@@ -1,7 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import logo from "@/assets/logo.jpeg";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogIn } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 const AppHeader = () => {
   const location = useLocation();
@@ -20,7 +21,7 @@ const AppHeader = () => {
       <div className="tiranga-stripe h-1 w-full" />
       <div className="container mx-auto flex items-center justify-between px-4 py-3">
         <Link to="/" className="flex items-center gap-3">
-          <img src={logo} alt="Mera Bharat Dukaan" className="h-10 w-10 rounded-full object-cover" />
+          <img src={logo} alt="Mera Bharat Dukaan" className="h-10 w-10 rounded-full object-cover border-2 border-primary-foreground/30" />
           <div>
             <h1 className="text-lg font-bold leading-tight text-primary-foreground">
               Mera Bharat Dukaan
@@ -30,29 +31,41 @@ const AppHeader = () => {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden gap-1 md:flex">
-          {links.map((l) => (
-            <Link
-              key={l.to}
-              to={l.to}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                location.pathname === l.to
-                  ? "bg-primary-foreground/20 text-primary-foreground"
-                  : "text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground"
-              }`}
-            >
-              {l.label}
-            </Link>
-          ))}
-        </nav>
+        <div className="hidden items-center gap-1 md:flex">
+          <nav className="flex gap-1">
+            {links.map((l) => (
+              <Link
+                key={l.to}
+                to={l.to}
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  location.pathname === l.to
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                }`}
+              >
+                {l.label}
+              </Link>
+            ))}
+          </nav>
+          <Button className="ml-3 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+            <LogIn className="mr-1 h-4 w-4" />
+            Login
+          </Button>
+        </div>
 
-        {/* Mobile menu button */}
-        <button
-          className="text-primary-foreground md:hidden"
-          onClick={() => setMenuOpen(!menuOpen)}
-        >
-          {menuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
+        {/* Mobile: Login + menu */}
+        <div className="flex items-center gap-2 md:hidden">
+          <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+            <LogIn className="mr-1 h-4 w-4" />
+            Login
+          </Button>
+          <button
+            className="text-primary-foreground"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            {menuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile nav */}

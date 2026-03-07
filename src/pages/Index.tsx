@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
-import { Search, MapPin, Store, ShoppingBag, Users } from "lucide-react";
+import { Search, MapPin, Store, ShoppingBag, Users, Mail } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { sampleShops, shopCategories } from "@/data/sampleShops";
 import ShopCard from "@/components/ShopCard";
 import AppHeader from "@/components/AppHeader";
+import { Link } from "react-router-dom";
 import logo from "@/assets/logo.jpeg";
 
 const Index = () => {
@@ -42,7 +43,7 @@ const Index = () => {
       {/* Hero */}
       <section className="relative z-10 bg-primary py-12 text-center">
         <div className="container mx-auto px-4">
-          <img src={logo} alt="Mera Bharat Dukaan" className="mx-auto mb-4 h-20 w-20 rounded-full shadow-lg" />
+          <img src={logo} alt="Mera Bharat Dukaan" className="mx-auto mb-4 h-24 w-24 rounded-full shadow-lg border-4 border-primary-foreground/20 object-cover" />
           <h2 className="mb-1 text-3xl font-extrabold text-primary-foreground">
             अपनी दुकान, अपना भारत
           </h2>
@@ -61,13 +62,12 @@ const Index = () => {
                 placeholder="Search shops, category, or pincode..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="bg-primary-foreground pl-10 text-foreground"
+                className="bg-primary-foreground pl-10 text-foreground border-0 shadow-md"
               />
             </div>
             <Button
               onClick={handleLocationAccess}
-              variant="outline"
-              className="border-primary-foreground/30 bg-primary-foreground/10 text-primary-foreground hover:bg-primary-foreground/20"
+              className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-md"
             >
               <MapPin className="mr-1 h-4 w-4" />
               {locationGranted ? "Located" : "Near Me"}
@@ -94,7 +94,7 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <ShoppingBag className="h-6 w-6 text-primary" />
+            <ShoppingBag className="h-6 w-6 text-accent" />
             <div>
               <p className="text-xl font-bold text-foreground">0%</p>
               <p className="text-xs text-muted-foreground">Commission</p>
@@ -105,24 +105,27 @@ const Index = () => {
 
       {/* Category filter */}
       <section className="relative z-10 bg-card py-4">
-        <div className="container mx-auto flex flex-wrap gap-2 px-4">
-          <Button
-            size="sm"
-            variant={selectedCategory === "" ? "default" : "outline"}
-            onClick={() => setSelectedCategory("")}
-          >
-            All
-          </Button>
-          {shopCategories.slice(0, 8).map((cat) => (
+        <div className="container mx-auto px-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Browse Categories</p>
+          <div className="flex flex-wrap gap-2">
             <Button
-              key={cat}
               size="sm"
-              variant={selectedCategory === cat ? "default" : "outline"}
-              onClick={() => setSelectedCategory(cat)}
+              variant={selectedCategory === "" ? "default" : "outline"}
+              onClick={() => setSelectedCategory("")}
             >
-              {cat}
+              All
             </Button>
-          ))}
+            {shopCategories.map((cat) => (
+              <Button
+                key={cat}
+                size="sm"
+                variant={selectedCategory === cat ? "default" : "outline"}
+                onClick={() => setSelectedCategory(cat)}
+              >
+                {cat}
+              </Button>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -149,12 +152,29 @@ const Index = () => {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 bg-primary py-6 text-center">
+      <footer className="relative z-10 bg-primary py-8 text-center">
         <div className="tiranga-stripe mb-4 h-1 w-full" />
-        <p className="text-sm text-primary-foreground/70">
-          © 2026 Mera Bharat Dukaan • <span className="font-hindi">सत्यमेव जयते</span>
-        </p>
-        <p className="mt-1 text-xs text-primary-foreground/50">Made in India 🇮🇳 with ❤️</p>
+        <div className="container mx-auto px-4">
+          <div className="mb-4 flex flex-wrap items-center justify-center gap-4 text-sm">
+            <Link to="/terms" className="text-primary-foreground/80 hover:text-primary-foreground underline-offset-2 hover:underline">
+              Terms & Conditions
+            </Link>
+            <span className="text-primary-foreground/30">|</span>
+            <Link to="/help" className="text-primary-foreground/80 hover:text-primary-foreground underline-offset-2 hover:underline">
+              Help & Support
+            </Link>
+          </div>
+          <div className="mb-3 flex items-center justify-center gap-2 text-sm text-primary-foreground/70">
+            <Mail className="h-4 w-4" />
+            <a href="mailto:helpline.bharatdukaan@gmail.com" className="hover:text-primary-foreground underline-offset-2 hover:underline">
+              helpline.bharatdukaan@gmail.com
+            </a>
+          </div>
+          <p className="text-sm text-primary-foreground/70">
+            © 2026 Mera Bharat Dukaan • <span className="font-hindi">सत्यमेव जयते</span>
+          </p>
+          <p className="mt-1 text-xs text-primary-foreground/50">Made in India 🇮🇳 with ❤️</p>
+        </div>
       </footer>
     </div>
   );

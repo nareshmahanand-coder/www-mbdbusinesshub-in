@@ -20,7 +20,7 @@ export const sampleShops: Shop[] = [
     id: "1",
     name: "Sai Kirana",
     nameHindi: "साई किराना",
-    category: "Kirana / Grocery",
+    category: "General Store",
     address: "Main Road, Risali, Bhilai, Chhattisgarh",
     pincode: "490006",
     lat: 21.2167,
@@ -68,7 +68,7 @@ export const sampleShops: Shop[] = [
     id: "4",
     name: "Maa Vaishno Sweets",
     nameHindi: "माँ वैष्णो स्वीट्स",
-    category: "Food & Sweets",
+    category: "Mithai & Sweets",
     address: "Power House Road, Risali, Bhilai",
     pincode: "490006",
     lat: 21.2195,
@@ -83,16 +83,36 @@ export const sampleShops: Shop[] = [
 ];
 
 export const shopCategories = [
-  "Kirana / Grocery",
-  "Pharmacy",
-  "Electronics",
-  "Food & Sweets",
-  "Clothing & Fashion",
-  "Hardware & Tools",
-  "Stationery & Books",
-  "Mobile & Recharge",
-  "Salon & Beauty",
+  // Daily Needs
   "Vegetables & Fruits",
-  "Dairy & Milk",
+  "Milk & Dairy",
+  "Bakery",
+  // Street Food & Sweets
+  "Mithai & Sweets",
+  "Snacks & Chaat",
+  "Momos",
+  "Fast Food",
+  // Services
+  "Car/Bike Mechanic",
+  "Electrician",
+  "Plumber",
+  "Salon & Barber",
+  "Tailor",
+  // Shopping
+  "Gift Items",
+  "Jewelry",
+  "Clothing & Fashion",
+  "Footwear",
+  "Toys",
+  // Tech
+  "Mobile Recharge & Repair",
+  "Electronics",
+  "Computer Services",
+  // Home
+  "Hardware",
+  "Stationery",
+  "General Store",
+  // Other
+  "Pharmacy",
   "Other",
 ];
