@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['Poppins', 'Noto Sans Devanagari', 'sans-serif'],
+        hindi: ['Noto Sans Devanagari', 'sans-serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -47,6 +51,10 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        saffron: "hsl(var(--saffron))",
+        "green-india": "hsl(var(--green-india))",
+        navy: "hsl(var(--navy))",
+        "chakra-blue": "hsl(var(--chakra-blue))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
