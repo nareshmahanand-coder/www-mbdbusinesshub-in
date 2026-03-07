@@ -43,7 +43,7 @@ const Index = () => {
       {/* Hero */}
       <section className="relative z-10 bg-primary py-12 text-center">
         <div className="container mx-auto px-4">
-          <img src={logo} alt="Mera Bharat Dukaan" className="mx-auto mb-4 h-24 w-24 rounded-full shadow-lg border-4 border-primary-foreground/20 object-cover" />
+          <img src={logoCircle} alt="Mera Bharat Dukaan" className="mx-auto mb-4 h-28 w-28 rounded-full shadow-xl border-4 border-primary-foreground/20 object-cover" />
           <h2 className="mb-1 text-3xl font-extrabold text-primary-foreground">
             अपनी दुकान, अपना भारत
           </h2>
