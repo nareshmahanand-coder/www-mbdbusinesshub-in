@@ -6,7 +6,7 @@ import { sampleShops, shopCategories } from "@/data/sampleShops";
 import ShopCard from "@/components/ShopCard";
 import AppHeader from "@/components/AppHeader";
 import { Link } from "react-router-dom";
-import logo from "@/assets/logo.jpeg";
+import logoCircle from "@/assets/logo-circle.jpeg";
 
 const Index = () => {
   const [search, setSearch] = useState("");
