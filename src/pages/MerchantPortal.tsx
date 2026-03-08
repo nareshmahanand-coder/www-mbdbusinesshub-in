@@ -6,12 +6,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { shopCategories } from "@/data/sampleShops";
-import { Store, Upload, CheckCircle } from "lucide-react";
+import { Store, Upload, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, AlertTriangle } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
+import upiQr from "@/assets/upi-qr.jpeg";
 
 const MerchantPortal = () => {
   const [submitted, setSubmitted] = useState(false);
+  const [transactionId, setTransactionId] = useState("");
+  const [premiumDaysLeft] = useState(3); // demo: 3 days left
   const [form, setForm] = useState({
     shopName: "",
     shopNameHindi: "",
@@ -31,6 +34,14 @@ const MerchantPortal = () => {
     }
     setSubmitted(true);
     toast.success("Shop registration submitted for verification!");
+  };
+
+  const handleScreenshotUpload = () => {
+    if (!transactionId.trim()) {
+      toast.error("कृपया Transaction ID भरें");
+      return;
+    }
+    toast.success("पेमेंट स्क्रीनशॉट अपलोड हो गया! Admin जल्द verify करेंगे।");
   };
 
   if (submitted) {
@@ -60,14 +71,28 @@ const MerchantPortal = () => {
     <div className="ashoka-watermark tiranga-bg min-h-screen">
       <AppHeader />
       <div className="relative z-10 container mx-auto max-w-2xl px-4 py-8">
+        {/* Main Hindi Heading */}
         <div className="mb-6 text-center">
           <Store className="mx-auto mb-2 h-10 w-10 text-saffron" />
-          <h2 className="text-2xl font-bold text-foreground">Register Your Shop</h2>
-          <p className="font-hindi text-muted-foreground">अपनी दुकान रजिस्टर करें</p>
+          <h1 className="font-hindi text-2xl font-extrabold leading-snug text-foreground sm:text-3xl">
+            अपनी दुकान को शहर में सबसे ऊपर दिखाएं और ज्यादा ग्राहक पाएं!
+          </h1>
+          <p className="mt-2 text-lg font-semibold text-foreground">Register Your Shop</p>
           <p className="mt-1 text-sm text-muted-foreground">Free listing • 0% Commission • Direct payments</p>
         </div>
 
-        <Card>
+        {/* Expiry Alert Banner */}
+        {premiumDaysLeft <= 3 && (
+          <div className="mb-6 flex items-center gap-3 rounded-lg border-2 border-saffron bg-saffron/10 px-4 py-3">
+            <AlertTriangle className="h-6 w-6 shrink-0 text-saffron" />
+            <p className="font-hindi text-sm font-semibold text-foreground">
+              आपका प्रीमियम प्लान {premiumDaysLeft} दिन में खत्म होने वाला है! टॉप पर बने रहने के लिए अभी रिन्यू करें।
+            </p>
+          </div>
+        )}
+
+        {/* Shop Registration Form */}
+        <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-lg">Shop Details • <span className="font-hindi font-normal">दुकान की जानकारी</span></CardTitle>
           </CardHeader>
@@ -180,6 +205,93 @@ const MerchantPortal = () => {
                 Submit for Verification
               </Button>
             </form>
+          </CardContent>
+        </Card>
+
+        {/* Premium QR & Payment Section */}
+        <Card className="mb-6 border-2 border-saffron">
+          <CardHeader className="text-center">
+            <Crown className="mx-auto mb-1 h-8 w-8 text-saffron" />
+            <CardTitle className="font-hindi text-xl">प्रीमियम मेंबरशिप • Premium Membership</CardTitle>
+            <p className="font-hindi mt-2 text-sm text-muted-foreground">
+              मात्र ₹99 में प्रीमियम मेंबर बनें। नीचे दिए गए QR कोड को स्कैन करके पेमेंट करें।
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {/* Benefits */}
+            <ul className="space-y-2 font-hindi text-sm">
+              <li className="flex items-start gap-2">
+                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-india" />
+                <span>आपकी दुकान ग्राहकों को सबसे पहले ऊपर दिखेगी।</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-india" />
+                <span>दुकान के नाम के साथ <strong>'Verified'</strong> (भरोसेमंद) का निशान लगेगा।</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Eye className="mt-0.5 h-5 w-5 shrink-0 text-green-india" />
+                <span>ज्यादा से ज्यादा लोग आपकी दुकान देख पाएंगे।</span>
+              </li>
+            </ul>
+
+            {/* QR Code */}
+            <div className="text-center">
+              <img
+                src={upiQr}
+                alt="UPI QR Code - Mera Bharat Dukaan"
+                className="mx-auto max-w-[260px] rounded-lg border shadow-md"
+              />
+              <p className="mt-2 text-xs text-muted-foreground">Scan & pay ₹99 using any UPI app</p>
+            </div>
+
+            {/* Payment Proof Upload */}
+            <div className="space-y-3 rounded-lg bg-muted/50 p-4">
+              <p className="font-hindi text-sm font-semibold text-foreground">
+                पेमेंट करने के बाद उसका फोटो (Screenshot) यहाँ अपलोड करें
+              </p>
+              <div className="flex h-20 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-saffron/50 transition-colors hover:border-saffron">
+                <div className="text-center">
+                  <Upload className="mx-auto h-5 w-5 text-saffron" />
+                  <p className="mt-1 text-xs text-muted-foreground">Upload Screenshot</p>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="txnId" className="font-hindi">Transaction ID *</Label>
+                <Input
+                  id="txnId"
+                  placeholder="e.g., T2403081234567890"
+                  value={transactionId}
+                  onChange={(e) => setTransactionId(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleScreenshotUpload} className="w-full bg-saffron text-white hover:bg-saffron/90">
+                <Upload className="mr-2 h-4 w-4" />
+                Submit Payment Proof
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Help & Support */}
+        <Card className="mb-8">
+          <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
+            <HelpCircle className="h-8 w-8 text-primary" />
+            <h3 className="font-hindi text-lg font-semibold">मदद और सहायता • Help Desk</h3>
+            <p className="font-hindi text-sm text-muted-foreground">
+              मदद के लिए यहाँ संपर्क करें:
+            </p>
+            <a
+              href="mailto:helpline.bharatdukaan@gmail.com"
+              className="text-sm font-medium text-primary underline underline-offset-2"
+            >
+              helpline.bharatdukaan@gmail.com
+            </a>
+            <Button variant="outline" asChild>
+              <a href="/help">
+                <HelpCircle className="mr-2 h-4 w-4" />
+                Help Desk
+              </a>
+            </Button>
           </CardContent>
         </Card>
       </div>

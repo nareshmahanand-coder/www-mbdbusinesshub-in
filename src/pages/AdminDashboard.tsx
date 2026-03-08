@@ -82,9 +82,6 @@ const AdminDashboard = () => {
             <p className="font-hindi text-muted-foreground">प्रशासन डैशबोर्ड</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowQr(true)}>
-              <Image className="mr-1 h-4 w-4" /> QR Code
-            </Button>
             <button className="relative rounded-full border p-2 hover:bg-muted" onClick={handleApprovePayment}>
               <Bell className="h-5 w-5" />
               {pendingPayments > 0 && (
