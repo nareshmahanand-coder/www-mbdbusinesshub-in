@@ -1,12 +1,11 @@
 import { useState, useMemo } from "react";
-import { Search, MapPin, Store, ShoppingBag, Users, Mail } from "lucide-react";
+import { Search, MapPin, Store, ShoppingBag, Users, Mail, Building, Phone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { sampleShops, shopCategories } from "@/data/sampleShops";
+import { sampleShops, shopCategories, categoryIcons } from "@/data/sampleShops";
 import ShopCard from "@/components/ShopCard";
 import AppHeader from "@/components/AppHeader";
 import { Link } from "react-router-dom";
-import logoCircle from "@/assets/logo-circle.jpeg";
 
 const Index = () => {
   const [search, setSearch] = useState("");
@@ -36,78 +35,95 @@ const Index = () => {
     }
   };
 
+  // Show top 8 categories as icon cards
+  const topCategories = shopCategories.slice(0, 8);
+
   return (
     <div className="ashoka-watermark tiranga-bg min-h-screen">
       <AppHeader />
 
       {/* Hero */}
-      <section className="relative z-10 bg-primary py-12 text-center">
-        <div className="container mx-auto px-4">
-          <img src={logoCircle} alt="Mera Bharat Dukaan" className="mx-auto mb-4 h-28 w-28 rounded-full shadow-xl border-4 border-primary-foreground/20 object-cover" />
-          <h2 className="mb-1 text-3xl font-extrabold text-primary-foreground">
-            अपनी दुकान, अपना भारत
+      <section className="relative z-10 overflow-hidden bg-gradient-to-b from-primary via-primary to-[hsl(240,100%,18%)] py-16 text-center">
+        {/* Ashoka Chakra overlay */}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.06]">
+          <span className="text-[40vw] leading-none text-primary-foreground">☸</span>
+        </div>
+
+        <div className="container relative z-10 mx-auto px-4">
+          <div className="mb-2 inline-block rounded-full bg-primary-foreground/10 px-4 py-1 text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
+            <span className="mr-1">🇮🇳</span> A Digital India Initiative
+          </div>
+
+          <h2 className="font-hindi mb-2 text-4xl font-extrabold text-primary-foreground md:text-5xl">
+            मेरा भारत दुकान
           </h2>
-          <p className="mb-1 text-lg font-semibold text-primary-foreground/80">
-            Mera Bharat Dukaan
+          <p className="mb-1 text-lg font-bold text-primary-foreground/90 md:text-xl">
+            Your Neighbourhood. Your Shops. Zero Commission.
           </p>
-          <p className="mb-6 text-sm text-primary-foreground/60 font-hindi">
-            सत्यमेव जयते • 0% Commission • Direct to Merchant
+          <p className="mb-8 text-sm text-primary-foreground/60">
+            Connecting 1.4 Billion Indians to their local shopkeepers — digitally.
           </p>
 
           {/* Search bar */}
-          <div className="mx-auto flex max-w-xl gap-2">
+          <div className="mx-auto flex max-w-xl gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search shops, category, or pincode..."
+                placeholder="Search shops, products, services..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="bg-primary-foreground pl-10 text-foreground border-0 shadow-md"
+                className="h-12 rounded-xl border-0 bg-primary-foreground pl-10 text-foreground shadow-lg"
               />
             </div>
             <Button
               onClick={handleLocationAccess}
-              className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold shadow-md"
+              className="h-12 rounded-xl bg-accent px-6 text-accent-foreground hover:bg-accent/90 font-semibold shadow-lg text-base"
             >
               <MapPin className="mr-1 h-4 w-4" />
               {locationGranted ? "Located" : "Near Me"}
             </Button>
           </div>
-        </div>
-      </section>
 
-      {/* Stats */}
-      <section className="relative z-10 border-b bg-card py-6">
-        <div className="container mx-auto flex flex-wrap items-center justify-center gap-8 px-4 text-center">
-          <div className="flex items-center gap-2">
-            <Store className="h-6 w-6 text-saffron" />
+          {/* Stats */}
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-10 text-center">
             <div>
-              <p className="text-xl font-bold text-foreground">4+</p>
-              <p className="text-xs text-muted-foreground">Shops Listed</p>
+              <p className="text-3xl font-extrabold text-accent">10,000+</p>
+              <p className="text-xs text-primary-foreground/60">Shops Listed</p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Users className="h-6 w-6 text-green-india" />
             <div>
-              <p className="text-xl font-bold text-foreground">100+</p>
-              <p className="text-xs text-muted-foreground">Happy Customers</p>
+              <p className="text-3xl font-extrabold text-accent">500+</p>
+              <p className="text-xs text-primary-foreground/60">Cities</p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <ShoppingBag className="h-6 w-6 text-accent" />
             <div>
-              <p className="text-xl font-bold text-foreground">0%</p>
-              <p className="text-xs text-muted-foreground">Commission</p>
+              <p className="text-3xl font-extrabold text-accent">0%</p>
+              <p className="text-xs text-primary-foreground/60">Commission</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Category filter */}
-      <section className="relative z-10 bg-card py-4">
+      {/* Browse by Category - Icon Cards */}
+      <section className="relative z-10 bg-background py-8">
         <div className="container mx-auto px-4">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Browse Categories</p>
-          <div className="flex flex-wrap gap-2">
+          <h3 className="mb-5 text-xl font-bold text-foreground">Browse by Category</h3>
+          <div className="grid grid-cols-4 gap-3 sm:grid-cols-8">
+            {topCategories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(selectedCategory === cat ? "" : cat)}
+                className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-all hover:shadow-md ${
+                  selectedCategory === cat
+                    ? "border-accent bg-accent/10 shadow-md"
+                    : "border-border bg-card hover:border-accent/50"
+                }`}
+              >
+                <span className="text-2xl">{categoryIcons[cat] || "🏪"}</span>
+                <span className="text-xs font-medium text-foreground text-center leading-tight">{cat}</span>
+              </button>
+            ))}
+          </div>
+          {/* All categories pills */}
+          <div className="mt-4 flex flex-wrap gap-2">
             <Button
               size="sm"
               variant={selectedCategory === "" ? "default" : "outline"}
@@ -115,14 +131,14 @@ const Index = () => {
             >
               All
             </Button>
-            {shopCategories.map((cat) => (
+            {shopCategories.slice(8).map((cat) => (
               <Button
                 key={cat}
                 size="sm"
                 variant={selectedCategory === cat ? "default" : "outline"}
                 onClick={() => setSelectedCategory(cat)}
               >
-                {cat}
+                {categoryIcons[cat] || "🏪"} {cat}
               </Button>
             ))}
           </div>
@@ -132,7 +148,7 @@ const Index = () => {
       {/* Shop listings */}
       <main className="relative z-10 container mx-auto px-4 py-8">
         <h3 className="mb-1 text-xl font-bold text-foreground">
-          Shops Near You <span className="font-hindi text-base font-normal text-muted-foreground">• आपके नज़दीकी दुकानें</span>
+          Nearby Shops <span className="font-hindi text-base font-normal text-muted-foreground">• आपके नज़दीकी दुकानें</span>
         </h3>
         <p className="mb-6 text-sm text-muted-foreground">Within 10 km • Risali, Bhilai Area</p>
 
@@ -151,29 +167,43 @@ const Index = () => {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="relative z-10 bg-primary py-8 text-center">
-        <div className="tiranga-stripe mb-4 h-1 w-full" />
+      {/* Footer - 3 column navy */}
+      <footer className="relative z-10 bg-primary py-10">
         <div className="container mx-auto px-4">
-          <div className="mb-4 flex flex-wrap items-center justify-center gap-4 text-sm">
-            <Link to="/terms" className="text-primary-foreground/80 hover:text-primary-foreground underline-offset-2 hover:underline">
-              Terms & Conditions
-            </Link>
-            <span className="text-primary-foreground/30">|</span>
-            <Link to="/help" className="text-primary-foreground/80 hover:text-primary-foreground underline-offset-2 hover:underline">
-              Help & Support
-            </Link>
+          <div className="grid gap-8 md:grid-cols-3">
+            {/* Brand */}
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-accent">🇮🇳</p>
+              <h4 className="text-lg font-bold text-primary-foreground">Mera Bharat Dukaan</h4>
+              <p className="mt-2 text-sm text-primary-foreground/60">
+                A Digital India initiative connecting local shopkeepers directly with customers. Zero commission. 100% desi.
+              </p>
+            </div>
+            {/* Quick Links */}
+            <div>
+              <h5 className="mb-3 font-bold text-primary-foreground">Quick Links</h5>
+              <div className="flex flex-col gap-2 text-sm">
+                <Link to="/" className="text-primary-foreground/70 hover:text-primary-foreground">Home</Link>
+                <Link to="/merchant" className="text-primary-foreground/70 hover:text-primary-foreground">Register Your Shop</Link>
+                <Link to="/terms" className="text-primary-foreground/70 hover:text-primary-foreground">Terms & Conditions</Link>
+                <Link to="/help" className="text-primary-foreground/70 hover:text-primary-foreground">Help & Support</Link>
+              </div>
+            </div>
+            {/* Support */}
+            <div>
+              <h5 className="mb-3 font-bold text-primary-foreground">Support</h5>
+              <div className="flex items-center gap-2 text-sm text-primary-foreground/70">
+                <Mail className="h-4 w-4" />
+                <a href="mailto:helpline.bharatdukaan@gmail.com" className="hover:text-primary-foreground">
+                  helpline.bharatdukaan@gmail.com
+                </a>
+              </div>
+            </div>
           </div>
-          <div className="mb-3 flex items-center justify-center gap-2 text-sm text-primary-foreground/70">
-            <Mail className="h-4 w-4" />
-            <a href="mailto:helpline.bharatdukaan@gmail.com" className="hover:text-primary-foreground underline-offset-2 hover:underline">
-              helpline.bharatdukaan@gmail.com
-            </a>
-          </div>
-          <p className="text-sm text-primary-foreground/70">
-            © 2026 Mera Bharat Dukaan • <span className="font-hindi">सत्यमेव जयते</span>
+          <div className="tiranga-stripe mt-8 h-1 w-full rounded-full" />
+          <p className="mt-4 text-center text-sm text-primary-foreground/50">
+            © 2026 Mera Bharat Dukaan. Made with ❤️ in India.
           </p>
-          <p className="mt-1 text-xs text-primary-foreground/50">Made in India 🇮🇳 with ❤️</p>
         </div>
       </footer>
     </div>

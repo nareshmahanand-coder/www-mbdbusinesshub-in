@@ -43,7 +43,7 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
 
         <div className="mb-3 flex items-center gap-1 text-sm text-muted-foreground">
           <MapPin className="h-4 w-4 shrink-0 text-saffron" />
-          <span>{shop.address} - {shop.pincode}</span>
+          <span>{shop.address}{shop.city ? `, ${shop.city}` : ""} - {shop.pincode}</span>
         </div>
 
         <div className="mb-4 flex items-center gap-1">
