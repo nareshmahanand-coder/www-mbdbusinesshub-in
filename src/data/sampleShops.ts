@@ -1,3 +1,11 @@
+export interface Review {
+  id: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
+
 export interface Shop {
   id: string;
   name: string;
@@ -13,6 +21,8 @@ export interface Shop {
   photos: string[];
   verified: boolean;
   rating: number;
+  reviewCount: number;
+  reviews: Review[];
   description: string;
 }
 
@@ -32,6 +42,11 @@ export const sampleShops: Shop[] = [
     photos: [],
     verified: true,
     rating: 4.5,
+    reviewCount: 28,
+    reviews: [
+      { id: "r1", userName: "Rahul", rating: 5, comment: "बहुत अच्छी दुकान!", date: "2026-02-15" },
+      { id: "r2", userName: "Priya", rating: 4, comment: "Good quality products.", date: "2026-02-20" },
+    ],
     description: "Your trusted neighborhood kirana store with daily essentials, groceries, snacks, and household items.",
   },
   {
@@ -49,6 +64,8 @@ export const sampleShops: Shop[] = [
     photos: [],
     verified: true,
     rating: 4.3,
+    reviewCount: 15,
+    reviews: [],
     description: "Wide range of men's, women's, and kids' clothing. Best quality fabrics at affordable prices.",
   },
   {
@@ -66,6 +83,8 @@ export const sampleShops: Shop[] = [
     photos: [],
     verified: false,
     rating: 4.0,
+    reviewCount: 8,
+    reviews: [],
     description: "Mobile phones, accessories, repair services, and all electronic items at competitive prices.",
   },
   {
@@ -83,6 +102,10 @@ export const sampleShops: Shop[] = [
     photos: [],
     verified: true,
     rating: 4.7,
+    reviewCount: 42,
+    reviews: [
+      { id: "r3", userName: "Anita", rating: 5, comment: "Fast delivery and genuine medicines.", date: "2026-03-01" },
+    ],
     description: "All medicines, health supplements, and medical supplies. Free home delivery on orders above ₹200.",
   },
   {
@@ -100,6 +123,8 @@ export const sampleShops: Shop[] = [
     photos: [],
     verified: true,
     rating: 4.2,
+    reviewCount: 12,
+    reviews: [],
     description: "Complete hardware solutions - tools, plumbing, electrical, and construction materials.",
   },
   {
@@ -117,38 +142,215 @@ export const sampleShops: Shop[] = [
     photos: [],
     verified: true,
     rating: 4.6,
+    reviewCount: 55,
+    reviews: [],
     description: "Delicious North Indian thali, snacks, and street food. Pure vegetarian. Family restaurant.",
+  },
+  {
+    id: "7",
+    name: "LIC Agent - Ramesh Verma",
+    nameHindi: "LIC एजेंट - रमेश वर्मा",
+    category: "Life Insurance (LIC)",
+    address: "Civil Lines",
+    city: "Bhilai",
+    pincode: "490006",
+    lat: 21.2100,
+    lng: 81.3800,
+    whatsapp: "919876543220",
+    phone: "919876543220",
+    photos: [],
+    verified: true,
+    rating: 4.4,
+    reviewCount: 18,
+    reviews: [],
+    description: "LIC policies, Jeevan Bima, term insurance, and pension plans. 15+ years experience.",
+  },
+  {
+    id: "8",
+    name: "Chauhan Tractor Service",
+    nameHindi: "चौहान ट्रैक्टर सर्विस",
+    category: "Tractor on Rent",
+    address: "Village Road",
+    city: "Durg",
+    pincode: "491001",
+    lat: 21.1900,
+    lng: 81.2800,
+    whatsapp: "919876543221",
+    phone: "919876543221",
+    photos: [],
+    verified: false,
+    rating: 4.1,
+    reviewCount: 6,
+    reviews: [],
+    description: "Tractor on rent for farming, construction. Harvester and trolley also available.",
   },
 ];
 
-export const shopCategories = [
-  "General Store",
-  "Clothing & Fashion",
-  "Electronics",
-  "Pharmacy",
-  "Salon & Barber",
-  "Fast Food",
-  "Stationery",
-  "Hardware",
-  // Extended
-  "Vegetables & Fruits",
-  "Milk & Dairy",
-  "Bakery",
-  "Mithai & Sweets",
-  "Snacks & Chaat",
-  "Momos",
-  "Car/Bike Mechanic",
-  "Electrician",
-  "Plumber",
-  "Tailor",
-  "Gift Items",
-  "Jewelry",
-  "Footwear",
-  "Toys",
-  "Mobile Recharge & Repair",
-  "Computer Services",
-  "Other",
+// ─── Category Sections ───
+export interface CategorySection {
+  sectionName: string;
+  sectionNameHindi: string;
+  categories: string[];
+}
+
+export const categorySections: CategorySection[] = [
+  {
+    sectionName: "Daily Needs",
+    sectionNameHindi: "दैनिक ज़रूरतें",
+    categories: [
+      "General Store",
+      "Vegetables & Fruits",
+      "Milk & Dairy",
+      "Bakery",
+      "Mithai & Sweets",
+    ],
+  },
+  {
+    sectionName: "Food & Street Food",
+    sectionNameHindi: "खाना और स्ट्रीट फूड",
+    categories: [
+      "Fast Food",
+      "Snacks & Chaat",
+      "Momos",
+    ],
+  },
+  {
+    sectionName: "Shopping",
+    sectionNameHindi: "खरीदारी",
+    categories: [
+      "Clothing & Fashion",
+      "Footwear",
+      "Jewelry",
+      "Gift Items",
+      "Toys",
+      "Stationery",
+    ],
+  },
+  {
+    sectionName: "Health & Wellness",
+    sectionNameHindi: "स्वास्थ्य",
+    categories: [
+      "Pharmacy",
+      "Salon & Barber",
+    ],
+  },
+  {
+    sectionName: "Electronics & Tech",
+    sectionNameHindi: "इलेक्ट्रॉनिक्स और टेक",
+    categories: [
+      "Electronics",
+      "Mobile Recharge & Repair",
+      "Computer Services",
+      "Cyber Cafe",
+    ],
+  },
+  {
+    sectionName: "Home & Hardware",
+    sectionNameHindi: "घर और हार्डवेयर",
+    categories: [
+      "Hardware",
+      "Electrician",
+      "Plumber",
+    ],
+  },
+  {
+    sectionName: "Services",
+    sectionNameHindi: "सेवाएं",
+    categories: [
+      "Tailor",
+      "Car/Bike Mechanic",
+      "Key Maker (चाबी वाला)",
+      "Cobbler (मोची)",
+      "Umbrella Repair",
+      "Stove/Gas Repair",
+      "Knife Sharpening (धार वाला)",
+    ],
+  },
+  {
+    sectionName: "Banking & Insurance (बैंकिंग और बीमा)",
+    sectionNameHindi: "बैंकिंग और बीमा",
+    categories: [
+      "Life Insurance (LIC)",
+      "Car/Bike Insurance",
+      "Health Insurance",
+      "General Insurance Agent",
+      "Personal Loan Agent",
+      "Home Loan Consultant",
+      "Mutual Fund/SIP Advisor",
+      "Share Market Expert",
+      "Tax/GST Consultant (CA)",
+      "Banking Correspondent (BC)",
+      "Mini-Bank/Aadhaar ATM",
+      "Credit Card Agent",
+    ],
+  },
+  {
+    sectionName: "Sanitation & Labor (स्वच्छता और जमीनी सेवाएं)",
+    sectionNameHindi: "स्वच्छता और जमीनी सेवाएं",
+    categories: [
+      "Gutter/Nali Cleaning (नाली-गटर सफाई)",
+      "Septic Tank Cleaning",
+      "Garbage Collection",
+      "Public Toilet Maintenance",
+      "Daily Wage Workers (मजदूर)",
+      "Loading/Unloading Labor",
+      "Palle-Dar",
+      "Warehouse Worker",
+    ],
+  },
+  {
+    sectionName: "Agriculture (कृषि)",
+    sectionNameHindi: "कृषि",
+    categories: [
+      "Tractor on Rent",
+      "Pesticide Spraying",
+      "Harvester Service",
+      "Veterinary (पशु डॉक्टर)",
+    ],
+  },
+  {
+    sectionName: "Professional & Digital (प्राइवेट और डिजिटल)",
+    sectionNameHindi: "प्राइवेट और डिजिटल",
+    categories: [
+      "Graphic Designer",
+      "Video Editor",
+      "Digital Marketing",
+      "Data Entry",
+    ],
+  },
+  {
+    sectionName: "Security & Events",
+    sectionNameHindi: "सुरक्षा और इवेंट",
+    categories: [
+      "Security Guard Agency",
+      "Bodyguard",
+      "Bouncers for Events",
+      "Tent House",
+      "DJ/Sound",
+      "Light Decor",
+      "Car/Travels on Rent",
+    ],
+  },
+  {
+    sectionName: "Real Estate",
+    sectionNameHindi: "रियल एस्टेट",
+    categories: [
+      "Property Dealer",
+      "Plot/Flat Sales",
+      "Rental Broker",
+    ],
+  },
+  {
+    sectionName: "Other",
+    sectionNameHindi: "अन्य",
+    categories: [
+      "Other",
+    ],
+  },
 ];
+
+// Flat list of all categories
+export const shopCategories: string[] = categorySections.flatMap((s) => s.categories);
 
 export const categoryIcons: Record<string, string> = {
   "General Store": "🛒",
@@ -175,5 +377,56 @@ export const categoryIcons: Record<string, string> = {
   "Toys": "🧸",
   "Mobile Recharge & Repair": "📲",
   "Computer Services": "💻",
+  "Cyber Cafe": "🖥️",
   "Other": "🏪",
+  // Banking & Insurance
+  "Life Insurance (LIC)": "🛡️",
+  "Car/Bike Insurance": "🚗",
+  "Health Insurance": "🏥",
+  "General Insurance Agent": "📋",
+  "Personal Loan Agent": "💰",
+  "Home Loan Consultant": "🏠",
+  "Mutual Fund/SIP Advisor": "📈",
+  "Share Market Expert": "📊",
+  "Tax/GST Consultant (CA)": "🧾",
+  "Banking Correspondent (BC)": "🏦",
+  "Mini-Bank/Aadhaar ATM": "🏧",
+  "Credit Card Agent": "💳",
+  // Sanitation & Labor
+  "Gutter/Nali Cleaning (नाली-गटर सफाई)": "🧹",
+  "Septic Tank Cleaning": "🚰",
+  "Garbage Collection": "🗑️",
+  "Public Toilet Maintenance": "🚻",
+  "Daily Wage Workers (मजदूर)": "👷",
+  "Loading/Unloading Labor": "📦",
+  "Palle-Dar": "🏋️",
+  "Warehouse Worker": "🏭",
+  // Agriculture
+  "Tractor on Rent": "🚜",
+  "Pesticide Spraying": "🌾",
+  "Harvester Service": "🌿",
+  "Veterinary (पशु डॉक्टर)": "🐄",
+  // Professional & Digital
+  "Graphic Designer": "🎨",
+  "Video Editor": "🎬",
+  "Digital Marketing": "📣",
+  "Data Entry": "⌨️",
+  // Security & Events
+  "Security Guard Agency": "🛡️",
+  "Bodyguard": "🕶️",
+  "Bouncers for Events": "💪",
+  "Tent House": "⛺",
+  "DJ/Sound": "🎵",
+  "Light Decor": "💡",
+  "Car/Travels on Rent": "🚘",
+  // Real Estate
+  "Property Dealer": "🏘️",
+  "Plot/Flat Sales": "🏗️",
+  "Rental Broker": "🔑",
+  // Zero-gap
+  "Key Maker (चाबी वाला)": "🔐",
+  "Cobbler (मोची)": "👞",
+  "Umbrella Repair": "☂️",
+  "Stove/Gas Repair": "🔥",
+  "Knife Sharpening (धार वाला)": "🔪",
 };

@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
-import { Search, MapPin, Store, Mail, HelpCircle } from "lucide-react";
+import { Search, MapPin, Store, Mail, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { sampleShops, shopCategories, categoryIcons } from "@/data/sampleShops";
+import { sampleShops, shopCategories, categoryIcons, categorySections } from "@/data/sampleShops";
 import ShopCard from "@/components/ShopCard";
 import AppHeader from "@/components/AppHeader";
 import HeroCarousel from "@/components/HeroCarousel";
@@ -12,20 +12,31 @@ const Index = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [locationGranted, setLocationGranted] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   const filteredShops = useMemo(() => {
     return sampleShops.filter((s) => {
+      const q = search.toLowerCase();
       const matchSearch =
         !search ||
-        s.name.toLowerCase().includes(search.toLowerCase()) ||
+        s.name.toLowerCase().includes(q) ||
         s.nameHindi.includes(search) ||
-        s.category.toLowerCase().includes(search.toLowerCase()) ||
-        s.address.toLowerCase().includes(search.toLowerCase()) ||
-        s.pincode.includes(search);
+        s.category.toLowerCase().includes(q) ||
+        s.address.toLowerCase().includes(q) ||
+        s.city.toLowerCase().includes(q) ||
+        s.pincode.includes(search) ||
+        s.description.toLowerCase().includes(q);
       const matchCategory = !selectedCategory || s.category === selectedCategory;
       return matchSearch && matchCategory;
     });
   }, [search, selectedCategory]);
+
+  // Also filter categories in search
+  const filteredCategories = useMemo(() => {
+    if (!search) return shopCategories;
+    const q = search.toLowerCase();
+    return shopCategories.filter((c) => c.toLowerCase().includes(q));
+  }, [search]);
 
   const handleLocationAccess = () => {
     if (navigator.geolocation) {
@@ -36,17 +47,20 @@ const Index = () => {
     }
   };
 
+  const toggleSection = (name: string) => {
+    setExpandedSections((prev) => ({ ...prev, [name]: !prev[name] }));
+  };
+
+  // Top 8 categories for quick access
   const topCategories = shopCategories.slice(0, 8);
 
   return (
     <div className="ashoka-watermark tiranga-bg min-h-screen">
       <AppHeader />
 
-      {/* Hero with Tiranga Animation */}
+      {/* Hero */}
       <section className="relative z-10 overflow-hidden bg-gradient-to-b from-primary via-primary to-[hsl(240,100%,18%)] py-12 text-center">
-        {/* Tiranga animated stripes */}
         <div className="tiranga-wave pointer-events-none absolute inset-0" />
-        {/* Ashoka Chakra overlay */}
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.06]">
           <span className="text-[40vw] leading-none text-primary-foreground">☸</span>
         </div>
@@ -71,12 +85,12 @@ const Index = () => {
             <HeroCarousel />
           </div>
 
-          {/* Search bar */}
+          {/* Global Search Bar */}
           <div className="mx-auto flex max-w-xl gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search shops, products, services..."
+                placeholder="Search shops, services, insurance, mechanic... / खोजें..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="h-12 rounded-xl border-0 bg-primary-foreground pl-10 text-foreground shadow-lg"
@@ -109,10 +123,12 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Browse by Category */}
+      {/* Quick Categories */}
       <section className="relative z-10 bg-background py-8">
         <div className="container mx-auto px-4">
-          <h3 className="mb-5 text-xl font-bold text-foreground">Browse by Category</h3>
+          <h3 className="mb-5 text-xl font-bold text-foreground">
+            Browse by Category <span className="font-hindi text-base font-normal text-muted-foreground">• श्रेणियाँ</span>
+          </h3>
           <div className="grid grid-cols-4 gap-3 sm:grid-cols-8">
             {topCategories.map((cat) => (
               <button
@@ -129,34 +145,68 @@ const Index = () => {
               </button>
             ))}
           </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant={selectedCategory === "" ? "default" : "outline"}
-              onClick={() => setSelectedCategory("")}
-            >
-              All
-            </Button>
-            {shopCategories.slice(8).map((cat) => (
-              <Button
-                key={cat}
-                size="sm"
-                variant={selectedCategory === cat ? "default" : "outline"}
-                onClick={() => setSelectedCategory(cat)}
-              >
-                {categoryIcons[cat] || "🏪"} {cat}
-              </Button>
+
+          {/* Sectioned Categories */}
+          <div className="mt-6 space-y-3">
+            {categorySections.map((section) => (
+              <div key={section.sectionName} className="rounded-lg border border-border bg-card">
+                <button
+                  onClick={() => toggleSection(section.sectionName)}
+                  className="flex w-full items-center justify-between px-4 py-3 text-left"
+                >
+                  <span className="text-sm font-bold text-foreground">
+                    {section.sectionName}{" "}
+                    <span className="font-hindi text-xs font-normal text-muted-foreground">
+                      • {section.sectionNameHindi}
+                    </span>
+                  </span>
+                  {expandedSections[section.sectionName] ? (
+                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </button>
+                {expandedSections[section.sectionName] && (
+                  <div className="flex flex-wrap gap-2 px-4 pb-3">
+                    {section.categories
+                      .filter((cat) => !search || cat.toLowerCase().includes(search.toLowerCase()))
+                      .map((cat) => (
+                        <Button
+                          key={cat}
+                          size="sm"
+                          variant={selectedCategory === cat ? "default" : "outline"}
+                          onClick={() => setSelectedCategory(selectedCategory === cat ? "" : cat)}
+                          className="text-xs"
+                        >
+                          {categoryIcons[cat] || "🏪"} {cat}
+                        </Button>
+                      ))}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
+
+          {/* Clear filter */}
+          {selectedCategory && (
+            <div className="mt-4">
+              <Button size="sm" variant="destructive" onClick={() => setSelectedCategory("")}>
+                ✕ Clear Filter: {selectedCategory}
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
       {/* Shop listings */}
       <main className="relative z-10 container mx-auto px-4 py-8">
         <h3 className="mb-1 text-xl font-bold text-foreground">
-          Nearby Shops <span className="font-hindi text-base font-normal text-muted-foreground">• आपके नज़दीकी दुकानें</span>
+          {selectedCategory || "All"} Shops{" "}
+          <span className="font-hindi text-base font-normal text-muted-foreground">• आपके नज़दीकी दुकानें</span>
         </h3>
-        <p className="mb-6 text-sm text-muted-foreground">Within 10 km • Risali, Bhilai Area</p>
+        <p className="mb-6 text-sm text-muted-foreground">
+          {filteredShops.length} results found {search && `for "${search}"`}
+        </p>
 
         {filteredShops.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -168,7 +218,12 @@ const Index = () => {
           <div className="py-16 text-center">
             <Store className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
             <p className="text-lg font-semibold text-foreground">No shops found</p>
-            <p className="text-sm text-muted-foreground">Try a different search or category</p>
+            <p className="font-hindi text-sm text-muted-foreground">
+              कोई दुकान नहीं मिली। कृपया अलग खोज या श्रेणी आज़माएं।
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Use 'Other / अन्य' category to list any unlisted service.
+            </p>
           </div>
         )}
       </main>

@@ -1,16 +1,46 @@
 import { Shop } from "@/data/sampleShops";
-import { MapPin, Phone, MessageCircle, Star, ShieldCheck, Flag } from "lucide-react";
+import { MapPin, Phone, MessageCircle, Star, ShieldCheck, Flag, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Textarea } from "@/components/ui/textarea";
+
+const StarRating = ({ rating, onRate, interactive = false }: { rating: number; onRate?: (r: number) => void; interactive?: boolean }) => {
+  const [hover, setHover] = useState(0);
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <button
+          key={s}
+          type="button"
+          disabled={!interactive}
+          className={`${interactive ? "cursor-pointer" : "cursor-default"}`}
+          onMouseEnter={() => interactive && setHover(s)}
+          onMouseLeave={() => interactive && setHover(0)}
+          onClick={() => interactive && onRate?.(s)}
+        >
+          <Star
+            className={`h-4 w-4 transition-colors ${
+              s <= (hover || rating) ? "fill-saffron text-saffron" : "text-muted-foreground/40"
+            }`}
+          />
+        </button>
+      ))}
+    </div>
+  );
+};
 
 const ShopCard = ({ shop }: { shop: Shop }) => {
   const [reported, setReported] = useState(false);
+  const [showReviews, setShowReviews] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [userComment, setUserComment] = useState("");
+  const [reviews, setReviews] = useState(shop.reviews || []);
 
   const handleWhatsApp = () => {
-    window.open(`https://wa.me/${shop.whatsapp}?text=Hi! I found your shop on Mera Bharat Dukaan.`, "_blank");
+    window.open(`https://wa.me/${shop.whatsapp}?text=${encodeURIComponent("Hi! I found your shop on Mera Bharat Dukaan.")}`, "_blank");
   };
 
   const handleCall = () => {
@@ -21,6 +51,34 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
     setReported(true);
     toast.success("Shop reported. We will review it shortly.");
   };
+
+  const handleSubmitReview = () => {
+    if (userRating === 0) {
+      toast.error("कृपया रेटिंग दें (Please select a rating)");
+      return;
+    }
+    const trimmed = userComment.trim();
+    if (!trimmed || trimmed.length > 500) {
+      toast.error("कृपया समीक्षा लिखें (max 500 chars)");
+      return;
+    }
+    const newReview = {
+      id: `r-${Date.now()}`,
+      userName: "You",
+      rating: userRating,
+      comment: trimmed,
+      date: new Date().toISOString().split("T")[0],
+    };
+    setReviews((prev) => [newReview, ...prev]);
+    setUserRating(0);
+    setUserComment("");
+    toast.success("आपकी समीक्षा सबमिट हो गई! (Review submitted)");
+  };
+
+  const avgRating = reviews.length > 0
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    : shop.rating.toFixed(1);
+  const totalReviews = (shop.reviewCount || 0) + reviews.filter(r => r.userName === "You").length;
 
   return (
     <Card className="group relative overflow-hidden transition-all hover:shadow-xl">
@@ -46,12 +104,61 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
           <span>{shop.address}{shop.city ? `, ${shop.city}` : ""} - {shop.pincode}</span>
         </div>
 
-        <div className="mb-4 flex items-center gap-1">
-          <Star className="h-4 w-4 fill-saffron text-saffron" />
-          <span className="text-sm font-semibold">{shop.rating}</span>
-        </div>
+        {/* Rating display */}
+        <button
+          onClick={() => setShowReviews(!showReviews)}
+          className="mb-4 flex items-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-muted"
+        >
+          <StarRating rating={Math.round(Number(avgRating))} />
+          <span className="text-sm font-semibold">{avgRating}</span>
+          <span className="text-xs text-muted-foreground">({totalReviews} reviews)</span>
+        </button>
 
         <p className="mb-4 text-sm text-muted-foreground">{shop.description}</p>
+
+        {/* Review section (expandable) */}
+        {showReviews && (
+          <div className="mb-4 rounded-lg border border-border bg-muted/30 p-3">
+            <h4 className="mb-2 text-sm font-bold text-foreground">
+              ⭐ Reviews <span className="font-hindi text-xs font-normal text-muted-foreground">• समीक्षाएं</span>
+            </h4>
+
+            {/* Existing reviews */}
+            {reviews.length > 0 ? (
+              <div className="mb-3 max-h-32 space-y-2 overflow-y-auto">
+                {reviews.slice(0, 5).map((r) => (
+                  <div key={r.id} className="rounded border border-border bg-background p-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-foreground">{r.userName}</span>
+                      <StarRating rating={r.rating} />
+                      <span className="text-[10px] text-muted-foreground">{r.date}</span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{r.comment}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mb-3 text-xs text-muted-foreground">No reviews yet. Be the first!</p>
+            )}
+
+            {/* Submit review */}
+            <div className="space-y-2 border-t border-border pt-2">
+              <p className="text-xs font-semibold text-foreground">अपनी रेटिंग दें (Rate this shop):</p>
+              <StarRating rating={userRating} onRate={setUserRating} interactive />
+              <Textarea
+                placeholder="अपनी समीक्षा लिखें... (Write your review)"
+                value={userComment}
+                onChange={(e) => setUserComment(e.target.value)}
+                className="min-h-[60px] text-xs"
+                maxLength={500}
+              />
+              <Button size="sm" onClick={handleSubmitReview} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                <Send className="mr-1 h-3 w-3" />
+                Submit Review / समीक्षा भेजें
+              </Button>
+            </div>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2">
           <Button
