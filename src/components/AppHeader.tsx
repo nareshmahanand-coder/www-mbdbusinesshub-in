@@ -13,7 +13,7 @@ const AppHeader = () => {
   const links = [
     { to: "/", label: "Home" },
     { to: "/merchant", label: "Merchant Portal" },
-    { to: "/admin", label: "Admin" },
+    { to: "/help", label: "Help Desk" },
   ];
 
   return (

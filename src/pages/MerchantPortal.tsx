@@ -11,10 +11,16 @@ import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 import upiQr from "@/assets/upi-qr.jpeg";
 
+const PLANS = [
+  { id: "monthly", label: "मासिक प्लान (₹99)", labelEn: "Monthly Plan", price: 99, days: 30 },
+  { id: "yearly", label: "सालाना प्लान (₹999)", labelEn: "Yearly Plan", price: 999, days: 365 },
+];
+
 const MerchantPortal = () => {
   const [submitted, setSubmitted] = useState(false);
   const [transactionId, setTransactionId] = useState("");
-  const [premiumDaysLeft] = useState(3); // demo: 3 days left
+  const [selectedPlan, setSelectedPlan] = useState(PLANS[0].id);
+  const [premiumDaysLeft] = useState(3);
   const [form, setForm] = useState({
     shopName: "",
     shopNameHindi: "",
@@ -25,6 +31,8 @@ const MerchantPortal = () => {
     phone: "",
     description: "",
   });
+
+  const currentPlan = PLANS.find((p) => p.id === selectedPlan)!;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,10 +91,10 @@ const MerchantPortal = () => {
 
         {/* Expiry Alert Banner */}
         {premiumDaysLeft <= 3 && (
-          <div className="mb-6 flex items-center gap-3 rounded-lg border-2 border-saffron bg-saffron/10 px-4 py-3">
-            <AlertTriangle className="h-6 w-6 shrink-0 text-saffron" />
+          <div className="mb-6 flex items-center gap-3 rounded-lg border-2 border-accent bg-accent/10 px-4 py-3">
+            <AlertTriangle className="h-6 w-6 shrink-0 text-accent" />
             <p className="font-hindi text-sm font-semibold text-foreground">
-              आपका प्रीमियम प्लान {premiumDaysLeft} दिन में खत्म होने वाला है! टॉप पर बने रहने के लिए अभी रिन्यू करें।
+              चेतावनी: आपका प्रीमियम प्लान {premiumDaysLeft} दिन में खत्म होने वाला है! टॉप पर बने रहने के लिए रिन्यू करें।
             </p>
           </div>
         )}
@@ -101,32 +109,17 @@ const MerchantPortal = () => {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="shopName">Shop Name *</Label>
-                  <Input
-                    id="shopName"
-                    placeholder="e.g., Sai Kirana"
-                    value={form.shopName}
-                    onChange={(e) => setForm({ ...form, shopName: e.target.value })}
-                    required
-                  />
+                  <Input id="shopName" placeholder="e.g., Sai Kirana" value={form.shopName} onChange={(e) => setForm({ ...form, shopName: e.target.value })} required />
                 </div>
                 <div>
                   <Label htmlFor="shopNameHindi">दुकान का नाम (Hindi)</Label>
-                  <Input
-                    id="shopNameHindi"
-                    placeholder="e.g., साई किराना"
-                    value={form.shopNameHindi}
-                    onChange={(e) => setForm({ ...form, shopNameHindi: e.target.value })}
-                    className="font-hindi"
-                  />
+                  <Input id="shopNameHindi" placeholder="e.g., साई किराना" value={form.shopNameHindi} onChange={(e) => setForm({ ...form, shopNameHindi: e.target.value })} className="font-hindi" />
                 </div>
               </div>
-
               <div>
                 <Label>Category *</Label>
                 <Select onValueChange={(v) => setForm({ ...form, category: v })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select shop category" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select shop category" /></SelectTrigger>
                   <SelectContent>
                     {shopCategories.map((cat) => (
                       <SelectItem key={cat} value={cat}>{cat}</SelectItem>
@@ -134,62 +127,28 @@ const MerchantPortal = () => {
                   </SelectContent>
                 </Select>
               </div>
-
               <div>
                 <Label htmlFor="address">Full Address *</Label>
-                <Textarea
-                  id="address"
-                  placeholder="Complete shop address with landmark"
-                  value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
-                  required
-                />
+                <Textarea id="address" placeholder="Complete shop address with landmark" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} required />
               </div>
-
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="pincode">Pincode *</Label>
-                  <Input
-                    id="pincode"
-                    placeholder="490006"
-                    value={form.pincode}
-                    onChange={(e) => setForm({ ...form, pincode: e.target.value })}
-                    required
-                    maxLength={6}
-                  />
+                  <Input id="pincode" placeholder="490006" value={form.pincode} onChange={(e) => setForm({ ...form, pincode: e.target.value })} required maxLength={6} />
                 </div>
                 <div>
                   <Label htmlFor="whatsapp">WhatsApp Number *</Label>
-                  <Input
-                    id="whatsapp"
-                    placeholder="91XXXXXXXXXX"
-                    value={form.whatsapp}
-                    onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
-                    required
-                  />
+                  <Input id="whatsapp" placeholder="91XXXXXXXXXX" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} required />
                 </div>
               </div>
-
               <div>
                 <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  placeholder="91XXXXXXXXXX"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                />
+                <Input id="phone" placeholder="91XXXXXXXXXX" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
               </div>
-
               <div>
                 <Label htmlFor="description">Shop Description</Label>
-                <Textarea
-                  id="description"
-                  placeholder="What do you sell? Any speciality?"
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                />
+                <Textarea id="description" placeholder="What do you sell? Any speciality?" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
               </div>
-
               <div>
                 <Label>Shop Photos</Label>
                 <div className="mt-1 flex h-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-border transition-colors hover:border-primary">
@@ -199,7 +158,6 @@ const MerchantPortal = () => {
                   </div>
                 </div>
               </div>
-
               <Button type="submit" className="w-full" size="lg">
                 <Store className="mr-2 h-5 w-5" />
                 Submit for Verification
@@ -208,16 +166,35 @@ const MerchantPortal = () => {
           </CardContent>
         </Card>
 
-        {/* Premium QR & Payment Section */}
-        <Card className="mb-6 border-2 border-saffron">
+        {/* Premium Subscription Plans */}
+        <Card className="mb-6 border-2 border-accent">
           <CardHeader className="text-center">
-            <Crown className="mx-auto mb-1 h-8 w-8 text-saffron" />
+            <Crown className="mx-auto mb-1 h-8 w-8 text-accent" />
             <CardTitle className="font-hindi text-xl">प्रीमियम मेंबरशिप • Premium Membership</CardTitle>
             <p className="font-hindi mt-2 text-sm text-muted-foreground">
               मात्र ₹99 में प्रीमियम मेंबर बनें। नीचे दिए गए QR कोड को स्कैन करके पेमेंट करें।
             </p>
           </CardHeader>
           <CardContent className="space-y-5">
+            {/* Plan Selection */}
+            <div className="grid grid-cols-2 gap-3">
+              {PLANS.map((plan) => (
+                <button
+                  key={plan.id}
+                  onClick={() => setSelectedPlan(plan.id)}
+                  className={`rounded-xl border-2 p-4 text-center transition-all ${
+                    selectedPlan === plan.id
+                      ? "border-accent bg-accent/10 shadow-md"
+                      : "border-border hover:border-accent/50"
+                  }`}
+                >
+                  <p className="font-hindi text-sm font-bold text-foreground">{plan.label}</p>
+                  <p className="mt-1 text-2xl font-extrabold text-accent">₹{plan.price}</p>
+                  <p className="text-xs text-muted-foreground">{plan.days} days</p>
+                </button>
+              ))}
+            </div>
+
             {/* Benefits */}
             <ul className="space-y-2 font-hindi text-sm">
               <li className="flex items-start gap-2">
@@ -241,7 +218,7 @@ const MerchantPortal = () => {
                 alt="UPI QR Code - Mera Bharat Dukaan"
                 className="mx-auto max-w-[260px] rounded-lg border shadow-md"
               />
-              <p className="mt-2 text-xs text-muted-foreground">Scan & pay ₹99 using any UPI app</p>
+              <p className="mt-2 text-xs text-muted-foreground">Scan & pay ₹{currentPlan.price} using any UPI app</p>
             </div>
 
             {/* Payment Proof Upload */}
@@ -249,9 +226,9 @@ const MerchantPortal = () => {
               <p className="font-hindi text-sm font-semibold text-foreground">
                 पेमेंट करने के बाद उसका फोटो (Screenshot) यहाँ अपलोड करें
               </p>
-              <div className="flex h-20 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-saffron/50 transition-colors hover:border-saffron">
+              <div className="flex h-20 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-accent/50 transition-colors hover:border-accent">
                 <div className="text-center">
-                  <Upload className="mx-auto h-5 w-5 text-saffron" />
+                  <Upload className="mx-auto h-5 w-5 text-accent" />
                   <p className="mt-1 text-xs text-muted-foreground">Upload Screenshot</p>
                 </div>
               </div>
@@ -264,10 +241,19 @@ const MerchantPortal = () => {
                   onChange={(e) => setTransactionId(e.target.value)}
                 />
               </div>
-              <Button onClick={handleScreenshotUpload} className="w-full bg-saffron text-white hover:bg-saffron/90">
+              <Button onClick={handleScreenshotUpload} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
                 <Upload className="mr-2 h-4 w-4" />
                 Submit Payment Proof
               </Button>
+            </div>
+
+            {/* Expiry Logic Info */}
+            <div className="rounded-lg border border-border bg-card p-3 text-center">
+              <p className="font-hindi text-xs text-muted-foreground">
+                {selectedPlan === "monthly"
+                  ? "प्रीमियम 30 दिन के लिए एक्टिव रहेगा। समाप्ति से 3 दिन पहले अलर्ट मिलेगा।"
+                  : "प्रीमियम 365 दिन के लिए एक्टिव रहेगा। समाप्ति से 3 दिन पहले अलर्ट मिलेगा।"}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -277,13 +263,8 @@ const MerchantPortal = () => {
           <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
             <HelpCircle className="h-8 w-8 text-primary" />
             <h3 className="font-hindi text-lg font-semibold">मदद और सहायता • Help Desk</h3>
-            <p className="font-hindi text-sm text-muted-foreground">
-              मदद के लिए यहाँ संपर्क करें:
-            </p>
-            <a
-              href="mailto:helpline.bharatdukaan@gmail.com"
-              className="text-sm font-medium text-primary underline underline-offset-2"
-            >
+            <p className="font-hindi text-sm text-muted-foreground">मदद के लिए यहाँ संपर्क करें:</p>
+            <a href="mailto:helpline.bharatdukaan@gmail.com" className="text-sm font-medium text-primary underline underline-offset-2">
               helpline.bharatdukaan@gmail.com
             </a>
             <Button variant="outline" asChild>

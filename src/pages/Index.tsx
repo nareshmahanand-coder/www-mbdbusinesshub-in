@@ -1,10 +1,11 @@
 import { useState, useMemo } from "react";
-import { Search, MapPin, Store, ShoppingBag, Users, Mail, Building, Phone } from "lucide-react";
+import { Search, MapPin, Store, Mail, HelpCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { sampleShops, shopCategories, categoryIcons } from "@/data/sampleShops";
 import ShopCard from "@/components/ShopCard";
 import AppHeader from "@/components/AppHeader";
+import HeroCarousel from "@/components/HeroCarousel";
 import { Link } from "react-router-dom";
 
 const Index = () => {
@@ -35,15 +36,16 @@ const Index = () => {
     }
   };
 
-  // Show top 8 categories as icon cards
   const topCategories = shopCategories.slice(0, 8);
 
   return (
     <div className="ashoka-watermark tiranga-bg min-h-screen">
       <AppHeader />
 
-      {/* Hero */}
-      <section className="relative z-10 overflow-hidden bg-gradient-to-b from-primary via-primary to-[hsl(240,100%,18%)] py-16 text-center">
+      {/* Hero with Tiranga Animation */}
+      <section className="relative z-10 overflow-hidden bg-gradient-to-b from-primary via-primary to-[hsl(240,100%,18%)] py-12 text-center">
+        {/* Tiranga animated stripes */}
+        <div className="tiranga-wave pointer-events-none absolute inset-0" />
         {/* Ashoka Chakra overlay */}
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.06]">
           <span className="text-[40vw] leading-none text-primary-foreground">☸</span>
@@ -60,9 +62,14 @@ const Index = () => {
           <p className="mb-1 text-lg font-bold text-primary-foreground/90 md:text-xl">
             Your Neighbourhood. Your Shops. Zero Commission.
           </p>
-          <p className="mb-8 text-sm text-primary-foreground/60">
+          <p className="mb-6 text-sm text-primary-foreground/60">
             Connecting 1.4 Billion Indians to their local shopkeepers — digitally.
           </p>
+
+          {/* Carousel */}
+          <div className="mx-auto max-w-3xl mb-8">
+            <HeroCarousel />
+          </div>
 
           {/* Search bar */}
           <div className="mx-auto flex max-w-xl gap-3">
@@ -85,7 +92,7 @@ const Index = () => {
           </div>
 
           {/* Stats */}
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-10 text-center">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-10 text-center">
             <div>
               <p className="text-3xl font-extrabold text-accent">10,000+</p>
               <p className="text-xs text-primary-foreground/60">Shops Listed</p>
@@ -102,7 +109,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Browse by Category - Icon Cards */}
+      {/* Browse by Category */}
       <section className="relative z-10 bg-background py-8">
         <div className="container mx-auto px-4">
           <h3 className="mb-5 text-xl font-bold text-foreground">Browse by Category</h3>
@@ -122,7 +129,6 @@ const Index = () => {
               </button>
             ))}
           </div>
-          {/* All categories pills */}
           <div className="mt-4 flex flex-wrap gap-2">
             <Button
               size="sm"
@@ -167,29 +173,29 @@ const Index = () => {
         )}
       </main>
 
-      {/* Footer - 3 column navy */}
+      {/* Footer */}
       <footer className="relative z-10 bg-primary py-10">
         <div className="container mx-auto px-4">
           <div className="grid gap-8 md:grid-cols-3">
-            {/* Brand */}
             <div>
               <p className="text-xs font-bold uppercase tracking-wider text-accent">🇮🇳</p>
               <h4 className="text-lg font-bold text-primary-foreground">Mera Bharat Dukaan</h4>
               <p className="mt-2 text-sm text-primary-foreground/60">
                 A Digital India initiative connecting local shopkeepers directly with customers. Zero commission. 100% desi.
               </p>
+              <p className="mt-2 text-xs text-primary-foreground/40">Udyam Registered Business</p>
             </div>
-            {/* Quick Links */}
             <div>
               <h5 className="mb-3 font-bold text-primary-foreground">Quick Links</h5>
               <div className="flex flex-col gap-2 text-sm">
                 <Link to="/" className="text-primary-foreground/70 hover:text-primary-foreground">Home</Link>
                 <Link to="/merchant" className="text-primary-foreground/70 hover:text-primary-foreground">Register Your Shop</Link>
                 <Link to="/terms" className="text-primary-foreground/70 hover:text-primary-foreground">Terms & Conditions</Link>
-                <Link to="/help" className="text-primary-foreground/70 hover:text-primary-foreground">Help & Support</Link>
+                <Link to="/help" className="text-primary-foreground/70 hover:text-primary-foreground">
+                  <HelpCircle className="mr-1 inline h-3 w-3" />Help & Support
+                </Link>
               </div>
             </div>
-            {/* Support */}
             <div>
               <h5 className="mb-3 font-bold text-primary-foreground">Support</h5>
               <div className="flex items-center gap-2 text-sm text-primary-foreground/70">
@@ -198,11 +204,12 @@ const Index = () => {
                   helpline.bharatdukaan@gmail.com
                 </a>
               </div>
+              <p className="mt-3 text-xs text-primary-foreground/40">Helpline: helpline.bharatdukaan@gmail.com</p>
             </div>
           </div>
           <div className="tiranga-stripe mt-8 h-1 w-full rounded-full" />
           <p className="mt-4 text-center text-sm text-primary-foreground/50">
-            © 2026 Mera Bharat Dukaan. Made with ❤️ in India.
+            © 2026 Mera Bharat Dukaan. Made with ❤️ in India. Udyam Registered Business.
           </p>
         </div>
       </footer>
