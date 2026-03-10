@@ -20,6 +20,7 @@ export interface Shop {
   phone: string;
   photos: string[];
   verified: boolean;
+  premium?: boolean;
   rating: number;
   reviewCount: number;
   reviews: Review[];

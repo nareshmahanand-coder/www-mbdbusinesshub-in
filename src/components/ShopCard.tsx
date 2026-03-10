@@ -94,9 +94,20 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
             </div>
             <p className="font-hindi text-sm text-muted-foreground">{shop.nameHindi}</p>
           </div>
-          <Badge variant="secondary" className="text-xs">
-            {shop.category}
-          </Badge>
+          <div className="flex flex-col items-end gap-1">
+            {shop.premium ? (
+              <Badge className="bg-saffron text-primary-foreground text-[10px] font-bold">
+                ⭐ Premium
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="border-green-india text-green-india text-[10px] font-bold">
+                FREE
+              </Badge>
+            )}
+            <Badge variant="secondary" className="text-xs">
+              {shop.category}
+            </Badge>
+          </div>
         </div>
 
         <div className="mb-3 flex items-center gap-1 text-sm text-muted-foreground">
