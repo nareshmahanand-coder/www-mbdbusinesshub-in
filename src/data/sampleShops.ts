@@ -341,6 +341,36 @@ export const categorySections: CategorySection[] = [
     ],
   },
   {
+    sectionName: "Accommodation & Food (रहना और खाना)",
+    sectionNameHindi: "रहना और खाना",
+    categories: [
+      "Boys PG (पेइंग गेस्ट)",
+      "Girls PG (पेइंग गेस्ट)",
+      "Student Hostel (हॉस्टल)",
+      "Tiffin Service / Mess (मेस)",
+      "Home-Made Food (घर का खाना)",
+    ],
+  },
+  {
+    sectionName: "Transport & Vehicles (वाहन और रिपेयर)",
+    sectionNameHindi: "वाहन और रिपेयर",
+    categories: [
+      "Cycle Store (साइकिल स्टोर)",
+      "Cycle Repair (साइकिल रिपेयर)",
+      "Two Wheeler Spare Parts",
+    ],
+  },
+  {
+    sectionName: "Home & Hospitality (घरेलू सेवा)",
+    sectionNameHindi: "घरेलू सेवा और देखभाल",
+    categories: [
+      "Maid / काम वाली बाई",
+      "Baby Sitter / बच्चा संभालने वाली",
+      "Caretaker / बुजुर्गों की देखभाल",
+      "Cook / खाना बनाने वाली",
+    ],
+  },
+  {
     sectionName: "Other",
     sectionNameHindi: "अन्य",
     categories: [
@@ -429,4 +459,19 @@ export const categoryIcons: Record<string, string> = {
   "Umbrella Repair": "☂️",
   "Stove/Gas Repair": "🔥",
   "Knife Sharpening (धार वाला)": "🔪",
+  // Accommodation & Food
+  "Boys PG (पेइंग गेस्ट)": "🏠",
+  "Girls PG (पेइंग गेस्ट)": "🏡",
+  "Student Hostel (हॉस्टल)": "🏢",
+  "Tiffin Service / Mess (मेस)": "🍱",
+  "Home-Made Food (घर का खाना)": "🍲",
+  // Transport & Vehicles
+  "Cycle Store (साइकिल स्टोर)": "🚲",
+  "Cycle Repair (साइकिल रिपेयर)": "🔧",
+  "Two Wheeler Spare Parts": "🏍️",
+  // Home & Hospitality
+  "Maid / काम वाली बाई": "🧹",
+  "Baby Sitter / बच्चा संभालने वाली": "👶",
+  "Caretaker / बुजुर्गों की देखभाल": "🧓",
+  "Cook / खाना बनाने वाली": "👩‍🍳",
 };
