@@ -9,6 +9,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import HelpPage from "./pages/HelpPage";
 import TermsPage from "./pages/TermsPage";
 import NotFound from "./pages/NotFound";
+import BharatMitraChatbot from "./components/BharatMitraChatbot";
 
 const queryClient = new QueryClient();
 
