@@ -266,7 +266,7 @@ const AdminDashboard = () => {
 
       <div className="container mx-auto px-4 py-6">
         {/* Stats Row */}
-        <div className="mb-6 grid gap-3 grid-cols-2 lg:grid-cols-5">
+        <div className="mb-6 grid gap-3 grid-cols-2 lg:grid-cols-6">
           <Card className="bg-navy text-primary-foreground">
             <CardContent className="flex items-center gap-3 p-4">
               <Users className="h-7 w-7 opacity-80" />
