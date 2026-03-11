@@ -239,6 +239,11 @@ const Index = () => {
                 A Digital India initiative connecting local shopkeepers directly with customers. Zero commission. 100% desi.
               </p>
               <p className="mt-2 text-xs text-primary-foreground/40">Udyam Registered Business</p>
+              {/* Atmanirbhar Bharat badge */}
+              <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-3 py-1">
+                <span className="text-sm">🇮🇳</span>
+                <span className="text-[10px] font-bold text-accent">आत्मनिर्भर भारत • Atmanirbhar Bharat</span>
+              </div>
             </div>
             <div>
               <h5 className="mb-3 font-bold text-primary-foreground">Quick Links</h5>
@@ -259,11 +264,29 @@ const Index = () => {
                   helpline.bharatdukaan@gmail.com
                 </a>
               </div>
-              <p className="mt-3 text-xs text-primary-foreground/40">Helpline: helpline.bharatdukaan@gmail.com</p>
+              <p className="mt-3 text-xs text-primary-foreground/40">Official Support • Bharat Dukaan</p>
             </div>
           </div>
           <div className="tiranga-stripe mt-8 h-1 w-full rounded-full" />
-          <p className="mt-4 text-center text-sm text-primary-foreground/50">
+          
+          {/* Digital India & Staff Access */}
+          <div className="mt-4 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="inline-flex items-center gap-1.5 rounded border border-primary-foreground/20 bg-primary-foreground/5 px-3 py-1">
+                <span className="text-sm">🏛️</span>
+                <span className="text-[10px] font-semibold text-primary-foreground/70">Digital India Initiative</span>
+              </div>
+            </div>
+            <Link
+              to="/admin"
+              className="inline-flex items-center gap-1.5 rounded border border-primary-foreground/15 px-3 py-1 text-[10px] text-primary-foreground/40 transition-colors hover:text-primary-foreground/60"
+            >
+              <Shield className="h-3 w-3" />
+              Staff Access / System
+            </Link>
+          </div>
+          
+          <p className="mt-3 text-center text-sm text-primary-foreground/50">
             © 2026 Mera Bharat Dukaan. Made with ❤️ in India. Udyam Registered Business.
           </p>
         </div>
