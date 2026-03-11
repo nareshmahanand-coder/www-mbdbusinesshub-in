@@ -303,6 +303,15 @@ const AdminDashboard = () => {
               </div>
             </CardContent>
           </Card>
+          <Card className="border-2 border-accent">
+            <CardContent className="flex items-center gap-3 p-4">
+              <Bell className="h-7 w-7 text-accent" />
+              <div>
+                <p className="text-2xl font-extrabold text-accent">{pendingPayments.length}</p>
+                <p className="text-[10px] text-muted-foreground">New Requests / नए अनुरोध</p>
+              </div>
+            </CardContent>
+          </Card>
           <Card className="col-span-2 lg:col-span-1 border-2 border-green-india">
             <CardContent className="flex items-center gap-3 p-4">
               <IndianRupee className="h-7 w-7 text-green-india" />
