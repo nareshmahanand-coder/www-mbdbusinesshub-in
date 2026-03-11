@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { Menu, X, LogIn, Home, Store, Shield } from "lucide-react";
+import { Menu, X, LogIn, Home, Store, Shield, Lock } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import LoginModal from "@/components/LoginModal";
@@ -18,15 +18,46 @@ const AppHeader = () => {
 
   return (
     <>
+      {/* Government-style top banner */}
+      <div className="bg-navy py-1.5">
+        <div className="container mx-auto flex items-center justify-center gap-3 px-4">
+          <img
+            src={logoCircle}
+            alt="Bharat Dukaan Seal"
+            className="h-7 w-7 rounded-full border border-primary-foreground/30 object-cover"
+          />
+          <div className="text-center">
+            <p className="font-hindi text-xs font-bold leading-tight text-primary-foreground">
+              भारत दुकान - डिजिटल स्थानीय बाज़ार
+            </p>
+            <p className="text-[9px] leading-tight text-primary-foreground/60">
+              Bharat Dukaan — Digital Local Marketplace | A Digital India Initiative
+            </p>
+          </div>
+          <img
+            src={logoCircle}
+            alt="Bharat Dukaan Seal"
+            className="h-7 w-7 rounded-full border border-primary-foreground/30 object-cover"
+          />
+        </div>
+      </div>
+
+      {/* Main header */}
       <header className="sticky top-0 z-50 bg-primary shadow-lg">
         <div className="container mx-auto flex items-center justify-between px-4 py-3">
           <Link to="/" className="flex items-center gap-3">
-            <img src={logoCircle} alt="Mera Bharat Dukaan" className="h-10 w-10 rounded-full object-cover border-2 border-primary-foreground/30" />
+            <img
+              src={logoCircle}
+              alt="Mera Bharat Dukaan"
+              className="h-10 w-10 rounded-full object-cover border-2 border-primary-foreground/30"
+            />
             <div>
               <h1 className="text-lg font-bold leading-tight text-primary-foreground">
                 Mera Bharat Dukaan
               </h1>
-              <p className="text-[10px] text-primary-foreground/60">Digital India Marketplace</p>
+              <p className="text-[10px] text-primary-foreground/60">
+                Digital India Marketplace
+              </p>
             </div>
           </Link>
 
@@ -52,7 +83,7 @@ const AppHeader = () => {
               className="ml-3 rounded-full bg-accent px-5 text-accent-foreground hover:bg-accent/90 font-semibold"
             >
               <LogIn className="mr-1.5 h-4 w-4" />
-              Login
+              Official Login
             </Button>
           </div>
 

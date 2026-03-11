@@ -266,7 +266,7 @@ const AdminDashboard = () => {
 
       <div className="container mx-auto px-4 py-6">
         {/* Stats Row */}
-        <div className="mb-6 grid gap-3 grid-cols-2 lg:grid-cols-5">
+        <div className="mb-6 grid gap-3 grid-cols-2 lg:grid-cols-6">
           <Card className="bg-navy text-primary-foreground">
             <CardContent className="flex items-center gap-3 p-4">
               <Users className="h-7 w-7 opacity-80" />
@@ -300,6 +300,15 @@ const AdminDashboard = () => {
               <div>
                 <p className="text-2xl font-extrabold text-foreground">{freeShops.length}</p>
                 <p className="text-[10px] text-muted-foreground">Free / मुफ्त</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-2 border-accent">
+            <CardContent className="flex items-center gap-3 p-4">
+              <Bell className="h-7 w-7 text-accent" />
+              <div>
+                <p className="text-2xl font-extrabold text-accent">{pendingPayments.length}</p>
+                <p className="text-[10px] text-muted-foreground">New Requests / नए अनुरोध</p>
               </div>
             </CardContent>
           </Card>
