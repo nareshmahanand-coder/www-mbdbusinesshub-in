@@ -228,7 +228,7 @@ const BharatMitraChatbot = () => {
               शिकायत भेजें
             </Button>
             {complaintSubmitted && (
-              <div className="rounded-lg border border-green-500/30 bg-green-50 p-3 text-center text-sm text-green-700">
+              <div className="rounded-lg border border-accent/30 bg-accent/10 p-3 text-center text-sm text-accent-foreground">
                 ✅ आपकी शिकायत सफलतापूर्वक दर्ज हो गई है! हम जल्द ही संपर्क करेंगे।
               </div>
             )}
