@@ -18,30 +18,6 @@ const AppHeader = () => {
 
   return (
     <>
-      {/* Government-style top banner */}
-      <div className="bg-navy py-1.5">
-        <div className="container mx-auto flex items-center justify-center gap-3 px-4">
-          <img
-            src={logoCircle}
-            alt="Bharat Dukaan Seal"
-            className="h-7 w-7 rounded-full border border-primary-foreground/30 object-cover"
-          />
-          <div className="text-center">
-            <p className="font-hindi text-xs font-bold leading-tight text-primary-foreground">
-              भारत दुकान - डिजिटल स्थानीय बाज़ार
-            </p>
-            <p className="text-[9px] leading-tight text-primary-foreground/60">
-              Bharat Dukaan — Digital Local Marketplace | A Digital India Initiative
-            </p>
-          </div>
-          <img
-            src={logoCircle}
-            alt="Bharat Dukaan Seal"
-            className="h-7 w-7 rounded-full border border-primary-foreground/30 object-cover"
-          />
-        </div>
-      </div>
-
       {/* Main header */}
       <header className="sticky top-0 z-50 bg-primary shadow-lg">
         <div className="container mx-auto flex items-center justify-between px-4 py-3">
