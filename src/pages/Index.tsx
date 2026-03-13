@@ -7,12 +7,14 @@ import ShopCard from "@/components/ShopCard";
 import AppHeader from "@/components/AppHeader";
 import HeroCarousel from "@/components/HeroCarousel";
 import { Link } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Index = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [locationGranted, setLocationGranted] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const { t } = useLanguage();
 
   const filteredShops = useMemo(() => {
     return sampleShops.filter((s) => {
@@ -31,7 +33,6 @@ const Index = () => {
     });
   }, [search, selectedCategory]);
 
-  // Also filter categories in search
   const filteredCategories = useMemo(() => {
     if (!search) return shopCategories;
     const q = search.toLowerCase();
@@ -51,7 +52,6 @@ const Index = () => {
     setExpandedSections((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
-  // Top 8 categories for quick access
   const topCategories = shopCategories.slice(0, 8);
 
   return (
@@ -67,30 +67,29 @@ const Index = () => {
 
         <div className="container relative z-10 mx-auto px-4">
           <div className="mb-2 inline-block rounded-full bg-primary-foreground/10 px-4 py-1 text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
-            <span className="mr-1">🇮🇳</span> A Digital India Initiative
+            <span className="mr-1">🇮🇳</span> {t("digital_india_initiative")}
           </div>
 
           <h2 className="font-hindi mb-2 text-4xl font-extrabold text-primary-foreground md:text-5xl">
             मेरा भारत दुकान
           </h2>
           <p className="mb-1 text-lg font-bold text-primary-foreground/90 md:text-xl">
-            Your Neighbourhood. Your Shops. Zero Commission.
+            {t("tagline_1")}
           </p>
           <p className="mb-6 text-sm text-primary-foreground/60">
-            Connecting 1.4 Billion Indians to their local shopkeepers — digitally.
+            {t("tagline_2")}
           </p>
 
-          {/* Carousel */}
           <div className="mx-auto max-w-3xl mb-8">
             <HeroCarousel />
           </div>
 
-          {/* Global Search Bar */}
+          {/* Search Bar */}
           <div className="mx-auto flex max-w-xl gap-3">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search shops, services, insurance, mechanic... / खोजें..."
+                placeholder={t("search_placeholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="h-12 rounded-xl border-0 bg-primary-foreground pl-10 text-foreground shadow-lg"
@@ -101,7 +100,7 @@ const Index = () => {
               className="h-12 rounded-xl bg-accent px-6 text-accent-foreground hover:bg-accent/90 font-semibold shadow-lg text-base"
             >
               <MapPin className="mr-1 h-4 w-4" />
-              {locationGranted ? "Located" : "Near Me"}
+              {locationGranted ? t("located") : t("near_me")}
             </Button>
           </div>
 
@@ -109,15 +108,15 @@ const Index = () => {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-10 text-center">
             <div>
               <p className="text-3xl font-extrabold text-accent">10,000+</p>
-              <p className="text-xs text-primary-foreground/60">Shops Listed</p>
+              <p className="text-xs text-primary-foreground/60">{t("shops_listed")}</p>
             </div>
             <div>
               <p className="text-3xl font-extrabold text-accent">500+</p>
-              <p className="text-xs text-primary-foreground/60">Cities</p>
+              <p className="text-xs text-primary-foreground/60">{t("cities")}</p>
             </div>
             <div>
               <p className="text-3xl font-extrabold text-accent">0%</p>
-              <p className="text-xs text-primary-foreground/60">Commission</p>
+              <p className="text-xs text-primary-foreground/60">{t("commission")}</p>
             </div>
           </div>
         </div>
@@ -127,7 +126,7 @@ const Index = () => {
       <section className="relative z-10 bg-background py-8">
         <div className="container mx-auto px-4">
           <h3 className="mb-5 text-xl font-bold text-foreground">
-            Browse by Category <span className="font-hindi text-base font-normal text-muted-foreground">• श्रेणियाँ</span>
+            {t("browse_by_category")} <span className="font-hindi text-base font-normal text-muted-foreground">• {t("categories_hindi")}</span>
           </h3>
           <div className="grid grid-cols-4 gap-3 sm:grid-cols-8">
             {topCategories.map((cat) => (
@@ -187,11 +186,10 @@ const Index = () => {
             ))}
           </div>
 
-          {/* Clear filter */}
           {selectedCategory && (
             <div className="mt-4">
               <Button size="sm" variant="destructive" onClick={() => setSelectedCategory("")}>
-                ✕ Clear Filter: {selectedCategory}
+                ✕ {t("clear_filter")}: {selectedCategory}
               </Button>
             </div>
           )}
@@ -201,11 +199,11 @@ const Index = () => {
       {/* Shop listings */}
       <main className="relative z-10 container mx-auto px-4 py-8">
         <h3 className="mb-1 text-xl font-bold text-foreground">
-          {selectedCategory || "All"} Shops{" "}
-          <span className="font-hindi text-base font-normal text-muted-foreground">• आपके नज़दीकी दुकानें</span>
+          {selectedCategory || t("all")} {t("shops")}{" "}
+          <span className="font-hindi text-base font-normal text-muted-foreground">• {t("nearby_shops")}</span>
         </h3>
         <p className="mb-6 text-sm text-muted-foreground">
-          {filteredShops.length} results found {search && `for "${search}"`}
+          {filteredShops.length} {t("results_found")} {search && `${t("for")} "${search}"`}
         </p>
 
         {filteredShops.length > 0 ? (
@@ -217,12 +215,9 @@ const Index = () => {
         ) : (
           <div className="py-16 text-center">
             <Store className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-            <p className="text-lg font-semibold text-foreground">No shops found</p>
+            <p className="text-lg font-semibold text-foreground">{t("no_shops_found")}</p>
             <p className="font-hindi text-sm text-muted-foreground">
-              कोई दुकान नहीं मिली। कृपया अलग खोज या श्रेणी आज़माएं।
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Use 'Other / अन्य' category to list any unlisted service.
+              {t("no_shops_msg")}
             </p>
           </div>
         )}
@@ -236,9 +231,8 @@ const Index = () => {
               <p className="text-xs font-bold uppercase tracking-wider text-accent">🇮🇳</p>
               <h4 className="text-lg font-bold text-primary-foreground">Mera Bharat Dukaan</h4>
               <p className="mt-2 text-sm text-primary-foreground/60">
-                A Digital India initiative connecting local shopkeepers directly with customers. Zero commission. 100% desi.
+                {t("footer_desc")}
               </p>
-              <p className="mt-2 text-xs text-primary-foreground/40">Udyam Registered Business</p>
               {/* Atmanirbhar Bharat badge */}
               <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-3 py-1">
                 <span className="text-sm">🇮🇳</span>
@@ -246,25 +240,25 @@ const Index = () => {
               </div>
             </div>
             <div>
-              <h5 className="mb-3 font-bold text-primary-foreground">Quick Links</h5>
+              <h5 className="mb-3 font-bold text-primary-foreground">{t("quick_links")}</h5>
               <div className="flex flex-col gap-2 text-sm">
-                <Link to="/" className="text-primary-foreground/70 hover:text-primary-foreground">Home</Link>
-                <Link to="/merchant" className="text-primary-foreground/70 hover:text-primary-foreground">Register Your Shop</Link>
-                <Link to="/terms" className="text-primary-foreground/70 hover:text-primary-foreground">Terms & Conditions</Link>
+                <Link to="/" className="text-primary-foreground/70 hover:text-primary-foreground">{t("home")}</Link>
+                <Link to="/merchant" className="text-primary-foreground/70 hover:text-primary-foreground">{t("register_shop")}</Link>
+                <Link to="/terms" className="text-primary-foreground/70 hover:text-primary-foreground">{t("terms")}</Link>
                 <Link to="/help" className="text-primary-foreground/70 hover:text-primary-foreground">
-                  <HelpCircle className="mr-1 inline h-3 w-3" />Help & Support
+                  <HelpCircle className="mr-1 inline h-3 w-3" />{t("help_support")}
                 </Link>
               </div>
             </div>
             <div>
-              <h5 className="mb-3 font-bold text-primary-foreground">Support</h5>
+              <h5 className="mb-3 font-bold text-primary-foreground">{t("support")}</h5>
               <div className="flex items-center gap-2 text-sm text-primary-foreground/70">
                 <Mail className="h-4 w-4" />
                 <a href="mailto:helpline.bharatdukaan@gmail.com" className="hover:text-primary-foreground">
                   helpline.bharatdukaan@gmail.com
                 </a>
               </div>
-              <p className="mt-3 text-xs text-primary-foreground/40">Official Support • Bharat Dukaan</p>
+              <p className="mt-3 text-xs text-primary-foreground/40">{t("official_support")}</p>
             </div>
           </div>
           <div className="tiranga-stripe mt-8 h-1 w-full rounded-full" />
@@ -274,7 +268,7 @@ const Index = () => {
             <div className="flex items-center gap-3">
               <div className="inline-flex items-center gap-1.5 rounded border border-primary-foreground/20 bg-primary-foreground/5 px-3 py-1">
                 <span className="text-sm">🏛️</span>
-                <span className="text-[10px] font-semibold text-primary-foreground/70">Digital India Initiative</span>
+                <span className="text-[10px] font-semibold text-primary-foreground/70">{t("digital_india_badge")}</span>
               </div>
             </div>
             <Link
@@ -282,12 +276,12 @@ const Index = () => {
               className="inline-flex items-center gap-1.5 rounded border border-primary-foreground/15 px-3 py-1 text-[10px] text-primary-foreground/40 transition-colors hover:text-primary-foreground/60"
             >
               <Shield className="h-3 w-3" />
-              Staff Access / System
+              {t("staff_access")}
             </Link>
           </div>
           
           <p className="mt-3 text-center text-sm text-primary-foreground/50">
-            © 2026 Mera Bharat Dukaan. Made with ❤️ in India. Udyam Registered Business.
+            {t("copyright")}
           </p>
         </div>
       </footer>
