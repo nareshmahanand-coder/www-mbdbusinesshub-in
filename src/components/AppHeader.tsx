@@ -1,24 +1,25 @@
 import { Link, useLocation } from "react-router-dom";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { Menu, X, LogIn, Home, Store, Shield, Lock } from "lucide-react";
+import { Menu, X, LogIn, Globe } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import LoginModal from "@/components/LoginModal";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const AppHeader = () => {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const { lang, toggleLang, t } = useLanguage();
 
   const links = [
-    { to: "/", label: "Home" },
-    { to: "/merchant", label: "Merchant Portal" },
-    { to: "/help", label: "Help Desk" },
+    { to: "/", label: t("home") },
+    { to: "/merchant", label: t("merchant_portal") },
+    { to: "/help", label: t("help_desk") },
   ];
 
   return (
     <>
-      {/* Main header */}
       <header className="sticky top-0 z-50 bg-primary shadow-lg">
         <div className="container mx-auto flex items-center justify-between px-4 py-3">
           <Link to="/" className="flex items-center gap-3">
@@ -32,7 +33,7 @@ const AppHeader = () => {
                 Mera Bharat Dukaan
               </h1>
               <p className="text-[10px] text-primary-foreground/60">
-                Digital India Marketplace
+                {t("digital_india_marketplace")}
               </p>
             </div>
           </Link>
@@ -54,24 +55,47 @@ const AppHeader = () => {
                 </Link>
               ))}
             </nav>
+
+            {/* Language Toggle */}
+            <button
+              onClick={toggleLang}
+              className="ml-2 flex items-center gap-1.5 rounded-full border border-primary-foreground/20 bg-primary-foreground/10 px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary-foreground/20"
+              title="Switch Language"
+            >
+              <Globe className="h-3.5 w-3.5" />
+              <span>{lang === "en" ? "A/अ" : "अ/A"}</span>
+              <span className="hidden lg:inline">
+                {lang === "en" ? "हिन्दी" : "EN"}
+              </span>
+            </button>
+
             <Button
               onClick={() => setLoginOpen(true)}
-              className="ml-3 rounded-full bg-accent px-5 text-accent-foreground hover:bg-accent/90 font-semibold"
+              className="ml-2 rounded-full bg-accent px-5 text-accent-foreground hover:bg-accent/90 font-semibold"
             >
               <LogIn className="mr-1.5 h-4 w-4" />
-              Official Login
+              {t("official_login")}
             </Button>
           </div>
 
           {/* Mobile */}
           <div className="flex items-center gap-2 md:hidden">
+            {/* Language Toggle Mobile */}
+            <button
+              onClick={toggleLang}
+              className="flex items-center gap-1 rounded-full border border-primary-foreground/20 bg-primary-foreground/10 px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground"
+            >
+              <Globe className="h-3.5 w-3.5" />
+              {lang === "en" ? "हिन्दी" : "EN"}
+            </button>
+
             <Button
               size="sm"
               onClick={() => setLoginOpen(true)}
               className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
             >
               <LogIn className="mr-1 h-4 w-4" />
-              Login
+              {t("login")}
             </Button>
             <button
               className="text-primary-foreground"
