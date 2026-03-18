@@ -11,6 +11,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import HelpPage from "./pages/HelpPage";
 import TermsPage from "./pages/TermsPage";
 import NotFound from "./pages/NotFound";
+import KisanRegistration from "./pages/KisanRegistration";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/help" element={<HelpPage />} />
             <Route path="/terms" element={<TermsPage />} />
+            <Route path="/kisan" element={<KisanRegistration />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
