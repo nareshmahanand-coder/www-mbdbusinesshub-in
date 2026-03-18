@@ -192,3 +192,31 @@
   animation: tiranga-wave 8s ease-in-out infinite;
   opacity: 0.15;
 }
+
+/* Ticker scroll animation */
+@keyframes ticker-scroll {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.ticker-scroll {
+  animation: ticker-scroll 20s linear infinite;
+}
+
+/* Tricolor ticker gradient */
+.ticker-tricolor {
+  background: linear-gradient(
+    90deg,
+    hsla(24, 95%, 53%, 0.15) 0%,
+    hsla(0, 0%, 100%, 0.95) 30%,
+    hsla(0, 0%, 100%, 0.95) 70%,
+    hsla(140, 60%, 35%, 0.15) 100%
+  );
+  border-bottom: 2px solid;
+  border-image: linear-gradient(
+    90deg,
+    hsl(24, 95%, 53%),
+    hsl(0, 0%, 100%),
+    hsl(140, 60%, 35%)
+  ) 1;
+}

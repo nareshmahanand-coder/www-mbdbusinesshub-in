@@ -58,6 +58,23 @@ const Index = () => {
     <div className="ashoka-watermark tiranga-bg min-h-screen">
       <AppHeader />
 
+      {/* Bharat Jodo Mission Section */}
+      <section className="relative z-10 bg-gradient-to-r from-[hsl(240,100%,20%)] via-[hsl(240,100%,25%)] to-[hsl(240,100%,20%)] py-8 text-center border-b-2 border-[hsl(45,80%,50%)]">
+        <div className="container mx-auto px-4">
+          <div className="inline-flex items-center gap-2 mb-3 rounded-full border border-[hsl(45,80%,50%)]/30 bg-[hsl(45,80%,50%)]/10 px-4 py-1">
+            <span className="text-sm">🏛️</span>
+            <span className="text-[11px] font-bold uppercase tracking-widest text-[hsl(45,80%,60%)]">भारत जोड़ो मिशन</span>
+          </div>
+          <h2 className="font-hindi text-2xl md:text-3xl font-extrabold text-primary-foreground leading-snug max-w-3xl mx-auto">
+            भारत जोड़ो मिशन:{" "}
+            <span className="text-[hsl(45,80%,60%)]">अब हर गली, हर मोहल्ला और हर शहर की दुकान...</span>
+            <br />
+            आपके मोबाइल के अंदर, आपकी जेब में।
+          </h2>
+          <div className="mt-4 mx-auto h-1 w-24 rounded-full bg-gradient-to-r from-saffron via-primary-foreground to-green-india opacity-60" />
+        </div>
+      </section>
+
       {/* Hero */}
       <section className="relative z-10 overflow-hidden bg-gradient-to-b from-primary via-primary to-[hsl(240,100%,18%)] py-12 text-center">
         <div className="tiranga-wave pointer-events-none absolute inset-0" />

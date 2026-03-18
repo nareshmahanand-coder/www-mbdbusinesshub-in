@@ -20,7 +20,20 @@ const AppHeader = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-primary shadow-lg">
+      {/* Tricolor Ticker */}
+      <div className="ticker-tricolor overflow-hidden whitespace-nowrap py-1.5 sticky top-0 z-[60]">
+        <p className="ticker-scroll inline-block font-hindi text-sm font-semibold text-foreground">
+          कश्मीर से लेकर कन्याकुमारी तक, हर धर्म को मिलेगा{" "}
+          <span className="text-saffron font-bold">सम्मान</span> और हर घर पहुँचेगा{" "}
+          <span className="text-green-india font-bold">सामान</span>।
+          &nbsp;&nbsp;&nbsp;•&nbsp;&nbsp;&nbsp;
+          कश्मीर से लेकर कन्याकुमारी तक, हर धर्म को मिलेगा{" "}
+          <span className="text-saffron font-bold">सम्मान</span> और हर घर पहुँचेगा{" "}
+          <span className="text-green-india font-bold">सामान</span>।
+        </p>
+      </div>
+
+      <header className="sticky top-[34px] z-50 bg-primary shadow-lg">
         <div className="container mx-auto flex items-center justify-between px-4 py-3">
           <Link to="/" className="flex items-center gap-3">
             <img
