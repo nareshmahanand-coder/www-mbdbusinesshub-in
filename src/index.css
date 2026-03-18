@@ -220,3 +220,34 @@
     hsl(140, 60%, 35%)
   ) 1;
 }
+
+/* Bharat Mitra animated avatar */
+@keyframes bharat-mitra-pulse {
+  0% { box-shadow: 0 0 0 0 hsla(24, 95%, 53%, 0.5); }
+  70% { box-shadow: 0 0 0 12px hsla(24, 95%, 53%, 0); }
+  100% { box-shadow: 0 0 0 0 hsla(24, 95%, 53%, 0); }
+}
+
+.bharat-mitra-avatar {
+  animation: bharat-mitra-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.bharat-mitra-pulse-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  border: 2px solid hsl(var(--accent));
+  animation: bharat-mitra-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  pointer-events: none;
+}
+
+/* Speaking animation */
+@keyframes bharat-mitra-speak {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.bharat-mitra-speaking {
+  animation: bharat-mitra-speak 0.6s ease-in-out infinite;
+  box-shadow: 0 0 0 3px hsla(24, 95%, 53%, 0.4);
+}
