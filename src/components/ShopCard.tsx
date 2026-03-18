@@ -40,7 +40,8 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
   const [reviews, setReviews] = useState(shop.reviews || []);
 
   const handleWhatsApp = () => {
-    window.open(`https://wa.me/${shop.whatsapp}?text=${encodeURIComponent("Hi! I found your shop on Mera Bharat Dukaan.")}`, "_blank");
+    const message = `नमस्ते! मैं आपके पास मेरा भारत दुकान के ज़रिए आया/आई हूँ और मुझे आपकी दुकान "${shop.name}" से सामान की तलाश है। कृपया बताइए क्या उपलब्ध है।`;
+    window.open(`https://wa.me/${shop.whatsapp}?text=${encodeURIComponent(message)}`, "_blank");
   };
 
   const handleCall = () => {
@@ -174,10 +175,10 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={handleWhatsApp}
-            className="flex-1 bg-green-india text-primary-foreground hover:bg-green-india/90"
+            className="flex-1 bg-green-india text-primary-foreground hover:bg-green-india/90 font-hindi"
           >
             <MessageCircle className="mr-1 h-4 w-4" />
-            WhatsApp Order
+            व्हाट्सएप पर ऑर्डर दें
           </Button>
           <Button
             onClick={handleCall}

@@ -46,7 +46,8 @@ const Index = () => {
   }, [lang]);
 
   const filteredShops = useMemo(() => {
-    return sampleShops.filter((s) => {
+    // Only show shops registered in our database (sampleShops)
+    const filtered = sampleShops.filter((s) => {
       const q = search.toLowerCase();
       const matchSearch =
         !search ||
@@ -59,6 +60,19 @@ const Index = () => {
         s.description.toLowerCase().includes(q);
       const matchCategory = !selectedCategory || s.category === selectedCategory;
       return matchSearch && matchCategory;
+    });
+
+    // Premium Priority: premium+verified shops first, then sort by rating as proxy for distance
+    return filtered.sort((a, b) => {
+      const aPremium = a.premium && a.verified ? 1 : 0;
+      const bPremium = b.premium && b.verified ? 1 : 0;
+      if (bPremium !== aPremium) return bPremium - aPremium;
+      // Then verified shops
+      const aVerified = a.verified ? 1 : 0;
+      const bVerified = b.verified ? 1 : 0;
+      if (bVerified !== aVerified) return bVerified - aVerified;
+      // Then by rating (higher first) as distance proxy
+      return b.rating - a.rating;
     });
   }, [search, selectedCategory]);
 
@@ -280,9 +294,17 @@ const Index = () => {
           {selectedCategory || t("all")} {t("shops")}{" "}
           <span className="font-hindi text-base font-normal text-muted-foreground">• {t("nearby_shops")}</span>
         </h3>
-        <p className="mb-6 text-sm text-muted-foreground">
+        <p className="mb-2 text-sm text-muted-foreground">
           {filteredShops.length} {t("results_found")} {search && `${t("for")} "${search}"`}
         </p>
+        {filteredShops.some(s => s.premium && s.verified) && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2">
+            <span className="text-lg">🇮🇳</span>
+            <p className="font-hindi text-sm text-foreground">
+              बॉस, मैंने आपके लिए <span className="font-bold text-accent">प्रीमियम दुकानें</span> सबसे ऊपर रख दी हैं। आप सीधे <span className="font-bold text-green-india">व्हाट्सएप</span> पर बात कर सकते हैं।
+            </p>
+          </div>
+        )}
 
         {filteredShops.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
