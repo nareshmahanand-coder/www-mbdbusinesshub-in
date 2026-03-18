@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Search, MapPin, Store, Mail, HelpCircle, ChevronDown, ChevronUp, Shield } from "lucide-react";
+import { useState, useMemo, useRef, useCallback } from "react";
+import { Search, MapPin, Store, Mail, HelpCircle, ChevronDown, ChevronUp, Shield, Mic } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { sampleShops, shopCategories, categoryIcons, categorySections } from "@/data/sampleShops";
