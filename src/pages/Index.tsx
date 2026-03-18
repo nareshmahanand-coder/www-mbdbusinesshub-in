@@ -46,7 +46,8 @@ const Index = () => {
   }, [lang]);
 
   const filteredShops = useMemo(() => {
-    return sampleShops.filter((s) => {
+    // Only show shops registered in our database (sampleShops)
+    const filtered = sampleShops.filter((s) => {
       const q = search.toLowerCase();
       const matchSearch =
         !search ||
@@ -59,6 +60,19 @@ const Index = () => {
         s.description.toLowerCase().includes(q);
       const matchCategory = !selectedCategory || s.category === selectedCategory;
       return matchSearch && matchCategory;
+    });
+
+    // Premium Priority: premium+verified shops first, then sort by rating as proxy for distance
+    return filtered.sort((a, b) => {
+      const aPremium = a.premium && a.verified ? 1 : 0;
+      const bPremium = b.premium && b.verified ? 1 : 0;
+      if (bPremium !== aPremium) return bPremium - aPremium;
+      // Then verified shops
+      const aVerified = a.verified ? 1 : 0;
+      const bVerified = b.verified ? 1 : 0;
+      if (bVerified !== aVerified) return bVerified - aVerified;
+      // Then by rating (higher first) as distance proxy
+      return b.rating - a.rating;
     });
   }, [search, selectedCategory]);
 
