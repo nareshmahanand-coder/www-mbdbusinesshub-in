@@ -221,15 +221,11 @@
   ) 1;
 }
 
-/* Bharat Mitra animated avatar */
+/* Bharat Mitra animated avatar — pulse ring */
 @keyframes bharat-mitra-pulse {
   0% { box-shadow: 0 0 0 0 hsla(24, 95%, 53%, 0.5); }
   70% { box-shadow: 0 0 0 12px hsla(24, 95%, 53%, 0); }
   100% { box-shadow: 0 0 0 0 hsla(24, 95%, 53%, 0); }
-}
-
-.bharat-mitra-avatar {
-  animation: bharat-mitra-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .bharat-mitra-pulse-ring {
@@ -241,13 +237,27 @@
   pointer-events: none;
 }
 
-/* Speaking animation */
+/* Human-like speaking animation with pulse + glow */
 @keyframes bharat-mitra-speak {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 3px hsla(24, 95%, 53%, 0.4); }
+  25% { transform: scale(1.03); box-shadow: 0 0 8px 4px hsla(24, 95%, 53%, 0.3); }
+  50% { transform: scale(1.06); box-shadow: 0 0 12px 6px hsla(24, 95%, 53%, 0.5); }
+  75% { transform: scale(1.03); box-shadow: 0 0 8px 4px hsla(24, 95%, 53%, 0.3); }
 }
 
 .bharat-mitra-speaking {
-  animation: bharat-mitra-speak 0.6s ease-in-out infinite;
-  box-shadow: 0 0 0 3px hsla(24, 95%, 53%, 0.4);
+  animation: bharat-mitra-speak 0.8s ease-in-out infinite;
+}
+
+/* Human-like heartbeat pulse for avatar */
+@keyframes bharat-mitra-heartbeat {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.06); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.04); }
+  56% { transform: scale(1); }
+}
+
+.bharat-mitra-avatar {
+  animation: bharat-mitra-heartbeat 1.8s ease-in-out infinite;
 }
