@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Search, MapPin, Store, Mail, HelpCircle, ChevronDown, ChevronUp, Shield } from "lucide-react";
+import { useState, useMemo, useRef, useCallback } from "react";
+import { Search, MapPin, Store, Mail, HelpCircle, ChevronDown, ChevronUp, Shield, Mic } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { sampleShops, shopCategories, categoryIcons, categorySections } from "@/data/sampleShops";
@@ -14,7 +14,36 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [locationGranted, setLocationGranted] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const stopListening = useCallback(() => {
+    setIsListening(false);
+    recognitionRef.current?.stop();
+  }, []);
+
+  const startListening = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert(lang === "hi" ? "आपका ब्राउज़र वॉइस सर्च सपोर्ट नहीं करता" : "Your browser does not support voice search");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = lang === "hi" ? "hi-IN" : "en-IN";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setSearch(transcript);
+      setIsListening(false);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [lang]);
 
   const filteredShops = useMemo(() => {
     return sampleShops.filter((s) => {
@@ -109,8 +138,15 @@ const Index = () => {
                 placeholder={t("search_placeholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-12 rounded-xl border-0 bg-primary-foreground pl-10 text-foreground shadow-lg"
+                className="h-12 rounded-xl border-0 bg-primary-foreground pl-10 pr-12 text-foreground shadow-lg"
               />
+              <button
+                onClick={startListening}
+                className="absolute right-2 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-full bg-accent text-accent-foreground transition-transform hover:scale-110 active:scale-95"
+                title="भारत मित्र से पूछें"
+              >
+                <Mic className="h-4 w-4" />
+              </button>
             </div>
             <Button
               onClick={handleLocationAccess}
@@ -120,6 +156,31 @@ const Index = () => {
               {locationGranted ? t("located") : t("near_me")}
             </Button>
           </div>
+
+          {/* Voice Listening Overlay */}
+          {isListening && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm" onClick={stopListening}>
+              <div className="flex flex-col items-center gap-6 rounded-2xl bg-card p-10 shadow-2xl border border-border animate-scale-in" onClick={(e) => e.stopPropagation()}>
+                <div className="relative flex items-center justify-center">
+                  <span className="absolute h-24 w-24 animate-ping rounded-full bg-accent/30" />
+                  <span className="absolute h-20 w-20 animate-pulse rounded-full bg-accent/20" />
+                  <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-lg">
+                    <Mic className="h-8 w-8" />
+                  </div>
+                </div>
+                <div className="text-center">
+                  <p className="font-hindi text-xl font-bold text-foreground">सुन रही हूँ... बोलिये</p>
+                  <p className="mt-1 text-sm text-muted-foreground font-hindi">भारत मित्र से पूछें</p>
+                </div>
+                <button
+                  onClick={stopListening}
+                  className="rounded-full border border-border px-6 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+                >
+                  {t("lang") === "hi" ? "बंद करें" : "Cancel"}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Stats */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-10 text-center">
