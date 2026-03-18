@@ -221,15 +221,11 @@
   ) 1;
 }
 
-/* Bharat Mitra animated avatar */
+/* Bharat Mitra animated avatar — pulse ring */
 @keyframes bharat-mitra-pulse {
   0% { box-shadow: 0 0 0 0 hsla(24, 95%, 53%, 0.5); }
   70% { box-shadow: 0 0 0 12px hsla(24, 95%, 53%, 0); }
   100% { box-shadow: 0 0 0 0 hsla(24, 95%, 53%, 0); }
-}
-
-.bharat-mitra-avatar {
-  animation: bharat-mitra-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 .bharat-mitra-pulse-ring {
