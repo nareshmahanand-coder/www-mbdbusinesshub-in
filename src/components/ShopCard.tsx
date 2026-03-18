@@ -175,10 +175,10 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={handleWhatsApp}
-            className="flex-1 bg-green-india text-primary-foreground hover:bg-green-india/90"
+            className="flex-1 bg-green-india text-primary-foreground hover:bg-green-india/90 font-hindi"
           >
             <MessageCircle className="mr-1 h-4 w-4" />
-            WhatsApp Order
+            व्हाट्सएप पर ऑर्डर दें
           </Button>
           <Button
             onClick={handleCall}

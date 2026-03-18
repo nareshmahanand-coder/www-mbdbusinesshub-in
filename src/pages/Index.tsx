@@ -294,9 +294,17 @@ const Index = () => {
           {selectedCategory || t("all")} {t("shops")}{" "}
           <span className="font-hindi text-base font-normal text-muted-foreground">• {t("nearby_shops")}</span>
         </h3>
-        <p className="mb-6 text-sm text-muted-foreground">
+        <p className="mb-2 text-sm text-muted-foreground">
           {filteredShops.length} {t("results_found")} {search && `${t("for")} "${search}"`}
         </p>
+        {filteredShops.some(s => s.premium && s.verified) && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2">
+            <span className="text-lg">🇮🇳</span>
+            <p className="font-hindi text-sm text-foreground">
+              बॉस, मैंने आपके लिए <span className="font-bold text-accent">प्रीमियम दुकानें</span> सबसे ऊपर रख दी हैं। आप सीधे <span className="font-bold text-green-india">व्हाट्सएप</span> पर बात कर सकते हैं।
+            </p>
+          </div>
+        )}
 
         {filteredShops.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

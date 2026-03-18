@@ -103,6 +103,7 @@ export const sampleShops: Shop[] = [
     phone: "919876543213",
     photos: [],
     verified: true,
+    premium: true,
     rating: 4.7,
     reviewCount: 42,
     reviews: [
