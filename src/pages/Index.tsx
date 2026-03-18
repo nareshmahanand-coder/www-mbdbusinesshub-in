@@ -14,7 +14,36 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [locationGranted, setLocationGranted] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const stopListening = useCallback(() => {
+    setIsListening(false);
+    recognitionRef.current?.stop();
+  }, []);
+
+  const startListening = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert(lang === "hi" ? "आपका ब्राउज़र वॉइस सर्च सपोर्ट नहीं करता" : "Your browser does not support voice search");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = lang === "hi" ? "hi-IN" : "en-IN";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setSearch(transcript);
+      setIsListening(false);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [lang]);
 
   const filteredShops = useMemo(() => {
     return sampleShops.filter((s) => {
