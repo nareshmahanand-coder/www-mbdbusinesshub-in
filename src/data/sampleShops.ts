@@ -27,21 +27,6 @@ export interface Shop {
   description: string;
 }
 
-export const defaultCategories = [
-  "General Store",
-  "Clothing & Fashion",
-  "Electronics",
-  "Pharmacy",
-  "Salon & Barber",
-  "Fast Food",
-  "Hardware & Paints",
-  "Vegetables & Fruits",
-  "Milk & Dairy",
-  "Bakery",
-  "Life Insurance (LIC)",
-  "Tractor on Rent",
-];
-
 export const sampleShops: Shop[] = [
   {
     id: "1",
@@ -130,7 +115,7 @@ export const sampleShops: Shop[] = [
     id: "5",
     name: "Singh Hardware",
     nameHindi: "सिंह हार्डवेयर",
-    category: "Hardware & Paints",
+    category: "Hardware",
     address: "Sector 22",
     city: "Chandigarh",
     pincode: "160022",
@@ -212,7 +197,6 @@ export interface CategorySection {
 }
 
 export const categorySections: CategorySection[] = [
-  // ═══════════════ SHOPS ═══════════════
   {
     sectionName: "Daily Needs",
     sectionNameHindi: "दैनिक ज़रूरतें",
@@ -231,16 +215,6 @@ export const categorySections: CategorySection[] = [
       "Fast Food",
       "Snacks & Chaat",
       "Momos",
-      "Paan & Tea Stall (पान-चाय)",
-    ],
-  },
-  {
-    sectionName: "Non-Veg Market",
-    sectionNameHindi: "नॉन-वेज बाजार",
-    categories: [
-      "Poultry & Chicken (मुर्गा)",
-      "Fish Market (मछली बाजार)",
-      "Meat Shop (मटन शॉप)",
     ],
   },
   {
@@ -252,14 +226,7 @@ export const categorySections: CategorySection[] = [
       "Jewelry",
       "Gift Items",
       "Toys",
-    ],
-  },
-  {
-    sectionName: "Specialized Shops",
-    sectionNameHindi: "विशेष दुकानें",
-    categories: [
-      "Hardware & Paints",
-      "Stationery & Photocopy",
+      "Stationery",
     ],
   },
   {
@@ -275,29 +242,25 @@ export const categorySections: CategorySection[] = [
     sectionNameHindi: "इलेक्ट्रॉनिक्स और टेक",
     categories: [
       "Electronics",
-      "Mobile & Electronics Repair",
       "Mobile Recharge & Repair",
       "Computer Services",
       "Cyber Cafe",
     ],
   },
-  // ═══════════════ SERVICES ═══════════════
   {
-    sectionName: "Home Services",
-    sectionNameHindi: "घरेलू सेवाएं",
+    sectionName: "Home & Hardware",
+    sectionNameHindi: "घर और हार्डवेयर",
     categories: [
-      "Plumber (प्लंबर)",
-      "Electrician (इलेक्ट्रीशियन)",
-      "Mason (मिस्त्री)",
-      "Painter (पेंटर)",
+      "Hardware",
+      "Electrician",
+      "Plumber",
     ],
   },
   {
-    sectionName: "Daily Services",
-    sectionNameHindi: "रोज़मर्रा की सेवाएं",
+    sectionName: "Services",
+    sectionNameHindi: "सेवाएं",
     categories: [
-      "Laundry / Dry Clean (धोबी)",
-      "Tailor (दरजी)",
+      "Tailor",
       "Car/Bike Mechanic",
       "Key Maker (चाबी वाला)",
       "Cobbler (मोची)",
@@ -307,15 +270,7 @@ export const categorySections: CategorySection[] = [
     ],
   },
   {
-    sectionName: "Education",
-    sectionNameHindi: "शिक्षा",
-    categories: [
-      "Home Tutors (ट्यूशन)",
-      "Coaching Centers (कोचिंग)",
-    ],
-  },
-  {
-    sectionName: "Banking & Insurance",
+    sectionName: "Banking & Insurance (बैंकिंग और बीमा)",
     sectionNameHindi: "बैंकिंग और बीमा",
     categories: [
       "Life Insurance (LIC)",
@@ -333,7 +288,7 @@ export const categorySections: CategorySection[] = [
     ],
   },
   {
-    sectionName: "Sanitation & Labor",
+    sectionName: "Sanitation & Labor (स्वच्छता और जमीनी सेवाएं)",
     sectionNameHindi: "स्वच्छता और जमीनी सेवाएं",
     categories: [
       "Gutter/Nali Cleaning (नाली-गटर सफाई)",
@@ -347,7 +302,17 @@ export const categorySections: CategorySection[] = [
     ],
   },
   {
-    sectionName: "Professional & Digital",
+    sectionName: "Agriculture (कृषि)",
+    sectionNameHindi: "कृषि",
+    categories: [
+      "Tractor on Rent",
+      "Pesticide Spraying",
+      "Harvester Service",
+      "Veterinary (पशु डॉक्टर)",
+    ],
+  },
+  {
+    sectionName: "Professional & Digital (प्राइवेट और डिजिटल)",
     sectionNameHindi: "प्राइवेट और डिजिटल",
     categories: [
       "Graphic Designer",
@@ -366,38 +331,7 @@ export const categorySections: CategorySection[] = [
       "Tent House",
       "DJ/Sound",
       "Light Decor",
-    ],
-  },
-  // ═══════════════ RENTALS ═══════════════
-  {
-    sectionName: "Vehicle Rentals",
-    sectionNameHindi: "वाहन किराया",
-    categories: [
-      "Car & Bike Rent (कार-बाइक किराया)",
-      "Heavy Vehicle / Truck Rent (ट्रक किराया)",
       "Car/Travels on Rent",
-    ],
-  },
-  {
-    sectionName: "Agriculture & Farming",
-    sectionNameHindi: "कृषि और खेती",
-    categories: [
-      "Tractor on Rent",
-      "Pesticide Spraying",
-      "Harvester Service",
-      "Veterinary (पशु डॉक्टर)",
-      "Seeds & Fertilizers (बीज-खाद)",
-      "Animal Feed (पशु आहार)",
-      "Dairy Farm (डेयरी फार्म)",
-    ],
-  },
-  {
-    sectionName: "Transport & Vehicles",
-    sectionNameHindi: "वाहन और रिपेयर",
-    categories: [
-      "Cycle Store (साइकिल स्टोर)",
-      "Cycle Repair (साइकिल रिपेयर)",
-      "Two Wheeler Spare Parts",
     ],
   },
   {
@@ -410,7 +344,7 @@ export const categorySections: CategorySection[] = [
     ],
   },
   {
-    sectionName: "Accommodation & Food",
+    sectionName: "Accommodation & Food (रहना और खाना)",
     sectionNameHindi: "रहना और खाना",
     categories: [
       "Boys PG (पेइंग गेस्ट)",
@@ -421,7 +355,16 @@ export const categorySections: CategorySection[] = [
     ],
   },
   {
-    sectionName: "Home & Hospitality",
+    sectionName: "Transport & Vehicles (वाहन और रिपेयर)",
+    sectionNameHindi: "वाहन और रिपेयर",
+    categories: [
+      "Cycle Store (साइकिल स्टोर)",
+      "Cycle Repair (साइकिल रिपेयर)",
+      "Two Wheeler Spare Parts",
+    ],
+  },
+  {
+    sectionName: "Home & Hospitality (घरेलू सेवा)",
     sectionNameHindi: "घरेलू सेवा और देखभाल",
     categories: [
       "Maid / काम वाली बाई",
@@ -439,8 +382,8 @@ export const categorySections: CategorySection[] = [
   },
 ];
 
-// Flat list of all categories (deduplicated)
-export const shopCategories: string[] = [...new Set(categorySections.flatMap((s) => s.categories))];
+// Flat list of all categories
+export const shopCategories: string[] = categorySections.flatMap((s) => s.categories);
 
 export const categoryIcons: Record<string, string> = {
   "General Store": "🛒",
@@ -449,7 +392,8 @@ export const categoryIcons: Record<string, string> = {
   "Pharmacy": "💊",
   "Salon & Barber": "✂️",
   "Fast Food": "🍔",
-  "Hardware & Paints": "🔧",
+  "Stationery": "📚",
+  "Hardware": "🔧",
   "Vegetables & Fruits": "🥦",
   "Milk & Dairy": "🥛",
   "Bakery": "🍞",
@@ -457,6 +401,9 @@ export const categoryIcons: Record<string, string> = {
   "Snacks & Chaat": "🍿",
   "Momos": "🥟",
   "Car/Bike Mechanic": "🔩",
+  "Electrician": "⚡",
+  "Plumber": "🪠",
+  "Tailor": "🧵",
   "Gift Items": "🎁",
   "Jewelry": "💎",
   "Footwear": "👟",
@@ -465,42 +412,6 @@ export const categoryIcons: Record<string, string> = {
   "Computer Services": "💻",
   "Cyber Cafe": "🖥️",
   "Other": "🏪",
-  // Non-Veg Market
-  "Poultry & Chicken (मुर्गा)": "🐔",
-  "Fish Market (मछली बाजार)": "🐟",
-  "Meat Shop (मटन शॉप)": "🥩",
-  // Specialized Shops
-  "Stationery & Photocopy": "📝",
-  "Paan & Tea Stall (पान-चाय)": "🍵",
-  // Home Services
-  "Plumber (प्लंबर)": "🪠",
-  "Electrician (इलेक्ट्रीशियन)": "⚡",
-  "Mason (मिस्त्री)": "🧱",
-  "Painter (पेंटर)": "🖌️",
-  // Daily Services
-  "Laundry / Dry Clean (धोबी)": "👔",
-  "Tailor (दरजी)": "🧵",
-  "Mobile & Electronics Repair": "🔌",
-  "Key Maker (चाबी वाला)": "🔐",
-  "Cobbler (मोची)": "👞",
-  "Umbrella Repair": "☂️",
-  "Stove/Gas Repair": "🔥",
-  "Knife Sharpening (धार वाला)": "🔪",
-  // Education
-  "Home Tutors (ट्यूशन)": "📖",
-  "Coaching Centers (कोचिंग)": "🎓",
-  // Vehicle Rentals
-  "Car & Bike Rent (कार-बाइक किराया)": "🚗",
-  "Heavy Vehicle / Truck Rent (ट्रक किराया)": "🚛",
-  "Car/Travels on Rent": "🚘",
-  // Agriculture
-  "Tractor on Rent": "🚜",
-  "Pesticide Spraying": "🌾",
-  "Harvester Service": "🌿",
-  "Veterinary (पशु डॉक्टर)": "🐄",
-  "Seeds & Fertilizers (बीज-खाद)": "🌱",
-  "Animal Feed (पशु आहार)": "🐃",
-  "Dairy Farm (डेयरी फार्म)": "🐮",
   // Banking & Insurance
   "Life Insurance (LIC)": "🛡️",
   "Car/Bike Insurance": "🚗",
@@ -523,6 +434,11 @@ export const categoryIcons: Record<string, string> = {
   "Loading/Unloading Labor": "📦",
   "Palle-Dar": "🏋️",
   "Warehouse Worker": "🏭",
+  // Agriculture
+  "Tractor on Rent": "🚜",
+  "Pesticide Spraying": "🌾",
+  "Harvester Service": "🌿",
+  "Veterinary (पशु डॉक्टर)": "🐄",
   // Professional & Digital
   "Graphic Designer": "🎨",
   "Video Editor": "🎬",
@@ -535,20 +451,27 @@ export const categoryIcons: Record<string, string> = {
   "Tent House": "⛺",
   "DJ/Sound": "🎵",
   "Light Decor": "💡",
-  // Transport & Vehicles
-  "Cycle Store (साइकिल स्टोर)": "🚲",
-  "Cycle Repair (साइकिल रिपेयर)": "🔧",
-  "Two Wheeler Spare Parts": "🏍️",
+  "Car/Travels on Rent": "🚘",
   // Real Estate
   "Property Dealer": "🏘️",
   "Plot/Flat Sales": "🏗️",
   "Rental Broker": "🔑",
+  // Zero-gap
+  "Key Maker (चाबी वाला)": "🔐",
+  "Cobbler (मोची)": "👞",
+  "Umbrella Repair": "☂️",
+  "Stove/Gas Repair": "🔥",
+  "Knife Sharpening (धार वाला)": "🔪",
   // Accommodation & Food
   "Boys PG (पेइंग गेस्ट)": "🏠",
   "Girls PG (पेइंग गेस्ट)": "🏡",
   "Student Hostel (हॉस्टल)": "🏢",
   "Tiffin Service / Mess (मेस)": "🍱",
   "Home-Made Food (घर का खाना)": "🍲",
+  // Transport & Vehicles
+  "Cycle Store (साइकिल स्टोर)": "🚲",
+  "Cycle Repair (साइकिल रिपेयर)": "🔧",
+  "Two Wheeler Spare Parts": "🏍️",
   // Home & Hospitality
   "Maid / काम वाली बाई": "🧹",
   "Baby Sitter / बच्चा संभालने वाली": "👶",
