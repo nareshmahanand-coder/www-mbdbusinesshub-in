@@ -97,8 +97,8 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
           </div>
           <div className="flex flex-col items-end gap-1">
             {shop.premium ? (
-              <Badge className="bg-saffron text-primary-foreground text-[10px] font-bold">
-                ⭐ Premium
+              <Badge className="bg-gradient-to-r from-saffron to-[hsl(35,90%,50%)] text-primary-foreground text-[10px] font-bold px-3 py-0.5 shadow-md animate-pulse">
+                ⭐ Premium ✓
               </Badge>
             ) : (
               <Badge variant="outline" className="border-green-india text-green-india text-[10px] font-bold">

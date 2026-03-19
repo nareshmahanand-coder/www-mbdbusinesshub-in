@@ -292,7 +292,7 @@ const BharatMitraChatbot = () => {
         </div>
         <button
           onClick={() => setOpen(true)}
-          className="bharat-mitra-avatar relative h-16 w-16 overflow-hidden rounded-full border-2 border-accent shadow-xl transition-transform hover:scale-110"
+          className="bharat-mitra-avatar relative h-20 w-20 overflow-hidden rounded-full border-3 border-accent shadow-2xl transition-transform hover:scale-110 animate-pulse"
           aria-label="Open Bharat Mitra Chat"
         >
           <span className="bharat-mitra-pulse-ring" />
