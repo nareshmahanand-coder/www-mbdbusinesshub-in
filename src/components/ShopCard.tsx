@@ -82,7 +82,7 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
   const totalReviews = (shop.reviewCount || 0) + reviews.filter(r => r.userName === "You").length;
 
   return (
-    <Card className={`group relative overflow-hidden transition-all hover:shadow-xl ${shop.verified && shop.premium ? "ring-2 ring-saffron shadow-[0_0_12px_hsl(var(--saffron)/0.3)]" : ""}`}>
+    <Card className={`group relative overflow-hidden transition-all hover:shadow-xl ${shop.premium ? "ring-2 ring-saffron shadow-[0_0_16px_hsl(var(--saffron)/0.35)] border-saffron" : ""}`}>
       <div className="absolute right-0 top-0 h-1 w-full tiranga-stripe" />
       <CardContent className="p-5">
         <div className="mb-3 flex items-start justify-between">
@@ -97,8 +97,8 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
           </div>
           <div className="flex flex-col items-end gap-1">
             {shop.premium ? (
-              <Badge className="bg-saffron text-primary-foreground text-[10px] font-bold">
-                ⭐ Premium
+              <Badge className="bg-gradient-to-r from-saffron to-[hsl(35,90%,50%)] text-primary-foreground text-[10px] font-bold px-3 py-0.5 shadow-md animate-pulse">
+                ⭐ Premium ✓
               </Badge>
             ) : (
               <Badge variant="outline" className="border-green-india text-green-india text-[10px] font-bold">
