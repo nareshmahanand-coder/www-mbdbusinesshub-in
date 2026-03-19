@@ -328,6 +328,9 @@ const Index = () => {
         )}
       </main>
 
+      {/* Shop Map — Registered Shops Only */}
+      <ShopMap />
+
       {/* Footer */}
       <footer className="relative z-10 bg-primary py-10">
         <div className="container mx-auto px-4">
