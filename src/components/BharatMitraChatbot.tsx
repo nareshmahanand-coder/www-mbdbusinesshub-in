@@ -31,8 +31,20 @@ const BharatMitraChatbot = () => {
   const [safetyActivated, setSafetyActivated] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [safeWalkActive, setSafeWalkActive] = useState(false);
+  const [hasGreeted, setHasGreeted] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-greet on first load with Hindi TTS
+  useEffect(() => {
+    if (!hasGreeted) {
+      const timer = setTimeout(() => {
+        speakHindi("नमस्ते बॉस, मेरा भारत दुकान में आपका स्वागत है। मैं आपकी क्या मदद कर सकती हूँ?");
+        setHasGreeted(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [hasGreeted]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
