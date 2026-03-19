@@ -6,6 +6,7 @@ import { sampleShops, shopCategories, categoryIcons, categorySections } from "@/
 import ShopCard from "@/components/ShopCard";
 import AppHeader from "@/components/AppHeader";
 import HeroCarousel from "@/components/HeroCarousel";
+import NandaFarmSection from "@/components/NandaFarmSection";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -213,6 +214,9 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Nanda Farm Featured Section */}
+      <NandaFarmSection />
 
       {/* Quick Categories */}
       <section className="relative z-10 bg-background py-8">

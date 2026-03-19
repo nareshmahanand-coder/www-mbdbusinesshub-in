@@ -9,6 +9,7 @@ import MerchantPortal from "./pages/MerchantPortal";
 import AdminDashboard from "./pages/AdminDashboard";
 import HelpPage from "./pages/HelpPage";
 import TermsPage from "./pages/TermsPage";
+import KisanRegistration from "./pages/KisanRegistration";
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
 
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/help" element={<HelpPage />} />
             <Route path="/terms" element={<TermsPage />} />
+            <Route path="/kisan" element={<KisanRegistration />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
