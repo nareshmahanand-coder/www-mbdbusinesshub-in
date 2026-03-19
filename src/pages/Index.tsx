@@ -7,6 +7,7 @@ import ShopCard from "@/components/ShopCard";
 import AppHeader from "@/components/AppHeader";
 import HeroCarousel from "@/components/HeroCarousel";
 import NandaFarmSection from "@/components/NandaFarmSection";
+import ShopMap from "@/components/ShopMap";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -326,6 +327,9 @@ const Index = () => {
           </div>
         )}
       </main>
+
+      {/* Shop Map — Registered Shops Only */}
+      <ShopMap />
 
       {/* Footer */}
       <footer className="relative z-10 bg-primary py-10">
