@@ -215,6 +215,9 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Nanda Farm Featured Section */}
+      <NandaFarmSection />
+
       {/* Quick Categories */}
       <section className="relative z-10 bg-background py-8">
         <div className="container mx-auto px-4">
