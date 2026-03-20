@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import { X, Send, HelpCircle, AlertTriangle, ShoppingBag, Heart, Shield, Volume2, Droplets, Megaphone, PhoneCall } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,10 @@ const WELCOME_MESSAGE: ChatMessage = {
   text: "नमस्ते बॉस जी! 🙏 भारत दुकान में आपका स्वागत है। मैं आपकी भारत मित्र हूँ। दुकान ढूंढें, ऑर्डर करें, या मदद मांगें — सब कुछ यहीं! नीचे दिए विकल्प चुनें या कुछ भी पूछें:",
 };
 
+const LOGIN_GREETING = "नमस्ते बॉस! मेरा भारत दुकान में आपका स्वागत है। मैं आपकी क्या मदद कर सकती हूँ?";
+
 const BharatMitraChatbot = () => {
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
@@ -31,41 +35,96 @@ const BharatMitraChatbot = () => {
   const [safetyActivated, setSafetyActivated] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [safeWalkActive, setSafeWalkActive] = useState(false);
-  const [hasGreeted, setHasGreeted] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const greetingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Voice greeting is now triggered only after login — via window event
+  const speakHindi = useCallback((text: string) => {
+    if (!("speechSynthesis" in window)) return;
+
+    const synth = window.speechSynthesis;
+
+    const speak = () => {
+      const utterance = new SpeechSynthesisUtterance(text);
+      const voices = synth.getVoices();
+      const preferredVoice =
+        voices.find((voice) => voice.lang.toLowerCase().startsWith("hi")) ??
+        voices.find((voice) => voice.lang.toLowerCase().includes("in")) ??
+        null;
+
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+        utterance.lang = preferredVoice.lang;
+      } else {
+        utterance.lang = "hi-IN";
+      }
+
+      utterance.rate = 0.92;
+      utterance.pitch = 1.05;
+      utterance.volume = 1;
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+
+      synth.cancel();
+      synth.speak(utterance);
+    };
+
+    if (synth.getVoices().length === 0) {
+      synth.onvoiceschanged = () => {
+        synth.onvoiceschanged = null;
+        speak();
+      };
+      window.setTimeout(speak, 350);
+      return;
+    }
+
+    speak();
+  }, []);
+
+  const triggerPendingGreeting = useCallback(() => {
+    if (location.pathname !== "/") return;
+    if (sessionStorage.getItem("bharat-mitra-pending-greet") !== "true") return;
+
+    sessionStorage.removeItem("bharat-mitra-pending-greet");
+
+    if (greetingTimeoutRef.current) {
+      clearTimeout(greetingTimeoutRef.current);
+    }
+
+    greetingTimeoutRef.current = setTimeout(() => {
+      speakHindi(LOGIN_GREETING);
+    }, 700);
+  }, [location.pathname, speakHindi]);
+
   useEffect(() => {
-    const handleGreet = () => {
-      if (!hasGreeted) {
-        setTimeout(() => {
-          speakHindi("नमस्ते बॉस! मेरा भारत दुकान में आपका स्वागत है। मैं आपकी क्या मदद कर सकती हूँ?");
-          setHasGreeted(true);
-        }, 1500);
+    triggerPendingGreeting();
+
+    return () => {
+      if (greetingTimeoutRef.current) {
+        clearTimeout(greetingTimeoutRef.current);
       }
     };
-    window.addEventListener("bharat-mitra-greet", handleGreet);
-    return () => window.removeEventListener("bharat-mitra-greet", handleGreet);
-  }, [hasGreeted]);
+  }, [triggerPendingGreeting]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Idle suggestion timer
   const resetIdleTimer = useCallback(() => {
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
     if (!open) return;
     idleTimerRef.current = setTimeout(() => {
       const suggestion = IDLE_SUGGESTIONS[Math.floor(Math.random() * IDLE_SUGGESTIONS.length)];
       setMessages((prev) => [...prev, { id: `idle-${Date.now()}`, sender: "bot", text: suggestion }]);
-    }, 45000); // 45 seconds idle
+    }, 45000);
   }, [open]);
 
   useEffect(() => {
     if (open) resetIdleTimer();
-    return () => { if (idleTimerRef.current) clearTimeout(idleTimerRef.current); };
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
   }, [open, resetIdleTimer]);
 
   const addBotMessage = (text: string) => {
@@ -78,20 +137,6 @@ const BharatMitraChatbot = () => {
     const msg: ChatMessage = { id: `user-${Date.now()}`, sender: "user", text };
     setMessages((prev) => [...prev, msg]);
     resetIdleTimer();
-  };
-
-  // TTS in Hindi
-  const speakHindi = (text: string) => {
-    if (!("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "hi-IN";
-    utterance.rate = 0.9;
-    utterance.pitch = 1.1;
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-    window.speechSynthesis.speak(utterance);
   };
 
   const addBotMessageAndSpeak = (text: string) => {
