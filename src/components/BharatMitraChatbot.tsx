@@ -35,15 +35,18 @@ const BharatMitraChatbot = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Auto-greet on first load with Hindi TTS
+  // Voice greeting is now triggered only after login — via window event
   useEffect(() => {
-    if (!hasGreeted) {
-      const timer = setTimeout(() => {
-        speakHindi("नमस्ते बॉस, मेरा भारत दुकान में आपका स्वागत है। मैं आपकी क्या मदद कर सकती हूँ?");
-        setHasGreeted(true);
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
+    const handleGreet = () => {
+      if (!hasGreeted) {
+        setTimeout(() => {
+          speakHindi("नमस्ते बॉस! मेरा भारत दुकान में आपका स्वागत है। मैं आपकी क्या मदद कर सकती हूँ?");
+          setHasGreeted(true);
+        }, 1500);
+      }
+    };
+    window.addEventListener("bharat-mitra-greet", handleGreet);
+    return () => window.removeEventListener("bharat-mitra-greet", handleGreet);
   }, [hasGreeted]);
 
   useEffect(() => {

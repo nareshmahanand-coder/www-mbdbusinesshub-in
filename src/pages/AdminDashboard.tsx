@@ -223,7 +223,7 @@ const AdminDashboard = () => {
                 onChange={(e) => setPin(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                 className="text-center text-lg tracking-[0.5em]"
-                maxLength={4}
+                maxLength={8}
               />
               <Button onClick={handleLogin} className="w-full bg-navy hover:bg-navy/90 text-primary-foreground">
                 <ShieldCheck className="mr-2 h-4 w-4" /> Secure Login
