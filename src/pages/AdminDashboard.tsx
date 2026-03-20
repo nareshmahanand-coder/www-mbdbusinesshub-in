@@ -216,9 +216,6 @@ const AdminDashboard = () => {
               <p className="font-hindi text-sm text-muted-foreground">प्रबंधन पोर्टल - सुरक्षित प्रवेश</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-md bg-muted/50 p-2 text-center">
-                <p className="text-[10px] text-muted-foreground">Demo PIN: <span className="font-mono font-bold">1947</span></p>
-              </div>
               <Input
                 type="password"
                 placeholder="Enter Admin PIN"
