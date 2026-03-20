@@ -12,7 +12,7 @@ const translations: Record<string, Record<Lang, string>> = {
   "home": { en: "Home", hi: "होम" },
   "merchant_portal": { en: "Merchant Portal", hi: "व्यापारी पोर्टल" },
   "help_desk": { en: "Help Desk", hi: "सहायता केंद्र" },
-  "official_login": { en: "Official Login", hi: "आधिकारिक लॉगिन" },
+  "official_login": { en: "Login", hi: "लॉगिन" },
   "login": { en: "Login", hi: "लॉगिन" },
   "digital_india_marketplace": { en: "Digital India Marketplace", hi: "डिजिटल इंडिया बाज़ार" },
   "search_placeholder": { en: "Search shops, services, insurance, mechanic... / खोजें...", hi: "दुकान, सेवाएँ, बीमा, मैकेनिक खोजें..." },

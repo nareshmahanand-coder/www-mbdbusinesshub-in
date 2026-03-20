@@ -72,7 +72,7 @@ const AdminDashboard = () => {
   ]);
 
   const handleLogin = () => {
-    if (pin === "1947") {
+    if (pin === "02032026") {
       setLoggedIn(true);
       toast.success("Admin access granted");
     } else {
@@ -216,9 +216,6 @@ const AdminDashboard = () => {
               <p className="font-hindi text-sm text-muted-foreground">प्रबंधन पोर्टल - सुरक्षित प्रवेश</p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="rounded-md bg-muted/50 p-2 text-center">
-                <p className="text-[10px] text-muted-foreground">Demo PIN: <span className="font-mono font-bold">1947</span></p>
-              </div>
               <Input
                 type="password"
                 placeholder="Enter Admin PIN"
@@ -226,7 +223,7 @@ const AdminDashboard = () => {
                 onChange={(e) => setPin(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                 className="text-center text-lg tracking-[0.5em]"
-                maxLength={4}
+                maxLength={8}
               />
               <Button onClick={handleLogin} className="w-full bg-navy hover:bg-navy/90 text-primary-foreground">
                 <ShieldCheck className="mr-2 h-4 w-4" /> Secure Login
