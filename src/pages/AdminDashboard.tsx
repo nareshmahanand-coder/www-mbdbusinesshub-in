@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { sampleShops, Shop, categoryIcons } from "@/data/sampleShops";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,12 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { supabase } from "@/integrations/supabase/client";
 import {
   ShieldCheck, ShieldX, Bell, CheckCircle2, IndianRupee, Users, Clock,
   BadgeCheck, MessageCircle, Send, XCircle, AlertTriangle, Crown,
   Download, CalendarPlus, LogOut, Search
 } from "lucide-react";
-import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 
 interface MerchantPayment {
@@ -33,6 +34,14 @@ interface ChatbotLog {
   lastAsked: string;
 }
 
+interface CustomerRecord {
+  id: string;
+  email: string | null;
+  phone: string | null;
+  provider: string | null;
+  created_at: string;
+}
+
 const MOCK_CHATBOT_LOGS: ChatbotLog[] = [
   { question: "दुकान कैसे जोड़ें?", count: 142, lastAsked: "2026-03-10" },
   { question: "प्रीमियम प्लान के क्या फायदे हैं?", count: 98, lastAsked: "2026-03-10" },
@@ -47,6 +56,12 @@ const getDaysActive = (dateStr: string) => {
   const now = new Date();
   return Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 };
+
+const formatDateTime = (dateStr: string) =>
+  new Date(dateStr).toLocaleString("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 
 const AdminDashboard = () => {
   const [shops, setShops] = useState<(Shop & { premiumStartDate?: string; premiumPlan?: "monthly" | "yearly"; joinDate?: string })[]>(
@@ -63,6 +78,8 @@ const AdminDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [rejectReasonMap, setRejectReasonMap] = useState<Record<string, string>>({});
   const [showRejectInput, setShowRejectInput] = useState<string | null>(null);
+  const [customers, setCustomers] = useState<CustomerRecord[]>([]);
+  const [customersLoading, setCustomersLoading] = useState(false);
 
   const [payments, setPayments] = useState<MerchantPayment[]>([
     { shopId: "1", shopName: "Sharma General Store", plan: "monthly", amount: 99, transactionId: "TXN001234", date: "2026-03-08", approved: false, screenshotUrl: "screenshot1.png" },
@@ -70,6 +87,30 @@ const AdminDashboard = () => {
     { shopId: "6", shopName: "Bhojanshala Restaurant", plan: "yearly", amount: 999, transactionId: "TXN005678", date: "2026-03-07", approved: true },
     { shopId: "2", shopName: "Gupta Cloth House", plan: "monthly", amount: 99, transactionId: "TXN004321", date: "2026-03-06", approved: true },
   ]);
+
+  useEffect(() => {
+    if (!loggedIn) return;
+
+    const loadCustomers = async () => {
+      setCustomersLoading(true);
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, email, phone, provider, created_at")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        toast.error("Customer Directory लोड नहीं हो सका");
+        setCustomers([]);
+        setCustomersLoading(false);
+        return;
+      }
+
+      setCustomers(data ?? []);
+      setCustomersLoading(false);
+    };
+
+    void loadCustomers();
+  }, [loggedIn]);
 
   const handleLogin = () => {
     if (pin === "02032026") {
@@ -95,7 +136,7 @@ const AdminDashboard = () => {
   };
 
   const approvePayment = (txnId: string) => {
-    const payment = payments.find(p => p.transactionId === txnId);
+    const payment = payments.find((p) => p.transactionId === txnId);
     if (payment) {
       setPayments((prev) =>
         prev.map((p) => (p.transactionId === txnId ? { ...p, approved: true, rejected: false } : p))
@@ -143,9 +184,14 @@ const AdminDashboard = () => {
         const duration = plan === "monthly" ? 30 : 365;
         const currentExpiry = new Date(currentStart.getTime() + duration * 24 * 60 * 60 * 1000);
         const newExpiry = new Date(Math.max(currentExpiry.getTime(), Date.now()));
-        // Shift start date so that expiry extends by 30 days
         const newStart = new Date(newExpiry.getTime() - (duration - 30) * 24 * 60 * 60 * 1000);
-        return { ...s, premiumStartDate: plan === "monthly" ? new Date(newExpiry.getTime() - 30 * 24 * 60 * 60 * 1000 + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0] : newStart.toISOString().split("T")[0] };
+        return {
+          ...s,
+          premiumStartDate:
+            plan === "monthly"
+              ? new Date(newExpiry.getTime() - 30 * 24 * 60 * 60 * 1000 + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+              : newStart.toISOString().split("T")[0],
+        };
       })
     );
     toast.success("✅ Premium extended by 30 days!");
@@ -153,12 +199,12 @@ const AdminDashboard = () => {
 
   const downloadCSV = () => {
     const headers = ["Shop Name", "Hindi Name", "Category", "City", "Pincode", "Verified", "Premium", "Plan", "Join Date"];
-    const rows = shops.map(s => [
+    const rows = shops.map((s) => [
       s.name, s.nameHindi, s.category, s.city, s.pincode,
       s.verified ? "Yes" : "No", s.premium ? "Yes" : "No",
       s.premiumPlan || "Free", s.joinDate || "N/A"
     ]);
-    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+    const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -169,29 +215,27 @@ const AdminDashboard = () => {
     toast.success("📥 Merchant list downloaded as CSV!");
   };
 
-  // Derived data
   const freeShops = useMemo(() => {
     const list = shops.filter((s) => !s.premium);
     if (!searchQuery.trim()) return list;
     const q = searchQuery.toLowerCase();
-    return list.filter(s => s.name.toLowerCase().includes(q) || s.nameHindi.includes(q) || s.category.toLowerCase().includes(q));
+    return list.filter((s) => s.name.toLowerCase().includes(q) || s.nameHindi.includes(q) || s.category.toLowerCase().includes(q));
   }, [shops, searchQuery]);
 
   const premiumShops = useMemo(() => {
     const list = shops.filter((s) => s.premium);
     if (!searchQuery.trim()) return list;
     const q = searchQuery.toLowerCase();
-    return list.filter(s => s.name.toLowerCase().includes(q) || s.nameHindi.includes(q));
+    return list.filter((s) => s.name.toLowerCase().includes(q) || s.nameHindi.includes(q));
   }, [shops, searchQuery]);
 
   const verifiedCount = shops.filter((s) => s.verified).length;
   const pendingPayments = payments.filter((p) => !p.approved && !p.rejected);
-
   const monthlyEarnings = payments.filter((p) => p.approved && p.plan === "monthly").reduce((sum, p) => sum + p.amount, 0);
   const yearlyEarnings = payments.filter((p) => p.approved && p.plan === "yearly").reduce((sum, p) => sum + p.amount, 0);
   const totalEarnings = monthlyEarnings + yearlyEarnings;
 
-  const getPremiumDaysLeft = (shop: any) => {
+  const getPremiumDaysLeft = (shop: Shop & { premiumStartDate?: string; premiumPlan?: "monthly" | "yearly" }) => {
     if (!shop.premiumStartDate || !shop.premiumPlan) return null;
     const start = new Date(shop.premiumStartDate);
     const duration = shop.premiumPlan === "monthly" ? 30 : 365;
@@ -200,7 +244,6 @@ const AdminDashboard = () => {
     return Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  // ─── Login Screen ───
   if (!loggedIn) {
     return (
       <div className="min-h-screen bg-background">
@@ -235,10 +278,8 @@ const AdminDashboard = () => {
     );
   }
 
-  // ─── Dashboard ───
   return (
     <div className="min-h-screen bg-background">
-      {/* Navy Header Bar */}
       <div className="sticky top-0 z-30 bg-navy px-4 py-3 shadow-md">
         <div className="container mx-auto flex items-center justify-between">
           <div>
@@ -262,7 +303,6 @@ const AdminDashboard = () => {
       </div>
 
       <div className="container mx-auto px-4 py-6">
-        {/* Stats Row */}
         <div className="mb-6 grid gap-3 grid-cols-2 lg:grid-cols-6">
           <Card className="bg-navy text-primary-foreground">
             <CardContent className="flex items-center gap-3 p-4">
@@ -322,7 +362,6 @@ const AdminDashboard = () => {
           </Card>
         </div>
 
-        {/* Search & Export Bar */}
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -338,14 +377,12 @@ const AdminDashboard = () => {
           </Button>
         </div>
 
-        {/* Tabs */}
         <Tabs defaultValue="free" className="mb-8">
           <TabsList className="w-full max-w-lg">
             <TabsTrigger value="free" className="flex-1 text-xs sm:text-sm">🆓 Free Listings (मुफ्त वाले)</TabsTrigger>
             <TabsTrigger value="premium" className="flex-1 text-xs sm:text-sm">⭐ Premium Approvals (प्रीमियम अनुरोध)</TabsTrigger>
           </TabsList>
 
-          {/* ─── Free Users Tab ─── */}
           <TabsContent value="free">
             <Card>
               <CardHeader className="bg-navy/5 border-b">
@@ -418,9 +455,7 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
-          {/* ─── Premium Approvals Tab ─── */}
           <TabsContent value="premium">
-            {/* Pending Payment Requests */}
             <Card className="mb-6">
               <CardHeader className="bg-saffron/10 border-b">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -456,7 +491,7 @@ const AdminDashboard = () => {
                               <Textarea
                                 placeholder="Rejection reason / अस्वीकृति का कारण..."
                                 value={rejectReasonMap[p.transactionId] || ""}
-                                onChange={(e) => setRejectReasonMap(prev => ({ ...prev, [p.transactionId]: e.target.value }))}
+                                onChange={(e) => setRejectReasonMap((prev) => ({ ...prev, [p.transactionId]: e.target.value }))}
                                 className="min-h-[40px] text-xs"
                               />
                               <Button size="sm" variant="destructive" onClick={() => rejectPayment(p.transactionId)} className="h-auto shrink-0">
@@ -472,11 +507,10 @@ const AdminDashboard = () => {
                   <p className="text-sm text-muted-foreground">✅ No pending payment requests.</p>
                 )}
 
-                {/* Rejected list */}
-                {payments.filter(p => p.rejected).length > 0 && (
+                {payments.filter((p) => p.rejected).length > 0 && (
                   <div className="mt-4 border-t pt-4">
                     <p className="mb-2 text-xs font-semibold text-destructive">Recently Rejected:</p>
-                    {payments.filter(p => p.rejected).map(p => (
+                    {payments.filter((p) => p.rejected).map((p) => (
                       <div key={p.transactionId} className="mb-1 rounded bg-destructive/5 px-3 py-2 text-xs">
                         <span className="font-medium">{p.shopName}</span> — {p.rejectReason || "No reason provided"} <span className="text-muted-foreground">({p.transactionId})</span>
                       </div>
@@ -486,7 +520,6 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
 
-            {/* Active Premium Shops */}
             <Card>
               <CardHeader className="bg-navy/5 border-b">
                 <CardTitle className="text-base">
@@ -505,7 +538,7 @@ const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {premiumShops.map((shop: any) => {
+                    {premiumShops.map((shop) => {
                       const daysLeft = getPremiumDaysLeft(shop);
                       const isExpiring = daysLeft !== null && daysLeft <= 3;
                       return (
@@ -580,7 +613,54 @@ const AdminDashboard = () => {
           </TabsContent>
         </Tabs>
 
-        {/* Chatbot Analytics */}
+        <Card className="mb-8">
+          <CardHeader className="bg-green-india/5 border-b">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-5 w-5 text-green-india" /> Customer Directory
+              <span className="rounded-full bg-green-india/10 px-2 py-0.5 text-xs font-semibold text-green-india">{customers.length}</span>
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">Every logged-in customer is tracked here with first login time.</p>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Provider</TableHead>
+                  <TableHead>First Login</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {customersLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground">Loading customers...</TableCell>
+                  </TableRow>
+                ) : customers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground">No customer records found yet.</TableCell>
+                  </TableRow>
+                ) : (
+                  customers.map((customer) => (
+                    <TableRow key={customer.id}>
+                      <TableCell className="font-medium text-foreground">
+                        {customer.email || customer.phone || "Unavailable"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="capitalize">
+                          {customer.provider || (customer.phone ? "phone" : "google")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatDateTime(customer.created_at)}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
         <Card className="mb-8">
           <CardHeader className="bg-navy/5 border-b">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -616,7 +696,6 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Footer */}
         <div className="border-t pt-4 text-center">
           <p className="text-xs text-muted-foreground">Bharat Dukaan - Management Portal • Internal Use Only</p>
           <p className="font-hindi text-xs text-muted-foreground">भारत दुकान - प्रबंधन पोर्टल • केवल आंतरिक उपयोग हेतु</p>

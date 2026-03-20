@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import logoCircle from "@/assets/logo-circle.jpeg";
 import { LogIn, Phone, Loader2 } from "lucide-react";
 
 const LoginPage = () => {
+  const navigate = useNavigate();
   const [phone, setPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
@@ -16,10 +18,14 @@ const LoginPage = () => {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    sessionStorage.setItem("bharat-mitra-pending-greet", "true");
+
     const { error } = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
+
     if (error) {
+      sessionStorage.removeItem("bharat-mitra-pending-greet");
       toast.error("Google login failed. Please try again.");
       setLoading(false);
     }
@@ -30,15 +36,24 @@ const LoginPage = () => {
       toast.error("कृपया 10 अंकों का मोबाइल नंबर दर्ज करें");
       return;
     }
+
     setLoading(true);
+
     const { error } = await supabase.auth.signInWithOtp({
       phone: `+91${phone}`,
     });
+
     if (error) {
-      toast.error(error.message || "OTP भेजने में विफल");
+      const isPhoneDisabled = error.message.toLowerCase().includes("phone") && error.message.toLowerCase().includes("disabled");
+      toast.error(
+        isPhoneDisabled
+          ? "मोबाइल लॉगिन backend में enabled नहीं है। कृपया Cloud में Phone sign-in ऑन करें।"
+          : error.message || "OTP भेजने में विफल"
+      );
       setLoading(false);
       return;
     }
+
     setOtpSent(true);
     setLoading(false);
     toast.success(`OTP भेजा गया: +91 ${phone}`);
@@ -49,24 +64,29 @@ const LoginPage = () => {
       toast.error("कृपया 6 अंकों का OTP दर्ज करें");
       return;
     }
+
     setLoading(true);
+
     const { error } = await supabase.auth.verifyOtp({
       phone: `+91${phone}`,
       token: otp,
       type: "sms",
     });
+
     if (error) {
       toast.error(error.message || "OTP सत्यापन विफल");
       setLoading(false);
       return;
     }
+
+    sessionStorage.setItem("bharat-mitra-pending-greet", "true");
     toast.success("लॉगिन सफल!");
     setLoading(false);
+    navigate("/", { replace: true });
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-saffron/10 via-background to-green-india/10">
-      {/* Tricolor bar */}
       <div className="h-1 w-full bg-gradient-to-r from-saffron via-white to-green-india" />
 
       <div className="flex flex-1 items-center justify-center px-4 py-8">
@@ -85,7 +105,6 @@ const LoginPage = () => {
             </p>
           </CardHeader>
           <CardContent className="space-y-5">
-            {/* Welcome message */}
             <div className="rounded-xl bg-saffron/10 border border-saffron/20 p-4 text-center">
               <p className="font-hindi text-sm leading-relaxed text-foreground">
                 मेरा भारत दुकान में आपका स्वागत है! 0% कमीशन, सीधा भुगतान और
@@ -94,7 +113,6 @@ const LoginPage = () => {
               </p>
             </div>
 
-            {/* Google Login */}
             <Button
               onClick={handleGoogleLogin}
               disabled={loading}
@@ -117,7 +135,6 @@ const LoginPage = () => {
               </div>
             </div>
 
-            {/* Phone Login */}
             {!otpSent ? (
               <>
                 <div className="flex items-center gap-2">
@@ -161,7 +178,10 @@ const LoginPage = () => {
                   Verify & Login
                 </Button>
                 <button
-                  onClick={() => { setOtpSent(false); setOtp(""); }}
+                  onClick={() => {
+                    setOtpSent(false);
+                    setOtp("");
+                  }}
                   className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
                 >
                   ← नंबर बदलें
