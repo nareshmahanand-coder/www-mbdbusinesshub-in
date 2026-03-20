@@ -26,9 +26,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
+        const wasLoggedOut = !user;
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        // Trigger Bharat Mitra greeting on fresh login
+        if (session?.user && wasLoggedOut) {
+          setTimeout(() => window.dispatchEvent(new Event("bharat-mitra-greet")), 500);
+        }
       }
     );
 
