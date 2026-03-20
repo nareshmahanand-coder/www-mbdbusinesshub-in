@@ -72,7 +72,7 @@ const AdminDashboard = () => {
   ]);
 
   const handleLogin = () => {
-    if (pin === "1947") {
+    if (pin === "02032026") {
       setLoggedIn(true);
       toast.success("Admin access granted");
     } else {
