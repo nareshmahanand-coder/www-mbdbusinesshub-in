@@ -14,6 +14,166 @@ export type Database = {
   }
   public: {
     Tables: {
+      merchant_profiles: {
+        Row: {
+          address: string | null
+          category: string | null
+          city: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_premium: boolean | null
+          is_verified: boolean | null
+          latitude: number | null
+          longitude: number | null
+          phone: string | null
+          photos: string[] | null
+          pincode: string | null
+          premium_plan: string | null
+          premium_start_date: string | null
+          shop_name: string
+          shop_name_hindi: string | null
+          updated_at: string
+          user_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          address?: string | null
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_premium?: boolean | null
+          is_verified?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          phone?: string | null
+          photos?: string[] | null
+          pincode?: string | null
+          premium_plan?: string | null
+          premium_start_date?: string | null
+          shop_name?: string
+          shop_name_hindi?: string | null
+          updated_at?: string
+          user_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string | null
+          category?: string | null
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_premium?: boolean | null
+          is_verified?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          phone?: string | null
+          photos?: string[] | null
+          pincode?: string | null
+          premium_plan?: string | null
+          premium_start_date?: string | null
+          shop_name?: string
+          shop_name_hindi?: string | null
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          merchant_id: string | null
+          message: string | null
+          shop_id: string | null
+          shop_name: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          merchant_id?: string | null
+          message?: string | null
+          shop_id?: string | null
+          shop_name?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          merchant_id?: string | null
+          message?: string | null
+          shop_id?: string | null
+          shop_name?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          in_stock: boolean | null
+          merchant_id: string
+          name: string
+          name_hindi: string | null
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          in_stock?: boolean | null
+          merchant_id: string
+          name: string
+          name_hindi?: string | null
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          in_stock?: boolean | null
+          merchant_id?: string
+          name?: string
+          name_hindi?: string | null
+          price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -46,6 +206,56 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      saved_shops: {
+        Row: {
+          created_at: string
+          id: string
+          shop_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          shop_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          shop_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      shop_analytics: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          merchant_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          merchant_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          merchant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_analytics_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
