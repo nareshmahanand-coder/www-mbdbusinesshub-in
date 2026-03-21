@@ -12,6 +12,8 @@ import HelpPage from "./pages/HelpPage";
 import TermsPage from "./pages/TermsPage";
 import KisanRegistration from "./pages/KisanRegistration";
 import LoginPage from "./pages/LoginPage";
+import CustomerDashboard from "./pages/CustomerDashboard";
+import MerchantDashboard from "./pages/MerchantDashboard";
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
 
@@ -55,6 +57,8 @@ const AppShell = () => {
         <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
         <Route path="/kisan" element={<ProtectedRoute><KisanRegistration /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><CustomerDashboard /></ProtectedRoute>} />
+        <Route path="/merchant-dashboard" element={<ProtectedRoute><MerchantDashboard /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {showChatbot && <BharatMitraChatbot />}

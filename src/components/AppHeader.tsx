@@ -5,12 +5,15 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import LoginModal from "@/components/LoginModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import UserProfileMenu from "@/components/UserProfileMenu";
 
 const AppHeader = () => {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const { lang, toggleLang, t } = useLanguage();
+  const { user } = useAuth();
 
   const links = [
     { to: "/", label: t("home") },
@@ -82,13 +85,19 @@ const AppHeader = () => {
               </span>
             </button>
 
-            <Button
-              onClick={() => setLoginOpen(true)}
-              className="ml-2 rounded-full bg-accent px-5 text-accent-foreground hover:bg-accent/90 font-semibold"
-            >
-              <LogIn className="mr-1.5 h-4 w-4" />
-              {t("official_login")}
-            </Button>
+            {user ? (
+              <div className="ml-2">
+                <UserProfileMenu />
+              </div>
+            ) : (
+              <Button
+                onClick={() => setLoginOpen(true)}
+                className="ml-2 rounded-full bg-accent px-5 text-accent-foreground hover:bg-accent/90 font-semibold"
+              >
+                <LogIn className="mr-1.5 h-4 w-4" />
+                {t("login")}
+              </Button>
+            )}
           </div>
 
           {/* Mobile */}
@@ -102,14 +111,18 @@ const AppHeader = () => {
               {lang === "en" ? "हिन्दी" : "EN"}
             </button>
 
-            <Button
-              size="sm"
-              onClick={() => setLoginOpen(true)}
-              className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
-            >
-              <LogIn className="mr-1 h-4 w-4" />
-              {t("login")}
-            </Button>
+            {user ? (
+              <UserProfileMenu />
+            ) : (
+              <Button
+                size="sm"
+                onClick={() => setLoginOpen(true)}
+                className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
+              >
+                <LogIn className="mr-1 h-4 w-4" />
+                {t("login")}
+              </Button>
+            )}
             <button
               className="text-primary-foreground"
               onClick={() => setMenuOpen(!menuOpen)}
