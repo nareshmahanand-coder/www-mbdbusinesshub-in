@@ -5,6 +5,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import LoginModal from "@/components/LoginModal";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/contexts/AuthContext";
+import UserProfileMenu from "@/components/UserProfileMenu";
 
 const AppHeader = () => {
   const location = useLocation();
