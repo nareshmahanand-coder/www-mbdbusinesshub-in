@@ -85,13 +85,19 @@ const AppHeader = () => {
               </span>
             </button>
 
-            <Button
-              onClick={() => setLoginOpen(true)}
-              className="ml-2 rounded-full bg-accent px-5 text-accent-foreground hover:bg-accent/90 font-semibold"
-            >
-              <LogIn className="mr-1.5 h-4 w-4" />
-              {t("official_login")}
-            </Button>
+            {user ? (
+              <div className="ml-2">
+                <UserProfileMenu />
+              </div>
+            ) : (
+              <Button
+                onClick={() => setLoginOpen(true)}
+                className="ml-2 rounded-full bg-accent px-5 text-accent-foreground hover:bg-accent/90 font-semibold"
+              >
+                <LogIn className="mr-1.5 h-4 w-4" />
+                {t("login")}
+              </Button>
+            )}
           </div>
 
           {/* Mobile */}
