@@ -13,6 +13,7 @@ const AppHeader = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const { lang, toggleLang, t } = useLanguage();
+  const { user } = useAuth();
 
   const links = [
     { to: "/", label: t("home") },
