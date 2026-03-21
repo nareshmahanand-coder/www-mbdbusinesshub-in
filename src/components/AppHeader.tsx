@@ -111,14 +111,18 @@ const AppHeader = () => {
               {lang === "en" ? "हिन्दी" : "EN"}
             </button>
 
-            <Button
-              size="sm"
-              onClick={() => setLoginOpen(true)}
-              className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
-            >
-              <LogIn className="mr-1 h-4 w-4" />
-              {t("login")}
-            </Button>
+            {user ? (
+              <UserProfileMenu />
+            ) : (
+              <Button
+                size="sm"
+                onClick={() => setLoginOpen(true)}
+                className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
+              >
+                <LogIn className="mr-1 h-4 w-4" />
+                {t("login")}
+              </Button>
+            )}
             <button
               className="text-primary-foreground"
               onClick={() => setMenuOpen(!menuOpen)}
