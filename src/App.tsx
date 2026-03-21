@@ -12,6 +12,8 @@ import HelpPage from "./pages/HelpPage";
 import TermsPage from "./pages/TermsPage";
 import KisanRegistration from "./pages/KisanRegistration";
 import LoginPage from "./pages/LoginPage";
+import CustomerDashboard from "./pages/CustomerDashboard";
+import MerchantDashboard from "./pages/MerchantDashboard";
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
 
