@@ -57,6 +57,8 @@ const AppShell = () => {
         <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
         <Route path="/kisan" element={<ProtectedRoute><KisanRegistration /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><CustomerDashboard /></ProtectedRoute>} />
+        <Route path="/merchant-dashboard" element={<ProtectedRoute><MerchantDashboard /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {showChatbot && <BharatMitraChatbot />}
