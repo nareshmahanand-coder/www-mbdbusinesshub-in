@@ -183,7 +183,7 @@ const MatrimonyPage = () => {
                   <label className="text-xs text-muted-foreground">Date of Birth</label>
                   <Input type="date" value={form.dob} onChange={e => setForm(f => ({...f, dob: e.target.value}))} />
                 </div>
-                <Input placeholder="Height (e.g. 5'8\")" value={form.height} onChange={e => setForm(f => ({...f, height: e.target.value}))} />
+                <Input placeholder={"Height (e.g. 5'8\")"} value={form.height} onChange={e => setForm(f => ({...f, height: e.target.value}))} />
                 <Input placeholder="Education" value={form.education} onChange={e => setForm(f => ({...f, education: e.target.value}))} />
                 <Input placeholder="Profession" value={form.profession} onChange={e => setForm(f => ({...f, profession: e.target.value}))} />
                 <Input placeholder="City" value={form.city} onChange={e => setForm(f => ({...f, city: e.target.value}))} />
