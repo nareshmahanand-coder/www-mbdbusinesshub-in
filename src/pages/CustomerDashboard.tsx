@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Heart, Settings, Trash2, Save } from "lucide-react";
+import { ShoppingBag, Heart, Settings, Trash2, Save, Store, Briefcase, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { sampleShops } from "@/data/sampleShops";
 
@@ -26,6 +26,9 @@ interface Order {
   created_at: string;
 }
 
+interface MyAd { id: string; title: string; price: number; is_sold: boolean; }
+interface MyJob { id: string; title: string; is_active: boolean; }
+
 const CustomerDashboard = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -33,6 +36,8 @@ const CustomerDashboard = () => {
 
   const [savedShops, setSavedShops] = useState<SavedShop[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [myAds, setMyAds] = useState<MyAd[]>([]);
+  const [myJobs, setMyJobs] = useState<MyJob[]>([]);
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -44,14 +49,18 @@ const CustomerDashboard = () => {
     setPhone(user.phone || "");
 
     const loadData = async () => {
-      const [savedRes, ordersRes, profileRes] = await Promise.all([
+      const [savedRes, ordersRes, profileRes, adsRes, jobsRes] = await Promise.all([
         supabase.from("saved_shops").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("orders").select("*").eq("customer_id", user.id).order("created_at", { ascending: false }),
         supabase.from("profiles").select("display_name, phone").eq("id", user.id).single(),
+        supabase.from("classifieds").select("id, title, price, is_sold").eq("user_id", user.id).order("created_at", { ascending: false }),
+        supabase.from("jobs").select("id, title, is_active").eq("user_id", user.id).order("created_at", { ascending: false }),
       ]);
 
       if (savedRes.data) setSavedShops(savedRes.data);
       if (ordersRes.data) setOrders(ordersRes.data);
+      if (adsRes.data) setMyAds(adsRes.data as MyAd[]);
+      if (jobsRes.data) setMyJobs(jobsRes.data as MyJob[]);
       if (profileRes.data) {
         setDisplayName(profileRes.data.display_name || displayName);
         setPhone(profileRes.data.phone || phone);
@@ -97,15 +106,21 @@ const CustomerDashboard = () => {
         </div>
 
         <Tabs defaultValue={defaultTab}>
-          <TabsList className="w-full max-w-md">
-            <TabsTrigger value="orders" className="flex-1 text-xs sm:text-sm">
-              <ShoppingBag className="mr-1.5 h-4 w-4" /> Orders
+          <TabsList className="w-full max-w-lg flex-wrap">
+            <TabsTrigger value="orders" className="flex-1 text-xs">
+              <ShoppingBag className="mr-1 h-3.5 w-3.5" /> Orders
             </TabsTrigger>
-            <TabsTrigger value="saved" className="flex-1 text-xs sm:text-sm">
-              <Heart className="mr-1.5 h-4 w-4" /> Saved
+            <TabsTrigger value="saved" className="flex-1 text-xs">
+              <Heart className="mr-1 h-3.5 w-3.5" /> Saved
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex-1 text-xs sm:text-sm">
-              <Settings className="mr-1.5 h-4 w-4" /> Settings
+            <TabsTrigger value="ads" className="flex-1 text-xs">
+              <Tag className="mr-1 h-3.5 w-3.5" /> My Ads
+            </TabsTrigger>
+            <TabsTrigger value="jobs" className="flex-1 text-xs">
+              <Briefcase className="mr-1 h-3.5 w-3.5" /> My Jobs
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex-1 text-xs">
+              <Settings className="mr-1 h-3.5 w-3.5" /> Settings
             </TabsTrigger>
           </TabsList>
 
@@ -171,6 +186,65 @@ const CustomerDashboard = () => {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="ads" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center justify-between">
+                  My Classified Ads
+                  <Link to="/classifieds"><Button size="sm" variant="outline">Post New Ad</Button></Link>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {myAds.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <Tag className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+                    <p className="text-muted-foreground">No ads posted yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {myAds.map((ad) => (
+                      <div key={ad.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                        <div>
+                          <p className="font-semibold text-foreground">{ad.title}</p>
+                          <p className="text-xs text-muted-foreground">₹{ad.price.toLocaleString("en-IN")}</p>
+                        </div>
+                        <Badge variant={ad.is_sold ? "default" : "secondary"}>{ad.is_sold ? "Sold" : "Active"}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="jobs" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center justify-between">
+                  My Job Posts
+                  <Link to="/jobs"><Button size="sm" variant="outline">Post New Job</Button></Link>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {myJobs.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <Briefcase className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+                    <p className="text-muted-foreground">No job posts yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {myJobs.map((job) => (
+                      <div key={job.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                        <p className="font-semibold text-foreground">{job.title}</p>
+                        <Badge variant={job.is_active ? "secondary" : "default"}>{job.is_active ? "Active" : "Closed"}</Badge>
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>

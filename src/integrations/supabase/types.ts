@@ -14,6 +14,191 @@ export type Database = {
   }
   public: {
     Tables: {
+      classifieds: {
+        Row: {
+          category: string | null
+          city: string | null
+          condition: string | null
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_sold: boolean | null
+          photos: string[] | null
+          price: number | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          city?: string | null
+          condition?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_sold?: boolean | null
+          photos?: string[] | null
+          price?: number | null
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          city?: string | null
+          condition?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_sold?: boolean | null
+          photos?: string[] | null
+          price?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      contact_requests: {
+        Row: {
+          created_at: string
+          id: string
+          profile_id: string
+          requester_id: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id: string
+          requester_id: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string
+          requester_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_requests_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "matrimony_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          city: string | null
+          company_name: string | null
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          job_type: string | null
+          salary_range: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          company_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          job_type?: string | null
+          salary_range?: string | null
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          company_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          job_type?: string | null
+          salary_range?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      matrimony_profiles: {
+        Row: {
+          about_me: string | null
+          city: string | null
+          created_at: string
+          dob: string | null
+          education: string | null
+          gender: string
+          height: string | null
+          id: string
+          is_published: boolean | null
+          name: string
+          photos: string[] | null
+          profession: string | null
+          subscription_end: string | null
+          subscription_plan: string | null
+          subscription_start: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          about_me?: string | null
+          city?: string | null
+          created_at?: string
+          dob?: string | null
+          education?: string | null
+          gender?: string
+          height?: string | null
+          id?: string
+          is_published?: boolean | null
+          name?: string
+          photos?: string[] | null
+          profession?: string | null
+          subscription_end?: string | null
+          subscription_plan?: string | null
+          subscription_start?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          about_me?: string | null
+          city?: string | null
+          created_at?: string
+          dob?: string | null
+          education?: string | null
+          gender?: string
+          height?: string | null
+          id?: string
+          is_published?: boolean | null
+          name?: string
+          photos?: string[] | null
+          profession?: string | null
+          subscription_end?: string | null
+          subscription_plan?: string | null
+          subscription_start?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       merchant_profiles: {
         Row: {
           address: string | null
@@ -224,6 +409,48 @@ export type Database = {
           created_at?: string
           id?: string
           shop_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      service_providers: {
+        Row: {
+          city: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_verified: boolean | null
+          name: string
+          phone: string | null
+          rating: number | null
+          service_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_verified?: boolean | null
+          name?: string
+          phone?: string | null
+          rating?: number | null
+          service_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_verified?: boolean | null
+          name?: string
+          phone?: string | null
+          rating?: number | null
+          service_type?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
