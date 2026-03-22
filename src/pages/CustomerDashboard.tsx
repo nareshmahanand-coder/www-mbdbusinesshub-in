@@ -192,6 +192,65 @@ const CustomerDashboard = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="ads" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center justify-between">
+                  My Classified Ads
+                  <Link to="/classifieds"><Button size="sm" variant="outline">Post New Ad</Button></Link>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {myAds.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <Tag className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+                    <p className="text-muted-foreground">No ads posted yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {myAds.map((ad) => (
+                      <div key={ad.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                        <div>
+                          <p className="font-semibold text-foreground">{ad.title}</p>
+                          <p className="text-xs text-muted-foreground">₹{ad.price.toLocaleString("en-IN")}</p>
+                        </div>
+                        <Badge variant={ad.is_sold ? "default" : "secondary"}>{ad.is_sold ? "Sold" : "Active"}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="jobs" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center justify-between">
+                  My Job Posts
+                  <Link to="/jobs"><Button size="sm" variant="outline">Post New Job</Button></Link>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {myJobs.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <Briefcase className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+                    <p className="text-muted-foreground">No job posts yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {myJobs.map((job) => (
+                      <div key={job.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                        <p className="font-semibold text-foreground">{job.title}</p>
+                        <Badge variant={job.is_active ? "secondary" : "default"}>{job.is_active ? "Active" : "Closed"}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="settings" className="mt-4">
             <Card>
               <CardHeader>
