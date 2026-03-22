@@ -26,6 +26,9 @@ interface Order {
   created_at: string;
 }
 
+interface MyAd { id: string; title: string; price: number; is_sold: boolean; }
+interface MyJob { id: string; title: string; is_active: boolean; }
+
 const CustomerDashboard = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -33,6 +36,8 @@ const CustomerDashboard = () => {
 
   const [savedShops, setSavedShops] = useState<SavedShop[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [myAds, setMyAds] = useState<MyAd[]>([]);
+  const [myJobs, setMyJobs] = useState<MyJob[]>([]);
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
