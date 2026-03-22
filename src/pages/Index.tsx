@@ -103,6 +103,7 @@ const Index = () => {
   return (
     <div className="ashoka-watermark tiranga-bg min-h-screen">
       <AppHeader />
+      <SuperAppNav />
 
       {/* Bharat Jodo Mission Section */}
       <section className="relative z-10 bg-gradient-to-r from-[hsl(240,100%,20%)] via-[hsl(240,100%,25%)] to-[hsl(240,100%,20%)] py-8 text-center border-b-2 border-[hsl(45,80%,50%)]">
