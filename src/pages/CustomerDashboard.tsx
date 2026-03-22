@@ -106,15 +106,21 @@ const CustomerDashboard = () => {
         </div>
 
         <Tabs defaultValue={defaultTab}>
-          <TabsList className="w-full max-w-md">
-            <TabsTrigger value="orders" className="flex-1 text-xs sm:text-sm">
-              <ShoppingBag className="mr-1.5 h-4 w-4" /> Orders
+          <TabsList className="w-full max-w-lg flex-wrap">
+            <TabsTrigger value="orders" className="flex-1 text-xs">
+              <ShoppingBag className="mr-1 h-3.5 w-3.5" /> Orders
             </TabsTrigger>
-            <TabsTrigger value="saved" className="flex-1 text-xs sm:text-sm">
-              <Heart className="mr-1.5 h-4 w-4" /> Saved
+            <TabsTrigger value="saved" className="flex-1 text-xs">
+              <Heart className="mr-1 h-3.5 w-3.5" /> Saved
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex-1 text-xs sm:text-sm">
-              <Settings className="mr-1.5 h-4 w-4" /> Settings
+            <TabsTrigger value="ads" className="flex-1 text-xs">
+              <Tag className="mr-1 h-3.5 w-3.5" /> My Ads
+            </TabsTrigger>
+            <TabsTrigger value="jobs" className="flex-1 text-xs">
+              <Briefcase className="mr-1 h-3.5 w-3.5" /> My Jobs
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex-1 text-xs">
+              <Settings className="mr-1 h-3.5 w-3.5" /> Settings
             </TabsTrigger>
           </TabsList>
 
