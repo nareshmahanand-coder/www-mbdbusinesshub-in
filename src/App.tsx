@@ -14,6 +14,10 @@ import KisanRegistration from "./pages/KisanRegistration";
 import LoginPage from "./pages/LoginPage";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import MerchantDashboard from "./pages/MerchantDashboard";
+import MatrimonyPage from "./pages/MatrimonyPage";
+import ClassifiedsPage from "./pages/ClassifiedsPage";
+import JobsPage from "./pages/JobsPage";
+import ServicesPage from "./pages/ServicesPage";
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
 
