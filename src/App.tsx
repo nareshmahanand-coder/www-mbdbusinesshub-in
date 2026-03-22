@@ -49,7 +49,7 @@ const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
 
 const AppShell = () => {
   const location = useLocation();
-  const showChatbot = !location.pathname.startsWith("/admin");
+  const showChatbot = location.pathname === "/";
 
   return (
     <>
@@ -63,6 +63,10 @@ const AppShell = () => {
         <Route path="/kisan" element={<ProtectedRoute><KisanRegistration /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><CustomerDashboard /></ProtectedRoute>} />
         <Route path="/merchant-dashboard" element={<ProtectedRoute><MerchantDashboard /></ProtectedRoute>} />
+        <Route path="/matrimony" element={<ProtectedRoute><MatrimonyPage /></ProtectedRoute>} />
+        <Route path="/classifieds" element={<ProtectedRoute><ClassifiedsPage /></ProtectedRoute>} />
+        <Route path="/jobs" element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />
+        <Route path="/services" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {showChatbot && <BharatMitraChatbot />}
