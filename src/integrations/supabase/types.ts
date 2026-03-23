@@ -146,10 +146,13 @@ export type Database = {
           created_at: string
           dob: string | null
           education: string | null
+          family_background: string | null
           gender: string
           height: string | null
+          hobbies: string | null
           id: string
           is_published: boolean | null
+          job_details: string | null
           name: string
           photos: string[] | null
           profession: string | null
@@ -165,10 +168,13 @@ export type Database = {
           created_at?: string
           dob?: string | null
           education?: string | null
+          family_background?: string | null
           gender?: string
           height?: string | null
+          hobbies?: string | null
           id?: string
           is_published?: boolean | null
+          job_details?: string | null
           name?: string
           photos?: string[] | null
           profession?: string | null
@@ -184,10 +190,13 @@ export type Database = {
           created_at?: string
           dob?: string | null
           education?: string | null
+          family_background?: string | null
           gender?: string
           height?: string | null
+          hobbies?: string | null
           id?: string
           is_published?: boolean | null
+          job_details?: string | null
           name?: string
           photos?: string[] | null
           profession?: string | null

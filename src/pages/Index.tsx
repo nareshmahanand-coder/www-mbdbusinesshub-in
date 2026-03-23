@@ -8,6 +8,7 @@ import AppHeader from "@/components/AppHeader";
 import HeroCarousel from "@/components/HeroCarousel";
 import NandaFarmSection from "@/components/NandaFarmSection";
 import ShopMap from "@/components/ShopMap";
+import RechargeSection from "@/components/RechargeSection";
 import SuperAppNav from "@/components/SuperAppNav";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -45,6 +46,7 @@ const Index = () => {
     recognition.onend = () => setIsListening(false);
     recognitionRef.current = recognition;
     recognition.start();
+
     setIsListening(true);
   }, [lang]);
 
@@ -110,10 +112,10 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="inline-flex items-center gap-2 mb-3 rounded-full border border-[hsl(45,80%,50%)]/30 bg-[hsl(45,80%,50%)]/10 px-4 py-1">
             <span className="text-sm">🏛️</span>
-            <span className="text-[11px] font-bold uppercase tracking-widest text-[hsl(45,80%,60%)]">भारत जोड़ो मिशन</span>
+            <span className="text-[11px] font-bold uppercase tracking-widest text-[hsl(45,80%,60%)]">नजदीकी दुकान</span>
           </div>
           <h2 className="font-hindi text-2xl md:text-3xl font-extrabold text-primary-foreground leading-snug max-w-3xl mx-auto">
-            भारत जोड़ो मिशन:{" "}
+            नजदीकी दुकान:{" "}
             <span className="text-[hsl(45,80%,60%)]">अब हर गली, हर मोहल्ला और हर शहर की दुकान...</span>
             <br />
             आपके मोबाइल के अंदर, आपकी जेब में।
@@ -220,6 +222,9 @@ const Index = () => {
 
       {/* Nanda Farm Featured Section */}
       <NandaFarmSection />
+
+      {/* Recharge & Bills */}
+      <RechargeSection />
 
       {/* Quick Categories */}
       <section className="relative z-10 bg-background py-8">

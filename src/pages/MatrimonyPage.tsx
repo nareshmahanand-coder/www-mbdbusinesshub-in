@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Heart, User, Crown, Send, Plus } from "lucide-react";
+import { Heart, User, Crown, Send, Upload, Image } from "lucide-react";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +22,10 @@ interface MatrimonyProfile {
   profession: string;
   city: string;
   about_me: string;
+  family_background: string;
+  hobbies: string;
+  job_details: string;
+  photos: string[];
   is_published: boolean;
   subscription_plan: string | null;
   subscription_end: string | null;
@@ -34,17 +38,17 @@ const MatrimonyPage = () => {
   const [profiles, setProfiles] = useState<MatrimonyProfile[]>([]);
   const [myProfile, setMyProfile] = useState<MatrimonyProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form state
   const [form, setForm] = useState({
     name: "", gender: "", dob: "", height: "", education: "",
-    profession: "", city: "", about_me: "",
+    profession: "", city: "", about_me: "", family_background: "",
+    hobbies: "", job_details: "",
   });
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, [user]);
+  useEffect(() => { loadData(); }, [user]);
 
   const loadData = async () => {
     setLoading(true);
@@ -52,24 +56,41 @@ const MatrimonyPage = () => {
       supabase.from("matrimony_profiles").select("*").eq("is_published", true).order("created_at", { ascending: false }),
       user ? supabase.from("matrimony_profiles").select("*").eq("user_id", user.id).maybeSingle() : Promise.resolve({ data: null }),
     ]);
-
-    if (profilesRes.data) setProfiles(profilesRes.data as MatrimonyProfile[]);
+    if (profilesRes.data) setProfiles(profilesRes.data as unknown as MatrimonyProfile[]);
     if (myRes.data) {
-      const p = myRes.data as MatrimonyProfile;
+      const p = myRes.data as unknown as MatrimonyProfile;
       setMyProfile(p);
       setForm({
         name: p.name, gender: p.gender, dob: p.dob || "", height: p.height,
-        education: p.education, profession: p.profession, city: p.city, about_me: p.about_me,
+        education: p.education, profession: p.profession, city: p.city,
+        about_me: p.about_me, family_background: p.family_background || "",
+        hobbies: p.hobbies || "", job_details: p.job_details || "",
       });
     }
     setLoading(false);
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user || !myProfile) { toast.error("Please create profile first"); return; }
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}/matrimony-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("uploads").upload(path, file);
+    if (error) { toast.error("Upload failed"); setUploading(false); return; }
+    const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
+    const newPhotos = [...(myProfile.photos || []), urlData.publicUrl];
+    await supabase.from("matrimony_profiles").update({ photos: newPhotos }).eq("id", myProfile.id);
+    toast.success("Photo uploaded!");
+    setUploading(false);
+    loadData();
   };
 
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
     const payload = { ...form, user_id: user.id, updated_at: new Date().toISOString() };
-
     if (myProfile) {
       const { error } = await supabase.from("matrimony_profiles").update(payload).eq("id", myProfile.id);
       if (error) toast.error("Save failed"); else { toast.success("Profile updated!"); loadData(); }
@@ -82,9 +103,7 @@ const MatrimonyPage = () => {
 
   const requestContact = async (profileId: string) => {
     if (!user) return;
-    const { error } = await supabase.from("contact_requests").insert({
-      requester_id: user.id, profile_id: profileId,
-    });
+    const { error } = await supabase.from("contact_requests").insert({ requester_id: user.id, profile_id: profileId });
     if (error?.code === "23505") toast.info("Request already sent");
     else if (error) toast.error("Failed to send request");
     else toast.success("Contact request sent!");
@@ -92,8 +111,7 @@ const MatrimonyPage = () => {
 
   const getAge = (dob: string | null) => {
     if (!dob) return "";
-    const diff = Date.now() - new Date(dob).getTime();
-    return Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000)) + " yrs";
+    return Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) + " yrs";
   };
 
   return (
@@ -129,9 +147,13 @@ const MatrimonyPage = () => {
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                            <User className="h-5 w-5 text-primary" />
-                          </div>
+                          {p.photos?.[0] ? (
+                            <img src={p.photos[0]} alt={p.name} className="h-10 w-10 rounded-full object-cover" />
+                          ) : (
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                              <User className="h-5 w-5 text-primary" />
+                            </div>
+                          )}
                           <div>
                             <p className="font-semibold text-foreground">{p.name}</p>
                             <p className="text-xs text-muted-foreground">{p.city}</p>
@@ -145,9 +167,7 @@ const MatrimonyPage = () => {
                         {p.education && <span>🎓 {p.education}</span>}
                         {p.profession && <span>💼 {p.profession}</span>}
                       </div>
-                      {p.about_me && (
-                        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{p.about_me}</p>
-                      )}
+                      {p.about_me && <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{p.about_me}</p>}
                       <Button size="sm" className="w-full" onClick={() => requestContact(p.id)}>
                         <Send className="mr-1.5 h-3.5 w-3.5" /> Request Contact
                       </Button>
@@ -187,21 +207,45 @@ const MatrimonyPage = () => {
                 <Input placeholder="Education" value={form.education} onChange={e => setForm(f => ({...f, education: e.target.value}))} />
                 <Input placeholder="Profession" value={form.profession} onChange={e => setForm(f => ({...f, profession: e.target.value}))} />
                 <Input placeholder="City" value={form.city} onChange={e => setForm(f => ({...f, city: e.target.value}))} />
-                <Textarea placeholder="About Me..." value={form.about_me} onChange={e => setForm(f => ({...f, about_me: e.target.value}))} rows={3} />
+
+                {/* Extended fields */}
+                <Textarea placeholder="Job Details (कार्य विवरण)" value={form.job_details}
+                  onChange={e => setForm(f => ({...f, job_details: e.target.value}))} rows={2} />
+                <Textarea placeholder="Family Background (पारिवारिक पृष्ठभूमि)" value={form.family_background}
+                  onChange={e => setForm(f => ({...f, family_background: e.target.value}))} rows={2} />
+                <Textarea placeholder="Hobbies (शौक)" value={form.hobbies}
+                  onChange={e => setForm(f => ({...f, hobbies: e.target.value}))} rows={2} />
+                <Textarea placeholder="About Me (अपने बारे में)..." value={form.about_me}
+                  onChange={e => setForm(f => ({...f, about_me: e.target.value}))} rows={3} />
+
+                {/* Photo Upload */}
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">Photos (फोटो)</label>
+                  {myProfile?.photos && myProfile.photos.length > 0 && (
+                    <div className="flex gap-2 mb-2 flex-wrap">
+                      {myProfile.photos.map((url, i) => (
+                        <img key={i} src={url} alt={`Photo ${i+1}`} className="h-16 w-16 rounded-lg object-cover border border-border" />
+                      ))}
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handlePhotoUpload} />
+                  <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading || !myProfile}>
+                    <Image className="mr-1.5 h-4 w-4" />
+                    {uploading ? "Uploading..." : "Upload Photo"}
+                  </Button>
+                  {!myProfile && <p className="text-[10px] text-muted-foreground mt-1">Create profile first to upload photos</p>}
+                </div>
 
                 <Button onClick={handleSave} disabled={saving} className="w-full">
                   {saving ? "Saving..." : myProfile ? "Update Profile" : "Create Profile"}
                 </Button>
 
-                {/* Premium subscription CTA */}
                 {myProfile && !myProfile.is_published && (
                   <Card className="border-accent/30 bg-accent/5">
                     <CardContent className="p-4 text-center">
                       <Crown className="mx-auto mb-2 h-8 w-8 text-accent" />
                       <h4 className="font-bold text-foreground">Premium Registration</h4>
-                      <p className="text-xs text-muted-foreground mb-3">
-                        Publish your profile and get contact requests
-                      </p>
+                      <p className="text-xs text-muted-foreground mb-3">Publish your profile and get contact requests</p>
                       <div className="flex gap-2 justify-center">
                         <Button size="sm" variant="outline" className="border-accent text-accent"
                           onClick={() => toast.info("Pay ₹99 via UPI to publish. Contact admin: helpline.bharatdukaan@gmail.com")}>
@@ -212,9 +256,7 @@ const MatrimonyPage = () => {
                           ₹999 / Year
                         </Button>
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-2">
-                        UPI / Contact Admin to activate
-                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-2">UPI / Contact Admin to activate</p>
                     </CardContent>
                   </Card>
                 )}
