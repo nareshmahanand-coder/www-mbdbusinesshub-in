@@ -19,38 +19,61 @@ const PLANS = [
 ];
 
 const MerchantPortal = () => {
+  const { user } = useAuth();
   const [submitted, setSubmitted] = useState(false);
   const [transactionId, setTransactionId] = useState("");
   const [selectedPlan, setSelectedPlan] = useState(PLANS[0].id);
   const [premiumDaysLeft] = useState(3);
+  const [shopPhotos, setShopPhotos] = useState<string[]>([]);
+  const [screenshotUrl, setScreenshotUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const shopPhotoRef = useRef<HTMLInputElement>(null);
+  const screenshotRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
-    shopName: "",
-    shopNameHindi: "",
-    category: "",
-    address: "",
-    pincode: "",
-    whatsapp: "",
-    phone: "",
-    description: "",
+    shopName: "", shopNameHindi: "", category: "", address: "",
+    pincode: "", whatsapp: "", phone: "", description: "",
   });
 
   const currentPlan = PLANS.find((p) => p.id === selectedPlan)!;
 
+  const handleFileUpload = async (file: File, folder: string): Promise<string | null> => {
+    if (!user) { toast.error("Please login first"); return null; }
+    setUploading(true);
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}/${folder}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("uploads").upload(path, file);
+    if (error) { toast.error("Upload failed"); setUploading(false); return null; }
+    const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
+    setUploading(false);
+    return urlData.publicUrl;
+  };
+
+  const handleShopPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = await handleFileUpload(file, "shop");
+    if (url) { setShopPhotos(prev => [...prev, url]); toast.success("Photo uploaded!"); }
+  };
+
+  const handleScreenshotFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = await handleFileUpload(file, "payment");
+    if (url) { setScreenshotUrl(url); toast.success("Screenshot uploaded!"); }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.shopName || !form.category || !form.address || !form.pincode || !form.whatsapp) {
-      toast.error("Please fill all required fields");
-      return;
+      toast.error("Please fill all required fields"); return;
     }
     setSubmitted(true);
     toast.success("Shop registration submitted for verification!");
   };
 
   const handleScreenshotUpload = () => {
-    if (!transactionId.trim()) {
-      toast.error("कृपया Transaction ID भरें");
-      return;
-    }
+    if (!transactionId.trim()) { toast.error("कृपया Transaction ID भरें"); return; }
+    if (!screenshotUrl) { toast.error("कृपया Screenshot upload करें"); return; }
     toast.success("पेमेंट स्क्रीनशॉट अपलोड हो गया! Admin जल्द verify करेंगे।");
   };
 
@@ -64,12 +87,8 @@ const MerchantPortal = () => {
               <CheckCircle className="mx-auto mb-4 h-16 w-16 text-green-india" />
               <h2 className="mb-2 text-2xl font-bold text-foreground">Registration Submitted!</h2>
               <p className="font-hindi text-lg text-muted-foreground">आपकी दुकान पंजीकरण सफल!</p>
-              <p className="mt-4 text-sm text-muted-foreground">
-                Your shop will be visible after admin verification. You'll be notified via WhatsApp.
-              </p>
-              <Button className="mt-6" onClick={() => setSubmitted(false)}>
-                Register Another Shop
-              </Button>
+              <p className="mt-4 text-sm text-muted-foreground">Your shop will be visible after admin verification.</p>
+              <Button className="mt-6" onClick={() => setSubmitted(false)}>Register Another Shop</Button>
             </CardContent>
           </Card>
         </div>
@@ -81,7 +100,6 @@ const MerchantPortal = () => {
     <div className="ashoka-watermark tiranga-bg min-h-screen">
       <AppHeader />
       <div className="relative z-10 container mx-auto max-w-2xl px-4 py-8">
-        {/* Main Hindi Heading */}
         <div className="mb-6 text-center">
           <Store className="mx-auto mb-2 h-10 w-10 text-saffron" />
           <h1 className="font-hindi text-2xl font-extrabold leading-snug text-foreground sm:text-3xl">
@@ -91,7 +109,6 @@ const MerchantPortal = () => {
           <p className="mt-1 text-sm text-muted-foreground">Free listing • 0% Commission • Direct payments</p>
         </div>
 
-        {/* Expiry Alert Banner */}
         {premiumDaysLeft <= 3 && (
           <div className="mb-6 flex items-center gap-3 rounded-lg border-2 border-accent bg-accent/10 px-4 py-3">
             <AlertTriangle className="h-6 w-6 shrink-0 text-accent" />
@@ -101,7 +118,6 @@ const MerchantPortal = () => {
           </div>
         )}
 
-        {/* Shop Registration Form */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-lg">Shop Details • <span className="font-hindi font-normal">दुकान की जानकारी</span></CardTitle>
@@ -123,9 +139,7 @@ const MerchantPortal = () => {
                 <Select onValueChange={(v) => setForm({ ...form, category: v })}>
                   <SelectTrigger><SelectValue placeholder="Select shop category" /></SelectTrigger>
                   <SelectContent>
-                    {shopCategories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                    ))}
+                    {shopCategories.map((cat) => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}
                   </SelectContent>
                 </Select>
               </div>
@@ -153,128 +167,90 @@ const MerchantPortal = () => {
               </div>
               <div>
                 <Label>Shop Photos</Label>
-                <div className="mt-1 flex h-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-border transition-colors hover:border-primary">
-                  <div className="text-center">
-                    <Upload className="mx-auto h-6 w-6 text-muted-foreground" />
-                    <p className="mt-1 text-xs text-muted-foreground">Click to upload photos</p>
+                {shopPhotos.length > 0 && (
+                  <div className="flex gap-2 mt-1 mb-2 flex-wrap">
+                    {shopPhotos.map((url, i) => (
+                      <img key={i} src={url} alt={`Shop ${i+1}`} className="h-16 w-16 rounded-lg object-cover border border-border" />
+                    ))}
                   </div>
-                </div>
+                )}
+                <input type="file" accept="image/*" ref={shopPhotoRef} className="hidden" onChange={handleShopPhotoUpload} />
+                <button type="button" onClick={() => shopPhotoRef.current?.click()} disabled={uploading}
+                  className="mt-1 flex h-24 w-full cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-border transition-colors hover:border-primary">
+                  <div className="text-center">
+                    <Image className="mx-auto h-6 w-6 text-muted-foreground" />
+                    <p className="mt-1 text-xs text-muted-foreground">{uploading ? "Uploading..." : "Click to upload photos"}</p>
+                  </div>
+                </button>
               </div>
               <Button type="submit" className="w-full" size="lg">
-                <Store className="mr-2 h-5 w-5" />
-                Submit for Verification
+                <Store className="mr-2 h-5 w-5" /> Submit for Verification
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        {/* Premium Subscription Plans */}
+        {/* Premium */}
         <Card className="mb-6 border-2 border-accent">
           <CardHeader className="text-center">
             <Crown className="mx-auto mb-1 h-8 w-8 text-accent" />
             <CardTitle className="font-hindi text-xl">प्रीमियम मेंबरशिप • Premium Membership</CardTitle>
-            <p className="font-hindi mt-2 text-sm text-muted-foreground">
-              मात्र ₹99 में प्रीमियम मेंबर बनें। नीचे दिए गए QR कोड को स्कैन करके पेमेंट करें।
-            </p>
+            <p className="font-hindi mt-2 text-sm text-muted-foreground">मात्र ₹99 में प्रीमियम मेंबर बनें।</p>
           </CardHeader>
           <CardContent className="space-y-5">
-            {/* Plan Selection */}
             <div className="grid grid-cols-2 gap-3">
               {PLANS.map((plan) => (
-                <button
-                  key={plan.id}
-                  onClick={() => setSelectedPlan(plan.id)}
-                  className={`rounded-xl border-2 p-4 text-center transition-all ${
-                    selectedPlan === plan.id
-                      ? "border-accent bg-accent/10 shadow-md"
-                      : "border-border hover:border-accent/50"
-                  }`}
-                >
+                <button key={plan.id} onClick={() => setSelectedPlan(plan.id)}
+                  className={`rounded-xl border-2 p-4 text-center transition-all ${selectedPlan === plan.id ? "border-accent bg-accent/10 shadow-md" : "border-border hover:border-accent/50"}`}>
                   <p className="font-hindi text-sm font-bold text-foreground">{plan.label}</p>
                   <p className="mt-1 text-2xl font-extrabold text-accent">₹{plan.price}</p>
                   <p className="text-xs text-muted-foreground">{plan.days} days</p>
                 </button>
               ))}
             </div>
-
-            {/* Benefits */}
             <ul className="space-y-2 font-hindi text-sm">
-              <li className="flex items-start gap-2">
-                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-india" />
-                <span>आपकी दुकान ग्राहकों को सबसे पहले ऊपर दिखेगी।</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-india" />
-                <span>दुकान के नाम के साथ <strong>'Verified'</strong> (भरोसेमंद) का निशान लगेगा।</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Eye className="mt-0.5 h-5 w-5 shrink-0 text-green-india" />
-                <span>ज्यादा से ज्यादा लोग आपकी दुकान देख पाएंगे।</span>
-              </li>
+              <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-india" /><span>आपकी दुकान ग्राहकों को सबसे पहले ऊपर दिखेगी।</span></li>
+              <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-india" /><span>दुकान के नाम के साथ <strong>'Verified'</strong> का निशान लगेगा।</span></li>
+              <li className="flex items-start gap-2"><Eye className="mt-0.5 h-5 w-5 shrink-0 text-green-india" /><span>ज्यादा से ज्यादा लोग आपकी दुकान देख पाएंगे।</span></li>
             </ul>
-
-            {/* QR Code */}
             <div className="text-center">
-              <img
-                src={upiQr}
-                alt="UPI QR Code - Mera Bharat Dukaan"
-                className="mx-auto max-w-[260px] rounded-lg border shadow-md"
-              />
+              <img src={upiQr} alt="UPI QR Code" className="mx-auto max-w-[260px] rounded-lg border shadow-md" />
               <p className="mt-2 text-xs text-muted-foreground">Scan & pay ₹{currentPlan.price} using any UPI app</p>
             </div>
-
-            {/* Payment Proof Upload */}
             <div className="space-y-3 rounded-lg bg-muted/50 p-4">
-              <p className="font-hindi text-sm font-semibold text-foreground">
-                पेमेंट करने के बाद उसका फोटो (Screenshot) यहाँ अपलोड करें
-              </p>
-              <div className="flex h-20 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-accent/50 transition-colors hover:border-accent">
+              <p className="font-hindi text-sm font-semibold text-foreground">पेमेंट करने के बाद उसका फोटो (Screenshot) यहाँ अपलोड करें</p>
+              <div className="flex h-20 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-accent/50 transition-colors hover:border-accent"
+                onClick={() => screenshotRef.current?.click()}>
+                <input type="file" accept="image/*" ref={screenshotRef} className="hidden" onChange={handleScreenshotFileChange} />
                 <div className="text-center">
-                  <Upload className="mx-auto h-5 w-5 text-accent" />
-                  <p className="mt-1 text-xs text-muted-foreground">Upload Screenshot</p>
+                  {screenshotUrl ? (
+                    <img src={screenshotUrl} alt="Screenshot" className="h-16 rounded object-contain" />
+                  ) : (
+                    <>
+                      <Upload className="mx-auto h-5 w-5 text-accent" />
+                      <p className="mt-1 text-xs text-muted-foreground">{uploading ? "Uploading..." : "Upload Screenshot"}</p>
+                    </>
+                  )}
                 </div>
               </div>
               <div>
                 <Label htmlFor="txnId" className="font-hindi">Transaction ID *</Label>
-                <Input
-                  id="txnId"
-                  placeholder="e.g., T2403081234567890"
-                  value={transactionId}
-                  onChange={(e) => setTransactionId(e.target.value)}
-                />
+                <Input id="txnId" placeholder="e.g., T2403081234567890" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} />
               </div>
               <Button onClick={handleScreenshotUpload} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-                <Upload className="mr-2 h-4 w-4" />
-                Submit Payment Proof
+                <Upload className="mr-2 h-4 w-4" /> Submit Payment Proof
               </Button>
-            </div>
-
-            {/* Expiry Logic Info */}
-            <div className="rounded-lg border border-border bg-card p-3 text-center">
-              <p className="font-hindi text-xs text-muted-foreground">
-                {selectedPlan === "monthly"
-                  ? "प्रीमियम 30 दिन के लिए एक्टिव रहेगा। समाप्ति से 3 दिन पहले अलर्ट मिलेगा।"
-                  : "प्रीमियम 365 दिन के लिए एक्टिव रहेगा। समाप्ति से 3 दिन पहले अलर्ट मिलेगा।"}
-              </p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Help & Support */}
         <Card className="mb-8">
           <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
             <HelpCircle className="h-8 w-8 text-primary" />
             <h3 className="font-hindi text-lg font-semibold">मदद और सहायता • Help Desk</h3>
             <p className="font-hindi text-sm text-muted-foreground">मदद के लिए यहाँ संपर्क करें:</p>
-            <a href="mailto:helpline.bharatdukaan@gmail.com" className="text-sm font-medium text-primary underline underline-offset-2">
-              helpline.bharatdukaan@gmail.com
-            </a>
-            <Button variant="outline" asChild>
-              <a href="/help">
-                <HelpCircle className="mr-2 h-4 w-4" />
-                Help Desk
-              </a>
-            </Button>
+            <a href="mailto:helpline.bharatdukaan@gmail.com" className="text-sm font-medium text-primary underline underline-offset-2">helpline.bharatdukaan@gmail.com</a>
+            <Button variant="outline" asChild><a href="/help"><HelpCircle className="mr-2 h-4 w-4" /> Help Desk</a></Button>
           </CardContent>
         </Card>
       </div>

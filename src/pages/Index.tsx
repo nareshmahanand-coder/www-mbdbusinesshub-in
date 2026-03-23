@@ -45,6 +45,7 @@ const Index = () => {
     recognition.onend = () => setIsListening(false);
     recognitionRef.current = recognition;
     recognition.start();
+
     setIsListening(true);
   }, [lang]);
 
