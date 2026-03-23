@@ -8,6 +8,7 @@ import AppHeader from "@/components/AppHeader";
 import HeroCarousel from "@/components/HeroCarousel";
 import NandaFarmSection from "@/components/NandaFarmSection";
 import ShopMap from "@/components/ShopMap";
+import RechargeSection from "@/components/RechargeSection";
 import SuperAppNav from "@/components/SuperAppNav";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
