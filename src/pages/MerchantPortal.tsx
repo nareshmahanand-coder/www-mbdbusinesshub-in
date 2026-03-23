@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -6,10 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { shopCategories } from "@/data/sampleShops";
-import { Store, Upload, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, AlertTriangle } from "lucide-react";
+import { Store, Upload, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, AlertTriangle, Image } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 import upiQr from "@/assets/upi-qr.jpeg";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const PLANS = [
   { id: "monthly", label: "मासिक प्लान (₹99)", labelEn: "Monthly Plan", price: 99, days: 30 },
