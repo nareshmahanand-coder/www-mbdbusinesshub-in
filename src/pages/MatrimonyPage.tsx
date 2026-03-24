@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Heart, User, Crown, Send, Upload, Image } from "lucide-react";
+import { Heart, User, Crown, Send, Upload, Image, Loader2 } from "lucide-react";
+import upiQrCode from "@/assets/upi-qr-code.jpg";
+
+const UPI_BASE = "upi://pay?pa=Q62993724@ybl&pn=MeraBharatDukaan&cu=INR";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -242,21 +245,29 @@ const MatrimonyPage = () => {
 
                 {myProfile && !myProfile.is_published && (
                   <Card className="border-accent/30 bg-accent/5">
-                    <CardContent className="p-4 text-center">
-                      <Crown className="mx-auto mb-2 h-8 w-8 text-accent" />
-                      <h4 className="font-bold text-foreground">Premium Registration</h4>
-                      <p className="text-xs text-muted-foreground mb-3">Publish your profile and get contact requests</p>
+                    <CardContent className="p-4 text-center space-y-3">
+                      <Crown className="mx-auto mb-1 h-8 w-8 text-accent" />
+                      <h4 className="font-bold text-foreground font-hindi">प्रीमियम रजिस्ट्रेशन • Premium Registration</h4>
+                      <p className="text-xs text-muted-foreground">Publish your profile and get contact requests</p>
+                      
                       <div className="flex gap-2 justify-center">
-                        <Button size="sm" variant="outline" className="border-accent text-accent"
-                          onClick={() => toast.info("Pay ₹99 via UPI to publish. Contact admin: helpline.bharatdukaan@gmail.com")}>
-                          ₹99 / Month
-                        </Button>
-                        <Button size="sm" className="bg-accent text-accent-foreground"
-                          onClick={() => toast.info("Pay ₹999 via UPI for yearly plan. Contact admin: helpline.bharatdukaan@gmail.com")}>
-                          ₹999 / Year
-                        </Button>
+                        <a href={`${UPI_BASE}&am=99`}>
+                          <Button size="sm" variant="outline" className="border-accent text-accent gap-1">
+                            📱 ₹99 / Month
+                          </Button>
+                        </a>
+                        <a href={`${UPI_BASE}&am=999`}>
+                          <Button size="sm" className="bg-accent text-accent-foreground gap-1">
+                            📱 ₹999 / Year
+                          </Button>
+                        </a>
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-2">UPI / Contact Admin to activate</p>
+                      <p className="text-[10px] text-muted-foreground">PhonePe / GPay / Paytm — मोबाइल पर सीधे ओपन होगा</p>
+                      
+                      <img src={upiQrCode} alt="Scan & Pay" className="mx-auto max-w-[180px] rounded-lg border border-border shadow-md" />
+                      <p className="text-[10px] text-muted-foreground">UPI ID: <span className="font-mono font-bold">Q62993724@ybl</span></p>
+                      
+                      <p className="font-hindi text-xs text-muted-foreground">पेमेंट करने के बाद Admin अप्रूव करेगा, फिर प्रोफ़ाइल पब्लिश होगी</p>
                     </CardContent>
                   </Card>
                 )}
