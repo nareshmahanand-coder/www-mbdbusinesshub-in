@@ -5,29 +5,45 @@ import { useAuth } from "@/contexts/AuthContext";
 export const useMembership = () => {
   const { user } = useAuth();
   const [isActive, setIsActive] = useState<boolean | null>(null);
+  const [isPending, setIsPending] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const checkMembership = async () => {
     if (!user) {
       setIsActive(null);
+      setIsPending(false);
       setLoading(false);
       return;
     }
 
     const today = new Date().toISOString().split("T")[0];
-    const { data, error } = await supabase
+
+    // Check for approved membership
+    const { data: approved } = await supabase
       .from("memberships")
       .select("id")
       .eq("user_id", user.id)
-      .eq("status", "active")
+      .eq("status", "approved")
       .gte("ends_at", today)
       .limit(1);
 
-    if (error) {
-      setIsActive(false);
-    } else {
-      setIsActive(data && data.length > 0);
+    if (approved && approved.length > 0) {
+      setIsActive(true);
+      setIsPending(false);
+      setLoading(false);
+      return;
     }
+
+    // Check for pending
+    const { data: pending } = await supabase
+      .from("memberships")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("status", "pending")
+      .limit(1);
+
+    setIsPending(pending !== null && pending.length > 0);
+    setIsActive(false);
     setLoading(false);
   };
 
@@ -35,5 +51,5 @@ export const useMembership = () => {
     checkMembership();
   }, [user]);
 
-  return { isActive, loading, refresh: checkMembership };
+  return { isActive, isPending, loading, refresh: checkMembership };
 };
