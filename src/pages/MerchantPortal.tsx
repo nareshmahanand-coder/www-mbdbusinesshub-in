@@ -9,7 +9,9 @@ import { shopCategories } from "@/data/sampleShops";
 import { Store, Upload, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, AlertTriangle, Image } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
-import upiQr from "@/assets/upi-qr.jpeg";
+import upiQr from "@/assets/upi-qr-code.jpg";
+
+const UPI_BASE = "upi://pay?pa=Q62993724@ybl&pn=MeraBharatDukaan&cu=INR";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 
