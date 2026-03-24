@@ -215,9 +215,15 @@ const MerchantPortal = () => {
               <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-india" /><span>दुकान के नाम के साथ <strong>'Verified'</strong> का निशान लगेगा।</span></li>
               <li className="flex items-start gap-2"><Eye className="mt-0.5 h-5 w-5 shrink-0 text-green-india" /><span>ज्यादा से ज्यादा लोग आपकी दुकान देख पाएंगे।</span></li>
             </ul>
-            <div className="text-center">
-              <img src={upiQr} alt="UPI QR Code" className="mx-auto max-w-[260px] rounded-lg border shadow-md" />
-              <p className="mt-2 text-xs text-muted-foreground">Scan & pay ₹{currentPlan.price} using any UPI app</p>
+            <div className="text-center space-y-2">
+              <a href={`${UPI_BASE}&am=${currentPlan.price}`} className="block">
+                <Button className="w-full bg-[hsl(265,80%,45%)] hover:bg-[hsl(265,80%,40%)] text-primary-foreground font-semibold gap-2 mb-2">
+                  📱 Pay ₹{currentPlan.price} via UPI (Click to Pay)
+                </Button>
+              </a>
+              <p className="text-[10px] text-muted-foreground">PhonePe / GPay / Paytm — मोबाइल पर सीधे ओपन होगा</p>
+              <img src={upiQr} alt="Scan & Pay with any UPI App" className="mx-auto max-w-[220px] rounded-lg border shadow-md" />
+              <p className="mt-1 text-xs text-muted-foreground">या QR स्कैन करें • UPI ID: <span className="font-mono font-bold">Q62993724@ybl</span></p>
             </div>
             <div className="space-y-3 rounded-lg bg-muted/50 p-4">
               <p className="font-hindi text-sm font-semibold text-foreground">पेमेंट करने के बाद उसका फोटो (Screenshot) यहाँ अपलोड करें</p>
