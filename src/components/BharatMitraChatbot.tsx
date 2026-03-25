@@ -48,9 +48,6 @@ const BharatMitraChatbot = () => {
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const greetingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Only render on home page
-  if (location.pathname !== "/") return null;
-
   const speakHindi = useCallback((text: string) => {
     if (!("speechSynthesis" in window)) return;
     const synth = window.speechSynthesis;
