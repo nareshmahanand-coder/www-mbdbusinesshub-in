@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { useMembership } from "@/hooks/useMembership";
@@ -56,9 +56,6 @@ const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AppShell = () => {
-  const location = useLocation();
-  const showChatbot = location.pathname === "/";
-
   return (
     <>
       <Routes>
@@ -77,7 +74,7 @@ const AppShell = () => {
         <Route path="/services" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      {showChatbot && <BharatMitraChatbot />}
+      <BharatMitraChatbot />
     </>
   );
 };

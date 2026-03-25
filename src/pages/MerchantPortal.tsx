@@ -9,11 +9,11 @@ import { shopCategories } from "@/data/sampleShops";
 import { Store, Upload, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, AlertTriangle, Image } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
-import upiQr from "@/assets/upi-qr-code.jpg";
-
-const UPI_BASE = "upi://pay?pa=Q62993724@ybl&pn=MeraBharatDukaan&cu=INR";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+
+const UPI_ID = "Nmahanand1@ybl";
+const UPI_BASE = `upi://pay?pa=${UPI_ID}&pn=MeraBharatDukaan&cu=INR`;
 
 const PLANS = [
   { id: "monthly", label: "मासिक प्लान (₹99)", labelEn: "Monthly Plan", price: 99, days: 30 },
@@ -215,18 +215,35 @@ const MerchantPortal = () => {
               <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-india" /><span>दुकान के नाम के साथ <strong>'Verified'</strong> का निशान लगेगा।</span></li>
               <li className="flex items-start gap-2"><Eye className="mt-0.5 h-5 w-5 shrink-0 text-green-india" /><span>ज्यादा से ज्यादा लोग आपकी दुकान देख पाएंगे।</span></li>
             </ul>
+
+            {/* UPI Direct Pay */}
             <div className="text-center space-y-2">
               <a href={`${UPI_BASE}&am=${currentPlan.price}`} className="block">
-                <Button className="w-full bg-[hsl(265,80%,45%)] hover:bg-[hsl(265,80%,40%)] text-primary-foreground font-semibold gap-2 mb-2">
-                  📱 Pay ₹{currentPlan.price} via UPI (Click to Pay)
+                <Button className="w-full bg-[hsl(265,80%,45%)] hover:bg-[hsl(265,80%,40%)] text-primary-foreground font-bold text-lg py-6 gap-2 shadow-lg">
+                  📱 Pay ₹{currentPlan.price} via UPI
                 </Button>
               </a>
-              <p className="text-[10px] text-muted-foreground">PhonePe / GPay / Paytm — मोबाइल पर सीधे ओपन होगा</p>
-              <img src={upiQr} alt="Scan & Pay with any UPI App" className="mx-auto max-w-[220px] rounded-lg border shadow-md" />
-              <p className="mt-1 text-xs text-muted-foreground">या QR स्कैन करें • UPI ID: <span className="font-mono font-bold">Q62993724@ybl</span></p>
+              <div className="flex gap-2">
+                <a href={`${UPI_BASE}&am=${currentPlan.price}`} className="flex-1">
+                  <Button variant="outline" className="w-full border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)] font-semibold">PhonePe</Button>
+                </a>
+                <a href={`${UPI_BASE}&am=${currentPlan.price}`} className="flex-1">
+                  <Button variant="outline" className="w-full border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)] font-semibold">GPay</Button>
+                </a>
+                <a href={`${UPI_BASE}&am=${currentPlan.price}`} className="flex-1">
+                  <Button variant="outline" className="w-full border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)] font-semibold">Paytm</Button>
+                </a>
+              </div>
+              <p className="text-[10px] text-muted-foreground">UPI ID: <span className="font-mono font-bold text-foreground">{UPI_ID}</span></p>
             </div>
+
+            {/* Payment proof - Transaction ID + Screenshot (Admin approval required) */}
             <div className="space-y-3 rounded-lg bg-muted/50 p-4">
-              <p className="font-hindi text-sm font-semibold text-foreground">पेमेंट करने के बाद उसका फोटो (Screenshot) यहाँ अपलोड करें</p>
+              <p className="font-hindi text-sm font-semibold text-foreground">पेमेंट करने के बाद Transaction ID और Screenshot अपलोड करें</p>
+              <div>
+                <Label htmlFor="txnId" className="font-hindi">Transaction ID *</Label>
+                <Input id="txnId" placeholder="e.g., T2403081234567890" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} />
+              </div>
               <div className="flex h-20 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-accent/50 transition-colors hover:border-accent"
                 onClick={() => screenshotRef.current?.click()}>
                 <input type="file" accept="image/*" ref={screenshotRef} className="hidden" onChange={handleScreenshotFileChange} />
@@ -241,13 +258,10 @@ const MerchantPortal = () => {
                   )}
                 </div>
               </div>
-              <div>
-                <Label htmlFor="txnId" className="font-hindi">Transaction ID *</Label>
-                <Input id="txnId" placeholder="e.g., T2403081234567890" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} />
-              </div>
-              <Button onClick={handleScreenshotUpload} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+              <Button onClick={handleScreenshotUpload} className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold text-base py-5">
                 <Upload className="mr-2 h-4 w-4" /> Submit Payment Proof
               </Button>
+              <p className="text-center text-[10px] text-muted-foreground font-hindi">Admin अप्रूव करते ही आपकी दुकान Premium हो जाएगी</p>
             </div>
           </CardContent>
         </Card>

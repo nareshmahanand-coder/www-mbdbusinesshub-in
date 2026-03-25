@@ -104,6 +104,9 @@ const BharatMitraChatbot = () => {
     return () => { if (idleTimerRef.current) clearTimeout(idleTimerRef.current); };
   }, [open, resetIdleTimer]);
 
+  // Only render on home page (after all hooks)
+  if (location.pathname !== "/") return null;
+
   const addBotMessage = (text: string) => {
     setMessages((prev) => [...prev, { id: `bot-${Date.now()}`, sender: "bot", text }]);
     resetIdleTimer();
@@ -158,7 +161,6 @@ const BharatMitraChatbot = () => {
     setTimeout(() => { addBotMessage(faq.answer); speakHindi(faq.answer); }, 400);
   };
 
-  // AI-powered send
   const handleSend = async () => {
     const trimmed = input.trim();
     if (!trimmed || isAiLoading) return;
@@ -166,7 +168,6 @@ const BharatMitraChatbot = () => {
     setInput("");
     const lower = trimmed.toLowerCase();
 
-    // Safe Walk end
     if (safeWalkActive && (lower.includes("पहुँच गए") || lower.includes("pahunch") || lower.includes("reached") || lower.includes("home"))) {
       setSafeWalkActive(false);
       const msg = "बॉस जी, बहुत अच्छा! आप सुरक्षित पहुँच गए। 🙏🎉";
@@ -174,13 +175,11 @@ const BharatMitraChatbot = () => {
       return;
     }
 
-    // Safety check
     if (SAFETY_KEYWORDS.some((kw) => lower.includes(kw))) {
       activateSafetyMode();
       return;
     }
 
-    // Use AI for everything else
     setIsAiLoading(true);
     const newHistory: AiMessage[] = [...aiHistory, { role: "user", content: trimmed }];
 
@@ -194,9 +193,7 @@ const BharatMitraChatbot = () => {
         body: JSON.stringify({ messages: newHistory }),
       });
 
-      if (!resp.ok || !resp.body) {
-        throw new Error(`HTTP ${resp.status}`);
-      }
+      if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status}`);
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
@@ -205,7 +202,6 @@ const BharatMitraChatbot = () => {
       let streamDone = false;
       const botMsgId = `bot-${Date.now()}`;
 
-      // Add placeholder bot message
       setMessages((prev) => [...prev, { id: botMsgId, sender: "bot", text: "..." }]);
 
       while (!streamDone) {
@@ -236,7 +232,6 @@ const BharatMitraChatbot = () => {
         }
       }
 
-      // Final flush
       if (textBuffer.trim()) {
         for (let raw of textBuffer.split("\n")) {
           if (!raw) continue;
@@ -277,18 +272,21 @@ const BharatMitraChatbot = () => {
     setTimeout(() => { addBotMessage(a); speakHindi(a); }, 400);
   };
 
-  // Closed state — clean icon + label only, no floating bubble
+  // Closed state — neon glowing FAB with pulse/wobble animation
   if (!open) {
     return (
       <div className="fixed right-4 bottom-6 z-50 flex flex-col items-center gap-1">
         <button
           onClick={() => setOpen(true)}
-          className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-primary shadow-2xl transition-transform hover:scale-110"
+          className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-primary shadow-2xl transition-transform hover:scale-110 animate-bharat-mitra-pulse"
+          style={{
+            boxShadow: "0 0 15px 5px hsl(var(--accent) / 0.5), 0 0 30px 10px hsl(var(--accent) / 0.3), 0 0 45px 15px hsl(var(--primary) / 0.2)",
+          }}
           aria-label="Open Bharat Mitra Chat"
         >
           <img src={assistantAvatar} alt="भारत मित्र" className="h-full w-full object-cover" />
         </button>
-        <span className="font-hindi text-[10px] font-bold text-foreground">भारत मित्र</span>
+        <span className="font-hindi text-xs font-extrabold text-foreground drop-shadow-sm">भारत मित्र</span>
       </div>
     );
   }

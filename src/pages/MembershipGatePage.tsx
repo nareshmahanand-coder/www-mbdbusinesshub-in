@@ -1,25 +1,22 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Loader2, Upload, CheckCircle2, Crown, Shield, Clock } from "lucide-react";
+import { Loader2, CheckCircle2, Crown, Sparkles } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import upiQrCode from "@/assets/upi-qr-code.jpg";
 
-const UPI_BASE = "upi://pay?pa=Q62993724@ybl&pn=MeraBharatDukaan&cu=INR";
+const UPI_ID = "Nmahanand1@ybl";
+const UPI_BASE = `upi://pay?pa=${UPI_ID}&pn=MeraBharatDukaan&cu=INR`;
 
 const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
   const { user, signOut } = useAuth();
   const [plan, setPlan] = useState<"monthly" | "yearly">("monthly");
   const [transactionId, setTransactionId] = useState("");
-  const [screenshotUrl, setScreenshotUrl] = useState("");
-  const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const planDetails = {
     monthly: { price: 1, label: "₹1", duration: "1 महीना", days: 30 },
@@ -27,20 +24,6 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
   };
 
   const getUpiLink = (amount: number) => `${UPI_BASE}&am=${amount}`;
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-    setUploading(true);
-    const ext = file.name.split(".").pop();
-    const path = `membership/${user.id}/${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("uploads").upload(path, file);
-    if (error) { toast.error("Screenshot upload failed"); setUploading(false); return; }
-    const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
-    setScreenshotUrl(urlData.publicUrl);
-    setUploading(false);
-    toast.success("Screenshot uploaded!");
-  };
 
   const handleSubmit = async () => {
     if (!transactionId.trim()) { toast.error("कृपया Transaction ID दर्ज करें"); return; }
@@ -56,8 +39,7 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
       plan,
       amount: planDetails[plan].price,
       transaction_id: transactionId.trim(),
-      screenshot_url: screenshotUrl || null,
-      status: "pending",
+      status: "approved",
       starts_at: now.toISOString().split("T")[0],
       ends_at: endsAt.toISOString().split("T")[0],
     });
@@ -72,26 +54,21 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-saffron/10 via-background to-green-india/10 px-4">
         <Card className="w-full max-w-md border-2 border-accent shadow-2xl text-center">
           <CardContent className="py-10 space-y-5">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-accent/20">
-              <Clock className="h-12 w-12 text-accent" />
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-india/20">
+              <CheckCircle2 className="h-12 w-12 text-green-india" />
             </div>
-            <h2 className="font-hindi text-2xl font-extrabold text-foreground">पेमेंट सबमिट हो गया!</h2>
+            <h2 className="font-hindi text-2xl font-extrabold text-foreground">बधाई हो! 🎉</h2>
             <p className="font-hindi text-base text-foreground leading-relaxed">
-              आपकी <span className="font-bold text-accent">'भारत गौरव मेंबरशिप'</span> की पेमेंट रिक्वेस्ट
-              Admin को भेज दी गई है।
-              <br /><br />
-              Admin अप्रूव करते ही आपको एक्सेस मिल जाएगा।
+              आपकी <span className="font-bold text-accent">'भारत गौरव मेंबरशिप'</span> एक्टिव हो गई है।
+              <br />अब आप ऐप की सभी सुविधाओं का लाभ ले सकते हैं।
             </p>
-            <div className="inline-flex items-center gap-2 rounded-full bg-saffron/10 px-4 py-2">
-              <Shield className="h-4 w-4 text-saffron" />
-              <span className="text-sm font-semibold text-saffron">Verification Pending</span>
+            <div className="inline-flex items-center gap-2 rounded-full bg-green-india/10 px-4 py-2">
+              <Sparkles className="h-4 w-4 text-green-india" />
+              <span className="text-sm font-semibold text-green-india">Membership Active ✓</span>
             </div>
-            <Button variant="outline" onClick={() => { setSubmitted(false); onActivated(); }} className="mt-4">
-              Refresh Status
+            <Button onClick={onActivated} className="mt-4 w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base py-5">
+              <Crown className="mr-2 h-5 w-5" /> ऐप में प्रवेश करें
             </Button>
-            <button onClick={signOut} className="block w-full text-center text-xs text-muted-foreground hover:text-foreground pt-2">
-              ← दूसरे अकाउंट से लॉगिन करें
-            </button>
           </CardContent>
         </Card>
       </div>
@@ -114,7 +91,7 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
             <div className="rounded-xl bg-accent/10 border border-accent/20 p-3 text-center">
               <p className="font-hindi text-sm leading-relaxed text-foreground">
                 ऐप की सभी सुविधाओं का लाभ लेने के लिए <span className="font-bold text-accent">भारत गौरव मेंबरशिप</span> लें।
-                पेमेंट करें और Admin अप्रूवल के बाद एक्सेस पाएं!
+                पेमेंट करें और <span className="font-bold text-green-india">तुरंत एक्सेस पाएं!</span>
               </p>
             </div>
 
@@ -133,46 +110,45 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
               </button>
             </div>
 
-            {/* UPI Click-to-Pay */}
-            <div className="flex gap-2">
-              <a href={getUpiLink(planDetails[plan].price)} className="flex-1">
-                <Button className="w-full bg-[hsl(265,80%,45%)] hover:bg-[hsl(265,80%,40%)] text-primary-foreground font-semibold gap-2">
+            {/* UPI Direct Pay Buttons */}
+            <div className="space-y-2">
+              <a href={getUpiLink(planDetails[plan].price)} className="block">
+                <Button className="w-full bg-[hsl(265,80%,45%)] hover:bg-[hsl(265,80%,40%)] text-primary-foreground font-bold text-lg py-6 gap-2 shadow-lg">
                   📱 Pay {planDetails[plan].label} via UPI
                 </Button>
               </a>
+              <div className="flex gap-2">
+                <a href={getUpiLink(planDetails[plan].price)} className="flex-1">
+                  <Button variant="outline" className="w-full border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)] font-semibold gap-1">
+                    PhonePe
+                  </Button>
+                </a>
+                <a href={getUpiLink(planDetails[plan].price)} className="flex-1">
+                  <Button variant="outline" className="w-full border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)] font-semibold gap-1">
+                    GPay
+                  </Button>
+                </a>
+                <a href={getUpiLink(planDetails[plan].price)} className="flex-1">
+                  <Button variant="outline" className="w-full border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)] font-semibold gap-1">
+                    Paytm
+                  </Button>
+                </a>
+              </div>
+              <p className="text-center text-[10px] text-muted-foreground">UPI ID: <span className="font-mono font-bold text-foreground">{UPI_ID}</span></p>
             </div>
-            <p className="text-center text-[10px] text-muted-foreground">PhonePe / GPay / Paytm — मोबाइल पर सीधे ओपन होगा</p>
 
-            {/* QR Code */}
-            <div className="rounded-xl border border-border bg-muted/50 p-4 text-center space-y-2">
-              <p className="text-sm font-bold text-foreground font-hindi">या QR स्कैन करें</p>
-              <img src={upiQrCode} alt="Scan & Pay with any UPI App" className="mx-auto max-w-[220px] rounded-lg border border-border shadow-md" />
-              <p className="text-xs text-muted-foreground">UPI ID: <span className="font-mono font-bold text-foreground">Q62993724@ybl</span></p>
-              <p className="font-hindi text-xs text-accent font-semibold">कृपया {planDetails[plan].label} का भुगतान करें</p>
-            </div>
-
-            {/* Transaction ID */}
+            {/* Transaction ID Only */}
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground font-hindi">Transaction ID / UTR Number *</label>
               <Input placeholder="e.g. 412345678901" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} />
             </div>
 
-            {/* Screenshot Upload */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground font-hindi">Payment Screenshot (optional)</label>
-              <input type="file" ref={fileInputRef} accept="image/*" onChange={handleFileUpload} className="hidden" />
-              <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploading} className="w-full gap-2">
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : screenshotUrl ? <CheckCircle2 className="h-4 w-4 text-green-india" /> : <Upload className="h-4 w-4" />}
-                {screenshotUrl ? "Screenshot Uploaded ✓" : "Upload Screenshot"}
-              </Button>
-            </div>
-
             <Button onClick={handleSubmit} disabled={submitting || !transactionId.trim()}
-              className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base py-5 gap-2">
+              className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold text-base py-6 gap-2 shadow-lg">
               {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Crown className="h-5 w-5" />}
-              Submit Payment & Request Approval
+              Submit & Activate Membership
             </Button>
-            <p className="text-center text-[10px] text-muted-foreground font-hindi">Admin अप्रूव करते ही आपकी मेंबरशिप एक्टिव हो जाएगी</p>
+            <p className="text-center text-[10px] text-muted-foreground font-hindi">Transaction ID डालते ही मेंबरशिप तुरंत एक्टिव हो जाएगी ✓</p>
 
             <button onClick={signOut} className="w-full text-center text-xs text-muted-foreground hover:text-foreground pt-2">
               ← दूसरे अकाउंट से लॉगिन करें
