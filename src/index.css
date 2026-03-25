@@ -261,3 +261,17 @@
 .bharat-mitra-avatar {
   animation: bharat-mitra-heartbeat 1.8s ease-in-out infinite;
 }
+
+/* Bharat Mitra FAB pulse/wobble animation */
+@keyframes bharat-mitra-pulse-wobble {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  10% { transform: scale(1.08) rotate(-3deg); }
+  20% { transform: scale(1.1) rotate(3deg); }
+  30% { transform: scale(1.08) rotate(-2deg); }
+  40% { transform: scale(1.05) rotate(0deg); }
+  50% { transform: scale(1) rotate(0deg); }
+}
+
+.animate-bharat-mitra-pulse {
+  animation: bharat-mitra-pulse-wobble 2.5s ease-in-out infinite;
+}

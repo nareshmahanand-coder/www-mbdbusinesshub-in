@@ -252,22 +252,24 @@ const MatrimonyPage = () => {
                       
                       <div className="flex gap-2 justify-center">
                         <a href={`${UPI_BASE}&am=99`}>
-                          <Button size="sm" variant="outline" className="border-accent text-accent gap-1">
+                          <Button size="sm" className="bg-[hsl(265,80%,45%)] hover:bg-[hsl(265,80%,40%)] text-primary-foreground font-bold gap-1">
                             📱 ₹99 / Month
                           </Button>
                         </a>
                         <a href={`${UPI_BASE}&am=999`}>
-                          <Button size="sm" className="bg-accent text-accent-foreground gap-1">
+                          <Button size="sm" className="bg-accent text-accent-foreground font-bold gap-1">
                             📱 ₹999 / Year
                           </Button>
                         </a>
                       </div>
-                      <p className="text-[10px] text-muted-foreground">PhonePe / GPay / Paytm — मोबाइल पर सीधे ओपन होगा</p>
+                      <div className="flex gap-1 justify-center">
+                        <a href={`${UPI_BASE}&am=99`}><Button variant="outline" size="sm" className="text-xs border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)]">PhonePe</Button></a>
+                        <a href={`${UPI_BASE}&am=99`}><Button variant="outline" size="sm" className="text-xs border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)]">GPay</Button></a>
+                        <a href={`${UPI_BASE}&am=99`}><Button variant="outline" size="sm" className="text-xs border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)]">Paytm</Button></a>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">UPI ID: <span className="font-mono font-bold text-foreground">{UPI_ID}</span></p>
                       
-                      <img src={upiQrCode} alt="Scan & Pay" className="mx-auto max-w-[180px] rounded-lg border border-border shadow-md" />
-                      <p className="text-[10px] text-muted-foreground">UPI ID: <span className="font-mono font-bold">Q62993724@ybl</span></p>
-                      
-                      <p className="font-hindi text-xs text-muted-foreground">पेमेंट करने के बाद Admin अप्रूव करेगा, फिर प्रोफ़ाइल पब्लिश होगी</p>
+                      <p className="font-hindi text-xs text-muted-foreground">पेमेंट करने के बाद Transaction ID और Screenshot अपलोड करें। Admin अप्रूव करेगा, फिर प्रोफ़ाइल पब्लिश होगी।</p>
                     </CardContent>
                   </Card>
                 )}

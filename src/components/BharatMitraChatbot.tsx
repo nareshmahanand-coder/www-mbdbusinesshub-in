@@ -104,6 +104,9 @@ const BharatMitraChatbot = () => {
     return () => { if (idleTimerRef.current) clearTimeout(idleTimerRef.current); };
   }, [open, resetIdleTimer]);
 
+  // Only render on home page (after all hooks)
+  if (location.pathname !== "/") return null;
+
   const addBotMessage = (text: string) => {
     setMessages((prev) => [...prev, { id: `bot-${Date.now()}`, sender: "bot", text }]);
     resetIdleTimer();
