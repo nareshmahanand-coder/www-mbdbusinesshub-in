@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Heart, User, Crown, Send, Upload, Image, Loader2 } from "lucide-react";
-import upiQrCode from "@/assets/upi-qr-code.jpg";
 
-const UPI_BASE = "upi://pay?pa=Q62993724@ybl&pn=MeraBharatDukaan&cu=INR";
+const UPI_ID = "Nmahanand1@ybl";
+const UPI_BASE = `upi://pay?pa=${UPI_ID}&pn=MeraBharatDukaan&cu=INR`;
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
