@@ -19,6 +19,7 @@ import MatrimonyPage from "./pages/MatrimonyPage";
 import ClassifiedsPage from "./pages/ClassifiedsPage";
 import JobsPage from "./pages/JobsPage";
 import ServicesPage from "./pages/ServicesPage";
+import MyProfilePage from "./pages/MyProfilePage";
 
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
@@ -66,6 +67,7 @@ const AppShell = () => {
         <Route path="/classifieds" element={<ProtectedRoute><ClassifiedsPage /></ProtectedRoute>} />
         <Route path="/jobs" element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />
         <Route path="/services" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />
+        <Route path="/my-profile" element={<ProtectedRoute><MyProfilePage /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <BharatMitraChatbot />
