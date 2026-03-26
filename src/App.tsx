@@ -19,6 +19,7 @@ import MatrimonyPage from "./pages/MatrimonyPage";
 import ClassifiedsPage from "./pages/ClassifiedsPage";
 import JobsPage from "./pages/JobsPage";
 import ServicesPage from "./pages/ServicesPage";
+import MyProfilePage from "./pages/MyProfilePage";
 
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
