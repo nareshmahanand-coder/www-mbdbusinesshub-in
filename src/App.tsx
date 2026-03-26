@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { useMembership } from "@/hooks/useMembership";
+
 import Index from "./pages/Index";
 import MerchantPortal from "./pages/MerchantPortal";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -19,7 +19,7 @@ import MatrimonyPage from "./pages/MatrimonyPage";
 import ClassifiedsPage from "./pages/ClassifiedsPage";
 import JobsPage from "./pages/JobsPage";
 import ServicesPage from "./pages/ServicesPage";
-import MembershipGatePage from "./pages/MembershipGatePage";
+
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
 
@@ -33,15 +33,9 @@ const FullScreenLoader = () => (
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
-  const { isActive, isPending, loading: membershipLoading, refresh } = useMembership();
 
-  if (loading || membershipLoading) return <FullScreenLoader />;
+  if (loading) return <FullScreenLoader />;
   if (!user) return <Navigate to="/login" replace />;
-
-  // If no approved membership, show the gate (pending or no submission)
-  if (isActive === false) {
-    return <MembershipGatePage onActivated={refresh} />;
-  }
 
   return <>{children}</>;
 };

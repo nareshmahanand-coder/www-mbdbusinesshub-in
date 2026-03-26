@@ -113,28 +113,7 @@ const LoginPage = () => {
               </p>
             </div>
 
-            <Button
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-base py-5 gap-2"
-            >
-              {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <LogIn className="h-5 w-5" />
-              )}
-              Login with Google
-            </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-card px-3 text-muted-foreground">या / OR</span>
-              </div>
-            </div>
-
+            {/* Mobile OTP — Primary */}
             {!otpSent ? (
               <>
                 <div className="flex items-center gap-2">
@@ -188,6 +167,29 @@ const LoginPage = () => {
                 </button>
               </>
             )}
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-card px-3 text-muted-foreground">या / OR</span>
+              </div>
+            </div>
+
+            {/* Google — Secondary */}
+            <Button
+              onClick={handleGoogleLogin}
+              disabled={loading}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-base py-5 gap-2"
+            >
+              {loading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <LogIn className="h-5 w-5" />
+              )}
+              Login with Google
+            </Button>
 
             <p className="text-center text-xs text-muted-foreground pt-2">
               By continuing, you agree to our{" "}
