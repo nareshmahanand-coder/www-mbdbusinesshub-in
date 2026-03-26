@@ -8,14 +8,23 @@ import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { LogIn, Phone, Loader2, ShieldCheck } from "lucide-react";
-
-const SIMULATED_OTP = "123456";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [phone, setPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
+  const [generatedOtp, setGeneratedOtp] = useState("");
+  const [showOtpAlert, setShowOtpAlert] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSendOtp = () => {
@@ -23,30 +32,28 @@ const LoginPage = () => {
       toast.error("कृपया 10 अंकों का मोबाइल नंबर दर्ज करें");
       return;
     }
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    setGeneratedOtp(code);
     setOtpSent(true);
-    toast.success(`OTP भेजा गया: +91 ${phone} (Demo OTP: ${SIMULATED_OTP})`);
+    setShowOtpAlert(true);
   };
 
   const handleVerifyOtp = async () => {
-    if (otp !== SIMULATED_OTP) {
-      toast.error("गलत OTP। कृपया 123456 दर्ज करें।");
+    if (otp !== generatedOtp) {
+      toast.error("गलत OTP। कृपया सही OTP दर्ज करें।");
       return;
     }
 
     setLoading(true);
-
-    // Use email+password auth under the hood with phone-derived email
     const fakeEmail = `${phone}@mbd.local`;
     const password = `mbd_${phone}_secure`;
 
-    // Try sign in first
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: fakeEmail,
       password,
     });
 
     if (signInError) {
-      // If user doesn't exist, sign up
       const { error: signUpError } = await supabase.auth.signUp({
         email: fakeEmail,
         password,
@@ -90,6 +97,26 @@ const LoginPage = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-saffron/10 via-background to-green-india/10">
       <div className="h-1 w-full bg-gradient-to-r from-saffron via-white to-green-india" />
 
+      {/* OTP Alert Dialog */}
+      <AlertDialog open={showOtpAlert} onOpenChange={setShowOtpAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>📩 आपका OTP कोड</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              <span className="block text-3xl font-bold tracking-[0.4em] text-foreground my-4">
+                {generatedOtp}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                इस OTP को नीचे दर्ज करें / Enter this OTP below
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="flex flex-1 items-center justify-center px-4 py-8">
         <Card className="w-full max-w-md border-2 border-saffron/30 shadow-2xl">
           <CardHeader className="text-center space-y-3 pb-2">
@@ -109,12 +136,10 @@ const LoginPage = () => {
           <CardContent className="space-y-5">
             <div className="rounded-xl bg-saffron/10 border border-saffron/20 p-4 text-center">
               <p className="font-hindi text-sm leading-relaxed text-foreground">
-                मेरा भारत दुकान में आपका स्वागत है! आगे बढ़ने के लिए अपना मोबाइल
-                नंबर दर्ज करें।
+                अपना मोबाइल नंबर दर्ज करें या ईमेल से लॉगिन करें
               </p>
             </div>
 
-            {/* Mobile OTP — Primary */}
             {!otpSent ? (
               <>
                 <div className="flex items-center gap-2">
@@ -174,6 +199,7 @@ const LoginPage = () => {
                   onClick={() => {
                     setOtpSent(false);
                     setOtp("");
+                    setGeneratedOtp("");
                   }}
                   className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
                 >
@@ -193,7 +219,6 @@ const LoginPage = () => {
               </div>
             </div>
 
-            {/* Google — Secondary */}
             <Button
               onClick={handleGoogleLogin}
               disabled={loading}
