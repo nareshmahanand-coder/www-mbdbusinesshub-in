@@ -33,15 +33,9 @@ const FullScreenLoader = () => (
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
-  const { isActive, isPending, loading: membershipLoading, refresh } = useMembership();
 
-  if (loading || membershipLoading) return <FullScreenLoader />;
+  if (loading) return <FullScreenLoader />;
   if (!user) return <Navigate to="/login" replace />;
-
-  // If no approved membership, show the gate (pending or no submission)
-  if (isActive === false) {
-    return <MembershipGatePage onActivated={refresh} />;
-  }
 
   return <>{children}</>;
 };
