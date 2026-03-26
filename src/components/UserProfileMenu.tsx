@@ -57,6 +57,12 @@ const UserProfileMenu = () => {
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
+          <Link to="/my-profile" className="flex items-center gap-2 cursor-pointer">
+            <User className="h-4 w-4" />
+            <span>My Profile</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <Link to="/dashboard" className="flex items-center gap-2 cursor-pointer">
             <LayoutDashboard className="h-4 w-4" />
             <span>My Dashboard</span>
