@@ -7,7 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { LogIn, Phone, Loader2 } from "lucide-react";
+import { LogIn, Phone, Loader2, ShieldCheck } from "lucide-react";
+
+const SIMULATED_OTP = "123456";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -15,6 +17,59 @@ const LoginPage = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const handleSendOtp = () => {
+    if (phone.length !== 10) {
+      toast.error("कृपया 10 अंकों का मोबाइल नंबर दर्ज करें");
+      return;
+    }
+    setOtpSent(true);
+    toast.success(`OTP भेजा गया: +91 ${phone} (Demo OTP: ${SIMULATED_OTP})`);
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otp !== SIMULATED_OTP) {
+      toast.error("गलत OTP। कृपया 123456 दर्ज करें।");
+      return;
+    }
+
+    setLoading(true);
+
+    // Use email+password auth under the hood with phone-derived email
+    const fakeEmail = `${phone}@mbd.local`;
+    const password = `mbd_${phone}_secure`;
+
+    // Try sign in first
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: fakeEmail,
+      password,
+    });
+
+    if (signInError) {
+      // If user doesn't exist, sign up
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: fakeEmail,
+        password,
+        options: {
+          data: {
+            full_name: `User ${phone}`,
+            phone: `+91${phone}`,
+          },
+        },
+      });
+
+      if (signUpError) {
+        toast.error(signUpError.message || "लॉगिन विफल। पुनः प्रयास करें।");
+        setLoading(false);
+        return;
+      }
+    }
+
+    sessionStorage.setItem("bharat-mitra-pending-greet", "true");
+    toast.success("लॉगिन सफल! 🎉");
+    setLoading(false);
+    navigate("/", { replace: true });
+  };
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -29,60 +84,6 @@ const LoginPage = () => {
       toast.error("Google login failed. Please try again.");
       setLoading(false);
     }
-  };
-
-  const handleSendOtp = async () => {
-    if (phone.length !== 10) {
-      toast.error("कृपया 10 अंकों का मोबाइल नंबर दर्ज करें");
-      return;
-    }
-
-    setLoading(true);
-
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: `+91${phone}`,
-    });
-
-    if (error) {
-      const isPhoneDisabled = error.message.toLowerCase().includes("phone") && error.message.toLowerCase().includes("disabled");
-      toast.error(
-        isPhoneDisabled
-          ? "मोबाइल लॉगिन backend में enabled नहीं है। कृपया Cloud में Phone sign-in ऑन करें।"
-          : error.message || "OTP भेजने में विफल"
-      );
-      setLoading(false);
-      return;
-    }
-
-    setOtpSent(true);
-    setLoading(false);
-    toast.success(`OTP भेजा गया: +91 ${phone}`);
-  };
-
-  const handleVerifyOtp = async () => {
-    if (otp.length !== 6) {
-      toast.error("कृपया 6 अंकों का OTP दर्ज करें");
-      return;
-    }
-
-    setLoading(true);
-
-    const { error } = await supabase.auth.verifyOtp({
-      phone: `+91${phone}`,
-      token: otp,
-      type: "sms",
-    });
-
-    if (error) {
-      toast.error(error.message || "OTP सत्यापन विफल");
-      setLoading(false);
-      return;
-    }
-
-    sessionStorage.setItem("bharat-mitra-pending-greet", "true");
-    toast.success("लॉगिन सफल!");
-    setLoading(false);
-    navigate("/", { replace: true });
   };
 
   return (
@@ -104,12 +105,12 @@ const LoginPage = () => {
               Mera Bharat Dukaan — Digital India Marketplace
             </p>
           </CardHeader>
+
           <CardContent className="space-y-5">
             <div className="rounded-xl bg-saffron/10 border border-saffron/20 p-4 text-center">
               <p className="font-hindi text-sm leading-relaxed text-foreground">
-                मेरा भारत दुकान में आपका स्वागत है! 0% कमीशन, सीधा भुगतान और
-                आत्मनिर्भर भारत की दिशा में एक छोटा सा कदम। आगे बढ़ने के लिए
-                कृपया लॉगिन करें।
+                मेरा भारत दुकान में आपका स्वागत है! आगे बढ़ने के लिए अपना मोबाइल
+                नंबर दर्ज करें।
               </p>
             </div>
 
@@ -124,37 +125,50 @@ const LoginPage = () => {
                     type="tel"
                     placeholder="मोबाइल नंबर दर्ज करें"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                    className="flex-1"
+                    onChange={(e) =>
+                      setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
+                    }
+                    className="flex-1 text-lg"
                     maxLength={10}
+                    autoFocus
                   />
                 </div>
                 <Button
                   onClick={handleSendOtp}
-                  disabled={loading}
+                  disabled={phone.length !== 10}
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base py-5 gap-2"
                 >
-                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Phone className="h-5 w-5" />}
-                  Login with Mobile Number
+                  <Phone className="h-5 w-5" />
+                  OTP भेजें / Get OTP
                 </Button>
               </>
             ) : (
               <>
+                <p className="text-center text-sm text-muted-foreground">
+                  OTP भेजा गया: <strong>+91 {phone}</strong>
+                </p>
                 <Input
                   type="tel"
                   placeholder="6 अंकों का OTP दर्ज करें"
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  className="text-center text-lg tracking-widest"
+                  onChange={(e) =>
+                    setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                  }
+                  className="text-center text-2xl tracking-[0.5em] font-bold"
                   maxLength={6}
+                  autoFocus
                 />
                 <Button
                   onClick={handleVerifyOtp}
-                  disabled={loading}
-                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base py-5"
+                  disabled={loading || otp.length !== 6}
+                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base py-5 gap-2"
                 >
-                  {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-                  Verify & Login
+                  {loading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="h-5 w-5" />
+                  )}
+                  सत्यापित करें / Verify & Login
                 </Button>
                 <button
                   onClick={() => {
@@ -173,7 +187,9 @@ const LoginPage = () => {
                 <span className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-card px-3 text-muted-foreground">या / OR</span>
+                <span className="bg-card px-3 text-muted-foreground">
+                  या / OR
+                </span>
               </div>
             </div>
 
@@ -181,7 +197,8 @@ const LoginPage = () => {
             <Button
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold text-base py-5 gap-2"
+              variant="outline"
+              className="w-full font-semibold text-base py-5 gap-2"
             >
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
