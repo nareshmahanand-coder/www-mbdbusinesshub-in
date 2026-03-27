@@ -8,15 +8,6 @@ import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { LogIn, Phone, Loader2, ShieldCheck } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -24,7 +15,6 @@ const LoginPage = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
   const [generatedOtp, setGeneratedOtp] = useState("");
-  const [showOtpAlert, setShowOtpAlert] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSendOtp = () => {
@@ -35,7 +25,9 @@ const LoginPage = () => {
     const code = String(Math.floor(100000 + Math.random() * 900000));
     setGeneratedOtp(code);
     setOtpSent(true);
-    setShowOtpAlert(true);
+    toast.success(`OTP sent to +91 ${phone}`);
+    // For development: log OTP to console
+    console.log("Simulated OTP:", code);
   };
 
   const handleVerifyOtp = async () => {
@@ -97,26 +89,6 @@ const LoginPage = () => {
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-saffron/10 via-background to-green-india/10">
       <div className="h-1 w-full bg-gradient-to-r from-saffron via-white to-green-india" />
 
-      {/* OTP Alert Dialog */}
-      <AlertDialog open={showOtpAlert} onOpenChange={setShowOtpAlert}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>📩 आपका OTP कोड</AlertDialogTitle>
-            <AlertDialogDescription className="text-center">
-              <span className="block text-3xl font-bold tracking-[0.4em] text-foreground my-4">
-                {generatedOtp}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                इस OTP को नीचे दर्ज करें / Enter this OTP below
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction>OK</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       <div className="flex flex-1 items-center justify-center px-4 py-8">
         <Card className="w-full max-w-md border-2 border-saffron/30 shadow-2xl">
           <CardHeader className="text-center space-y-3 pb-2">
@@ -136,7 +108,7 @@ const LoginPage = () => {
           <CardContent className="space-y-5">
             <div className="rounded-xl bg-saffron/10 border border-saffron/20 p-4 text-center">
               <p className="font-hindi text-sm leading-relaxed text-foreground">
-                अपना मोबाइल नंबर दर्ज करें या ईमेल से लॉगिन करें
+                अपना मोबाइल नंबर दर्ज करें और OTP के साथ सुरक्षित लॉगिन करें
               </p>
             </div>
 
@@ -169,9 +141,14 @@ const LoginPage = () => {
               </>
             ) : (
               <>
-                <p className="text-center text-sm text-muted-foreground">
-                  OTP भेजा गया: <strong>+91 {phone}</strong>
-                </p>
+                <div className="rounded-lg bg-green-india/10 border border-green-india/20 p-3 text-center">
+                  <p className="text-sm font-medium text-foreground">
+                    📩 OTP sent to <strong>+91 {phone}</strong>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    कृपया अपने मोबाइल पर प्राप्त OTP दर्ज करें
+                  </p>
+                </div>
                 <Input
                   type="tel"
                   placeholder="6 अंकों का OTP दर्ज करें"

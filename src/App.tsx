@@ -5,8 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { useMembership } from "@/hooks/useMembership";
-import { useState } from "react";
+
 
 import Index from "./pages/Index";
 import MerchantPortal from "./pages/MerchantPortal";
@@ -25,7 +24,6 @@ import MyProfilePage from "./pages/MyProfilePage";
 
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
-import MembershipOverlay from "./components/MembershipOverlay";
 
 const queryClient = new QueryClient();
 
@@ -53,28 +51,7 @@ const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const HomeWithMembershipGate = () => {
-  const { isActive, loading } = useMembership();
-  const [dismissed, setDismissed] = useState(false);
 
-  if (loading) return <FullScreenLoader />;
-
-  const showOverlay = !isActive && !dismissed;
-
-  return (
-    <div className="relative">
-      {/* Home page content - blurred when overlay is shown */}
-      <div className={showOverlay ? "blur-sm pointer-events-none select-none" : ""}>
-        <Index />
-      </div>
-
-      {/* Membership overlay */}
-      {showOverlay && (
-        <MembershipOverlay onActivated={() => setDismissed(true)} />
-      )}
-    </div>
-  );
-};
 
 const AppShell = () => {
   return (
@@ -82,7 +59,7 @@ const AppShell = () => {
       <Routes>
         <Route path="/login" element={<PublicLoginRoute><LoginPage /></PublicLoginRoute>} />
         <Route path="/terms" element={<TermsPage />} />
-        <Route path="/" element={<ProtectedRoute><HomeWithMembershipGate /></ProtectedRoute>} />
+        <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
         <Route path="/merchant" element={<ProtectedRoute><MerchantPortal /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
