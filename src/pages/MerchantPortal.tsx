@@ -11,6 +11,7 @@ import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import PaymentQRSection from "@/components/PaymentQRSection";
 
 const UPI_ID = "Nmahanand1@ybl";
 const UPI_BASE = `upi://pay?pa=${UPI_ID}&pn=MeraBharatDukaan&cu=INR`;
