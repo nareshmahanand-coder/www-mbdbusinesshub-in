@@ -217,25 +217,7 @@ const MerchantPortal = () => {
             </ul>
 
             {/* UPI Direct Pay */}
-            <div className="text-center space-y-2">
-              <a href={`${UPI_BASE}&am=${currentPlan.price}`} className="block">
-                <Button className="w-full bg-[hsl(265,80%,45%)] hover:bg-[hsl(265,80%,40%)] text-primary-foreground font-bold text-lg py-6 gap-2 shadow-lg">
-                  📱 Pay ₹{currentPlan.price} via UPI
-                </Button>
-              </a>
-              <div className="flex gap-2">
-                <a href={`${UPI_BASE}&am=${currentPlan.price}`} className="flex-1">
-                  <Button variant="outline" className="w-full border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)] font-semibold">PhonePe</Button>
-                </a>
-                <a href={`${UPI_BASE}&am=${currentPlan.price}`} className="flex-1">
-                  <Button variant="outline" className="w-full border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)] font-semibold">GPay</Button>
-                </a>
-                <a href={`${UPI_BASE}&am=${currentPlan.price}`} className="flex-1">
-                  <Button variant="outline" className="w-full border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)] font-semibold">Paytm</Button>
-                </a>
-              </div>
-              <p className="text-[10px] text-muted-foreground">UPI ID: <span className="font-mono font-bold text-foreground">{UPI_ID}</span></p>
-            </div>
+            <PaymentQRSection amount={currentPlan.price} label={`₹${currentPlan.price}`} />
 
             {/* Payment proof - Transaction ID + Screenshot (Admin approval required) */}
             <div className="space-y-3 rounded-lg bg-muted/50 p-4">
