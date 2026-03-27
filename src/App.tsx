@@ -24,7 +24,6 @@ import MyProfilePage from "./pages/MyProfilePage";
 
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
-import MembershipOverlay from "./components/MembershipOverlay";
 
 const queryClient = new QueryClient();
 
