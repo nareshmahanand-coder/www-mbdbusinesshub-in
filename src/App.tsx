@@ -51,28 +51,7 @@ const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const HomeWithMembershipGate = () => {
-  const { isActive, loading } = useMembership();
-  const [dismissed, setDismissed] = useState(false);
 
-  if (loading) return <FullScreenLoader />;
-
-  const showOverlay = !isActive && !dismissed;
-
-  return (
-    <div className="relative">
-      {/* Home page content - blurred when overlay is shown */}
-      <div className={showOverlay ? "blur-sm pointer-events-none select-none" : ""}>
-        <Index />
-      </div>
-
-      {/* Membership overlay */}
-      {showOverlay && (
-        <MembershipOverlay onActivated={() => setDismissed(true)} />
-      )}
-    </div>
-  );
-};
 
 const AppShell = () => {
   return (
