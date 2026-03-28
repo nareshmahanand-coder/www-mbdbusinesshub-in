@@ -307,18 +307,24 @@ const BharatMitraChatbot = () => {
   // Closed state — neon glowing FAB with pulse/wobble animation
   if (!open) {
     return (
-      <div className="fixed right-4 bottom-6 z-50 flex flex-col items-center gap-1">
+      <div
+        className="fixed z-50 flex flex-col items-center gap-1 animate-bharat-mitra-float"
+        style={{ left: fabPos.x, top: fabPos.y, cursor: dragging ? "grabbing" : "grab", touchAction: "none" }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
         <button
-          onClick={() => setOpen(true)}
-          className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-primary shadow-2xl transition-transform hover:scale-110 animate-bharat-mitra-pulse"
+          onClick={() => { if (!hasDragged.current) setOpen(true); }}
+          className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-destructive shadow-2xl transition-transform hover:scale-110 animate-bharat-mitra-pulse"
           style={{
-            boxShadow: "0 0 15px 5px hsl(var(--accent) / 0.5), 0 0 30px 10px hsl(var(--accent) / 0.3), 0 0 45px 15px hsl(var(--primary) / 0.2)",
+            boxShadow: "0 0 15px 5px hsl(var(--destructive) / 0.5), 0 0 30px 10px hsl(var(--destructive) / 0.3), 0 0 45px 15px hsl(var(--primary) / 0.2)",
           }}
           aria-label="Open Bharat Mitra Chat"
         >
           <img src={assistantAvatar} alt="भारत मित्र" className="h-full w-full object-cover" />
         </button>
-        <span className="font-hindi text-xs font-extrabold text-foreground drop-shadow-sm">भारत मित्र</span>
+        <span className="font-hindi text-sm font-black text-destructive drop-shadow-[0_0_8px_hsl(var(--destructive)/0.6)] select-none">भारत मित्र</span>
       </div>
     );
   }
