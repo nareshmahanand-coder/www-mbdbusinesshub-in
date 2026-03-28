@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Briefcase, Plus, Phone, MapPin, Building } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import ImageUpload, { NoImage } from "@/components/ImageUpload";
 
 interface Job {
   id: string;
@@ -21,6 +22,7 @@ interface Job {
   salary_range: string;
   job_type: string;
   contact_phone: string;
+  image_url: string;
   is_active: boolean;
   created_at: string;
   user_id: string;
@@ -33,6 +35,7 @@ const JobsPage = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [jobImage, setJobImage] = useState<string[]>([]);
 
   const [form, setForm] = useState({
     title: "", description: "", company_name: "", city: "",
@@ -53,12 +56,15 @@ const JobsPage = () => {
     if (!user) return;
     if (!form.title.trim()) { toast.error("Job title required"); return; }
     setSaving(true);
-    const { error } = await supabase.from("jobs").insert({ ...form, user_id: user.id });
+    const { error } = await supabase.from("jobs").insert({
+      ...form, user_id: user.id, image_url: jobImage[0] || "",
+    });
     setSaving(false);
     if (error) toast.error("Failed to post job");
     else {
       toast.success("Job posted!");
       setForm({ title: "", description: "", company_name: "", city: "", salary_range: "", job_type: "full-time", contact_phone: "" });
+      setJobImage([]);
       setDialogOpen(false);
       loadJobs();
     }
@@ -104,6 +110,13 @@ const JobsPage = () => {
                   </SelectContent>
                 </Select>
                 <Input placeholder="Contact Phone" value={form.contact_phone} onChange={e => setForm(f => ({...f, contact_phone: e.target.value}))} />
+                <ImageUpload
+                  images={jobImage}
+                  onImagesChange={setJobImage}
+                  maxImages={1}
+                  folder="jobs"
+                  label="Upload Company Logo / Job Banner"
+                />
                 <Button onClick={postJob} disabled={saving} className="w-full">
                   {saving ? "Posting..." : "Post Job"}
                 </Button>
@@ -126,7 +139,12 @@ const JobsPage = () => {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((job) => (
-              <Card key={job.id}>
+              <Card key={job.id} className="overflow-hidden">
+                {job.image_url ? (
+                  <img src={job.image_url} alt={job.title} className="h-36 w-full object-cover" />
+                ) : (
+                  <NoImage />
+                )}
                 <CardContent className="p-4">
                   <h3 className="font-semibold text-foreground mb-1">{job.title}</h3>
                   {job.company_name && (
