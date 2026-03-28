@@ -275,3 +275,13 @@
 .animate-bharat-mitra-pulse {
   animation: bharat-mitra-pulse-wobble 2.5s ease-in-out infinite;
 }
+
+/* Bharat Mitra floating/bouncing animation */
+@keyframes bharat-mitra-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-bharat-mitra-float {
+  animation: bharat-mitra-float 3s ease-in-out infinite;
+}
