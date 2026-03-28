@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useLayoutEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { X, Send, HelpCircle, AlertTriangle, ShoppingBag, Heart, Shield, Volume2, Droplets, Megaphone, PhoneCall } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,9 +44,41 @@ const BharatMitraChatbot = () => {
   const [safetyActivated, setSafetyActivated] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [safeWalkActive, setSafeWalkActive] = useState(false);
+  // Draggable FAB state
+  const [fabPos, setFabPos] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
+  const [dragging, setDragging] = useState(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const hasDragged = useRef(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const greetingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Initialize FAB position
+  useLayoutEffect(() => {
+    if (fabPos.x === -1) {
+      setFabPos({ x: window.innerWidth - 80, y: window.innerHeight - 120 });
+    }
+  }, []);
+
+  // Drag handlers
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    setDragging(true);
+    hasDragged.current = false;
+    dragOffset.current = { x: e.clientX - fabPos.x, y: e.clientY - fabPos.y };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, [fabPos]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragging) return;
+    hasDragged.current = true;
+    const newX = Math.max(0, Math.min(window.innerWidth - 72, e.clientX - dragOffset.current.x));
+    const newY = Math.max(0, Math.min(window.innerHeight - 100, e.clientY - dragOffset.current.y));
+    setFabPos({ x: newX, y: newY });
+  }, [dragging]);
+
+  const handlePointerUp = useCallback(() => {
+    setDragging(false);
+  }, []);
 
   const speakHindi = useCallback((text: string) => {
     if (!("speechSynthesis" in window)) return;
@@ -275,18 +307,24 @@ const BharatMitraChatbot = () => {
   // Closed state — neon glowing FAB with pulse/wobble animation
   if (!open) {
     return (
-      <div className="fixed right-4 bottom-6 z-50 flex flex-col items-center gap-1">
+      <div
+        className="fixed z-50 flex flex-col items-center gap-1 animate-bharat-mitra-float"
+        style={{ left: fabPos.x, top: fabPos.y, cursor: dragging ? "grabbing" : "grab", touchAction: "none" }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
         <button
-          onClick={() => setOpen(true)}
-          className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-primary shadow-2xl transition-transform hover:scale-110 animate-bharat-mitra-pulse"
+          onClick={() => { if (!hasDragged.current) setOpen(true); }}
+          className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-destructive shadow-2xl transition-transform hover:scale-110 animate-bharat-mitra-pulse"
           style={{
-            boxShadow: "0 0 15px 5px hsl(var(--accent) / 0.5), 0 0 30px 10px hsl(var(--accent) / 0.3), 0 0 45px 15px hsl(var(--primary) / 0.2)",
+            boxShadow: "0 0 15px 5px hsl(var(--destructive) / 0.5), 0 0 30px 10px hsl(var(--destructive) / 0.3), 0 0 45px 15px hsl(var(--primary) / 0.2)",
           }}
           aria-label="Open Bharat Mitra Chat"
         >
           <img src={assistantAvatar} alt="भारत मित्र" className="h-full w-full object-cover" />
         </button>
-        <span className="font-hindi text-xs font-extrabold text-foreground drop-shadow-sm">भारत मित्र</span>
+        <span className="font-hindi text-sm font-black text-destructive drop-shadow-[0_0_8px_hsl(var(--destructive)/0.6)] select-none">भारत मित्र</span>
       </div>
     );
   }
@@ -374,6 +412,15 @@ const BharatMitraChatbot = () => {
                     m.sender === "user" ? "bg-accent text-accent-foreground" : "bg-muted text-foreground"
                   }`}>
                     {m.text}
+                    {m.sender === "bot" && m.id !== "welcome" && (
+                      <button
+                        onClick={() => speakHindi(m.text)}
+                        className="ml-2 inline-flex items-center text-muted-foreground hover:text-accent transition-colors"
+                        title="सुनें"
+                      >
+                        <Volume2 className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
