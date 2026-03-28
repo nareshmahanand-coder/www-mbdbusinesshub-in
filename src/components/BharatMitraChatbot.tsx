@@ -44,9 +44,41 @@ const BharatMitraChatbot = () => {
   const [safetyActivated, setSafetyActivated] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [safeWalkActive, setSafeWalkActive] = useState(false);
+  // Draggable FAB state
+  const [fabPos, setFabPos] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
+  const [dragging, setDragging] = useState(false);
+  const dragOffset = useRef({ x: 0, y: 0 });
+  const hasDragged = useRef(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const greetingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Initialize FAB position
+  useLayoutEffect(() => {
+    if (fabPos.x === -1) {
+      setFabPos({ x: window.innerWidth - 80, y: window.innerHeight - 120 });
+    }
+  }, []);
+
+  // Drag handlers
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    setDragging(true);
+    hasDragged.current = false;
+    dragOffset.current = { x: e.clientX - fabPos.x, y: e.clientY - fabPos.y };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, [fabPos]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragging) return;
+    hasDragged.current = true;
+    const newX = Math.max(0, Math.min(window.innerWidth - 72, e.clientX - dragOffset.current.x));
+    const newY = Math.max(0, Math.min(window.innerHeight - 100, e.clientY - dragOffset.current.y));
+    setFabPos({ x: newX, y: newY });
+  }, [dragging]);
+
+  const handlePointerUp = useCallback(() => {
+    setDragging(false);
+  }, []);
 
   const speakHindi = useCallback((text: string) => {
     if (!("speechSynthesis" in window)) return;
