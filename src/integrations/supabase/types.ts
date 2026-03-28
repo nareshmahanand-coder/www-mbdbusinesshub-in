@@ -102,6 +102,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          image_url: string | null
           is_active: boolean | null
           job_type: string | null
           salary_range: string | null
@@ -116,6 +117,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           job_type?: string | null
           salary_range?: string | null
@@ -130,6 +132,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           job_type?: string | null
           salary_range?: string | null
