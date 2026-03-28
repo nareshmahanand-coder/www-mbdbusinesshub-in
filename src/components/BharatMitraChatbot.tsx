@@ -412,6 +412,15 @@ const BharatMitraChatbot = () => {
                     m.sender === "user" ? "bg-accent text-accent-foreground" : "bg-muted text-foreground"
                   }`}>
                     {m.text}
+                    {m.sender === "bot" && m.id !== "welcome" && (
+                      <button
+                        onClick={() => speakHindi(m.text)}
+                        className="ml-2 inline-flex items-center text-muted-foreground hover:text-accent transition-colors"
+                        title="सुनें"
+                      >
+                        <Volume2 className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
