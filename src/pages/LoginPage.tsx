@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { sendOtp, type ConfirmationResult } from "@/lib/firebase";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { LogIn, Phone, Loader2, ShieldCheck } from "lucide-react";
@@ -14,60 +15,82 @@ const LoginPage = () => {
   const [phone, setPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
-  const [generatedOtp, setGeneratedOtp] = useState("");
   const [loading, setLoading] = useState(false);
+  const confirmationRef = useRef<ConfirmationResult | null>(null);
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     if (phone.length !== 10) {
       toast.error("कृपया 10 अंकों का मोबाइल नंबर दर्ज करें");
       return;
     }
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    setGeneratedOtp(code);
-    setOtpSent(true);
-    toast.success(`OTP sent to +91 ${phone}`);
-    // For development: log OTP to console
-    console.log("Simulated OTP:", code);
+    setLoading(true);
+    try {
+      const confirmation = await sendOtp(`+91${phone}`, "recaptcha-container");
+      confirmationRef.current = confirmation;
+      setOtpSent(true);
+      toast.success(`OTP sent to +91 ${phone}`);
+    } catch (error: any) {
+      console.error("Firebase OTP error:", error);
+      const msg = error?.code === "auth/too-many-requests"
+        ? "बहुत अधिक प्रयास। कुछ देर बाद पुनः प्रयास करें।"
+        : "OTP भेजने में विफल। कृपया पुनः प्रयास करें।";
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleVerifyOtp = async () => {
-    if (otp !== generatedOtp) {
-      toast.error("गलत OTP। कृपया सही OTP दर्ज करें।");
+    if (otp.length !== 6 || !confirmationRef.current) {
+      toast.error("कृपया सही 6 अंकों का OTP दर्ज करें");
       return;
     }
 
     setLoading(true);
-    const fakeEmail = `${phone}@mbd.local`;
-    const password = `mbd_${phone}_secure`;
+    try {
+      // Verify OTP with Firebase
+      await confirmationRef.current.confirm(otp);
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: fakeEmail,
-      password,
-    });
+      // Now sign into Supabase with fake-email pattern
+      const fakeEmail = `${phone}@mbd.local`;
+      const password = `mbd_${phone}_secure`;
 
-    if (signInError) {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email: fakeEmail,
         password,
-        options: {
-          data: {
-            full_name: `User ${phone}`,
-            phone: `+91${phone}`,
-          },
-        },
       });
 
-      if (signUpError) {
-        toast.error(signUpError.message || "लॉगिन विफल। पुनः प्रयास करें।");
-        setLoading(false);
-        return;
-      }
-    }
+      if (signInError) {
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: fakeEmail,
+          password,
+          options: {
+            data: {
+              full_name: `User ${phone}`,
+              phone: `+91${phone}`,
+            },
+          },
+        });
 
-    sessionStorage.setItem("bharat-mitra-pending-greet", "true");
-    toast.success("लॉगिन सफल! 🎉");
-    setLoading(false);
-    navigate("/", { replace: true });
+        if (signUpError) {
+          toast.error(signUpError.message || "लॉगिन विफल। पुनः प्रयास करें।");
+          setLoading(false);
+          return;
+        }
+      }
+
+      sessionStorage.setItem("bharat-mitra-pending-greet", "true");
+      toast.success("लॉगिन सफल! 🎉");
+      setLoading(false);
+      navigate("/", { replace: true });
+    } catch (error: any) {
+      console.error("OTP verify error:", error);
+      const msg = error?.code === "auth/invalid-verification-code"
+        ? "गलत OTP। कृपया सही OTP दर्ज करें।"
+        : "सत्यापन विफल। पुनः प्रयास करें।";
+      toast.error(msg);
+      setLoading(false);
+    }
   };
 
   const handleGoogleLogin = async () => {
@@ -132,10 +155,14 @@ const LoginPage = () => {
                 </div>
                 <Button
                   onClick={handleSendOtp}
-                  disabled={phone.length !== 10}
+                  disabled={phone.length !== 10 || loading}
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base py-5 gap-2"
                 >
-                  <Phone className="h-5 w-5" />
+                  {loading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Phone className="h-5 w-5" />
+                  )}
                   OTP भेजें / Get OTP
                 </Button>
               </>
@@ -176,7 +203,7 @@ const LoginPage = () => {
                   onClick={() => {
                     setOtpSent(false);
                     setOtp("");
-                    setGeneratedOtp("");
+                    confirmationRef.current = null;
                   }}
                   className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
                 >
@@ -225,6 +252,9 @@ const LoginPage = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Invisible reCAPTCHA container — required by Firebase Phone Auth */}
+      <div id="recaptcha-container" />
     </div>
   );
 };
