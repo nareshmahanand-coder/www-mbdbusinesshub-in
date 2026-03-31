@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { sendOtp, renderRecaptcha, type ConfirmationResult } from "@/lib/firebase";
+import { sendOtp, renderRecaptcha, resetRecaptcha, type ConfirmationResult } from "@/lib/firebase";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { LogIn, Phone, Loader2, ShieldCheck } from "lucide-react";
@@ -22,7 +22,10 @@ const LoginPage = () => {
   useEffect(() => {
     renderRecaptcha("recaptcha-container")
       .then(() => setRecaptchaReady(true))
-      .catch((err) => console.error("reCAPTCHA render error:", err));
+      .catch((err) => {
+        setRecaptchaReady(false);
+        console.error("reCAPTCHA render error:", err);
+      });
   }, []);
 
   const handleSendOtp = async () => {
@@ -38,6 +41,15 @@ const LoginPage = () => {
       toast.success(`OTP sent to +91 ${phone}`);
     } catch (error: any) {
       console.error("Firebase OTP error:", error);
+      setRecaptchaReady(false);
+
+      try {
+        await resetRecaptcha("recaptcha-container");
+        setRecaptchaReady(true);
+      } catch (resetError) {
+        console.error("reCAPTCHA reset error:", resetError);
+      }
+
       const msg = error?.code === "auth/too-many-requests"
         ? "बहुत अधिक प्रयास। कुछ देर बाद पुनः प्रयास करें।"
         : "OTP भेजने में विफल। कृपया पुनः प्रयास करें।";
