@@ -160,9 +160,10 @@ const LoginPage = () => {
                     autoFocus
                   />
                 </div>
+                <div id="recaptcha-container" className="flex justify-center" />
                 <Button
                   onClick={handleSendOtp}
-                  disabled={phone.length !== 10 || loading}
+                  disabled={phone.length !== 10 || loading || !recaptchaReady}
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base py-5 gap-2"
                 >
                   {loading ? (
