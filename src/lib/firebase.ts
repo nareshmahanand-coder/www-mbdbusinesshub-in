@@ -1,6 +1,14 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
 
+declare global {
+  interface Window {
+    grecaptcha?: {
+      reset: (widgetId?: number) => void;
+    };
+  }
+}
+
 const firebaseConfig = {
   apiKey: "AIzaSyBfdOA2dNmXMQelLzGSGJKZi08AwE4B8ek",
   authDomain: "mera-bharat-dukaan.firebaseapp.com",
@@ -14,12 +22,27 @@ const app = initializeApp(firebaseConfig);
 export const firebaseAuth = getAuth(app);
 
 let recaptchaVerifier: RecaptchaVerifier | null = null;
+let recaptchaWidgetId: number | null = null;
 
-export const setupRecaptcha = (containerId: string): Promise<RecaptchaVerifier> => {
+export const clearRecaptcha = (containerId?: string): void => {
   if (recaptchaVerifier) {
     recaptchaVerifier.clear();
     recaptchaVerifier = null;
   }
+
+  recaptchaWidgetId = null;
+
+  if (containerId) {
+    const container = document.getElementById(containerId);
+    if (container) {
+      container.innerHTML = "";
+    }
+  }
+};
+
+export const setupRecaptcha = (containerId: string): Promise<RecaptchaVerifier> => {
+  clearRecaptcha(containerId);
+
   recaptchaVerifier = new RecaptchaVerifier(firebaseAuth, containerId, {
     size: "normal",
     callback: () => {
@@ -29,10 +52,32 @@ export const setupRecaptcha = (containerId: string): Promise<RecaptchaVerifier> 
       // reCAPTCHA expired
     },
   });
-  return recaptchaVerifier.render().then(() => recaptchaVerifier!);
+
+  return recaptchaVerifier.render()
+    .then((widgetId) => {
+      recaptchaWidgetId = widgetId;
+      return recaptchaVerifier!;
+    })
+    .catch((error) => {
+      clearRecaptcha(containerId);
+      throw error;
+    });
 };
 
 export const renderRecaptcha = async (containerId: string): Promise<void> => {
+  if (recaptchaVerifier && recaptchaWidgetId !== null) {
+    return;
+  }
+
+  await setupRecaptcha(containerId);
+};
+
+export const resetRecaptcha = async (containerId: string): Promise<void> => {
+  if (recaptchaVerifier && recaptchaWidgetId !== null && window.grecaptcha) {
+    window.grecaptcha.reset(recaptchaWidgetId);
+    return;
+  }
+
   await setupRecaptcha(containerId);
 };
 
