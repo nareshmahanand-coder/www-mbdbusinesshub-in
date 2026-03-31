@@ -15,17 +15,21 @@ export const firebaseAuth = getAuth(app);
 
 let recaptchaVerifier: RecaptchaVerifier | null = null;
 
-export const setupRecaptcha = (containerId: string): RecaptchaVerifier => {
+export const setupRecaptcha = (containerId: string): Promise<RecaptchaVerifier> => {
   if (recaptchaVerifier) {
     recaptchaVerifier.clear();
+    recaptchaVerifier = null;
   }
   recaptchaVerifier = new RecaptchaVerifier(firebaseAuth, containerId, {
-    size: "invisible",
+    size: "normal",
     callback: () => {
       // reCAPTCHA solved
     },
+    "expired-callback": () => {
+      // reCAPTCHA expired
+    },
   });
-  return recaptchaVerifier;
+  return recaptchaVerifier.render().then(() => recaptchaVerifier!);
 };
 
 export const sendOtp = async (phoneNumber: string, containerId: string): Promise<ConfirmationResult> => {
