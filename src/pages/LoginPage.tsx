@@ -1,11 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { sendOtp, type ConfirmationResult } from "@/lib/firebase";
+import { sendOtp, renderRecaptcha, type ConfirmationResult } from "@/lib/firebase";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { LogIn, Phone, Loader2, ShieldCheck } from "lucide-react";
@@ -17,6 +17,13 @@ const LoginPage = () => {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const confirmationRef = useRef<ConfirmationResult | null>(null);
+  const [recaptchaReady, setRecaptchaReady] = useState(false);
+
+  useEffect(() => {
+    renderRecaptcha("recaptcha-container")
+      .then(() => setRecaptchaReady(true))
+      .catch((err) => console.error("reCAPTCHA render error:", err));
+  }, []);
 
   const handleSendOtp = async () => {
     if (phone.length !== 10) {
@@ -25,7 +32,7 @@ const LoginPage = () => {
     }
     setLoading(true);
     try {
-      const confirmation = await sendOtp(`+91${phone}`, "recaptcha-container");
+      const confirmation = await sendOtp(`+91${phone}`);
       confirmationRef.current = confirmation;
       setOtpSent(true);
       toast.success(`OTP sent to +91 ${phone}`);
@@ -153,9 +160,10 @@ const LoginPage = () => {
                     autoFocus
                   />
                 </div>
+                <div id="recaptcha-container" className="flex justify-center" />
                 <Button
                   onClick={handleSendOtp}
-                  disabled={phone.length !== 10 || loading}
+                  disabled={phone.length !== 10 || loading || !recaptchaReady}
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base py-5 gap-2"
                 >
                   {loading ? (
@@ -253,8 +261,6 @@ const LoginPage = () => {
         </Card>
       </div>
 
-      {/* Invisible reCAPTCHA container — required by Firebase Phone Auth */}
-      <div id="recaptcha-container" />
     </div>
   );
 };
