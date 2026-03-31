@@ -32,9 +32,15 @@ export const setupRecaptcha = (containerId: string): Promise<RecaptchaVerifier> 
   return recaptchaVerifier.render().then(() => recaptchaVerifier!);
 };
 
-export const sendOtp = async (phoneNumber: string, containerId: string): Promise<ConfirmationResult> => {
-  const verifier = setupRecaptcha(containerId);
-  return signInWithPhoneNumber(firebaseAuth, phoneNumber, verifier);
+export const renderRecaptcha = async (containerId: string): Promise<void> => {
+  await setupRecaptcha(containerId);
+};
+
+export const sendOtp = async (phoneNumber: string): Promise<ConfirmationResult> => {
+  if (!recaptchaVerifier) {
+    throw new Error("reCAPTCHA not initialized. Please complete the reCAPTCHA first.");
+  }
+  return signInWithPhoneNumber(firebaseAuth, phoneNumber, recaptchaVerifier);
 };
 
 export type { ConfirmationResult };
