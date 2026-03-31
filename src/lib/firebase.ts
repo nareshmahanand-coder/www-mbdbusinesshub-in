@@ -85,7 +85,30 @@ export const sendOtp = async (phoneNumber: string): Promise<ConfirmationResult> 
   if (!recaptchaVerifier) {
     throw new Error("reCAPTCHA not initialized. Please complete the reCAPTCHA first.");
   }
-  return signInWithPhoneNumber(firebaseAuth, phoneNumber, recaptchaVerifier);
+
+  if (recaptchaWidgetId === null) {
+    recaptchaWidgetId = await recaptchaVerifier.render();
+  }
+
+  try {
+    await recaptchaVerifier.verify();
+  } catch (error) {
+    const message = error instanceof Error
+      ? error.message
+      : "reCAPTCHA verification failed. Please complete the checkbox and try again.";
+
+    throw new Error(message);
+  }
+
+  try {
+    return await signInWithPhoneNumber(firebaseAuth, phoneNumber, recaptchaVerifier);
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+
+    throw new Error("Failed to request OTP.");
+  }
 };
 
 export type { ConfirmationResult };

@@ -3,12 +3,48 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { sendOtp, renderRecaptcha, resetRecaptcha, type ConfirmationResult } from "@/lib/firebase";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { LogIn, Phone, Loader2, ShieldCheck } from "lucide-react";
+import { AlertTriangle, LogIn, Phone, Loader2, ShieldCheck } from "lucide-react";
+
+const getOtpErrorContent = (error: any) => {
+  const code = typeof error?.code === "string" ? error.code : undefined;
+  const details = [code, error?.message].filter(Boolean).join(" — ") || "Unknown error";
+
+  switch (code) {
+    case "auth/captcha-check-failed":
+    case "auth/invalid-app-credential":
+    case "auth/missing-app-credential":
+      return {
+        message: "reCAPTCHA सत्यापन विफल हुआ। कृपया checkbox दोबारा पूरा करें और फिर OTP भेजें।",
+        details,
+      };
+    case "auth/too-many-requests":
+      return {
+        message: "बहुत अधिक प्रयास। कुछ देर बाद पुनः प्रयास करें।",
+        details,
+      };
+    case "auth/quota-exceeded":
+      return {
+        message: "SMS quota पूरी हो चुकी है। कृपया बाद में पुनः प्रयास करें।",
+        details,
+      };
+    case "auth/invalid-phone-number":
+      return {
+        message: "मोबाइल नंबर अमान्य है। कृपया सही 10 अंकों का नंबर दर्ज करें।",
+        details,
+      };
+    default:
+      return {
+        message: "OTP भेजने में विफल। कृपया पुनः प्रयास करें।",
+        details,
+      };
+  }
+};
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -18,6 +54,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const confirmationRef = useRef<ConfirmationResult | null>(null);
   const [recaptchaReady, setRecaptchaReady] = useState(false);
+  const [otpError, setOtpError] = useState<{ message: string; details: string } | null>(null);
 
   useEffect(() => {
     renderRecaptcha("recaptcha-container")
@@ -33,7 +70,10 @@ const LoginPage = () => {
       toast.error("कृपया 10 अंकों का मोबाइल नंबर दर्ज करें");
       return;
     }
+
+    setOtpError(null);
     setLoading(true);
+
     try {
       const confirmation = await sendOtp(`+91${phone}`);
       confirmationRef.current = confirmation;
@@ -41,7 +81,9 @@ const LoginPage = () => {
       toast.success(`OTP sent to +91 ${phone}`);
     } catch (error: any) {
       console.error("Firebase OTP error:", error);
+      const nextError = getOtpErrorContent(error);
       setRecaptchaReady(false);
+      setOtpError(nextError);
 
       try {
         await resetRecaptcha("recaptcha-container");
@@ -50,16 +92,15 @@ const LoginPage = () => {
         console.error("reCAPTCHA reset error:", resetError);
       }
 
-      const msg = error?.code === "auth/too-many-requests"
-        ? "बहुत अधिक प्रयास। कुछ देर बाद पुनः प्रयास करें।"
-        : "OTP भेजने में विफल। कृपया पुनः प्रयास करें।";
-      toast.error(msg);
+      toast.error(nextError.message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleVerifyOtp = async () => {
+    setOtpError(null);
+
     if (otp.length !== 6 || !confirmationRef.current) {
       toast.error("कृपया सही 6 अंकों का OTP दर्ज करें");
       return;
@@ -154,6 +195,17 @@ const LoginPage = () => {
               </p>
             </div>
 
+            {otpError && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>OTP request failed</AlertTitle>
+                <AlertDescription className="space-y-1 break-words">
+                  <p>{otpError.message}</p>
+                  <p className="text-xs">{otpError.details}</p>
+                </AlertDescription>
+              </Alert>
+            )}
+
             {!otpSent ? (
               <>
                 <div className="flex items-center gap-2">
@@ -164,9 +216,10 @@ const LoginPage = () => {
                     type="tel"
                     placeholder="मोबाइल नंबर दर्ज करें"
                     value={phone}
-                    onChange={(e) =>
-                      setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
-                    }
+                    onChange={(e) => {
+                      setOtpError(null);
+                      setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
+                    }}
                     className="flex-1 text-lg"
                     maxLength={10}
                     autoFocus
@@ -200,9 +253,10 @@ const LoginPage = () => {
                   type="tel"
                   placeholder="6 अंकों का OTP दर्ज करें"
                   value={otp}
-                  onChange={(e) =>
-                    setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
-                  }
+                  onChange={(e) => {
+                    setOtpError(null);
+                    setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                  }}
                   className="text-center text-2xl tracking-[0.5em] font-bold"
                   maxLength={6}
                   autoFocus
@@ -223,6 +277,7 @@ const LoginPage = () => {
                   onClick={() => {
                     setOtpSent(false);
                     setOtp("");
+                    setOtpError(null);
                     confirmationRef.current = null;
                   }}
                   className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
