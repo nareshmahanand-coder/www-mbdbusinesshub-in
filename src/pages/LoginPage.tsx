@@ -1,11 +1,11 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { sendOtp, type ConfirmationResult } from "@/lib/firebase";
+import { sendOtp, renderRecaptcha, type ConfirmationResult } from "@/lib/firebase";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { LogIn, Phone, Loader2, ShieldCheck } from "lucide-react";
