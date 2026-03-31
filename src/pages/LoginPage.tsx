@@ -17,6 +17,13 @@ const LoginPage = () => {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const confirmationRef = useRef<ConfirmationResult | null>(null);
+  const [recaptchaReady, setRecaptchaReady] = useState(false);
+
+  useEffect(() => {
+    renderRecaptcha("recaptcha-container")
+      .then(() => setRecaptchaReady(true))
+      .catch((err) => console.error("reCAPTCHA render error:", err));
+  }, []);
 
   const handleSendOtp = async () => {
     if (phone.length !== 10) {
