@@ -32,7 +32,7 @@ const LoginPage = () => {
     }
     setLoading(true);
     try {
-      const confirmation = await sendOtp(`+91${phone}`, "recaptcha-container");
+      const confirmation = await sendOtp(`+91${phone}`);
       confirmationRef.current = confirmation;
       setOtpSent(true);
       toast.success(`OTP sent to +91 ${phone}`);
