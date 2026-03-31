@@ -261,9 +261,9 @@ const LoginPage = () => {
         </Card>
       </div>
 
-      {/* Invisible reCAPTCHA container — required by Firebase Phone Auth */}
-      <div id="recaptcha-container" />
     </div>
+  );
+};
   );
 };
 
