@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useLayoutEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { X, Send, HelpCircle, AlertTriangle, ShoppingBag, Heart, Shield, Volume2, Droplets, Megaphone, PhoneCall } from "lucide-react";
+import { X, Send, HelpCircle, AlertTriangle, ShoppingBag, Heart, Shield, Volume2, Droplets, Megaphone, PhoneCall, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,11 +40,14 @@ const BharatMitraChatbot = () => {
   const [complaintText, setComplaintText] = useState("");
   const [complaintSubmitted, setComplaintSubmitted] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [safetyActivated, setSafetyActivated] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [safeWalkActive, setSafeWalkActive] = useState(false);
-  // Draggable FAB state
+  const [isListening, setIsListening] = useState(false);
+
+  // Draggable FAB state — default top-right
   const [fabPos, setFabPos] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
   const [dragging, setDragging] = useState(false);
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -52,11 +55,12 @@ const BharatMitraChatbot = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const greetingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recognitionRef = useRef<any>(null);
 
-  // Initialize FAB position
+  // Initialize FAB position — TOP-RIGHT
   useLayoutEffect(() => {
     if (fabPos.x === -1) {
-      setFabPos({ x: window.innerWidth - 80, y: window.innerHeight - 120 });
+      setFabPos({ x: window.innerWidth - 80, y: 24 });
     }
   }, []);
 
@@ -80,7 +84,17 @@ const BharatMitraChatbot = () => {
     setDragging(false);
   }, []);
 
-  const speakHindi = useCallback((text: string) => {
+  // Auto-scroll to bottom
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
+  }, []);
+
+  useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
+
+  // TTS — speak a specific message
+  const speakText = useCallback((text: string, msgId?: string) => {
     if (!("speechSynthesis" in window)) return;
     const synth = window.speechSynthesis;
     const speak = () => {
@@ -92,9 +106,9 @@ const BharatMitraChatbot = () => {
       if (preferredVoice) { utterance.voice = preferredVoice; utterance.lang = preferredVoice.lang; }
       else { utterance.lang = "hi-IN"; }
       utterance.rate = 0.92; utterance.pitch = 1.05; utterance.volume = 1;
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
+      utterance.onstart = () => { setIsSpeaking(true); if (msgId) setSpeakingMsgId(msgId); };
+      utterance.onend = () => { setIsSpeaking(false); setSpeakingMsgId(null); };
+      utterance.onerror = () => { setIsSpeaking(false); setSpeakingMsgId(null); };
       synth.cancel(); synth.speak(utterance);
     };
     if (synth.getVoices().length === 0) {
@@ -105,22 +119,59 @@ const BharatMitraChatbot = () => {
     speak();
   }, []);
 
+  // STT — Web Speech API
+  const toggleListening = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("आपका ब्राउज़र Speech Recognition सपोर्ट नहीं करता।");
+      return;
+    }
+
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "hi-IN";
+    recognition.interimResults = false;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInput((prev) => prev + (prev ? " " : "") + transcript);
+      setIsListening(false);
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [isListening]);
+
   const triggerPendingGreeting = useCallback(() => {
     if (location.pathname !== "/") return;
     if (sessionStorage.getItem("bharat-mitra-pending-greet") !== "true") return;
     sessionStorage.removeItem("bharat-mitra-pending-greet");
     if (greetingTimeoutRef.current) clearTimeout(greetingTimeoutRef.current);
     greetingTimeoutRef.current = setTimeout(() => {
-      speakHindi(LOGIN_GREETING);
+      speakText(LOGIN_GREETING);
     }, 700);
-  }, [location.pathname, speakHindi]);
+  }, [location.pathname, speakText]);
 
   useEffect(() => {
     triggerPendingGreeting();
     return () => { if (greetingTimeoutRef.current) clearTimeout(greetingTimeoutRef.current); };
   }, [triggerPendingGreeting]);
-
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   const resetIdleTimer = useCallback(() => {
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
@@ -161,7 +212,7 @@ const BharatMitraChatbot = () => {
   const activateSafetyMode = async () => {
     setSafetyActivated(true);
     const msg = "🚨 बॉस जी, सुरक्षा चक्र एक्टिव! आपकी लोकेशन शेयर की जा रही है...";
-    addBotMessage(msg); speakHindi(msg);
+    addBotMessage(msg); speakText(msg);
     const loc = await getUserLocation();
     if (loc) {
       addBotMessage(`📍 आपकी लोकेशन: https://www.google.com/maps?q=${loc.lat},${loc.lng}`);
@@ -170,7 +221,7 @@ const BharatMitraChatbot = () => {
       if (nearest) addBotMessage(`🏪 नजदीकी लोकल गार्जियन: ${nearest.name} (${nearest.address})।`);
     } else {
       const fallback = "बॉस जी, लोकेशन नहीं मिल पाई। कृपया तुरंत 112 पर कॉल करें।";
-      addBotMessage(fallback); speakHindi(fallback);
+      addBotMessage(fallback); speakText(fallback);
     }
   };
 
@@ -178,11 +229,11 @@ const BharatMitraChatbot = () => {
     if (safeWalkActive) {
       setSafeWalkActive(false);
       const msg = "बॉस जी, Safe Walk बंद हो गया। आप सुरक्षित पहुँच गए! 🙏";
-      addBotMessage(msg); speakHindi(msg);
+      addBotMessage(msg); speakText(msg);
     } else {
       setSafeWalkActive(true);
       const msg = "बॉस जी, Safe Walk शुरू! मैं आपके साथ हूँ। 🛡️";
-      addBotMessage(msg); speakHindi(msg);
+      addBotMessage(msg); speakText(msg);
     }
   };
 
@@ -190,7 +241,7 @@ const BharatMitraChatbot = () => {
 
   const handleFaq = (faq: (typeof FAQ_BUTTONS)[0]) => {
     addUserMessage(faq.label);
-    setTimeout(() => { addBotMessage(faq.answer); speakHindi(faq.answer); }, 400);
+    setTimeout(() => { addBotMessage(faq.answer); speakText(faq.answer); }, 400);
   };
 
   const handleSend = async () => {
@@ -203,7 +254,7 @@ const BharatMitraChatbot = () => {
     if (safeWalkActive && (lower.includes("पहुँच गए") || lower.includes("pahunch") || lower.includes("reached") || lower.includes("home"))) {
       setSafeWalkActive(false);
       const msg = "बॉस जी, बहुत अच्छा! आप सुरक्षित पहुँच गए। 🙏🎉";
-      addBotMessage(msg); speakHindi(msg);
+      addBotMessage(msg); speakText(msg);
       return;
     }
 
@@ -301,10 +352,10 @@ const BharatMitraChatbot = () => {
 
   const handleHealthAsk = (q: string, a: string) => {
     setActiveTab(null); addUserMessage(q);
-    setTimeout(() => { addBotMessage(a); speakHindi(a); }, 400);
+    setTimeout(() => { addBotMessage(a); speakText(a); }, 400);
   };
 
-  // Closed state — neon glowing FAB with pulse/wobble animation
+  // Closed state — FAB at top-right with neon glow
   if (!open) {
     return (
       <div
@@ -339,7 +390,7 @@ const BharatMitraChatbot = () => {
   ];
 
   return (
-    <div className="fixed right-4 bottom-6 z-50 flex h-[520px] w-[340px] flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl sm:w-[380px]">
+    <div className="fixed right-3 top-3 z-50 flex h-[85vh] max-h-[600px] w-[340px] flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl sm:w-[380px] animate-in slide-in-from-top-2 fade-in duration-300">
       {/* Header */}
       <div className="flex items-center gap-3 bg-primary px-4 py-3">
         <div className="relative">
@@ -368,7 +419,7 @@ const BharatMitraChatbot = () => {
             className="rounded-full p-1.5 text-primary-foreground/50 hover:text-primary-foreground transition-colors" title="आज के डील्स">
             <Megaphone className="h-4 w-4" />
           </button>
-          <button onClick={() => { setOpen(false); setActiveTab(null); window.speechSynthesis?.cancel(); }} className="text-primary-foreground/70 hover:text-primary-foreground">
+          <button onClick={() => { setOpen(false); setActiveTab(null); window.speechSynthesis?.cancel(); setIsListening(false); recognitionRef.current?.stop(); }} className="text-primary-foreground/70 hover:text-primary-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -412,16 +463,18 @@ const BharatMitraChatbot = () => {
                     m.sender === "user" ? "bg-accent text-accent-foreground" : "bg-muted text-foreground"
                   }`}>
                     {m.text}
-                    {m.sender === "bot" && m.id !== "welcome" && (
-                      <button
-                        onClick={() => speakHindi(m.text)}
-                        className="ml-2 inline-flex items-center text-muted-foreground hover:text-accent transition-colors"
-                        title="सुनें"
-                      >
-                        <Volume2 className="h-3 w-3" />
-                      </button>
-                    )}
                   </div>
+                  {m.sender === "bot" && m.id !== "welcome" && (
+                    <button
+                      onClick={() => speakText(m.text, m.id)}
+                      className={`ml-1 mt-1 flex-shrink-0 self-start rounded-full p-1 transition-colors ${
+                        speakingMsgId === m.id ? "bg-accent text-accent-foreground animate-pulse" : "text-muted-foreground hover:text-accent hover:bg-accent/10"
+                      }`}
+                      title="सुनें"
+                    >
+                      <Volume2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               ))}
               {isAiLoading && messages[messages.length - 1]?.sender === "user" && (
@@ -440,10 +493,22 @@ const BharatMitraChatbot = () => {
               ))}
             </div>
             <div className="flex gap-2 border-t border-border p-3">
-              <Input value={input} onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                placeholder="बॉस जी, कुछ भी पूछें..."
-                className="h-9 text-sm" disabled={isAiLoading} />
+              <div className="relative flex-1">
+                <Input value={input} onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                  placeholder="बॉस जी, कुछ भी पूछें..."
+                  className="h-9 pr-9 text-sm" disabled={isAiLoading} />
+                <button
+                  onClick={toggleListening}
+                  className={`absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-1 transition-colors ${
+                    isListening ? "bg-destructive text-destructive-foreground animate-pulse" : "text-muted-foreground hover:text-accent"
+                  }`}
+                  title={isListening ? "बोलना बंद करें" : "बोलकर टाइप करें"}
+                  type="button"
+                >
+                  {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </button>
+              </div>
               <Button size="sm" onClick={handleSend} className="h-9 bg-accent text-accent-foreground hover:bg-accent/90" disabled={isAiLoading}>
                 <Send className="h-4 w-4" />
               </Button>
