@@ -176,7 +176,18 @@ Rules:
 - For govt schemes: provide eligibility, benefits, and official website
 - If asked about specific shops/jobs/profiles: use the LIVE APP DATA above
 - Keep responses concise (2-4 sentences unless explaining a process)
-- Never make up specific shop names, prices, or contacts not in the data above`;
+- Never make up specific shop names, prices, or contacts not in the data above
+
+## CRITICAL — SHOP LINKING FORMAT:
+When recommending a shop to the user, you MUST use this exact format:
+[[SHOP:shop_id:shop_name]]
+Example: "जी बॉस, आपके पास [[SHOP:abc123:शर्मा जनरल स्टोर]] पर टमाटर उपलब्ध हैं। यहाँ क्लिक करके दुकान देखें!"
+- Use the SHOP_ID from the data above
+- For sample/demo shops use their numeric IDs (1, 2, 3, etc.)
+- Always prioritize nearest shops and premium shops
+- When user asks for a product/service, search ALL shops and recommend the most relevant ones
+- Include multiple shop options if available
+- Categories include: grocery, dairy (दूध, बकरी का दूध), vegetables, pharmacy, electrician, plumber, salon, etc.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
