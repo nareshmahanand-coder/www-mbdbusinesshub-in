@@ -470,7 +470,7 @@ const BharatMitraChatbot = () => {
                   <div className={`max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed whitespace-pre-line ${
                     m.sender === "user" ? "bg-accent text-accent-foreground" : "bg-muted text-foreground"
                   }`}>
-                    {m.text}
+                    {renderMessageWithShopLinks(m.text)}
                   </div>
                   {m.sender === "bot" && m.id !== "welcome" && (
                     <button
