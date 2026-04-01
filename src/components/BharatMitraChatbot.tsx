@@ -191,6 +191,38 @@ const BharatMitraChatbot = () => {
   // Only render on home page (after all hooks)
   if (location.pathname !== "/") return null;
 
+  // Parse [[SHOP:id:name]] links in bot messages
+  const renderMessageWithShopLinks = (text: string) => {
+    const regex = /\[\[SHOP:([^:]+):([^\]]+)\]\]/g;
+    const parts: (string | JSX.Element)[] = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index));
+      }
+      const shopId = match[1];
+      const shopName = match[2];
+      parts.push(
+        <button
+          key={`shop-${shopId}-${match.index}`}
+          onClick={() => { setOpen(false); navigate(`/shop/${shopId}`); }}
+          className="inline-flex items-center gap-1 rounded-lg border border-accent/40 bg-accent/15 px-2 py-0.5 font-semibold text-accent transition-colors hover:bg-accent/30 mx-0.5"
+        >
+          🏪 {shopName}
+        </button>
+      );
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+
+    return parts.length > 0 ? parts : text;
+  };
+
   const addBotMessage = (text: string) => {
     setMessages((prev) => [...prev, { id: `bot-${Date.now()}`, sender: "bot", text }]);
     resetIdleTimer();
