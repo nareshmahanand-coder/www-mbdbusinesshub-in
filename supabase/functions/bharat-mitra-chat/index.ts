@@ -117,9 +117,24 @@ serve(async (req) => {
       ]);
 
       if (shopsRes.data?.length) {
-        dbContext += `\n### 🏪 Registered Shops (${shopsRes.data.length}):\n`;
-        shopsRes.data.forEach((s: any) => {
-          dbContext += `- ${s.shop_name}${s.shop_name_hindi ? ` (${s.shop_name_hindi})` : ""} | ${s.category} | ${s.city} | ${s.is_premium ? "⭐ Premium" : "Free"}${s.is_verified ? " ✅ Verified" : ""} | WhatsApp: ${s.whatsapp || s.phone || "N/A"}\n`;
+        // Sort by proximity if user location available
+        let shops = shopsRes.data as any[];
+        if (userLat && userLng) {
+          shops = shops.map((s: any) => ({
+            ...s,
+            _dist: s.latitude && s.longitude
+              ? Math.sqrt(Math.pow(s.latitude - userLat, 2) + Math.pow(s.longitude - userLng, 2))
+              : 999,
+          })).sort((a: any, b: any) => {
+            // Premium first, then by distance
+            if (a.is_premium && !b.is_premium) return -1;
+            if (!a.is_premium && b.is_premium) return 1;
+            return a._dist - b._dist;
+          });
+        }
+        dbContext += `\n### 🏪 Registered Shops (${shops.length}):\n`;
+        shops.forEach((s: any) => {
+          dbContext += `- [SHOP_ID:${s.id}] ${s.shop_name}${s.shop_name_hindi ? ` (${s.shop_name_hindi})` : ""} | ${s.category} | ${s.city}, ${s.address || ""} | ${s.is_premium ? "⭐ Premium" : "Free"}${s.is_verified ? " ✅ Verified" : ""} | ${s.description || ""}\n`;
         });
       }
 
