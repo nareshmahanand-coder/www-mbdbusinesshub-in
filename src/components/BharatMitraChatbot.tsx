@@ -267,6 +267,9 @@ const BharatMitraChatbot = () => {
     setIsAiLoading(true);
     const newHistory: AiMessage[] = [...aiHistory, { role: "user", content: trimmed }];
 
+    // Get user location for proximity search
+    const loc = userLocation || await getUserLocation();
+
     try {
       const resp = await fetch(CHAT_URL, {
         method: "POST",
@@ -274,7 +277,11 @@ const BharatMitraChatbot = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: newHistory }),
+        body: JSON.stringify({
+          messages: newHistory,
+          userLat: loc?.lat,
+          userLng: loc?.lng,
+        }),
       });
 
       if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status}`);
