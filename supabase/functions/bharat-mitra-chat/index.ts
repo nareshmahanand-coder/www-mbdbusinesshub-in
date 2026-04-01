@@ -110,7 +110,7 @@ serve(async (req) => {
       const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
       const [shopsRes, jobsRes, matrimonyRes, classifiedsRes] = await Promise.all([
-        supabase.from("merchant_profiles").select("shop_name, shop_name_hindi, category, city, address, phone, whatsapp, is_premium, is_verified").limit(50),
+        supabase.from("merchant_profiles").select("id, shop_name, shop_name_hindi, category, city, address, phone, whatsapp, is_premium, is_verified, latitude, longitude, description").limit(50),
         supabase.from("jobs").select("title, company_name, city, salary_range, job_type, contact_phone, is_active").eq("is_active", true).limit(30),
         supabase.from("matrimony_profiles").select("name, gender, city, education, profession, height, dob, is_published").eq("is_published", true).limit(30),
         supabase.from("classifieds").select("title, category, price, city, condition, is_sold").eq("is_sold", false).limit(30),
