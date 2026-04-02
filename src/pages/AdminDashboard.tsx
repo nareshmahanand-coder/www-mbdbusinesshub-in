@@ -486,9 +486,14 @@ const AdminDashboard = () => {
                             </a>
                           )}
                         </div>
-                        <Button size="sm" onClick={() => approveMembership(m.id)} className="bg-green-india hover:bg-green-india/90 text-primary-foreground h-8">
-                          <CheckCircle2 className="mr-1 h-4 w-4" /> Approve & Welcome
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => approveMembership(m.id)} className="bg-green-india hover:bg-green-india/90 text-primary-foreground h-8">
+                            <CheckCircle2 className="mr-1 h-4 w-4" /> Approve
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => rejectMembership(m.id)} className="h-8">
+                            <XCircle className="mr-1 h-4 w-4" /> Reject
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))
