@@ -62,7 +62,7 @@ const BharatMitraChatbot = () => {
   // Initialize FAB position — TOP-RIGHT
   useLayoutEffect(() => {
     if (fabPos.x === -1) {
-      setFabPos({ x: window.innerWidth - 80, y: 24 });
+      setFabPos({ x: window.innerWidth - 100, y: Math.round(window.innerHeight / 2 - 50) });
     }
   }, []);
 
