@@ -294,7 +294,6 @@ const AdminDashboard = () => {
     setMemberships(prev => prev.map(m => m.id === membershipId ? { ...m, status: "rejected" } : m));
     toast.error("❌ मेंबरशिप अस्वीकृत की गई।");
   };
-  };
 
   // Verify & Publish Matrimony Profile
   const publishMatrimony = async (profileId: string) => {
