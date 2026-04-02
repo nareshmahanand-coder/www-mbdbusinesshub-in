@@ -142,7 +142,6 @@ const AdminDashboard = () => {
         .order("created_at", { ascending: false });
       
       if (data) {
-        // Enrich with profile info
         const userIds = [...new Set(data.map(m => m.user_id))];
         const { data: profiles } = await supabase
           .from("profiles")
@@ -187,6 +186,40 @@ const AdminDashboard = () => {
     void loadCustomers();
     void loadMemberships();
     void loadMatrimony();
+
+    // Realtime subscription for new payments
+    const channel = supabase
+      .channel('admin-memberships')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'memberships' },
+        async (payload) => {
+          const newMembership = payload.new as any;
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("email, phone")
+            .eq("id", newMembership.user_id)
+            .maybeSingle();
+          
+          const enriched = {
+            ...newMembership,
+            profile_email: profile?.email,
+            profile_phone: profile?.phone,
+          };
+          setMemberships(prev => [enriched, ...prev]);
+          
+          // Show real-time notification
+          toast.info(
+            `🔔 नया पेमेंट! ${profile?.email || profile?.phone || "User"} ने ${newMembership.plan === "monthly" ? "₹1 मासिक" : "₹12 वार्षिक"} मेंबरशिप ली। TXN: ${newMembership.transaction_id || "N/A"}`,
+            { duration: 10000 }
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [loggedIn]);
 
   const handleLogin = () => {
