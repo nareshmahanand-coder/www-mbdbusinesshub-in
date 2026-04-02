@@ -22,6 +22,7 @@ const WELCOME_MESSAGE: ChatMessage = {
 };
 
 const LOGIN_GREETING = "मेरा भारत दुकान में आपका स्वागत है, मैं हूँ भारत मित्र, आपकी क्या सेवा कर सकती हूँ?";
+const WELCOME_AUDIO_TEXT = "मेरा भारत दुकान में, मैं आपकी भारत मित्र आपका स्वागत करती हूँ।";
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bharat-mitra-chat`;
 
