@@ -400,23 +400,22 @@ const BharatMitraChatbot = () => {
   if (!open) {
     return (
       <div
-        className="fixed z-50 flex flex-col items-center gap-1 animate-bharat-mitra-float"
-        style={{ left: fabPos.x, top: fabPos.y, cursor: dragging ? "grabbing" : "grab", touchAction: "none" }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
+        className="fixed z-50 flex flex-col items-center gap-1.5"
+        style={{ right: 12, top: "50%", transform: "translateY(-50%)", touchAction: "none" }}
       >
         <button
-          onClick={() => { if (!hasDragged.current) setOpen(true); }}
-          className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-destructive shadow-2xl transition-transform hover:scale-110 animate-bharat-mitra-pulse"
+          onClick={() => { setOpen(true); setTimeout(() => speakText(WELCOME_AUDIO_TEXT), 400); }}
+          className="relative h-20 w-20 overflow-hidden rounded-full border-[3px] border-destructive shadow-2xl transition-transform hover:scale-110 animate-bharat-mitra-pulse"
           style={{
-            boxShadow: "0 0 15px 5px hsl(var(--destructive) / 0.5), 0 0 30px 10px hsl(var(--destructive) / 0.3), 0 0 45px 15px hsl(var(--primary) / 0.2)",
+            boxShadow: "0 0 20px 6px hsl(var(--destructive) / 0.5), 0 0 40px 14px hsl(var(--destructive) / 0.3), 0 0 60px 20px hsl(var(--primary) / 0.2)",
           }}
           aria-label="Open Bharat Mitra Chat"
         >
           <img src={assistantAvatar} alt="भारत मित्र" className="h-full w-full object-cover" />
         </button>
-        <span className="font-hindi text-sm font-black text-destructive drop-shadow-[0_0_8px_hsl(var(--destructive)/0.6)] select-none">भारत मित्र</span>
+        <span className="font-hindi text-sm font-black text-destructive drop-shadow-[0_0_8px_hsl(var(--destructive)/0.6)] select-none whitespace-nowrap">
+          भारत मित्र <span className="font-sans text-xs font-bold tracking-wide">AI</span>
+        </span>
       </div>
     );
   }
