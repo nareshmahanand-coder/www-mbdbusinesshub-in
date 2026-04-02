@@ -279,8 +279,21 @@ const AdminDashboard = () => {
     if (error) { toast.error("Approval failed"); return; }
     
     setMemberships(prev => prev.map(m => m.id === membershipId ? { ...m, status: "approved" } : m));
-    toast.success("✅ भारत गौरव मेंबरशिप अप्रूव हो गई! Welcome notification sent.");
-    // The welcome message will appear when user refreshes
+    toast.success("✅ भारत गौरव मेंबरशिप अप्रूव हो गई!");
+  };
+
+  // Reject Bharat Gaurav Membership
+  const rejectMembership = async (membershipId: string) => {
+    const { error } = await supabase
+      .from("memberships")
+      .update({ status: "rejected" })
+      .eq("id", membershipId);
+    
+    if (error) { toast.error("Rejection failed"); return; }
+    
+    setMemberships(prev => prev.map(m => m.id === membershipId ? { ...m, status: "rejected" } : m));
+    toast.error("❌ मेंबरशिप अस्वीकृत की गई।");
+  };
   };
 
   // Verify & Publish Matrimony Profile
