@@ -430,7 +430,7 @@ const BharatMitraChatbot = () => {
   ];
 
   return (
-    <div className="fixed right-3 top-3 z-50 flex h-[85vh] max-h-[600px] w-[340px] flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl sm:w-[380px] animate-in slide-in-from-top-2 fade-in duration-300">
+    <div className="fixed left-1/2 top-1/2 z-50 flex h-[85vh] max-h-[600px] w-[92vw] max-w-[380px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl animate-in zoom-in-95 fade-in duration-300">
       {/* Header */}
       <div className="flex items-center gap-3 bg-primary px-4 py-3">
         <div className="relative">
