@@ -112,14 +112,6 @@ const MerchantPortal = () => {
           <p className="mt-1 text-sm text-muted-foreground">Free listing • 0% Commission • Direct payments</p>
         </div>
 
-        {premiumDaysLeft <= 3 && (
-          <div className="mb-6 flex items-center gap-3 rounded-lg border-2 border-accent bg-accent/10 px-4 py-3">
-            <AlertTriangle className="h-6 w-6 shrink-0 text-accent" />
-            <p className="font-hindi text-sm font-semibold text-foreground">
-              चेतावनी: आपका प्रीमियम प्लान {premiumDaysLeft} दिन में खत्म होने वाला है! टॉप पर बने रहने के लिए रिन्यू करें।
-            </p>
-          </div>
-        )}
 
         <Card className="mb-6">
           <CardHeader>
