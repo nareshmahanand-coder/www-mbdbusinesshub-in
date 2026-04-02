@@ -142,7 +142,6 @@ const AdminDashboard = () => {
         .order("created_at", { ascending: false });
       
       if (data) {
-        // Enrich with profile info
         const userIds = [...new Set(data.map(m => m.user_id))];
         const { data: profiles } = await supabase
           .from("profiles")
@@ -187,6 +186,40 @@ const AdminDashboard = () => {
     void loadCustomers();
     void loadMemberships();
     void loadMatrimony();
+
+    // Realtime subscription for new payments
+    const channel = supabase
+      .channel('admin-memberships')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'memberships' },
+        async (payload) => {
+          const newMembership = payload.new as any;
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("email, phone")
+            .eq("id", newMembership.user_id)
+            .maybeSingle();
+          
+          const enriched = {
+            ...newMembership,
+            profile_email: profile?.email,
+            profile_phone: profile?.phone,
+          };
+          setMemberships(prev => [enriched, ...prev]);
+          
+          // Show real-time notification
+          toast.info(
+            `🔔 नया पेमेंट! ${profile?.email || profile?.phone || "User"} ने ${newMembership.plan === "monthly" ? "₹1 मासिक" : "₹12 वार्षिक"} मेंबरशिप ली। TXN: ${newMembership.transaction_id || "N/A"}`,
+            { duration: 10000 }
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [loggedIn]);
 
   const handleLogin = () => {
@@ -246,8 +279,20 @@ const AdminDashboard = () => {
     if (error) { toast.error("Approval failed"); return; }
     
     setMemberships(prev => prev.map(m => m.id === membershipId ? { ...m, status: "approved" } : m));
-    toast.success("✅ भारत गौरव मेंबरशिप अप्रूव हो गई! Welcome notification sent.");
-    // The welcome message will appear when user refreshes
+    toast.success("✅ भारत गौरव मेंबरशिप अप्रूव हो गई!");
+  };
+
+  // Reject Bharat Gaurav Membership
+  const rejectMembership = async (membershipId: string) => {
+    const { error } = await supabase
+      .from("memberships")
+      .update({ status: "rejected" })
+      .eq("id", membershipId);
+    
+    if (error) { toast.error("Rejection failed"); return; }
+    
+    setMemberships(prev => prev.map(m => m.id === membershipId ? { ...m, status: "rejected" } : m));
+    toast.error("❌ मेंबरशिप अस्वीकृत की गई।");
   };
 
   // Verify & Publish Matrimony Profile
@@ -441,9 +486,14 @@ const AdminDashboard = () => {
                             </a>
                           )}
                         </div>
-                        <Button size="sm" onClick={() => approveMembership(m.id)} className="bg-green-india hover:bg-green-india/90 text-primary-foreground h-8">
-                          <CheckCircle2 className="mr-1 h-4 w-4" /> Approve & Welcome
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => approveMembership(m.id)} className="bg-green-india hover:bg-green-india/90 text-primary-foreground h-8">
+                            <CheckCircle2 className="mr-1 h-4 w-4" /> Approve
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => rejectMembership(m.id)} className="h-8">
+                            <XCircle className="mr-1 h-4 w-4" /> Reject
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -699,30 +749,53 @@ const AdminDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Provider</TableHead>
-                  <TableHead>First Login</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {customersLoading ? (
-                  <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
-                ) : customers.length === 0 ? (
-                  <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">No customers yet.</TableCell></TableRow>
-                ) : (
-                  customers.map((c) => (
-                    <TableRow key={c.id}>
-                      <TableCell className="font-medium text-foreground">{c.email || c.phone || "N/A"}</TableCell>
-                      <TableCell><Badge variant="secondary" className="capitalize">{c.provider || (c.phone ? "phone" : "google")}</Badge></TableCell>
-                      <TableCell className="text-muted-foreground">{formatDateTime(c.created_at)}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+            <Tabs defaultValue="new" className="w-full">
+              <TabsList className="w-full rounded-none border-b">
+                <TabsTrigger value="new" className="text-xs">🆕 New Users ({customers.filter(c => getDaysActive(c.created_at) <= 7).length})</TabsTrigger>
+                <TabsTrigger value="old" className="text-xs">👤 Old Users ({customers.filter(c => getDaysActive(c.created_at) > 7).length})</TabsTrigger>
+                <TabsTrigger value="all" className="text-xs">📋 All ({customers.length})</TabsTrigger>
+              </TabsList>
+              {["new", "old", "all"].map(tab => (
+                <TabsContent key={tab} value={tab} className="mt-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Contact</TableHead>
+                        <TableHead>Provider</TableHead>
+                        <TableHead>First Login</TableHead>
+                        <TableHead>Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {customersLoading ? (
+                        <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+                      ) : customers
+                          .filter(c => tab === "all" ? true : tab === "new" ? getDaysActive(c.created_at) <= 7 : getDaysActive(c.created_at) > 7)
+                          .length === 0 ? (
+                        <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No users found.</TableCell></TableRow>
+                      ) : (
+                        customers
+                          .filter(c => tab === "all" ? true : tab === "new" ? getDaysActive(c.created_at) <= 7 : getDaysActive(c.created_at) > 7)
+                          .map((c) => (
+                            <TableRow key={c.id}>
+                              <TableCell className="font-medium text-foreground">{c.email || c.phone || "N/A"}</TableCell>
+                              <TableCell><Badge variant="secondary" className="capitalize">{c.provider || (c.phone ? "phone" : "google")}</Badge></TableCell>
+                              <TableCell className="text-muted-foreground">{formatDateTime(c.created_at)}</TableCell>
+                              <TableCell>
+                                {getDaysActive(c.created_at) <= 7 ? (
+                                  <Badge className="bg-green-india text-primary-foreground text-[9px]">🆕 New</Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-[9px]">👤 Regular</Badge>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TabsContent>
+              ))}
+            </Tabs>
           </CardContent>
         </Card>
 

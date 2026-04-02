@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { shopCategories } from "@/data/sampleShops";
-import { Store, Upload, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, AlertTriangle, Image } from "lucide-react";
+import { Store, Upload, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, Image } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,7 +26,7 @@ const MerchantPortal = () => {
   const [submitted, setSubmitted] = useState(false);
   const [transactionId, setTransactionId] = useState("");
   const [selectedPlan, setSelectedPlan] = useState(PLANS[0].id);
-  const [premiumDaysLeft] = useState(3);
+  
   const [shopPhotos, setShopPhotos] = useState<string[]>([]);
   const [screenshotUrl, setScreenshotUrl] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -112,14 +112,6 @@ const MerchantPortal = () => {
           <p className="mt-1 text-sm text-muted-foreground">Free listing • 0% Commission • Direct payments</p>
         </div>
 
-        {premiumDaysLeft <= 3 && (
-          <div className="mb-6 flex items-center gap-3 rounded-lg border-2 border-accent bg-accent/10 px-4 py-3">
-            <AlertTriangle className="h-6 w-6 shrink-0 text-accent" />
-            <p className="font-hindi text-sm font-semibold text-foreground">
-              चेतावनी: आपका प्रीमियम प्लान {premiumDaysLeft} दिन में खत्म होने वाला है! टॉप पर बने रहने के लिए रिन्यू करें।
-            </p>
-          </div>
-        )}
 
         <Card className="mb-6">
           <CardHeader>
