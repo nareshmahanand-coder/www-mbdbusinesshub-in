@@ -26,7 +26,7 @@ const MerchantPortal = () => {
   const [submitted, setSubmitted] = useState(false);
   const [transactionId, setTransactionId] = useState("");
   const [selectedPlan, setSelectedPlan] = useState(PLANS[0].id);
-  const [premiumDaysLeft] = useState(3);
+  
   const [shopPhotos, setShopPhotos] = useState<string[]>([]);
   const [screenshotUrl, setScreenshotUrl] = useState("");
   const [uploading, setUploading] = useState(false);
