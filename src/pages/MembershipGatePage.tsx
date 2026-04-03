@@ -18,6 +18,7 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
   const [transactionId, setTransactionId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
 
   const planDetails = {
     monthly: { price: 1, label: "₹1", duration: "1 महीना", days: 30 },
