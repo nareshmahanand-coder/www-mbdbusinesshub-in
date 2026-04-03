@@ -268,6 +268,63 @@ const CustomerDashboard = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="receipts" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Payment Receipts</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {memberships.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <FileText className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+                    <p className="text-muted-foreground">No payment receipts yet</p>
+                    <p className="font-hindi text-sm text-muted-foreground">अभी तक कोई रसीद नहीं</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {memberships.map((m) => {
+                      const receiptNumber = `MBD-${new Date(m.created_at).getTime().toString(36).toUpperCase()}`;
+                      return (
+                        <div key={m.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-foreground text-sm">
+                              {m.plan === "yearly" ? "Yearly Plan" : "Monthly Plan"} — ₹{m.amount}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              TXN: {m.transaction_id || "N/A"} • {new Date(m.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                            </p>
+                            <Badge variant={m.status === "approved" ? "default" : "secondary"} className="mt-1 text-[10px]">
+                              {m.status === "approved" ? "Approved ✓" : m.status === "pending" ? "Pending" : m.status}
+                            </Badge>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="ml-2 gap-1 border-accent text-accent shrink-0"
+                            onClick={() =>
+                              downloadReceipt({
+                                userName: user?.user_metadata?.display_name || user?.email || "User",
+                                userEmail: user?.email || "",
+                                plan: m.plan as "monthly" | "yearly",
+                                amount: m.amount,
+                                transactionId: m.transaction_id || "N/A",
+                                startsAt: m.starts_at,
+                                endsAt: m.ends_at,
+                                receiptNumber,
+                              })
+                            }
+                          >
+                            <Download className="h-3.5 w-3.5" /> PDF
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="settings" className="mt-4">
             <Card>
               <CardHeader>
