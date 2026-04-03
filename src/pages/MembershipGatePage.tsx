@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, Crown, Sparkles } from "lucide-react";
+import { Loader2, CheckCircle2, Crown, Sparkles, Download } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
+import { downloadReceipt } from "@/lib/generateReceipt";
 
 const UPI_ID = "Nmahanand1@ybl";
 const UPI_BASE = `upi://pay?pa=${UPI_ID}&pn=MeraBharatDukaan&cu=INR`;
