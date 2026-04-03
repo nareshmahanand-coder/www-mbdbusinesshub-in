@@ -29,6 +29,16 @@ interface Order {
 
 interface MyAd { id: string; title: string; price: number; is_sold: boolean; }
 interface MyJob { id: string; title: string; is_active: boolean; }
+interface Membership {
+  id: string;
+  plan: string;
+  amount: number;
+  transaction_id: string | null;
+  status: string;
+  starts_at: string;
+  ends_at: string;
+  created_at: string;
+}
 
 const CustomerDashboard = () => {
   const { user } = useAuth();
