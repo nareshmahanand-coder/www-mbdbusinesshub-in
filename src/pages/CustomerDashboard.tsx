@@ -61,18 +61,20 @@ const CustomerDashboard = () => {
     setPhone(user.phone || "");
 
     const loadData = async () => {
-      const [savedRes, ordersRes, profileRes, adsRes, jobsRes] = await Promise.all([
+      const [savedRes, ordersRes, profileRes, adsRes, jobsRes, membershipRes] = await Promise.all([
         supabase.from("saved_shops").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("orders").select("*").eq("customer_id", user.id).order("created_at", { ascending: false }),
         supabase.from("profiles").select("display_name, phone").eq("id", user.id).single(),
         supabase.from("classifieds").select("id, title, price, is_sold").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("jobs").select("id, title, is_active").eq("user_id", user.id).order("created_at", { ascending: false }),
+        supabase.from("memberships").select("id, plan, amount, transaction_id, status, starts_at, ends_at, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
       ]);
 
       if (savedRes.data) setSavedShops(savedRes.data);
       if (ordersRes.data) setOrders(ordersRes.data);
       if (adsRes.data) setMyAds(adsRes.data as MyAd[]);
       if (jobsRes.data) setMyJobs(jobsRes.data as MyJob[]);
+      if (membershipRes.data) setMemberships(membershipRes.data as Membership[]);
       if (profileRes.data) {
         setDisplayName(profileRes.data.display_name || displayName);
         setPhone(profileRes.data.phone || phone);
