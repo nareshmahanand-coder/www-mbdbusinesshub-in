@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, Crown, Sparkles } from "lucide-react";
+import { Loader2, CheckCircle2, Crown, Sparkles, Download } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
+import { downloadReceipt } from "@/lib/generateReceipt";
 
 const UPI_ID = "Nmahanand1@ybl";
 const UPI_BASE = `upi://pay?pa=${UPI_ID}&pn=MeraBharatDukaan&cu=INR`;
@@ -17,6 +18,7 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
   const [transactionId, setTransactionId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [receiptData, setReceiptData] = useState<any>(null);
 
   const planDetails = {
     monthly: { price: 1, label: "₹1", duration: "1 महीना", days: 30 },
@@ -34,6 +36,8 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
     const endsAt = new Date(now);
     endsAt.setDate(endsAt.getDate() + planDetails[plan].days);
 
+    const receiptNumber = `MBD-${Date.now().toString(36).toUpperCase()}`;
+
     const { error } = await supabase.from("memberships").insert({
       user_id: user.id,
       plan,
@@ -45,6 +49,27 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
     });
 
     if (error) { toast.error("Submission failed. Please try again."); setSubmitting(false); return; }
+
+    const rData = {
+      userName: user.user_metadata?.display_name || user.email || "User",
+      userEmail: user.email || "",
+      plan,
+      amount: planDetails[plan].price,
+      transactionId: transactionId.trim(),
+      startsAt: now.toISOString().split("T")[0],
+      endsAt: endsAt.toISOString().split("T")[0],
+      receiptNumber,
+    };
+
+    // Auto-download receipt
+    try {
+      downloadReceipt(rData);
+      toast.success("Receipt downloaded successfully! 🧾");
+    } catch {
+      toast.error("Receipt generation failed, but payment is recorded.");
+    }
+
+    setReceiptData(rData);
     setSubmitted(true);
     setSubmitting(false);
   };
@@ -66,7 +91,12 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
               <Sparkles className="h-4 w-4 text-green-india" />
               <span className="text-sm font-semibold text-green-india">Membership Active ✓</span>
             </div>
-            <Button onClick={onActivated} className="mt-4 w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base py-5">
+            {receiptData && (
+              <Button variant="outline" onClick={() => downloadReceipt(receiptData)} className="w-full border-accent text-accent font-semibold gap-2">
+                <Download className="h-4 w-4" /> Receipt फिर से डाउनलोड करें
+              </Button>
+            )}
+            <Button onClick={onActivated} className="mt-2 w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base py-5">
               <Crown className="mr-2 h-5 w-5" /> ऐप में प्रवेश करें
             </Button>
           </CardContent>
