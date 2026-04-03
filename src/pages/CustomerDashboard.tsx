@@ -133,6 +133,9 @@ const CustomerDashboard = () => {
             <TabsTrigger value="jobs" className="flex-1 text-xs">
               <Briefcase className="mr-1 h-3.5 w-3.5" /> My Jobs
             </TabsTrigger>
+            <TabsTrigger value="receipts" className="flex-1 text-xs">
+              <FileText className="mr-1 h-3.5 w-3.5" /> Receipts
+            </TabsTrigger>
             <TabsTrigger value="settings" className="flex-1 text-xs">
               <Settings className="mr-1 h-3.5 w-3.5" /> Settings
             </TabsTrigger>
