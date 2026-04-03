@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Heart, Settings, Trash2, Save, Store, Briefcase, Tag } from "lucide-react";
+import { ShoppingBag, Heart, Settings, Trash2, Save, Store, Briefcase, Tag, Download, FileText } from "lucide-react";
+import { downloadReceipt } from "@/lib/generateReceipt";
 import { toast } from "sonner";
 import { sampleShops } from "@/data/sampleShops";
 
