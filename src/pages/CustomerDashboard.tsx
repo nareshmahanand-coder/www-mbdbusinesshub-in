@@ -49,6 +49,7 @@ const CustomerDashboard = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [myAds, setMyAds] = useState<MyAd[]>([]);
   const [myJobs, setMyJobs] = useState<MyJob[]>([]);
+  const [memberships, setMemberships] = useState<Membership[]>([]);
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
