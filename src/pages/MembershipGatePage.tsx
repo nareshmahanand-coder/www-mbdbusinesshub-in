@@ -36,6 +36,8 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
     const endsAt = new Date(now);
     endsAt.setDate(endsAt.getDate() + planDetails[plan].days);
 
+    const receiptNumber = `MBD-${Date.now().toString(36).toUpperCase()}`;
+
     const { error } = await supabase.from("memberships").insert({
       user_id: user.id,
       plan,
@@ -47,6 +49,27 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
     });
 
     if (error) { toast.error("Submission failed. Please try again."); setSubmitting(false); return; }
+
+    const rData = {
+      userName: user.user_metadata?.display_name || user.email || "User",
+      userEmail: user.email || "",
+      plan,
+      amount: planDetails[plan].price,
+      transactionId: transactionId.trim(),
+      startsAt: now.toISOString().split("T")[0],
+      endsAt: endsAt.toISOString().split("T")[0],
+      receiptNumber,
+    };
+
+    // Auto-download receipt
+    try {
+      downloadReceipt(rData);
+      toast.success("Receipt downloaded successfully! 🧾");
+    } catch {
+      toast.error("Receipt generation failed, but payment is recorded.");
+    }
+
+    setReceiptData(rData);
     setSubmitted(true);
     setSubmitting(false);
   };
