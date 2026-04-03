@@ -91,7 +91,12 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
               <Sparkles className="h-4 w-4 text-green-india" />
               <span className="text-sm font-semibold text-green-india">Membership Active ✓</span>
             </div>
-            <Button onClick={onActivated} className="mt-4 w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base py-5">
+            {receiptData && (
+              <Button variant="outline" onClick={() => downloadReceipt(receiptData)} className="w-full border-accent text-accent font-semibold gap-2">
+                <Download className="h-4 w-4" /> Receipt फिर से डाउनलोड करें
+              </Button>
+            )}
+            <Button onClick={onActivated} className="mt-2 w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base py-5">
               <Crown className="mr-2 h-5 w-5" /> ऐप में प्रवेश करें
             </Button>
           </CardContent>
