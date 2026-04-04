@@ -605,12 +605,13 @@ const BharatMitraChatbot = () => {
             </div>
             <Textarea value={complaintText} onChange={(e) => setComplaintText(e.target.value)}
               placeholder="अपनी शिकायत यहाँ लिखें..." className="min-h-[120px] text-sm" />
-            <Button onClick={handleComplaintSubmit} className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              <AlertTriangle className="mr-2 h-4 w-4" /> शिकायत भेजें
+            <Button onClick={handleComplaintSubmit} disabled={!complaintText.trim() || complaintLoading}
+              className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              <AlertTriangle className="mr-2 h-4 w-4" /> {complaintLoading ? "भेज रही हूँ..." : "शिकायत भेजें"}
             </Button>
             {complaintSubmitted && (
-              <div className="rounded-lg border border-accent/30 bg-accent/10 p-3 text-center text-sm text-accent-foreground">
-                ✅ आपकी शिकायत सफलतापूर्वक दर्ज हो गई है!
+              <div className="rounded-lg border border-green-300 bg-green-50 p-3 text-center text-sm text-green-800">
+                ✅ आपकी शिकायत दर्ज कर ली गई है। हमारी टीम जल्द ही आपसे संपर्क करेगी।
               </div>
             )}
           </div>
