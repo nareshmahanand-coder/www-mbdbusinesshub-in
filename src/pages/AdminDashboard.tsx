@@ -196,9 +196,21 @@ const AdminDashboard = () => {
       setMatrimonyLoading(false);
     };
 
+    const loadComplaints = async () => {
+      setComplaintsLoading(true);
+      const { data, error } = await supabase
+        .from("complaints")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) { toast.error("Complaints load failed"); setComplaints([]); }
+      else setComplaints((data ?? []) as ComplaintRecord[]);
+      setComplaintsLoading(false);
+    };
+
     void loadCustomers();
     void loadMemberships();
     void loadMatrimony();
+    void loadComplaints();
 
     // Realtime subscription for new payments
     const channel = supabase
