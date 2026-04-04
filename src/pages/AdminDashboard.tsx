@@ -782,6 +782,60 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* COMPLAINTS SECTION */}
+          <TabsContent value="complaints">
+            <Card>
+              <CardHeader className="bg-destructive/5 border-b">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive" /> शिकायतें / Complaints
+                  {unreadComplaints.length > 0 && (
+                    <Badge variant="destructive">{unreadComplaints.length} Unread</Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {complaintsLoading ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">Loading...</p>
+                ) : complaints.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">✅ No complaints yet.</p>
+                ) : (
+                  <div className="divide-y">
+                    {complaints.map((c) => (
+                      <div key={c.id} className={`p-4 ${!c.is_read ? 'bg-destructive/5' : ''}`}>
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              {!c.is_read && <span className="h-2.5 w-2.5 rounded-full bg-destructive shrink-0" />}
+                              <p className="font-semibold text-sm text-foreground truncate">
+                                {c.user_name || "Unknown User"}
+                              </p>
+                              <span className="text-xs text-muted-foreground">
+                                {c.user_phone || "No phone"}
+                              </span>
+                            </div>
+                            <p className="text-sm text-foreground/80 mb-1">{c.complaint_text}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              🕐 {formatDateTime(c.created_at)}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant={c.is_read ? "outline" : "default"}
+                            onClick={() => toggleComplaintRead(c.id, c.is_read)}
+                            className="shrink-0 h-8 text-xs"
+                          >
+                            {c.is_read ? <Eye className="mr-1 h-3 w-3" /> : <CheckCircle2 className="mr-1 h-3 w-3" />}
+                            {c.is_read ? "Mark Unread" : "Mark Read"}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Customer Directory */}
