@@ -430,11 +430,29 @@ const BharatMitraChatbot = () => {
     { id: "safety" as TabType, icon: Shield, label: "सुरक्षा" },
   ];
 
+  const chatW = Math.min(window.innerWidth * 0.92, 360);
+  const chatH = Math.min(window.innerHeight * 0.7, 520);
+
   return (
-    <div className="fixed left-1/2 top-1/2 z-50 flex h-[85vh] max-h-[600px] w-[92vw] max-w-[380px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl animate-in zoom-in-95 fade-in duration-300">
-      {/* Header */}
-      <div className="flex items-center gap-3 bg-primary px-4 py-3">
-        <div className="relative">
+    <div
+      className="fixed z-50 flex flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl animate-scale-in"
+      style={{
+        left: chatPos.x,
+        top: chatPos.y,
+        width: chatW,
+        height: chatH,
+        touchAction: "none",
+        transition: draggingChat ? "none" : "box-shadow 0.3s ease",
+      }}
+    >
+      {/* Draggable Header */}
+      <div
+        className="flex items-center gap-3 bg-primary px-4 py-3 cursor-grab active:cursor-grabbing select-none"
+        onPointerDown={handleChatPointerDown}
+        onPointerMove={handleChatPointerMove}
+        onPointerUp={handleChatPointerUp}
+      >
+        <div className="relative pointer-events-none">
           <img src={assistantAvatar} alt="भारत मित्र"
             className={`h-10 w-10 rounded-full border-2 border-primary-foreground/30 object-cover ${isSpeaking ? "bharat-mitra-speaking" : ""}`}
           />
@@ -444,13 +462,13 @@ const BharatMitraChatbot = () => {
             </span>
           )}
         </div>
-        <div className="flex-1">
+        <div className="flex-1 pointer-events-none">
           <h4 className="text-sm font-bold text-primary-foreground">🇮🇳 भारत मित्र AI</h4>
           <p className="text-[10px] text-primary-foreground/60">
-            {isAiLoading ? "सोच रही हूँ..." : safeWalkActive ? "🛡️ Safe Walk Active" : isSpeaking ? "बोल रही हूँ..." : "Powered by AI"}
+            {isAiLoading ? "सोच रही हूँ..." : safeWalkActive ? "🛡️ Safe Walk Active" : isSpeaking ? "बोल रही हूँ..." : "खींचकर कहीं भी ले जाएं ↕️"}
           </p>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" style={{ pointerEvents: "auto" }}>
           <button onClick={toggleSafeWalk}
             className={`rounded-full p-1.5 transition-colors ${safeWalkActive ? "bg-accent text-accent-foreground animate-pulse" : "text-primary-foreground/50 hover:text-primary-foreground"}`}
             title="Safe Walk">
