@@ -34,6 +34,7 @@ interface AiMessage {
 }
 
 const BharatMitraChatbot = () => {
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
