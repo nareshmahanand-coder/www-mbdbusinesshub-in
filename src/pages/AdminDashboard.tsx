@@ -421,9 +421,9 @@ const AdminDashboard = () => {
           <div className="flex items-center gap-3">
             <div className="relative">
               <Bell className="h-5 w-5 text-primary-foreground" />
-              {(pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length) > 0 && (
+              {(pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length + unreadComplaints.length) > 0 && (
                 <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                  {pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length}
+                  {pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length + unreadComplaints.length}
                 </span>
               )}
             </div>
