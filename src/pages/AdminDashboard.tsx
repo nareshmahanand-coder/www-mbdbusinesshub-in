@@ -491,6 +491,14 @@ const AdminDashboard = () => {
             <TabsTrigger value="matrimony" className="text-xs">💕 जीवनसाथी ({unpublishedMatrimony.length})</TabsTrigger>
             <TabsTrigger value="free" className="text-xs">🆓 Free Shops</TabsTrigger>
             <TabsTrigger value="premium" className="text-xs">⭐ Premium</TabsTrigger>
+            <TabsTrigger value="complaints" className="text-xs relative">
+              📢 शिकायतें
+              {unreadComplaints.length > 0 && (
+                <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                  {unreadComplaints.length}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           {/* BHARAT GAURAV MEMBERSHIP SECTION */}
