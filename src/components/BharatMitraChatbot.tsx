@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
 import { X, Send, HelpCircle, AlertTriangle, ShoppingBag, Heart, Shield, Volume2, Droplets, Megaphone, PhoneCall, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,6 +34,7 @@ interface AiMessage {
 }
 
 const BharatMitraChatbot = () => {
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -41,6 +44,7 @@ const BharatMitraChatbot = () => {
   const [input, setInput] = useState("");
   const [complaintText, setComplaintText] = useState("");
   const [complaintSubmitted, setComplaintSubmitted] = useState(false);
+  const [complaintLoading, setComplaintLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -386,10 +390,28 @@ const BharatMitraChatbot = () => {
     }
   };
 
-  const handleComplaintSubmit = () => {
+  const handleComplaintSubmit = async () => {
     if (!complaintText.trim()) return;
-    setComplaintSubmitted(true); setComplaintText("");
-    setTimeout(() => setComplaintSubmitted(false), 4000);
+    setComplaintLoading(true);
+    try {
+      const userName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
+      const userPhone = user?.phone ?? user?.user_metadata?.phone ?? null;
+
+      await supabase.from("complaints").insert({
+        user_id: user?.id ?? null,
+        user_name: userName,
+        user_phone: userPhone,
+        complaint_text: complaintText.trim(),
+      });
+
+      setComplaintSubmitted(true);
+      setComplaintText("");
+      setTimeout(() => setComplaintSubmitted(false), 5000);
+    } catch (err) {
+      console.error("Complaint submit error:", err);
+    } finally {
+      setComplaintLoading(false);
+    }
   };
 
   const handleHealthAsk = (q: string, a: string) => {
@@ -583,12 +605,13 @@ const BharatMitraChatbot = () => {
             </div>
             <Textarea value={complaintText} onChange={(e) => setComplaintText(e.target.value)}
               placeholder="अपनी शिकायत यहाँ लिखें..." className="min-h-[120px] text-sm" />
-            <Button onClick={handleComplaintSubmit} className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              <AlertTriangle className="mr-2 h-4 w-4" /> शिकायत भेजें
+            <Button onClick={handleComplaintSubmit} disabled={!complaintText.trim() || complaintLoading}
+              className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              <AlertTriangle className="mr-2 h-4 w-4" /> {complaintLoading ? "भेज रही हूँ..." : "शिकायत भेजें"}
             </Button>
             {complaintSubmitted && (
-              <div className="rounded-lg border border-accent/30 bg-accent/10 p-3 text-center text-sm text-accent-foreground">
-                ✅ आपकी शिकायत सफलतापूर्वक दर्ज हो गई है!
+              <div className="rounded-lg border border-green-300 bg-green-50 p-3 text-center text-sm text-green-800">
+                ✅ आपकी शिकायत दर्ज कर ली गई है। हमारी टीम जल्द ही आपसे संपर्क करेगी।
               </div>
             )}
           </div>

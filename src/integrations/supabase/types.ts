@@ -62,6 +62,36 @@ export type Database = {
         }
         Relationships: []
       }
+      complaints: {
+        Row: {
+          complaint_text: string
+          created_at: string
+          id: string
+          status: string
+          user_id: string | null
+          user_name: string | null
+          user_phone: string | null
+        }
+        Insert: {
+          complaint_text: string
+          created_at?: string
+          id?: string
+          status?: string
+          user_id?: string | null
+          user_name?: string | null
+          user_phone?: string | null
+        }
+        Update: {
+          complaint_text?: string
+          created_at?: string
+          id?: string
+          status?: string
+          user_id?: string | null
+          user_name?: string | null
+          user_phone?: string | null
+        }
+        Relationships: []
+      }
       contact_requests: {
         Row: {
           created_at: string
