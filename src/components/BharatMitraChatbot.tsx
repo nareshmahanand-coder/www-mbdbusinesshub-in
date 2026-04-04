@@ -49,41 +49,42 @@ const BharatMitraChatbot = () => {
   const [safeWalkActive, setSafeWalkActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
 
-  // Draggable FAB state — default top-right
-  const [fabPos, setFabPos] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
-  const [dragging, setDragging] = useState(false);
-  const dragOffset = useRef({ x: 0, y: 0 });
-  const hasDragged = useRef(false);
+  // Chat window draggable state
+  const [chatPos, setChatPos] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
+  const [draggingChat, setDraggingChat] = useState(false);
+  const chatDragOffset = useRef({ x: 0, y: 0 });
   const chatEndRef = useRef<HTMLDivElement>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const greetingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Initialize FAB position — TOP-RIGHT
-  useLayoutEffect(() => {
-    if (fabPos.x === -1) {
-      setFabPos({ x: window.innerWidth - 100, y: Math.round(window.innerHeight / 2 - 50) });
-    }
+  // Initialize chat position — right side, above center to not block search
+  const initChatPos = useCallback(() => {
+    const chatW = Math.min(window.innerWidth * 0.92, 360);
+    const chatH = Math.min(window.innerHeight * 0.7, 520);
+    const x = Math.max(8, window.innerWidth - chatW - 12);
+    const y = Math.max(8, Math.min(window.innerHeight - chatH - 16, window.innerHeight * 0.12));
+    setChatPos({ x, y });
   }, []);
 
-  // Drag handlers
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    setDragging(true);
-    hasDragged.current = false;
-    dragOffset.current = { x: e.clientX - fabPos.x, y: e.clientY - fabPos.y };
+  // Chat header drag handlers
+  const handleChatPointerDown = useCallback((e: React.PointerEvent) => {
+    setDraggingChat(true);
+    chatDragOffset.current = { x: e.clientX - chatPos.x, y: e.clientY - chatPos.y };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  }, [fabPos]);
+  }, [chatPos]);
 
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragging) return;
-    hasDragged.current = true;
-    const newX = Math.max(0, Math.min(window.innerWidth - 72, e.clientX - dragOffset.current.x));
-    const newY = Math.max(0, Math.min(window.innerHeight - 100, e.clientY - dragOffset.current.y));
-    setFabPos({ x: newX, y: newY });
-  }, [dragging]);
+  const handleChatPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!draggingChat) return;
+    const chatW = Math.min(window.innerWidth * 0.92, 360);
+    const chatH = Math.min(window.innerHeight * 0.7, 520);
+    const newX = Math.max(0, Math.min(window.innerWidth - chatW, e.clientX - chatDragOffset.current.x));
+    const newY = Math.max(0, Math.min(window.innerHeight - chatH, e.clientY - chatDragOffset.current.y));
+    setChatPos({ x: newX, y: newY });
+  }, [draggingChat]);
 
-  const handlePointerUp = useCallback(() => {
-    setDragging(false);
+  const handleChatPointerUp = useCallback(() => {
+    setDraggingChat(false);
   }, []);
 
   // Auto-scroll to bottom
