@@ -34,6 +34,17 @@ interface ChatbotLog {
   lastAsked: string;
 }
 
+interface ComplaintRecord {
+  id: string;
+  user_id: string | null;
+  user_name: string | null;
+  user_phone: string | null;
+  complaint_text: string;
+  status: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 interface CustomerRecord {
   id: string;
   email: string | null;
