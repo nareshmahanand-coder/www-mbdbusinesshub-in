@@ -390,8 +390,6 @@ const BharatMitraChatbot = () => {
     }
   };
 
-  const [complaintLoading, setComplaintLoading] = useState(false);
-
   const handleComplaintSubmit = async () => {
     if (!complaintText.trim()) return;
     setComplaintLoading(true);
