@@ -397,7 +397,7 @@ const BharatMitraChatbot = () => {
     setTimeout(() => { addBotMessage(a); speakText(a); }, 400);
   };
 
-  // Closed state — FAB at top-right with neon glow
+  // Closed state — FAB at center-right with neon glow
   if (!open) {
     return (
       <div
@@ -405,7 +405,7 @@ const BharatMitraChatbot = () => {
         style={{ right: 12, top: "50%", transform: "translateY(-50%)", touchAction: "none" }}
       >
         <button
-          onClick={() => { setOpen(true); setTimeout(() => speakText(WELCOME_AUDIO_TEXT), 400); }}
+          onClick={() => { initChatPos(); setOpen(true); setTimeout(() => speakText(WELCOME_AUDIO_TEXT), 400); }}
           className="relative h-20 w-20 overflow-hidden rounded-full border-[3px] border-destructive shadow-2xl transition-transform hover:scale-110 animate-bharat-mitra-pulse"
           style={{
             boxShadow: "0 0 20px 6px hsl(var(--destructive) / 0.5), 0 0 40px 14px hsl(var(--destructive) / 0.3), 0 0 60px 20px hsl(var(--primary) / 0.2)",
