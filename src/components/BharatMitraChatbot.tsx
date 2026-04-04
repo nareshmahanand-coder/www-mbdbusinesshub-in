@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useLayoutEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { X, Send, HelpCircle, AlertTriangle, ShoppingBag, Heart, Shield, Volume2, Droplets, Megaphone, PhoneCall, Mic, MicOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -49,41 +49,42 @@ const BharatMitraChatbot = () => {
   const [safeWalkActive, setSafeWalkActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
 
-  // Draggable FAB state — default top-right
-  const [fabPos, setFabPos] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
-  const [dragging, setDragging] = useState(false);
-  const dragOffset = useRef({ x: 0, y: 0 });
-  const hasDragged = useRef(false);
+  // Chat window draggable state
+  const [chatPos, setChatPos] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
+  const [draggingChat, setDraggingChat] = useState(false);
+  const chatDragOffset = useRef({ x: 0, y: 0 });
   const chatEndRef = useRef<HTMLDivElement>(null);
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const greetingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Initialize FAB position — TOP-RIGHT
-  useLayoutEffect(() => {
-    if (fabPos.x === -1) {
-      setFabPos({ x: window.innerWidth - 100, y: Math.round(window.innerHeight / 2 - 50) });
-    }
+  // Initialize chat position — right side, above center to not block search
+  const initChatPos = useCallback(() => {
+    const chatW = Math.min(window.innerWidth * 0.92, 360);
+    const chatH = Math.min(window.innerHeight * 0.7, 520);
+    const x = Math.max(8, window.innerWidth - chatW - 12);
+    const y = Math.max(8, Math.min(window.innerHeight - chatH - 16, window.innerHeight * 0.12));
+    setChatPos({ x, y });
   }, []);
 
-  // Drag handlers
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    setDragging(true);
-    hasDragged.current = false;
-    dragOffset.current = { x: e.clientX - fabPos.x, y: e.clientY - fabPos.y };
+  // Chat header drag handlers
+  const handleChatPointerDown = useCallback((e: React.PointerEvent) => {
+    setDraggingChat(true);
+    chatDragOffset.current = { x: e.clientX - chatPos.x, y: e.clientY - chatPos.y };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  }, [fabPos]);
+  }, [chatPos]);
 
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragging) return;
-    hasDragged.current = true;
-    const newX = Math.max(0, Math.min(window.innerWidth - 72, e.clientX - dragOffset.current.x));
-    const newY = Math.max(0, Math.min(window.innerHeight - 100, e.clientY - dragOffset.current.y));
-    setFabPos({ x: newX, y: newY });
-  }, [dragging]);
+  const handleChatPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!draggingChat) return;
+    const chatW = Math.min(window.innerWidth * 0.92, 360);
+    const chatH = Math.min(window.innerHeight * 0.7, 520);
+    const newX = Math.max(0, Math.min(window.innerWidth - chatW, e.clientX - chatDragOffset.current.x));
+    const newY = Math.max(0, Math.min(window.innerHeight - chatH, e.clientY - chatDragOffset.current.y));
+    setChatPos({ x: newX, y: newY });
+  }, [draggingChat]);
 
-  const handlePointerUp = useCallback(() => {
-    setDragging(false);
+  const handleChatPointerUp = useCallback(() => {
+    setDraggingChat(false);
   }, []);
 
   // Auto-scroll to bottom
@@ -396,7 +397,7 @@ const BharatMitraChatbot = () => {
     setTimeout(() => { addBotMessage(a); speakText(a); }, 400);
   };
 
-  // Closed state — FAB at top-right with neon glow
+  // Closed state — FAB at center-right with neon glow
   if (!open) {
     return (
       <div
@@ -404,7 +405,7 @@ const BharatMitraChatbot = () => {
         style={{ right: 12, top: "50%", transform: "translateY(-50%)", touchAction: "none" }}
       >
         <button
-          onClick={() => { setOpen(true); setTimeout(() => speakText(WELCOME_AUDIO_TEXT), 400); }}
+          onClick={() => { initChatPos(); setOpen(true); setTimeout(() => speakText(WELCOME_AUDIO_TEXT), 400); }}
           className="relative h-20 w-20 overflow-hidden rounded-full border-[3px] border-destructive shadow-2xl transition-transform hover:scale-110 animate-bharat-mitra-pulse"
           style={{
             boxShadow: "0 0 20px 6px hsl(var(--destructive) / 0.5), 0 0 40px 14px hsl(var(--destructive) / 0.3), 0 0 60px 20px hsl(var(--primary) / 0.2)",
@@ -429,11 +430,29 @@ const BharatMitraChatbot = () => {
     { id: "safety" as TabType, icon: Shield, label: "सुरक्षा" },
   ];
 
+  const chatW = Math.min(window.innerWidth * 0.92, 360);
+  const chatH = Math.min(window.innerHeight * 0.7, 520);
+
   return (
-    <div className="fixed left-1/2 top-1/2 z-50 flex h-[85vh] max-h-[600px] w-[92vw] max-w-[380px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl animate-in zoom-in-95 fade-in duration-300">
-      {/* Header */}
-      <div className="flex items-center gap-3 bg-primary px-4 py-3">
-        <div className="relative">
+    <div
+      className="fixed z-50 flex flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl animate-scale-in"
+      style={{
+        left: chatPos.x,
+        top: chatPos.y,
+        width: chatW,
+        height: chatH,
+        touchAction: "none",
+        transition: draggingChat ? "none" : "box-shadow 0.3s ease",
+      }}
+    >
+      {/* Draggable Header */}
+      <div
+        className="flex items-center gap-3 bg-primary px-4 py-3 cursor-grab active:cursor-grabbing select-none"
+        onPointerDown={handleChatPointerDown}
+        onPointerMove={handleChatPointerMove}
+        onPointerUp={handleChatPointerUp}
+      >
+        <div className="relative pointer-events-none">
           <img src={assistantAvatar} alt="भारत मित्र"
             className={`h-10 w-10 rounded-full border-2 border-primary-foreground/30 object-cover ${isSpeaking ? "bharat-mitra-speaking" : ""}`}
           />
@@ -443,13 +462,13 @@ const BharatMitraChatbot = () => {
             </span>
           )}
         </div>
-        <div className="flex-1">
+        <div className="flex-1 pointer-events-none">
           <h4 className="text-sm font-bold text-primary-foreground">🇮🇳 भारत मित्र AI</h4>
           <p className="text-[10px] text-primary-foreground/60">
-            {isAiLoading ? "सोच रही हूँ..." : safeWalkActive ? "🛡️ Safe Walk Active" : isSpeaking ? "बोल रही हूँ..." : "Powered by AI"}
+            {isAiLoading ? "सोच रही हूँ..." : safeWalkActive ? "🛡️ Safe Walk Active" : isSpeaking ? "बोल रही हूँ..." : "खींचकर कहीं भी ले जाएं ↕️"}
           </p>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" style={{ pointerEvents: "auto" }}>
           <button onClick={toggleSafeWalk}
             className={`rounded-full p-1.5 transition-colors ${safeWalkActive ? "bg-accent text-accent-foreground animate-pulse" : "text-primary-foreground/50 hover:text-primary-foreground"}`}
             title="Safe Walk">
