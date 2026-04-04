@@ -34,6 +34,17 @@ interface ChatbotLog {
   lastAsked: string;
 }
 
+interface ComplaintRecord {
+  id: string;
+  user_id: string | null;
+  user_name: string | null;
+  user_phone: string | null;
+  complaint_text: string;
+  status: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 interface CustomerRecord {
   id: string;
   email: string | null;
@@ -112,6 +123,8 @@ const AdminDashboard = () => {
   const [membershipsLoading, setMembershipsLoading] = useState(false);
   const [matrimonyProfiles, setMatrimonyProfiles] = useState<MatrimonyRecord[]>([]);
   const [matrimonyLoading, setMatrimonyLoading] = useState(false);
+  const [complaints, setComplaints] = useState<ComplaintRecord[]>([]);
+  const [complaintsLoading, setComplaintsLoading] = useState(false);
 
   const [payments, setPayments] = useState<MerchantPayment[]>([
     { shopId: "1", shopName: "Sharma General Store", plan: "monthly", amount: 99, transactionId: "TXN001234", date: "2026-03-08", approved: false, screenshotUrl: "screenshot1.png" },
@@ -183,9 +196,21 @@ const AdminDashboard = () => {
       setMatrimonyLoading(false);
     };
 
+    const loadComplaints = async () => {
+      setComplaintsLoading(true);
+      const { data, error } = await supabase
+        .from("complaints")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) { toast.error("Complaints load failed"); setComplaints([]); }
+      else setComplaints((data ?? []) as ComplaintRecord[]);
+      setComplaintsLoading(false);
+    };
+
     void loadCustomers();
     void loadMemberships();
     void loadMatrimony();
+    void loadComplaints();
 
     // Realtime subscription for new payments
     const channel = supabase
@@ -339,6 +364,17 @@ const AdminDashboard = () => {
   const totalEarnings = monthlyEarnings + yearlyEarnings;
   const pendingMemberships = memberships.filter(m => m.status === "pending");
   const unpublishedMatrimony = matrimonyProfiles.filter(p => !p.is_published);
+  const unreadComplaints = complaints.filter(c => !c.is_read);
+
+  const toggleComplaintRead = async (complaintId: string, currentRead: boolean) => {
+    const { error } = await supabase
+      .from("complaints")
+      .update({ is_read: !currentRead } as any)
+      .eq("id", complaintId);
+    if (error) { toast.error("Update failed"); return; }
+    setComplaints(prev => prev.map(c => c.id === complaintId ? { ...c, is_read: !currentRead } : c));
+    toast.success(!currentRead ? "✅ पढ़ा गया" : "🔴 अपठित");
+  };
 
   const getPremiumDaysLeft = (shop: Shop & { premiumStartDate?: string; premiumPlan?: "monthly" | "yearly" }) => {
     if (!shop.premiumStartDate || !shop.premiumPlan) return null;
@@ -385,9 +421,9 @@ const AdminDashboard = () => {
           <div className="flex items-center gap-3">
             <div className="relative">
               <Bell className="h-5 w-5 text-primary-foreground" />
-              {(pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length) > 0 && (
+              {(pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length + unreadComplaints.length) > 0 && (
                 <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                  {pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length}
+                  {pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length + unreadComplaints.length}
                 </span>
               )}
             </div>
@@ -455,6 +491,14 @@ const AdminDashboard = () => {
             <TabsTrigger value="matrimony" className="text-xs">💕 जीवनसाथी ({unpublishedMatrimony.length})</TabsTrigger>
             <TabsTrigger value="free" className="text-xs">🆓 Free Shops</TabsTrigger>
             <TabsTrigger value="premium" className="text-xs">⭐ Premium</TabsTrigger>
+            <TabsTrigger value="complaints" className="text-xs relative">
+              📢 शिकायतें
+              {unreadComplaints.length > 0 && (
+                <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                  {unreadComplaints.length}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           {/* BHARAT GAURAV MEMBERSHIP SECTION */}
@@ -735,6 +779,60 @@ const AdminDashboard = () => {
                   </tbody>
                 </table>
                 {premiumShops.length === 0 && <p className="p-6 text-center text-sm text-muted-foreground">No premium shops yet.</p>}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* COMPLAINTS SECTION */}
+          <TabsContent value="complaints">
+            <Card>
+              <CardHeader className="bg-destructive/5 border-b">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive" /> शिकायतें / Complaints
+                  {unreadComplaints.length > 0 && (
+                    <Badge variant="destructive">{unreadComplaints.length} Unread</Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {complaintsLoading ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">Loading...</p>
+                ) : complaints.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">✅ No complaints yet.</p>
+                ) : (
+                  <div className="divide-y">
+                    {complaints.map((c) => (
+                      <div key={c.id} className={`p-4 ${!c.is_read ? 'bg-destructive/5' : ''}`}>
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              {!c.is_read && <span className="h-2.5 w-2.5 rounded-full bg-destructive shrink-0" />}
+                              <p className="font-semibold text-sm text-foreground truncate">
+                                {c.user_name || "Unknown User"}
+                              </p>
+                              <span className="text-xs text-muted-foreground">
+                                {c.user_phone || "No phone"}
+                              </span>
+                            </div>
+                            <p className="text-sm text-foreground/80 mb-1">{c.complaint_text}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              🕐 {formatDateTime(c.created_at)}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant={c.is_read ? "outline" : "default"}
+                            onClick={() => toggleComplaintRead(c.id, c.is_read)}
+                            className="shrink-0 h-8 text-xs"
+                          >
+                            {c.is_read ? <Eye className="mr-1 h-3 w-3" /> : <CheckCircle2 className="mr-1 h-3 w-3" />}
+                            {c.is_read ? "Mark Unread" : "Mark Read"}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

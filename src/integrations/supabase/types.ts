@@ -67,6 +67,7 @@ export type Database = {
           complaint_text: string
           created_at: string
           id: string
+          is_read: boolean
           status: string
           user_id: string | null
           user_name: string | null
@@ -76,6 +77,7 @@ export type Database = {
           complaint_text: string
           created_at?: string
           id?: string
+          is_read?: boolean
           status?: string
           user_id?: string | null
           user_name?: string | null
@@ -85,6 +87,7 @@ export type Database = {
           complaint_text?: string
           created_at?: string
           id?: string
+          is_read?: boolean
           status?: string
           user_id?: string | null
           user_name?: string | null
