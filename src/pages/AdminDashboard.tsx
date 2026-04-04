@@ -364,6 +364,17 @@ const AdminDashboard = () => {
   const totalEarnings = monthlyEarnings + yearlyEarnings;
   const pendingMemberships = memberships.filter(m => m.status === "pending");
   const unpublishedMatrimony = matrimonyProfiles.filter(p => !p.is_published);
+  const unreadComplaints = complaints.filter(c => !c.is_read);
+
+  const toggleComplaintRead = async (complaintId: string, currentRead: boolean) => {
+    const { error } = await supabase
+      .from("complaints")
+      .update({ is_read: !currentRead } as any)
+      .eq("id", complaintId);
+    if (error) { toast.error("Update failed"); return; }
+    setComplaints(prev => prev.map(c => c.id === complaintId ? { ...c, is_read: !currentRead } : c));
+    toast.success(!currentRead ? "✅ पढ़ा गया" : "🔴 अपठित");
+  };
 
   const getPremiumDaysLeft = (shop: Shop & { premiumStartDate?: string; premiumPlan?: "monthly" | "yearly" }) => {
     if (!shop.premiumStartDate || !shop.premiumPlan) return null;
