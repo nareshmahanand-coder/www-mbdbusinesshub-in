@@ -389,10 +389,30 @@ const BharatMitraChatbot = () => {
     }
   };
 
-  const handleComplaintSubmit = () => {
+  const [complaintLoading, setComplaintLoading] = useState(false);
+
+  const handleComplaintSubmit = async () => {
     if (!complaintText.trim()) return;
-    setComplaintSubmitted(true); setComplaintText("");
-    setTimeout(() => setComplaintSubmitted(false), 4000);
+    setComplaintLoading(true);
+    try {
+      const userName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
+      const userPhone = user?.phone ?? user?.user_metadata?.phone ?? null;
+
+      await supabase.from("complaints").insert({
+        user_id: user?.id ?? null,
+        user_name: userName,
+        user_phone: userPhone,
+        complaint_text: complaintText.trim(),
+      });
+
+      setComplaintSubmitted(true);
+      setComplaintText("");
+      setTimeout(() => setComplaintSubmitted(false), 5000);
+    } catch (err) {
+      console.error("Complaint submit error:", err);
+    } finally {
+      setComplaintLoading(false);
+    }
   };
 
   const handleHealthAsk = (q: string, a: string) => {
