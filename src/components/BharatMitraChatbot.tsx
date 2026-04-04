@@ -44,6 +44,7 @@ const BharatMitraChatbot = () => {
   const [input, setInput] = useState("");
   const [complaintText, setComplaintText] = useState("");
   const [complaintSubmitted, setComplaintSubmitted] = useState(false);
+  const [complaintLoading, setComplaintLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
