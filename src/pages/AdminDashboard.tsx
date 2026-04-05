@@ -1098,6 +1098,19 @@ const AdminDashboard = () => {
           <p className="font-hindi text-xs text-muted-foreground">भारत दुकान - प्रबंधन पोर्टल • केवल आंतरिक उपयोग हेतु</p>
         </div>
       </div>
+
+      {/* Full-size image overlay */}
+      {fullImageUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setFullImageUrl(null)}>
+          <div className="relative max-h-[90vh] max-w-[90vw]">
+            <img src={fullImageUrl} alt="Document" className="max-h-[85vh] max-w-full rounded-lg object-contain" />
+            <button onClick={() => setFullImageUrl(null)}
+              className="absolute -top-3 -right-3 rounded-full bg-destructive p-1.5 text-destructive-foreground shadow-lg">
+              <XCircle className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
