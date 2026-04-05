@@ -33,6 +33,13 @@ const MerchantPortal = () => {
   const [uploading, setUploading] = useState(false);
   const shopPhotoRef = useRef<HTMLInputElement>(null);
   const screenshotRef = useRef<HTMLInputElement>(null);
+  
+  // KYC Documents
+  const [aadharUrl, setAadharUrl] = useState("");
+  const [panUrl, setPanUrl] = useState("");
+  const [gstUrl, setGstUrl] = useState("");
+  const [fssaiUrl, setFssaiUrl] = useState("");
+  
   const [form, setForm] = useState({
     shopName: "", shopNameHindi: "", category: "", address: "",
     pincode: "", whatsapp: "", phone: "", description: "",
