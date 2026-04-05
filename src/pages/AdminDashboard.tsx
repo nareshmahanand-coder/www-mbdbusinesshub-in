@@ -643,24 +643,46 @@ const AdminDashboard = () => {
                 ) : (
                   unpublishedMatrimony.map((p) => (
                     <div key={p.id} className="rounded-lg border border-[hsl(340,80%,50%)]/30 bg-[hsl(340,80%,50%)]/5 p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          {p.photos?.[0] ? (
-                            <img src={p.photos[0]} alt={p.name} className="h-12 w-12 rounded-full object-cover border border-border" />
-                          ) : (
-                            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                              <Heart className="h-5 w-5 text-muted-foreground" />
+                      <div className="flex flex-col gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            {p.photos?.[0] ? (
+                              <img src={p.photos[0]} alt={p.name} className="h-12 w-12 rounded-full object-cover border border-border" />
+                            ) : (
+                              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                                <Heart className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-semibold text-foreground">{p.name} <Badge variant="secondary" className="text-[9px] ml-1">{p.gender}</Badge></p>
+                              <p className="text-xs text-muted-foreground">{p.city} • {p.profile_email || p.profile_phone || "Contact N/A"}</p>
+                              <p className="text-xs text-muted-foreground">Plan: {p.subscription_plan || "Not paid"}</p>
                             </div>
-                          )}
-                          <div>
-                            <p className="font-semibold text-foreground">{p.name} <Badge variant="secondary" className="text-[9px] ml-1">{p.gender}</Badge></p>
-                            <p className="text-xs text-muted-foreground">{p.city} • {p.profile_email || p.profile_phone || "Contact N/A"}</p>
-                            <p className="text-xs text-muted-foreground">Plan: {p.subscription_plan || "Not paid"}</p>
                           </div>
+                          <Button size="sm" onClick={() => publishMatrimony(p.id)} className="bg-[hsl(340,80%,50%)] hover:bg-[hsl(340,80%,45%)] text-primary-foreground h-8">
+                            <CheckCircle2 className="mr-1 h-4 w-4" /> Verify & Publish
+                          </Button>
                         </div>
-                        <Button size="sm" onClick={() => publishMatrimony(p.id)} className="bg-[hsl(340,80%,50%)] hover:bg-[hsl(340,80%,45%)] text-primary-foreground h-8">
-                          <CheckCircle2 className="mr-1 h-4 w-4" /> Verify & Publish
-                        </Button>
+                        {/* KYC Documents */}
+                        {(p.aadhar_url || p.pan_url) && (
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            <p className="w-full text-[11px] font-semibold text-foreground flex items-center gap-1"><FileText className="h-3 w-3" /> KYC Documents:</p>
+                            {p.aadhar_url && (
+                              <button onClick={() => setFullImageUrl(p.aadhar_url!)} className="group relative">
+                                <img src={p.aadhar_url} alt="Aadhar" className="h-14 w-20 rounded border border-border object-cover" />
+                                <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
+                                <span className="block text-[9px] text-center text-muted-foreground">Aadhar</span>
+                              </button>
+                            )}
+                            {p.pan_url && (
+                              <button onClick={() => setFullImageUrl(p.pan_url!)} className="group relative">
+                                <img src={p.pan_url} alt="PAN" className="h-14 w-20 rounded border border-border object-cover" />
+                                <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
+                                <span className="block text-[9px] text-center text-muted-foreground">PAN</span>
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))
