@@ -78,6 +78,8 @@ const MerchantPortal = () => {
     if (!form.shopName || !form.category || !form.address || !form.pincode || !form.whatsapp) {
       toast.error("Please fill all required fields"); return;
     }
+    if (!aadharUrl) { toast.error("कृपया आधार कार्ड की फोटो अपलोड करें"); return; }
+    if (!panUrl) { toast.error("कृपया पैन कार्ड की फोटो अपलोड करें"); return; }
     setSubmitted(true);
     toast.success("Shop registration submitted for verification!");
   };
