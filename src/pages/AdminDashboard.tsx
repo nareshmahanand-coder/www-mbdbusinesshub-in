@@ -704,6 +704,82 @@ const AdminDashboard = () => {
             </Card>
           </TabsContent>
 
+          {/* MERCHANTS KYC VERIFICATION */}
+          <TabsContent value="merchants">
+            <Card>
+              <CardHeader className="bg-saffron/5 border-b">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-saffron" /> Merchant KYC Verification
+                  <Badge variant="secondary">{merchants.filter(m => !m.is_verified).length} Pending</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 p-4">
+                {merchantsLoading ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">Loading...</p>
+                ) : merchants.filter(m => !m.is_verified).length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">✅ No pending merchant verifications.</p>
+                ) : (
+                  merchants.filter(m => !m.is_verified).map((m) => (
+                    <div key={m.id} className="rounded-lg border border-saffron/30 bg-saffron/5 p-4 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                          <p className="font-semibold text-foreground">{m.shop_name}</p>
+                          <p className="text-xs text-muted-foreground">{m.category} • {m.city} • {m.profile_email || m.profile_phone || "Contact N/A"}</p>
+                          <p className="text-[11px] text-muted-foreground">🕐 {formatDateTime(m.created_at)}</p>
+                        </div>
+                      </div>
+                      {/* KYC Documents */}
+                      <div className="flex flex-wrap gap-2">
+                        <p className="w-full text-[11px] font-semibold text-foreground flex items-center gap-1"><FileText className="h-3 w-3" /> KYC Documents:</p>
+                        {m.aadhar_url ? (
+                          <button onClick={() => setFullImageUrl(m.aadhar_url!)} className="group relative">
+                            <img src={m.aadhar_url} alt="Aadhar" className="h-14 w-20 rounded border border-border object-cover" />
+                            <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
+                            <span className="block text-[9px] text-center text-muted-foreground">Aadhar ✓</span>
+                          </button>
+                        ) : <span className="text-[10px] text-destructive">Aadhar ✗</span>}
+                        {m.pan_url ? (
+                          <button onClick={() => setFullImageUrl(m.pan_url!)} className="group relative">
+                            <img src={m.pan_url} alt="PAN" className="h-14 w-20 rounded border border-border object-cover" />
+                            <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
+                            <span className="block text-[9px] text-center text-muted-foreground">PAN ✓</span>
+                          </button>
+                        ) : <span className="text-[10px] text-destructive">PAN ✗</span>}
+                        {m.gst_url && (
+                          <button onClick={() => setFullImageUrl(m.gst_url!)} className="group relative">
+                            <img src={m.gst_url} alt="GST" className="h-14 w-20 rounded border border-border object-cover" />
+                            <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
+                            <span className="block text-[9px] text-center text-muted-foreground">GST ✓</span>
+                          </button>
+                        )}
+                        {m.fssai_url && (
+                          <button onClick={() => setFullImageUrl(m.fssai_url!)} className="group relative">
+                            <img src={m.fssai_url} alt="FSSAI" className="h-14 w-20 rounded border border-border object-cover" />
+                            <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
+                            <span className="block text-[9px] text-center text-muted-foreground">FSSAI ✓</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+
+                {/* Verified merchants */}
+                {merchants.filter(m => m.is_verified).length > 0 && (
+                  <div className="mt-4 border-t pt-4">
+                    <p className="mb-2 text-xs font-semibold text-green-india">✅ Verified Merchants:</p>
+                    {merchants.filter(m => m.is_verified).slice(0, 10).map((m) => (
+                      <div key={m.id} className="mb-1 rounded bg-green-india/5 px-3 py-2 text-xs flex items-center justify-between">
+                        <span><span className="font-medium">{m.shop_name}</span> — {m.category}, {m.city}</span>
+                        <Badge className="bg-green-india text-primary-foreground text-[9px]">Verified</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* FREE SHOPS */}
           <TabsContent value="free">
             <Card>
