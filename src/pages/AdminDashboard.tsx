@@ -545,9 +545,17 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="memberships" className="mb-8">
-          <TabsList className="w-full max-w-2xl flex-wrap h-auto gap-1">
+          <TabsList className="w-full max-w-3xl flex-wrap h-auto gap-1">
             <TabsTrigger value="memberships" className="text-xs">🏅 भारत गौरव ({pendingMemberships.length})</TabsTrigger>
             <TabsTrigger value="matrimony" className="text-xs">💕 जीवनसाथी ({unpublishedMatrimony.length})</TabsTrigger>
+            <TabsTrigger value="merchants" className="text-xs relative">
+              🏪 Merchants
+              {merchants.filter(m => !m.is_verified).length > 0 && (
+                <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                  {merchants.filter(m => !m.is_verified).length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="free" className="text-xs">🆓 Free Shops</TabsTrigger>
             <TabsTrigger value="premium" className="text-xs">⭐ Premium</TabsTrigger>
             <TabsTrigger value="complaints" className="text-xs relative">
