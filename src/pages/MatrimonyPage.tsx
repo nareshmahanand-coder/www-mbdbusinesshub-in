@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import PaymentQRSection from "@/components/PaymentQRSection";
 import AppHeader from "@/components/AppHeader";
+import KycDocUpload from "@/components/KycDocUpload";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,8 @@ interface MatrimonyProfile {
   subscription_plan: string | null;
   subscription_end: string | null;
   user_id: string;
+  aadhar_url: string | null;
+  pan_url: string | null;
 }
 
 const MatrimonyPage = () => {
@@ -44,6 +47,8 @@ const MatrimonyPage = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [aadharUrl, setAadharUrl] = useState("");
+  const [panUrl, setPanUrl] = useState("");
 
   const [form, setForm] = useState({
     name: "", gender: "", dob: "", height: "", education: "",
