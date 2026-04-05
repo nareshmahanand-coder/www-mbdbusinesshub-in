@@ -188,6 +188,18 @@ const MerchantPortal = () => {
                   </div>
                 </button>
               </div>
+
+              {/* KYC Documents */}
+              <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+                <p className="text-sm font-semibold text-foreground">📄 KYC Documents • <span className="font-hindi">दस्तावेज़ सत्यापन</span></p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <KycDocUpload label="Aadhar Card" labelHindi="आधार कार्ड" required value={aadharUrl} onChange={setAadharUrl} userId={user?.id || ""} folder="kyc-aadhar" />
+                  <KycDocUpload label="PAN Card" labelHindi="पैन कार्ड" required value={panUrl} onChange={setPanUrl} userId={user?.id || ""} folder="kyc-pan" />
+                  <KycDocUpload label="GST Certificate" labelHindi="जीएसटी प्रमाणपत्र" value={gstUrl} onChange={setGstUrl} userId={user?.id || ""} folder="kyc-gst" />
+                  <KycDocUpload label="FSSAI License" labelHindi="फूड लाइसेंस" value={fssaiUrl} onChange={setFssaiUrl} userId={user?.id || ""} folder="kyc-fssai" />
+                </div>
+              </div>
+
               <Button type="submit" className="w-full" size="lg">
                 <Store className="mr-2 h-5 w-5" /> Submit for Verification
               </Button>
