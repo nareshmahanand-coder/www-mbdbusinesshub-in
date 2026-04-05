@@ -228,14 +228,37 @@ const AdminDashboard = () => {
       setComplaintsLoading(false);
     };
 
+    const loadMerchants = async () => {
+      setMerchantsLoading(true);
+      const { data } = await supabase
+        .from("merchant_profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (data) {
+        const userIds = [...new Set(data.map(m => m.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, email, phone")
+          .in("id", userIds);
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) ?? []);
+        setMerchants(data.map(m => ({
+          ...m,
+          profile_email: profileMap.get(m.user_id)?.email,
+          profile_phone: profileMap.get(m.user_id)?.phone,
+        })) as MerchantRecord[]);
+      }
+      setMerchantsLoading(false);
+    };
+
     void loadCustomers();
     void loadMemberships();
     void loadMatrimony();
     void loadComplaints();
+    void loadMerchants();
 
-    // Realtime subscription for new payments
+    // Realtime subscription for new payments & merchant submissions
     const channel = supabase
-      .channel('admin-memberships')
+      .channel('admin-realtime')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'memberships' },
@@ -254,11 +277,26 @@ const AdminDashboard = () => {
           };
           setMemberships(prev => [enriched, ...prev]);
           
-          // Show real-time notification
           toast.info(
             `🔔 नया पेमेंट! ${profile?.email || profile?.phone || "User"} ने ${newMembership.plan === "monthly" ? "₹1 मासिक" : "₹12 वार्षिक"} मेंबरशिप ली। TXN: ${newMembership.transaction_id || "N/A"}`,
             { duration: 10000 }
           );
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'merchant_profiles' },
+        () => {
+          toast.info("🔔 नया दुकान रजिस्ट्रेशन आया है!", { duration: 8000 });
+          void loadMerchants();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'matrimony_profiles' },
+        () => {
+          toast.info("🔔 नया जीवनसाथी प्रोफ़ाइल आया है!", { duration: 8000 });
+          void loadMatrimony();
         }
       )
       .subscribe();
