@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   ShieldCheck, ShieldX, Bell, CheckCircle2, IndianRupee, Users, Clock,
   BadgeCheck, MessageCircle, Send, XCircle, AlertTriangle, Crown,
-  Download, CalendarPlus, LogOut, Search, Heart, Eye
+  Download, CalendarPlus, LogOut, Search, Heart, Eye, FileText, ZoomIn
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -80,6 +80,24 @@ interface MatrimonyRecord {
   created_at: string;
   profile_email?: string | null;
   profile_phone?: string | null;
+  aadhar_url?: string | null;
+  pan_url?: string | null;
+}
+
+interface MerchantRecord {
+  id: string;
+  user_id: string;
+  shop_name: string;
+  category: string | null;
+  city: string | null;
+  is_verified: boolean | null;
+  aadhar_url: string | null;
+  pan_url: string | null;
+  gst_url: string | null;
+  fssai_url: string | null;
+  created_at: string;
+  profile_email?: string | null;
+  profile_phone?: string | null;
 }
 
 const MOCK_CHATBOT_LOGS: ChatbotLog[] = [
@@ -125,6 +143,9 @@ const AdminDashboard = () => {
   const [matrimonyLoading, setMatrimonyLoading] = useState(false);
   const [complaints, setComplaints] = useState<ComplaintRecord[]>([]);
   const [complaintsLoading, setComplaintsLoading] = useState(false);
+  const [merchants, setMerchants] = useState<MerchantRecord[]>([]);
+  const [merchantsLoading, setMerchantsLoading] = useState(false);
+  const [fullImageUrl, setFullImageUrl] = useState<string | null>(null);
 
   const [payments, setPayments] = useState<MerchantPayment[]>([
     { shopId: "1", shopName: "Sharma General Store", plan: "monthly", amount: 99, transactionId: "TXN001234", date: "2026-03-08", approved: false, screenshotUrl: "screenshot1.png" },
@@ -207,14 +228,37 @@ const AdminDashboard = () => {
       setComplaintsLoading(false);
     };
 
+    const loadMerchants = async () => {
+      setMerchantsLoading(true);
+      const { data } = await supabase
+        .from("merchant_profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (data) {
+        const userIds = [...new Set(data.map(m => m.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, email, phone")
+          .in("id", userIds);
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) ?? []);
+        setMerchants(data.map(m => ({
+          ...m,
+          profile_email: profileMap.get(m.user_id)?.email,
+          profile_phone: profileMap.get(m.user_id)?.phone,
+        })) as MerchantRecord[]);
+      }
+      setMerchantsLoading(false);
+    };
+
     void loadCustomers();
     void loadMemberships();
     void loadMatrimony();
     void loadComplaints();
+    void loadMerchants();
 
-    // Realtime subscription for new payments
+    // Realtime subscription for new payments & merchant submissions
     const channel = supabase
-      .channel('admin-memberships')
+      .channel('admin-realtime')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'memberships' },
@@ -233,11 +277,26 @@ const AdminDashboard = () => {
           };
           setMemberships(prev => [enriched, ...prev]);
           
-          // Show real-time notification
           toast.info(
             `🔔 नया पेमेंट! ${profile?.email || profile?.phone || "User"} ने ${newMembership.plan === "monthly" ? "₹1 मासिक" : "₹12 वार्षिक"} मेंबरशिप ली। TXN: ${newMembership.transaction_id || "N/A"}`,
             { duration: 10000 }
           );
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'merchant_profiles' },
+        () => {
+          toast.info("🔔 नया दुकान रजिस्ट्रेशन आया है!", { duration: 8000 });
+          void loadMerchants();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'matrimony_profiles' },
+        () => {
+          toast.info("🔔 नया जीवनसाथी प्रोफ़ाइल आया है!", { duration: 8000 });
+          void loadMatrimony();
         }
       )
       .subscribe();
@@ -421,9 +480,9 @@ const AdminDashboard = () => {
           <div className="flex items-center gap-3">
             <div className="relative">
               <Bell className="h-5 w-5 text-primary-foreground" />
-              {(pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length + unreadComplaints.length) > 0 && (
+              {(pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length + unreadComplaints.length + merchants.filter(m => !m.is_verified).length) > 0 && (
                 <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                  {pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length + unreadComplaints.length}
+                  {pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length + unreadComplaints.length + merchants.filter(m => !m.is_verified).length}
                 </span>
               )}
             </div>
@@ -486,9 +545,17 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs defaultValue="memberships" className="mb-8">
-          <TabsList className="w-full max-w-2xl flex-wrap h-auto gap-1">
+          <TabsList className="w-full max-w-3xl flex-wrap h-auto gap-1">
             <TabsTrigger value="memberships" className="text-xs">🏅 भारत गौरव ({pendingMemberships.length})</TabsTrigger>
             <TabsTrigger value="matrimony" className="text-xs">💕 जीवनसाथी ({unpublishedMatrimony.length})</TabsTrigger>
+            <TabsTrigger value="merchants" className="text-xs relative">
+              🏪 Merchants
+              {merchants.filter(m => !m.is_verified).length > 0 && (
+                <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                  {merchants.filter(m => !m.is_verified).length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="free" className="text-xs">🆓 Free Shops</TabsTrigger>
             <TabsTrigger value="premium" className="text-xs">⭐ Premium</TabsTrigger>
             <TabsTrigger value="complaints" className="text-xs relative">
@@ -576,24 +643,46 @@ const AdminDashboard = () => {
                 ) : (
                   unpublishedMatrimony.map((p) => (
                     <div key={p.id} className="rounded-lg border border-[hsl(340,80%,50%)]/30 bg-[hsl(340,80%,50%)]/5 p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          {p.photos?.[0] ? (
-                            <img src={p.photos[0]} alt={p.name} className="h-12 w-12 rounded-full object-cover border border-border" />
-                          ) : (
-                            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                              <Heart className="h-5 w-5 text-muted-foreground" />
+                      <div className="flex flex-col gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            {p.photos?.[0] ? (
+                              <img src={p.photos[0]} alt={p.name} className="h-12 w-12 rounded-full object-cover border border-border" />
+                            ) : (
+                              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                                <Heart className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-semibold text-foreground">{p.name} <Badge variant="secondary" className="text-[9px] ml-1">{p.gender}</Badge></p>
+                              <p className="text-xs text-muted-foreground">{p.city} • {p.profile_email || p.profile_phone || "Contact N/A"}</p>
+                              <p className="text-xs text-muted-foreground">Plan: {p.subscription_plan || "Not paid"}</p>
                             </div>
-                          )}
-                          <div>
-                            <p className="font-semibold text-foreground">{p.name} <Badge variant="secondary" className="text-[9px] ml-1">{p.gender}</Badge></p>
-                            <p className="text-xs text-muted-foreground">{p.city} • {p.profile_email || p.profile_phone || "Contact N/A"}</p>
-                            <p className="text-xs text-muted-foreground">Plan: {p.subscription_plan || "Not paid"}</p>
                           </div>
+                          <Button size="sm" onClick={() => publishMatrimony(p.id)} className="bg-[hsl(340,80%,50%)] hover:bg-[hsl(340,80%,45%)] text-primary-foreground h-8">
+                            <CheckCircle2 className="mr-1 h-4 w-4" /> Verify & Publish
+                          </Button>
                         </div>
-                        <Button size="sm" onClick={() => publishMatrimony(p.id)} className="bg-[hsl(340,80%,50%)] hover:bg-[hsl(340,80%,45%)] text-primary-foreground h-8">
-                          <CheckCircle2 className="mr-1 h-4 w-4" /> Verify & Publish
-                        </Button>
+                        {/* KYC Documents */}
+                        {(p.aadhar_url || p.pan_url) && (
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            <p className="w-full text-[11px] font-semibold text-foreground flex items-center gap-1"><FileText className="h-3 w-3" /> KYC Documents:</p>
+                            {p.aadhar_url && (
+                              <button onClick={() => setFullImageUrl(p.aadhar_url!)} className="group relative">
+                                <img src={p.aadhar_url} alt="Aadhar" className="h-14 w-20 rounded border border-border object-cover" />
+                                <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
+                                <span className="block text-[9px] text-center text-muted-foreground">Aadhar</span>
+                              </button>
+                            )}
+                            {p.pan_url && (
+                              <button onClick={() => setFullImageUrl(p.pan_url!)} className="group relative">
+                                <img src={p.pan_url} alt="PAN" className="h-14 w-20 rounded border border-border object-cover" />
+                                <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
+                                <span className="block text-[9px] text-center text-muted-foreground">PAN</span>
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))
@@ -607,6 +696,82 @@ const AdminDashboard = () => {
                       <div key={p.id} className="mb-1 rounded bg-green-india/5 px-3 py-2 text-xs flex items-center justify-between">
                         <span><span className="font-medium">{p.name}</span> — {p.gender}, {p.city}</span>
                         <Badge className="bg-green-india text-primary-foreground text-[9px]">Published</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* MERCHANTS KYC VERIFICATION */}
+          <TabsContent value="merchants">
+            <Card>
+              <CardHeader className="bg-saffron/5 border-b">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-saffron" /> Merchant KYC Verification
+                  <Badge variant="secondary">{merchants.filter(m => !m.is_verified).length} Pending</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 p-4">
+                {merchantsLoading ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">Loading...</p>
+                ) : merchants.filter(m => !m.is_verified).length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">✅ No pending merchant verifications.</p>
+                ) : (
+                  merchants.filter(m => !m.is_verified).map((m) => (
+                    <div key={m.id} className="rounded-lg border border-saffron/30 bg-saffron/5 p-4 space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div>
+                          <p className="font-semibold text-foreground">{m.shop_name}</p>
+                          <p className="text-xs text-muted-foreground">{m.category} • {m.city} • {m.profile_email || m.profile_phone || "Contact N/A"}</p>
+                          <p className="text-[11px] text-muted-foreground">🕐 {formatDateTime(m.created_at)}</p>
+                        </div>
+                      </div>
+                      {/* KYC Documents */}
+                      <div className="flex flex-wrap gap-2">
+                        <p className="w-full text-[11px] font-semibold text-foreground flex items-center gap-1"><FileText className="h-3 w-3" /> KYC Documents:</p>
+                        {m.aadhar_url ? (
+                          <button onClick={() => setFullImageUrl(m.aadhar_url!)} className="group relative">
+                            <img src={m.aadhar_url} alt="Aadhar" className="h-14 w-20 rounded border border-border object-cover" />
+                            <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
+                            <span className="block text-[9px] text-center text-muted-foreground">Aadhar ✓</span>
+                          </button>
+                        ) : <span className="text-[10px] text-destructive">Aadhar ✗</span>}
+                        {m.pan_url ? (
+                          <button onClick={() => setFullImageUrl(m.pan_url!)} className="group relative">
+                            <img src={m.pan_url} alt="PAN" className="h-14 w-20 rounded border border-border object-cover" />
+                            <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
+                            <span className="block text-[9px] text-center text-muted-foreground">PAN ✓</span>
+                          </button>
+                        ) : <span className="text-[10px] text-destructive">PAN ✗</span>}
+                        {m.gst_url && (
+                          <button onClick={() => setFullImageUrl(m.gst_url!)} className="group relative">
+                            <img src={m.gst_url} alt="GST" className="h-14 w-20 rounded border border-border object-cover" />
+                            <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
+                            <span className="block text-[9px] text-center text-muted-foreground">GST ✓</span>
+                          </button>
+                        )}
+                        {m.fssai_url && (
+                          <button onClick={() => setFullImageUrl(m.fssai_url!)} className="group relative">
+                            <img src={m.fssai_url} alt="FSSAI" className="h-14 w-20 rounded border border-border object-cover" />
+                            <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
+                            <span className="block text-[9px] text-center text-muted-foreground">FSSAI ✓</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+
+                {/* Verified merchants */}
+                {merchants.filter(m => m.is_verified).length > 0 && (
+                  <div className="mt-4 border-t pt-4">
+                    <p className="mb-2 text-xs font-semibold text-green-india">✅ Verified Merchants:</p>
+                    {merchants.filter(m => m.is_verified).slice(0, 10).map((m) => (
+                      <div key={m.id} className="mb-1 rounded bg-green-india/5 px-3 py-2 text-xs flex items-center justify-between">
+                        <span><span className="font-medium">{m.shop_name}</span> — {m.category}, {m.city}</span>
+                        <Badge className="bg-green-india text-primary-foreground text-[9px]">Verified</Badge>
                       </div>
                     ))}
                   </div>
@@ -933,6 +1098,19 @@ const AdminDashboard = () => {
           <p className="font-hindi text-xs text-muted-foreground">भारत दुकान - प्रबंधन पोर्टल • केवल आंतरिक उपयोग हेतु</p>
         </div>
       </div>
+
+      {/* Full-size image overlay */}
+      {fullImageUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setFullImageUrl(null)}>
+          <div className="relative max-h-[90vh] max-w-[90vw]">
+            <img src={fullImageUrl} alt="Document" className="max-h-[85vh] max-w-full rounded-lg object-contain" />
+            <button onClick={() => setFullImageUrl(null)}
+              className="absolute -top-3 -right-3 rounded-full bg-destructive p-1.5 text-destructive-foreground shadow-lg">
+              <XCircle className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

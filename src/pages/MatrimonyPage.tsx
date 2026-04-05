@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import PaymentQRSection from "@/components/PaymentQRSection";
 import AppHeader from "@/components/AppHeader";
+import KycDocUpload from "@/components/KycDocUpload";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,8 @@ interface MatrimonyProfile {
   subscription_plan: string | null;
   subscription_end: string | null;
   user_id: string;
+  aadhar_url: string | null;
+  pan_url: string | null;
 }
 
 const MatrimonyPage = () => {
@@ -44,6 +47,8 @@ const MatrimonyPage = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [aadharUrl, setAadharUrl] = useState("");
+  const [panUrl, setPanUrl] = useState("");
 
   const [form, setForm] = useState({
     name: "", gender: "", dob: "", height: "", education: "",
@@ -64,6 +69,8 @@ const MatrimonyPage = () => {
     if (myRes.data) {
       const p = myRes.data as unknown as MatrimonyProfile;
       setMyProfile(p);
+      setAadharUrl(p.aadhar_url || "");
+      setPanUrl(p.pan_url || "");
       setForm({
         name: p.name, gender: p.gender, dob: p.dob || "", height: p.height,
         education: p.education, profession: p.profession, city: p.city,
@@ -93,8 +100,10 @@ const MatrimonyPage = () => {
 
   const handleSave = async () => {
     if (!user) return;
+    if (!aadharUrl) { toast.error("कृपया आधार कार्ड की फोटो अपलोड करें"); return; }
+    if (!panUrl) { toast.error("कृपया पैन कार्ड की फोटो अपलोड करें"); return; }
     setSaving(true);
-    const payload = { ...form, user_id: user.id, updated_at: new Date().toISOString() };
+    const payload = { ...form, user_id: user.id, aadhar_url: aadharUrl, pan_url: panUrl, updated_at: new Date().toISOString() };
     if (myProfile) {
       const { error } = await supabase.from("matrimony_profiles").update(payload).eq("id", myProfile.id);
       if (error) toast.error("Save failed"); else { toast.success("Profile updated!"); loadData(); }
@@ -238,6 +247,15 @@ const MatrimonyPage = () => {
                     {uploading ? "Uploading..." : "Upload Photo"}
                   </Button>
                   {!myProfile && <p className="text-[10px] text-muted-foreground mt-1">Create profile first to upload photos</p>}
+                </div>
+
+                {/* KYC Documents */}
+                <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+                  <p className="text-sm font-semibold text-foreground">📄 KYC Documents • <span className="font-hindi">दस्तावेज़ सत्यापन</span></p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <KycDocUpload label="Aadhar Card" labelHindi="आधार कार्ड" required value={aadharUrl} onChange={setAadharUrl} userId={user?.id || ""} folder="kyc-aadhar" />
+                    <KycDocUpload label="PAN Card" labelHindi="पैन कार्ड" required value={panUrl} onChange={setPanUrl} userId={user?.id || ""} folder="kyc-pan" />
+                  </div>
                 </div>
 
                 <Button onClick={handleSave} disabled={saving} className="w-full">

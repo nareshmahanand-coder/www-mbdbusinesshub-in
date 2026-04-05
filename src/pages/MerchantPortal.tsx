@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import PaymentQRSection from "@/components/PaymentQRSection";
+import KycDocUpload from "@/components/KycDocUpload";
 
 const UPI_ID = "Nmahanand1@ybl";
 const UPI_BASE = `upi://pay?pa=${UPI_ID}&pn=MeraBharatDukaan&cu=INR`;
@@ -32,6 +33,13 @@ const MerchantPortal = () => {
   const [uploading, setUploading] = useState(false);
   const shopPhotoRef = useRef<HTMLInputElement>(null);
   const screenshotRef = useRef<HTMLInputElement>(null);
+  
+  // KYC Documents
+  const [aadharUrl, setAadharUrl] = useState("");
+  const [panUrl, setPanUrl] = useState("");
+  const [gstUrl, setGstUrl] = useState("");
+  const [fssaiUrl, setFssaiUrl] = useState("");
+  
   const [form, setForm] = useState({
     shopName: "", shopNameHindi: "", category: "", address: "",
     pincode: "", whatsapp: "", phone: "", description: "",
@@ -70,6 +78,8 @@ const MerchantPortal = () => {
     if (!form.shopName || !form.category || !form.address || !form.pincode || !form.whatsapp) {
       toast.error("Please fill all required fields"); return;
     }
+    if (!aadharUrl) { toast.error("कृपया आधार कार्ड की फोटो अपलोड करें"); return; }
+    if (!panUrl) { toast.error("कृपया पैन कार्ड की फोटो अपलोड करें"); return; }
     setSubmitted(true);
     toast.success("Shop registration submitted for verification!");
   };
@@ -178,6 +188,18 @@ const MerchantPortal = () => {
                   </div>
                 </button>
               </div>
+
+              {/* KYC Documents */}
+              <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+                <p className="text-sm font-semibold text-foreground">📄 KYC Documents • <span className="font-hindi">दस्तावेज़ सत्यापन</span></p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <KycDocUpload label="Aadhar Card" labelHindi="आधार कार्ड" required value={aadharUrl} onChange={setAadharUrl} userId={user?.id || ""} folder="kyc-aadhar" />
+                  <KycDocUpload label="PAN Card" labelHindi="पैन कार्ड" required value={panUrl} onChange={setPanUrl} userId={user?.id || ""} folder="kyc-pan" />
+                  <KycDocUpload label="GST Certificate" labelHindi="जीएसटी प्रमाणपत्र" value={gstUrl} onChange={setGstUrl} userId={user?.id || ""} folder="kyc-gst" />
+                  <KycDocUpload label="FSSAI License" labelHindi="फूड लाइसेंस" value={fssaiUrl} onChange={setFssaiUrl} userId={user?.id || ""} folder="kyc-fssai" />
+                </div>
+              </div>
+
               <Button type="submit" className="w-full" size="lg">
                 <Store className="mr-2 h-5 w-5" /> Submit for Verification
               </Button>
