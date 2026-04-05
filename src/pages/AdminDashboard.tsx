@@ -143,6 +143,9 @@ const AdminDashboard = () => {
   const [matrimonyLoading, setMatrimonyLoading] = useState(false);
   const [complaints, setComplaints] = useState<ComplaintRecord[]>([]);
   const [complaintsLoading, setComplaintsLoading] = useState(false);
+  const [merchants, setMerchants] = useState<MerchantRecord[]>([]);
+  const [merchantsLoading, setMerchantsLoading] = useState(false);
+  const [fullImageUrl, setFullImageUrl] = useState<string | null>(null);
 
   const [payments, setPayments] = useState<MerchantPayment[]>([
     { shopId: "1", shopName: "Sharma General Store", plan: "monthly", amount: 99, transactionId: "TXN001234", date: "2026-03-08", approved: false, screenshotUrl: "screenshot1.png" },
