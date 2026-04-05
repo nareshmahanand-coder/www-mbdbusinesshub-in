@@ -177,6 +177,7 @@ export type Database = {
       }
       matrimony_profiles: {
         Row: {
+          aadhar_url: string | null
           about_me: string | null
           city: string | null
           created_at: string
@@ -190,6 +191,7 @@ export type Database = {
           is_published: boolean | null
           job_details: string | null
           name: string
+          pan_url: string | null
           photos: string[] | null
           profession: string | null
           subscription_end: string | null
@@ -199,6 +201,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          aadhar_url?: string | null
           about_me?: string | null
           city?: string | null
           created_at?: string
@@ -212,6 +215,7 @@ export type Database = {
           is_published?: boolean | null
           job_details?: string | null
           name?: string
+          pan_url?: string | null
           photos?: string[] | null
           profession?: string | null
           subscription_end?: string | null
@@ -221,6 +225,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          aadhar_url?: string | null
           about_me?: string | null
           city?: string | null
           created_at?: string
@@ -234,6 +239,7 @@ export type Database = {
           is_published?: boolean | null
           job_details?: string | null
           name?: string
+          pan_url?: string | null
           photos?: string[] | null
           profession?: string | null
           subscription_end?: string | null
@@ -288,16 +294,20 @@ export type Database = {
       }
       merchant_profiles: {
         Row: {
+          aadhar_url: string | null
           address: string | null
           category: string | null
           city: string | null
           created_at: string
           description: string | null
+          fssai_url: string | null
+          gst_url: string | null
           id: string
           is_premium: boolean | null
           is_verified: boolean | null
           latitude: number | null
           longitude: number | null
+          pan_url: string | null
           phone: string | null
           photos: string[] | null
           pincode: string | null
@@ -310,16 +320,20 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          aadhar_url?: string | null
           address?: string | null
           category?: string | null
           city?: string | null
           created_at?: string
           description?: string | null
+          fssai_url?: string | null
+          gst_url?: string | null
           id?: string
           is_premium?: boolean | null
           is_verified?: boolean | null
           latitude?: number | null
           longitude?: number | null
+          pan_url?: string | null
           phone?: string | null
           photos?: string[] | null
           pincode?: string | null
@@ -332,16 +346,20 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          aadhar_url?: string | null
           address?: string | null
           category?: string | null
           city?: string | null
           created_at?: string
           description?: string | null
+          fssai_url?: string | null
+          gst_url?: string | null
           id?: string
           is_premium?: boolean | null
           is_verified?: boolean | null
           latitude?: number | null
           longitude?: number | null
+          pan_url?: string | null
           phone?: string | null
           photos?: string[] | null
           pincode?: string | null
