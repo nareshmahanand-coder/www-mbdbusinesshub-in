@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   ShieldCheck, ShieldX, Bell, CheckCircle2, IndianRupee, Users, Clock,
   BadgeCheck, MessageCircle, Send, XCircle, AlertTriangle, Crown,
-  Download, CalendarPlus, LogOut, Search, Heart, Eye
+  Download, CalendarPlus, LogOut, Search, Heart, Eye, FileText, ZoomIn
 } from "lucide-react";
 import { toast } from "sonner";
 
