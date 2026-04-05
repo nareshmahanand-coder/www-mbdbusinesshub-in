@@ -69,6 +69,8 @@ const MatrimonyPage = () => {
     if (myRes.data) {
       const p = myRes.data as unknown as MatrimonyProfile;
       setMyProfile(p);
+      setAadharUrl(p.aadhar_url || "");
+      setPanUrl(p.pan_url || "");
       setForm({
         name: p.name, gender: p.gender, dob: p.dob || "", height: p.height,
         education: p.education, profession: p.profession, city: p.city,
