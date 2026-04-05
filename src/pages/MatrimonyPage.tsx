@@ -249,6 +249,15 @@ const MatrimonyPage = () => {
                   {!myProfile && <p className="text-[10px] text-muted-foreground mt-1">Create profile first to upload photos</p>}
                 </div>
 
+                {/* KYC Documents */}
+                <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+                  <p className="text-sm font-semibold text-foreground">📄 KYC Documents • <span className="font-hindi">दस्तावेज़ सत्यापन</span></p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <KycDocUpload label="Aadhar Card" labelHindi="आधार कार्ड" required value={aadharUrl} onChange={setAadharUrl} userId={user?.id || ""} folder="kyc-aadhar" />
+                    <KycDocUpload label="PAN Card" labelHindi="पैन कार्ड" required value={panUrl} onChange={setPanUrl} userId={user?.id || ""} folder="kyc-pan" />
+                  </div>
+                </div>
+
                 <Button onClick={handleSave} disabled={saving} className="w-full">
                   {saving ? "Saving..." : myProfile ? "Update Profile" : "Create Profile"}
                 </Button>
