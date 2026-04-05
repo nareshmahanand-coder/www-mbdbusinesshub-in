@@ -80,6 +80,24 @@ interface MatrimonyRecord {
   created_at: string;
   profile_email?: string | null;
   profile_phone?: string | null;
+  aadhar_url?: string | null;
+  pan_url?: string | null;
+}
+
+interface MerchantRecord {
+  id: string;
+  user_id: string;
+  shop_name: string;
+  category: string | null;
+  city: string | null;
+  is_verified: boolean | null;
+  aadhar_url: string | null;
+  pan_url: string | null;
+  gst_url: string | null;
+  fssai_url: string | null;
+  created_at: string;
+  profile_email?: string | null;
+  profile_phone?: string | null;
 }
 
 const MOCK_CHATBOT_LOGS: ChatbotLog[] = [
