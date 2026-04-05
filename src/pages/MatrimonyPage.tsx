@@ -100,8 +100,10 @@ const MatrimonyPage = () => {
 
   const handleSave = async () => {
     if (!user) return;
+    if (!aadharUrl) { toast.error("कृपया आधार कार्ड की फोटो अपलोड करें"); return; }
+    if (!panUrl) { toast.error("कृपया पैन कार्ड की फोटो अपलोड करें"); return; }
     setSaving(true);
-    const payload = { ...form, user_id: user.id, updated_at: new Date().toISOString() };
+    const payload = { ...form, user_id: user.id, aadhar_url: aadharUrl, pan_url: panUrl, updated_at: new Date().toISOString() };
     if (myProfile) {
       const { error } = await supabase.from("matrimony_profiles").update(payload).eq("id", myProfile.id);
       if (error) toast.error("Save failed"); else { toast.success("Profile updated!"); loadData(); }
