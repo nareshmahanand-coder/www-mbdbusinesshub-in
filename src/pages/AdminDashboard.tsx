@@ -11,8 +11,12 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   ShieldCheck, ShieldX, Bell, CheckCircle2, IndianRupee, Users, Clock,
   BadgeCheck, MessageCircle, Send, XCircle, AlertTriangle, Crown,
-  Download, CalendarPlus, LogOut, Search, Heart, Eye, FileText, ZoomIn
+  Download, CalendarPlus, LogOut, Search, Heart, Eye, FileText, ZoomIn, Trash2
 } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 interface MerchantPayment {
