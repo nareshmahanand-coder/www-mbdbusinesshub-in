@@ -149,6 +149,8 @@ const AdminDashboard = () => {
   const [complaintsLoading, setComplaintsLoading] = useState(false);
   const [merchants, setMerchants] = useState<MerchantRecord[]>([]);
   const [merchantsLoading, setMerchantsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("memberships");
+  const [notificationsCleared, setNotificationsCleared] = useState(false);
   const [fullImageUrl, setFullImageUrl] = useState<string | null>(null);
 
   const [payments, setPayments] = useState<MerchantPayment[]>([
