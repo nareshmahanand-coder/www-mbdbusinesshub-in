@@ -8,7 +8,7 @@ import AppHeader from "@/components/AppHeader";
 import HeroCarousel from "@/components/HeroCarousel";
 import NandaFarmSection from "@/components/NandaFarmSection";
 import ShopMap from "@/components/ShopMap";
-import RechargeSection from "@/components/RechargeSection";
+
 import SuperAppNav from "@/components/SuperAppNav";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -223,8 +223,6 @@ const Index = () => {
       {/* Nanda Farm Featured Section */}
       <NandaFarmSection />
 
-      {/* Recharge & Bills */}
-      <RechargeSection />
 
       {/* Quick Categories */}
       <section className="relative z-10 bg-background py-8">
