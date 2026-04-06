@@ -596,7 +596,7 @@ const AdminDashboard = () => {
           </Button>
         </div>
 
-        <Tabs defaultValue="memberships" className="mb-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
           <TabsList className="w-full max-w-3xl flex-wrap h-auto gap-1">
             <TabsTrigger value="memberships" className="text-xs">🏅 भारत गौरव ({pendingMemberships.length})</TabsTrigger>
             <TabsTrigger value="matrimony" className="text-xs">💕 जीवनसाथी ({unpublishedMatrimony.length})</TabsTrigger>
