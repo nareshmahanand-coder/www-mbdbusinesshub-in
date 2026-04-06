@@ -11,8 +11,12 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   ShieldCheck, ShieldX, Bell, CheckCircle2, IndianRupee, Users, Clock,
   BadgeCheck, MessageCircle, Send, XCircle, AlertTriangle, Crown,
-  Download, CalendarPlus, LogOut, Search, Heart, Eye, FileText, ZoomIn
+  Download, CalendarPlus, LogOut, Search, Heart, Eye, FileText, ZoomIn, Trash2
 } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 interface MerchantPayment {
@@ -145,6 +149,8 @@ const AdminDashboard = () => {
   const [complaintsLoading, setComplaintsLoading] = useState(false);
   const [merchants, setMerchants] = useState<MerchantRecord[]>([]);
   const [merchantsLoading, setMerchantsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("memberships");
+  const [notificationsCleared, setNotificationsCleared] = useState(false);
   const [fullImageUrl, setFullImageUrl] = useState<string | null>(null);
 
   const [payments, setPayments] = useState<MerchantPayment[]>([
@@ -478,14 +484,60 @@ const AdminDashboard = () => {
             <p className="font-hindi text-xs text-primary-foreground/70">भारत दुकान - प्रबंधन पोर्टल</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <Bell className="h-5 w-5 text-primary-foreground" />
-              {(pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length + unreadComplaints.length + merchants.filter(m => !m.is_verified).length) > 0 && (
-                <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                  {pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length + unreadComplaints.length + merchants.filter(m => !m.is_verified).length}
-                </span>
-              )}
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="relative focus:outline-none">
+                  <Bell className="h-5 w-5 text-primary-foreground" />
+                  {!notificationsCleared && (pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length + unreadComplaints.length + merchants.filter(m => !m.is_verified).length) > 0 && (
+                    <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                      {pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length + unreadComplaints.length + merchants.filter(m => !m.is_verified).length}
+                    </span>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72">
+                <DropdownMenuLabel className="flex items-center justify-between">
+                  <span>🔔 Notifications</span>
+                  <button onClick={() => setNotificationsCleared(true)} className="text-[10px] text-destructive hover:underline flex items-center gap-0.5">
+                    <Trash2 className="h-3 w-3" /> Clear All
+                  </button>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {pendingMemberships.length > 0 && (
+                  <DropdownMenuItem onClick={() => { setActiveTab("memberships"); setNotificationsCleared(false); }}>
+                    <Crown className="mr-2 h-4 w-4 text-saffron" />
+                    <span className="text-xs">{pendingMemberships.length} pending membership(s)</span>
+                  </DropdownMenuItem>
+                )}
+                {merchants.filter(m => !m.is_verified).length > 0 && (
+                  <DropdownMenuItem onClick={() => { setActiveTab("merchants"); setNotificationsCleared(false); }}>
+                    <FileText className="mr-2 h-4 w-4 text-navy" />
+                    <span className="text-xs">{merchants.filter(m => !m.is_verified).length} merchant KYC pending</span>
+                  </DropdownMenuItem>
+                )}
+                {unpublishedMatrimony.length > 0 && (
+                  <DropdownMenuItem onClick={() => { setActiveTab("matrimony"); setNotificationsCleared(false); }}>
+                    <Heart className="mr-2 h-4 w-4 text-[hsl(340,80%,50%)]" />
+                    <span className="text-xs">{unpublishedMatrimony.length} matrimony profile(s) pending</span>
+                  </DropdownMenuItem>
+                )}
+                {unreadComplaints.length > 0 && (
+                  <DropdownMenuItem onClick={() => { setActiveTab("complaints"); setNotificationsCleared(false); }}>
+                    <AlertTriangle className="mr-2 h-4 w-4 text-destructive" />
+                    <span className="text-xs">{unreadComplaints.length} unread complaint(s)</span>
+                  </DropdownMenuItem>
+                )}
+                {pendingPayments.length > 0 && (
+                  <DropdownMenuItem onClick={() => { setActiveTab("premium"); setNotificationsCleared(false); }}>
+                    <IndianRupee className="mr-2 h-4 w-4 text-green-india" />
+                    <span className="text-xs">{pendingPayments.length} payment(s) pending</span>
+                  </DropdownMenuItem>
+                )}
+                {(pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length + unreadComplaints.length + merchants.filter(m => !m.is_verified).length) === 0 && (
+                  <div className="px-2 py-4 text-center text-xs text-muted-foreground">No new notifications</div>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button size="sm" variant="ghost" onClick={handleLogout} className="text-primary-foreground hover:bg-primary-foreground/10">
               <LogOut className="mr-1 h-4 w-4" /> Logout
             </Button>
@@ -544,7 +596,7 @@ const AdminDashboard = () => {
           </Button>
         </div>
 
-        <Tabs defaultValue="memberships" className="mb-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
           <TabsList className="w-full max-w-3xl flex-wrap h-auto gap-1">
             <TabsTrigger value="memberships" className="text-xs">🏅 भारत गौरव ({pendingMemberships.length})</TabsTrigger>
             <TabsTrigger value="matrimony" className="text-xs">💕 जीवनसाथी ({unpublishedMatrimony.length})</TabsTrigger>
