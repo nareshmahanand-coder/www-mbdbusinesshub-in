@@ -150,7 +150,8 @@ const AdminDashboard = () => {
   const [merchants, setMerchants] = useState<MerchantRecord[]>([]);
   const [merchantsLoading, setMerchantsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("memberships");
-  const [notificationsCleared, setNotificationsCleared] = useState(false);
+  const [notificationsClearedAt, setNotificationsClearedAt] = useState<string | null>(null);
+  const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [fullImageUrl, setFullImageUrl] = useState<string | null>(null);
 
   const [payments, setPayments] = useState<MerchantPayment[]>([
@@ -484,51 +485,60 @@ const AdminDashboard = () => {
             <p className="font-hindi text-xs text-primary-foreground/70">भारत दुकान - प्रबंधन पोर्टल</p>
           </div>
           <div className="flex items-center gap-3">
-            <DropdownMenu>
+            <DropdownMenu open={notifDropdownOpen} onOpenChange={setNotifDropdownOpen}>
               <DropdownMenuTrigger asChild>
                 <button className="relative focus:outline-none">
                   <Bell className="h-5 w-5 text-primary-foreground" />
-                  {!notificationsCleared && (pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length + unreadComplaints.length + merchants.filter(m => !m.is_verified).length) > 0 && (
-                    <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                      {pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length + unreadComplaints.length + merchants.filter(m => !m.is_verified).length}
-                    </span>
-                  )}
+                  {(() => {
+                    const cutoff = notificationsClearedAt;
+                    const visibleCount =
+                      pendingPayments.filter(p => !cutoff || p.date > cutoff).length +
+                      pendingMemberships.filter(m => !cutoff || m.created_at > cutoff).length +
+                      unpublishedMatrimony.filter(p => !cutoff || p.created_at > cutoff).length +
+                      unreadComplaints.filter(c => !cutoff || c.created_at > cutoff).length +
+                      merchants.filter(m => !m.is_verified && (!cutoff || m.created_at > cutoff)).length;
+                    return visibleCount > 0 ? (
+                      <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                        {visibleCount}
+                      </span>
+                    ) : null;
+                  })()}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-72">
                 <DropdownMenuLabel className="flex items-center justify-between">
                   <span>🔔 Notifications</span>
-                  <button onClick={() => setNotificationsCleared(true)} className="text-[10px] text-destructive hover:underline flex items-center gap-0.5">
+                  <button onClick={(e) => { e.stopPropagation(); setNotificationsClearedAt(new Date().toISOString()); toast.success("सभी नोटिफिकेशन साफ़ हो गई"); }} className="text-[10px] text-destructive hover:underline flex items-center gap-0.5">
                     <Trash2 className="h-3 w-3" /> Clear All
                   </button>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {pendingMemberships.length > 0 && (
-                  <DropdownMenuItem onClick={() => { setActiveTab("memberships"); setNotificationsCleared(false); }}>
+                  <DropdownMenuItem onClick={() => { setActiveTab("memberships"); setNotifDropdownOpen(false); }}>
                     <Crown className="mr-2 h-4 w-4 text-saffron" />
                     <span className="text-xs">{pendingMemberships.length} pending membership(s)</span>
                   </DropdownMenuItem>
                 )}
                 {merchants.filter(m => !m.is_verified).length > 0 && (
-                  <DropdownMenuItem onClick={() => { setActiveTab("merchants"); setNotificationsCleared(false); }}>
+                  <DropdownMenuItem onClick={() => { setActiveTab("merchants"); setNotifDropdownOpen(false); }}>
                     <FileText className="mr-2 h-4 w-4 text-navy" />
                     <span className="text-xs">{merchants.filter(m => !m.is_verified).length} merchant KYC pending</span>
                   </DropdownMenuItem>
                 )}
                 {unpublishedMatrimony.length > 0 && (
-                  <DropdownMenuItem onClick={() => { setActiveTab("matrimony"); setNotificationsCleared(false); }}>
+                  <DropdownMenuItem onClick={() => { setActiveTab("matrimony"); setNotifDropdownOpen(false); }}>
                     <Heart className="mr-2 h-4 w-4 text-[hsl(340,80%,50%)]" />
                     <span className="text-xs">{unpublishedMatrimony.length} matrimony profile(s) pending</span>
                   </DropdownMenuItem>
                 )}
                 {unreadComplaints.length > 0 && (
-                  <DropdownMenuItem onClick={() => { setActiveTab("complaints"); setNotificationsCleared(false); }}>
+                  <DropdownMenuItem onClick={() => { setActiveTab("complaints"); setNotifDropdownOpen(false); }}>
                     <AlertTriangle className="mr-2 h-4 w-4 text-destructive" />
                     <span className="text-xs">{unreadComplaints.length} unread complaint(s)</span>
                   </DropdownMenuItem>
                 )}
                 {pendingPayments.length > 0 && (
-                  <DropdownMenuItem onClick={() => { setActiveTab("premium"); setNotificationsCleared(false); }}>
+                  <DropdownMenuItem onClick={() => { setActiveTab("premium"); setNotifDropdownOpen(false); }}>
                     <IndianRupee className="mr-2 h-4 w-4 text-green-india" />
                     <span className="text-xs">{pendingPayments.length} payment(s) pending</span>
                   </DropdownMenuItem>
