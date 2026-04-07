@@ -1,19 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import ClassifiedsCategoryGrid from "@/components/classifieds/CategoryGrid";
+import ClassifiedsAdCard from "@/components/classifieds/AdCard";
+import ClassifiedsPostDialog from "@/components/classifieds/PostDialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShoppingBag, Plus, Phone, MapPin, IndianRupee, Tag, ChevronLeft, ChevronRight } from "lucide-react";
-import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import ImageUpload, { NoImage } from "@/components/ImageUpload";
+import { Slider } from "@/components/ui/slider";
+import { Search, SlidersHorizontal, Plus, X, MapPin } from "lucide-react";
 
-interface ClassifiedAd {
+export interface ClassifiedAd {
   id: string;
   title: string;
   description: string;
@@ -28,42 +26,7 @@ interface ClassifiedAd {
   user_id: string;
 }
 
-const categories = [
-  "Mobile / Tablet", "Electronics", "Furniture", "Vehicle", "Books",
-  "Clothing", "Kitchen", "Sports", "Other",
-];
-
-const PhotoCarousel = ({ photos }: { photos: string[] }) => {
-  const [idx, setIdx] = useState(0);
-  if (!photos || photos.length === 0) return <NoImage />;
-
-  return (
-    <div className="relative h-40 w-full overflow-hidden bg-muted">
-      <img src={photos[idx]} alt="" className="h-full w-full object-cover transition-opacity" />
-      {photos.length > 1 && (
-        <>
-          <button
-            onClick={e => { e.stopPropagation(); setIdx(i => (i - 1 + photos.length) % photos.length); }}
-            className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1 text-foreground shadow"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            onClick={e => { e.stopPropagation(); setIdx(i => (i + 1) % photos.length); }}
-            className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-background/80 p-1 text-foreground shadow"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
-          <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex gap-1">
-            {photos.map((_, i) => (
-              <span key={i} className={`h-1.5 w-1.5 rounded-full ${i === idx ? "bg-primary" : "bg-background/60"}`} />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-};
+const cities = ["All", "Bhilai", "Durg", "Raipur", "Bilaspur", "Korba", "Rajnandgaon"];
 
 const ClassifiedsPage = () => {
   const { user } = useAuth();
@@ -71,13 +34,10 @@ const ClassifiedsPage = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [adPhotos, setAdPhotos] = useState<string[]>([]);
-
-  const [form, setForm] = useState({
-    title: "", description: "", price: "", category: "", city: "",
-    condition: "used", contact_phone: "",
-  });
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [cityFilter, setCityFilter] = useState("All");
+  const [priceRange, setPriceRange] = useState([0, 500000]);
 
   useEffect(() => { loadAds(); }, []);
 
@@ -89,128 +49,148 @@ const ClassifiedsPage = () => {
     setLoading(false);
   };
 
-  const postAd = async () => {
-    if (!user) return;
-    if (!form.title.trim()) { toast.error("Title is required"); return; }
-    setSaving(true);
-    const { error } = await supabase.from("classifieds").insert({
-      ...form, price: Number(form.price) || 0, user_id: user.id, photos: adPhotos,
+  const filtered = useMemo(() => {
+    return ads.filter(a => {
+      const q = search.toLowerCase();
+      const matchesSearch = !search || a.title?.toLowerCase().includes(q) || a.category?.toLowerCase().includes(q) || a.city?.toLowerCase().includes(q);
+      const matchesCategory = !selectedCategory || a.category === selectedCategory;
+      const matchesCity = cityFilter === "All" || a.city?.toLowerCase() === cityFilter.toLowerCase();
+      const matchesPrice = (a.price ?? 0) >= priceRange[0] && (a.price ?? 0) <= priceRange[1];
+      return matchesSearch && matchesCategory && matchesCity && matchesPrice;
     });
-    setSaving(false);
-    if (error) toast.error("Failed to post ad");
-    else {
-      toast.success("Ad posted successfully!");
-      setForm({ title: "", description: "", price: "", category: "", city: "", condition: "used", contact_phone: "" });
-      setAdPhotos([]);
-      setDialogOpen(false);
-      loadAds();
-    }
+  }, [ads, search, selectedCategory, cityFilter, priceRange]);
+
+  const clearFilters = () => {
+    setSelectedCategory(null);
+    setCityFilter("All");
+    setPriceRange([0, 500000]);
+    setSearch("");
   };
 
-  const filtered = ads.filter(a => {
-    const q = search.toLowerCase();
-    return !search || a.title.toLowerCase().includes(q) || a.category.toLowerCase().includes(q) || a.city.toLowerCase().includes(q);
-  });
+  const hasActiveFilters = selectedCategory || cityFilter !== "All" || priceRange[0] > 0 || priceRange[1] < 500000;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24">
       <AppHeader />
-      <div className="container mx-auto px-4 py-6">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <ShoppingBag className="h-6 w-6 text-accent" /> पुरानी चीजें — Buy & Sell
-            </h1>
-            <p className="text-sm text-muted-foreground">OLX-style classifieds for your local area</p>
+
+      {/* Search Bar */}
+      <div className="sticky top-0 z-30 bg-card border-b border-border shadow-sm">
+        <div className="container mx-auto px-3 py-2.5 flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="खोजें — Cars, Mobiles, Furniture..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9 h-10 bg-muted/50 border-0 focus-visible:ring-1"
+            />
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-accent text-accent-foreground">
-                <Plus className="mr-1.5 h-4 w-4" /> Post Ad
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader><DialogTitle>Post a New Ad</DialogTitle></DialogHeader>
-              <div className="space-y-3">
-                <Input placeholder="Title *" value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} />
-                <Textarea placeholder="Description" value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} rows={3} />
-                <Input placeholder="Price ₹" type="number" value={form.price} onChange={e => setForm(f => ({...f, price: e.target.value}))} />
-                <Select value={form.category} onValueChange={v => setForm(f => ({...f, category: v}))}>
-                  <SelectTrigger><SelectValue placeholder="Category" /></SelectTrigger>
+          <Button
+            variant={showFilters ? "default" : "outline"}
+            size="icon"
+            className="shrink-0 h-10 w-10"
+            onClick={() => setShowFilters(f => !f)}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Filters Panel */}
+        {showFilters && (
+          <div className="container mx-auto px-3 pb-3 space-y-3 border-t border-border pt-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-foreground">Filters</p>
+              {hasActiveFilters && (
+                <button onClick={clearFilters} className="text-xs text-destructive flex items-center gap-1">
+                  <X className="h-3 w-3" /> Clear All
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">Location</label>
+                <Select value={cityFilter} onValueChange={setCityFilter}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    {cities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                <Select value={form.condition} onValueChange={v => setForm(f => ({...f, condition: v}))}>
-                  <SelectTrigger><SelectValue placeholder="Condition" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="like-new">Like New</SelectItem>
-                    <SelectItem value="used">Used</SelectItem>
-                    <SelectItem value="old">Old</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input placeholder="City" value={form.city} onChange={e => setForm(f => ({...f, city: e.target.value}))} />
-                <Input placeholder="Contact Phone" value={form.contact_phone} onChange={e => setForm(f => ({...f, contact_phone: e.target.value}))} />
-                <ImageUpload
-                  images={adPhotos}
-                  onImagesChange={setAdPhotos}
-                  maxImages={5}
-                  folder="classifieds"
-                  label="Upload Product Photos (up to 5)"
-                />
-                <Button onClick={postAd} disabled={saving} className="w-full">
-                  {saving ? "Posting..." : "Post Ad"}
-                </Button>
               </div>
-            </DialogContent>
-          </Dialog>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">
+                  Price: ₹{priceRange[0].toLocaleString("en-IN")} – ₹{priceRange[1].toLocaleString("en-IN")}
+                </label>
+                <Slider
+                  min={0} max={500000} step={5000}
+                  value={priceRange}
+                  onValueChange={setPriceRange}
+                  className="mt-2"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="container mx-auto px-3 py-4">
+        {/* Category Grid */}
+        <ClassifiedsCategoryGrid
+          selected={selectedCategory}
+          onSelect={cat => setSelectedCategory(cat === selectedCategory ? null : cat)}
+        />
+
+        {/* Results Header */}
+        <div className="flex items-center justify-between mt-5 mb-3">
+          <div>
+            <h2 className="text-base font-bold text-foreground">
+              {selectedCategory ? selectedCategory : "Fresh Recommendations"}
+            </h2>
+            <p className="text-xs text-muted-foreground">{filtered.length} ads found</p>
+          </div>
+          {selectedCategory && (
+            <button onClick={() => setSelectedCategory(null)} className="text-xs text-accent font-medium">
+              View All
+            </button>
+          )}
         </div>
 
-        <div className="mb-4">
-          <Input placeholder="Search ads by title, category, city..." value={search}
-            onChange={e => setSearch(e.target.value)} className="max-w-md" />
-        </div>
-
+        {/* Product Grid */}
         {loading ? (
-          <div className="py-16 text-center text-muted-foreground">Loading...</div>
+          <div className="grid grid-cols-2 gap-3">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="rounded-xl bg-muted animate-pulse h-56" />
+            ))}
+          </div>
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center">
-            <ShoppingBag className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-            <p className="text-muted-foreground">No ads found</p>
+            <p className="text-muted-foreground text-sm">कोई विज्ञापन नहीं मिला</p>
+            <p className="text-xs text-muted-foreground mt-1">Try changing your filters or search</p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((ad) => (
-              <Card key={ad.id} className="overflow-hidden">
-                <PhotoCarousel photos={ad.photos?.filter(Boolean) || []} />
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-foreground line-clamp-1">{ad.title}</h3>
-                    <Badge variant="secondary" className="text-[10px] shrink-0 ml-2">{ad.condition}</Badge>
-                  </div>
-                  {ad.description && <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{ad.description}</p>}
-                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mb-3">
-                    <span className="flex items-center gap-0.5"><IndianRupee className="h-3 w-3" />{ad.price?.toLocaleString("en-IN")}</span>
-                    {ad.category && <span className="flex items-center gap-0.5"><Tag className="h-3 w-3" />{ad.category}</span>}
-                    {ad.city && <span className="flex items-center gap-0.5"><MapPin className="h-3 w-3" />{ad.city}</span>}
-                  </div>
-                  {ad.contact_phone && (
-                    <a href={`tel:${ad.contact_phone}`}>
-                      <Button size="sm" variant="outline" className="w-full text-xs">
-                        <Phone className="mr-1 h-3.5 w-3.5" /> Call Seller
-                      </Button>
-                    </a>
-                  )}
-                  <p className="text-[10px] text-muted-foreground mt-2">
-                    {new Date(ad.created_at).toLocaleDateString("en-IN")}
-                  </p>
-                </CardContent>
-              </Card>
+          <div className="grid grid-cols-2 gap-3">
+            {filtered.map((ad, idx) => (
+              <ClassifiedsAdCard key={ad.id} ad={ad} isFeatured={idx < 2} />
             ))}
           </div>
         )}
       </div>
+
+      {/* Floating Sell Button */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+        <Button
+          onClick={() => setDialogOpen(true)}
+          className="rounded-full h-12 px-7 bg-accent text-accent-foreground shadow-lg shadow-accent/30 text-sm font-bold hover:bg-accent/90 active:scale-95 transition-transform"
+        >
+          <Plus className="h-5 w-5 mr-1.5" /> Sell
+        </Button>
+      </div>
+
+      {/* Post Ad Dialog */}
+      <ClassifiedsPostDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onPosted={loadAds}
+      />
     </div>
   );
 };
