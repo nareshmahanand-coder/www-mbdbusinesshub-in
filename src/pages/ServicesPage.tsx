@@ -122,7 +122,7 @@ const ServicesPage = () => {
           <div className="py-16 text-center text-muted-foreground">Loading...</div>
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center">
-            <Headphones className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+            <Store className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <p className="text-muted-foreground">No service providers listed yet</p>
           </div>
         ) : (
