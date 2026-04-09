@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
+import PremiumShopSlider from "@/components/PremiumShopSlider";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Store, Plus, Phone, MapPin, Star, Search } from "lucide-react";
+import { Store, Plus, Phone, MapPin, Star, Search, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -28,7 +29,8 @@ interface ServiceProvider {
 const serviceTypes = [
   "Electrician", "Plumber", "Carpenter", "Doctor", "Tutor",
   "Driver", "Cook / Chef", "Tailor", "Painter", "AC Repair",
-  "Mobile Repair", "CA / Tax Consultant", "Lawyer", "Other",
+  "Mobile Repair", "CA / Tax Consultant", "Lawyer",
+  "Kirana Store", "Chicken / Mutton Shop", "Medical Store", "Salon", "Other",
 ];
 
 const ServicesPage = () => {
@@ -77,7 +79,8 @@ const ServicesPage = () => {
     <div className="min-h-screen bg-background">
       <AppHeader />
       <div className="container mx-auto px-4 py-6">
-        <div className="mb-6 flex items-center justify-between">
+        {/* Header */}
+        <div className="mb-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <Store className="h-6 w-6 text-primary" /> नजदीकी दुकान — Nearby Shops
@@ -111,6 +114,10 @@ const ServicesPage = () => {
           </Dialog>
         </div>
 
+        {/* Premium Auto-Slider — always visible */}
+        <PremiumShopSlider />
+
+        {/* Search */}
         <div className="mb-4">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -118,6 +125,7 @@ const ServicesPage = () => {
           </div>
         </div>
 
+        {/* Service providers list — always visible */}
         {loading ? (
           <div className="py-16 text-center text-muted-foreground">Loading...</div>
         ) : filtered.length === 0 ? (
@@ -143,11 +151,21 @@ const ServicesPage = () => {
                     {p.rating > 0 && <span className="flex items-center gap-0.5"><Star className="h-3 w-3 text-accent" />{p.rating}</span>}
                   </div>
                   {p.phone && (
-                    <a href={`tel:${p.phone}`}>
-                      <Button size="sm" className="w-full bg-[hsl(var(--green-india))] text-white hover:bg-[hsl(140,60%,30%)]">
-                        <Phone className="mr-1 h-3.5 w-3.5" /> Call Now
+                    <div className="flex gap-2">
+                      <a href={`tel:${p.phone}`} className="flex-1">
+                        <Button size="sm" className="w-full bg-[hsl(var(--green-india))] text-white hover:bg-[hsl(140,60%,30%)]">
+                          <Phone className="mr-1 h-3.5 w-3.5" /> Call Now
+                        </Button>
+                      </a>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-[hsl(var(--green-india))] text-[hsl(var(--green-india))]"
+                        onClick={() => window.open(`https://wa.me/91${p.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`नमस्ते, मुझे ${p.service_type} सेवा चाहिए।`)}`, "_blank")}
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" />
                       </Button>
-                    </a>
+                    </div>
                   )}
                 </CardContent>
               </Card>
