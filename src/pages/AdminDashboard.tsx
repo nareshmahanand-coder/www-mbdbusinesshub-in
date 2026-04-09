@@ -628,6 +628,7 @@ const AdminDashboard = () => {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="slider" className="text-xs">🎠 Slider</TabsTrigger>
           </TabsList>
 
           {/* BHARAT GAURAV MEMBERSHIP SECTION */}
