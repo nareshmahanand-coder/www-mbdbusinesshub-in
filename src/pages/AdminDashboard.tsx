@@ -1064,6 +1064,52 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+          {/* SLIDER MANAGEMENT */}
+          <TabsContent value="slider">
+            <Card>
+              <CardHeader className="bg-accent/5 border-b">
+                <CardTitle className="text-base flex items-center gap-2">
+                  🎠 Premium Slider Management — प्रीमियम स्लाइडर प्रबंधन
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  नजदीकी दुकान section में सबसे ऊपर Auto-Rotating Premium Slider दिखता है।
+                  केवल <strong>Verified + Premium</strong> दुकानें slider में दिखती हैं।
+                </p>
+                <div className="rounded-lg border border-accent/30 bg-accent/5 p-4">
+                  <h4 className="font-semibold text-foreground mb-2">कौन-सी दुकानें slider में हैं?</h4>
+                  {merchantsLoading ? (
+                    <p className="text-sm text-muted-foreground">Loading...</p>
+                  ) : (
+                    (() => {
+                      const sliderShops = merchants.filter(m => m.is_verified);
+                      return sliderShops.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">कोई Premium + Verified दुकान नहीं है।</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {sliderShops.map(m => (
+                            <div key={m.id} className="flex items-center justify-between rounded bg-background border p-3">
+                              <div>
+                                <p className="font-semibold text-foreground text-sm">{m.shop_name}</p>
+                                <p className="text-xs text-muted-foreground">{m.category} • {m.city}</p>
+                              </div>
+                              <Badge className="bg-accent text-accent-foreground text-[10px]">In Slider</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()
+                  )}
+                </div>
+                <div className="rounded-lg border p-4">
+                  <h4 className="font-semibold text-foreground mb-1">Slider Speed</h4>
+                  <p className="text-xs text-muted-foreground mb-2">Default: हर 5 सेकंड में slide बदलती है। Premium merchants को Verified करके slider में जोड़ें।</p>
+                  <p className="text-xs text-muted-foreground">💡 Tip: किसी दुकान को slider में जोड़ने के लिए Merchants tab में उसे <strong>Verify ✓</strong> करें और Premium status दें।</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
         {/* Customer Directory */}
