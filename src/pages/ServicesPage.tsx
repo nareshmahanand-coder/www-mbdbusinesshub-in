@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Headphones, Plus, Phone, MapPin, Star } from "lucide-react";
+import { Store, Plus, Phone, MapPin, Star, Search } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -80,9 +80,9 @@ const ServicesPage = () => {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Headphones className="h-6 w-6 text-primary" /> भारत मित्र — Services
+              <Store className="h-6 w-6 text-primary" /> नजदीकी दुकान — Nearby Shops
             </h1>
-            <p className="text-sm text-muted-foreground">Find local service providers near you</p>
+            <p className="text-sm text-muted-foreground">Find local shops & service providers near you</p>
           </div>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
@@ -112,14 +112,17 @@ const ServicesPage = () => {
         </div>
 
         <div className="mb-4">
-          <Input placeholder="Search by name, service, city..." value={search} onChange={e => setSearch(e.target.value)} className="max-w-md" />
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder="Search — Plumber, Electrician, Kirana, Chicken Shop..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
+          </div>
         </div>
 
         {loading ? (
           <div className="py-16 text-center text-muted-foreground">Loading...</div>
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center">
-            <Headphones className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+            <Store className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
             <p className="text-muted-foreground">No service providers listed yet</p>
           </div>
         ) : (

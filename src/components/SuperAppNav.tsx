@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ShoppingBag, Heart, Briefcase, Headphones } from "lucide-react";
+import { ShoppingBag, Heart, Briefcase, MapPin } from "lucide-react";
 
 const modules = [
   {
@@ -28,9 +28,9 @@ const modules = [
   },
   {
     to: "/services",
-    icon: Headphones,
-    label: "भारत मित्र",
-    sublabel: "Services",
+    icon: MapPin,
+    label: "नजदीकी दुकान",
+    sublabel: "Nearby Shops",
     bg: "bg-[hsl(240,100%,95%)]",
     iconBg: "bg-[hsl(240,100%,25%)]",
   },
