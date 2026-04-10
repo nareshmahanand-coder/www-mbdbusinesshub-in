@@ -22,6 +22,7 @@ import JobsPage from "./pages/JobsPage";
 import ServicesPage from "./pages/ServicesPage";
 import MyProfilePage from "./pages/MyProfilePage";
 import ShopProfilePage from "./pages/ShopProfilePage";
+import SkillDevelopmentPage from "./pages/SkillDevelopmentPage";
 
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
