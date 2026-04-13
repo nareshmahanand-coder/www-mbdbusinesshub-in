@@ -22,6 +22,8 @@ export interface Book {
   description: string;
   totalPages: number;
   chapters: Chapter[];
+  govtPdfUrl?: string; // Link to official govt e-book PDF
+  govtPdfLabel?: string; // Label for the govt PDF button
 }
 
 export interface BookCategory {
