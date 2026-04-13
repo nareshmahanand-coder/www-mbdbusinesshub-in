@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Search, GraduationCap, Wrench, Car, Scissors, Heart, Monitor, Sprout, Globe, BookOpen, Lightbulb, ChevronRight, ChevronLeft, ArrowLeft, Star, Award, Send, Image, Volume2, VolumeX, FileCheck, Trophy, BookMarked, Layers, List, ChevronDown } from "lucide-react";
+import { Search, GraduationCap, Wrench, Car, Scissors, Heart, Monitor, Sprout, Globe, BookOpen, Lightbulb, ChevronRight, ChevronLeft, ArrowLeft, Star, Award, Send, Image, Volume2, VolumeX, FileCheck, Trophy, BookMarked, Layers, List, ChevronDown, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
