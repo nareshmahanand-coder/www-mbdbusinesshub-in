@@ -3,6 +3,8 @@
    Every book has chapters → pages with detailed Hindi theory & diagrams
    ═══════════════════════════════════════════════════════════════════════ */
 
+import { mobileRepairExpandedChapters, tallyExpandedChapters } from "./skillBooksExpanded";
+
 export interface BookPage {
   title: string;
   content: string; // Full Hindi text with **bold** markers
@@ -937,7 +939,10 @@ Antenna → RF Switch → RF Filter → RF IC (Transceiver) → Modem (in CPU/So
     },
   ],
 };
+mobileRepairBook.chapters.push(...mobileRepairExpandedChapters);
 mobileRepairBook.totalPages = countPages(mobileRepairBook.chapters);
+mobileRepairBook.govtPdfUrl = "https://nios.ac.in/media/documents/vocational/mobile_phone_repairing.pdf";
+mobileRepairBook.govtPdfLabel = "NIOS — Mobile Phone Repairing (Official PDF)";
 
 /* ══════════════════════════════════════════
    2. LAPTOP REPAIRING — Textbook
@@ -960,6 +965,8 @@ const laptopRepairBook: Book = {
   ],
 };
 laptopRepairBook.totalPages = countPages(laptopRepairBook.chapters);
+laptopRepairBook.govtPdfUrl = "https://nios.ac.in/media/documents/vocational/computer_hardware.pdf";
+laptopRepairBook.govtPdfLabel = "NIOS — Computer Hardware Repair (Official PDF)";
 
 /* ══════════════════════════════════════════
    3. TV REPAIRING
