@@ -152,9 +152,18 @@ const EBookReader = ({ book, onBack }: { book: Book; onBack: () => void }) => {
           </div>
 
           {/* Listen Button */}
-          <Button onClick={handleListen} size="sm" variant={isSpeaking ? "destructive" : "secondary"} className="w-full gap-2 text-xs mb-4">
-            {isSpeaking ? <><VolumeX className="h-3.5 w-3.5" /> बंद करें</> : <><Volume2 className="h-3.5 w-3.5" /> 🔊 सुनिए — इस पृष्ठ को हिंदी में सुनें</>}
-          </Button>
+          <div className="flex gap-2 mb-4">
+            <Button onClick={handleListen} size="sm" variant={isSpeaking ? "destructive" : "secondary"} className="flex-1 gap-2 text-xs">
+              {isSpeaking ? <><VolumeX className="h-3.5 w-3.5" /> बंद करें</> : <><Volume2 className="h-3.5 w-3.5" /> 🔊 सुनिए</>}
+            </Button>
+            {book.govtPdfUrl && (
+              <Button size="sm" variant="outline" className="gap-1 text-xs" asChild>
+                <a href={book.govtPdfUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-3.5 w-3.5" /> 📕 सरकारी PDF
+                </a>
+              </Button>
+            )}
+          </div>
 
           {/* Content */}
           <div className="bg-card border border-border rounded-xl p-4 shadow-sm mb-4">
