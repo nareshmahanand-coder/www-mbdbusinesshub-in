@@ -3,6 +3,8 @@
    Every book has chapters → pages with detailed Hindi theory & diagrams
    ═══════════════════════════════════════════════════════════════════════ */
 
+import { mobileRepairExpandedChapters, tallyExpandedChapters } from "./skillBooksExpanded";
+
 export interface BookPage {
   title: string;
   content: string; // Full Hindi text with **bold** markers
@@ -22,6 +24,8 @@ export interface Book {
   description: string;
   totalPages: number;
   chapters: Chapter[];
+  govtPdfUrl?: string; // Link to official govt e-book PDF
+  govtPdfLabel?: string; // Label for the govt PDF button
 }
 
 export interface BookCategory {
@@ -935,7 +939,10 @@ Antenna → RF Switch → RF Filter → RF IC (Transceiver) → Modem (in CPU/So
     },
   ],
 };
+mobileRepairBook.chapters.push(...mobileRepairExpandedChapters);
 mobileRepairBook.totalPages = countPages(mobileRepairBook.chapters);
+mobileRepairBook.govtPdfUrl = "https://nios.ac.in/media/documents/vocational/mobile_phone_repairing.pdf";
+mobileRepairBook.govtPdfLabel = "NIOS — Mobile Phone Repairing (Official PDF)";
 
 /* ══════════════════════════════════════════
    2. LAPTOP REPAIRING — Textbook
@@ -958,6 +965,8 @@ const laptopRepairBook: Book = {
   ],
 };
 laptopRepairBook.totalPages = countPages(laptopRepairBook.chapters);
+laptopRepairBook.govtPdfUrl = "https://nios.ac.in/media/documents/vocational/computer_hardware.pdf";
+laptopRepairBook.govtPdfLabel = "NIOS — Computer Hardware Repair (Official PDF)";
 
 /* ══════════════════════════════════════════
    3. TV REPAIRING
@@ -1018,12 +1027,18 @@ const tallyBook = makeQuickBook("tally", "Tally Prime", "टैली प्र�
     { title: "Company Create और Ledger Setup", content: `**Tally Prime शुरू करने के Steps:**\n\n**Step 1: Company Create (Alt + F3 → Create Company)**\n• **Company Name**: अपनी दुकान/कंपनी का नाम\n• **Address**: पूरा पता\n• **Financial Year**: April to March (भारत में)\n• **Books Beginning**: जिस तारीख से शुरू करना है\n• **GSTIN**: अगर GST registered हैं तो GST number\n• **State**: राज्य चुनें (GST calculations के लिए ज़रूरी)\n\n**Step 2: Ledger Create (Gateway → Masters → Accounts Info → Ledger → Create)**\n• **Cash**: Under "Cash-in-Hand" group\n• **Bank A/c**: Under "Bank Accounts" (SBI, PNB etc.)\n• **Customer**: Under "Sundry Debtors" (जिनसे पैसा लेना है)\n• **Supplier**: Under "Sundry Creditors" (जिन्हें पैसा देना है)\n• **Purchase**: Under "Purchase Accounts"\n• **Sales**: Under "Sales Accounts"\n• **Expenses**: Salary, Rent, Electricity — Under "Indirect Expenses"\n\n**Step 3: GST Setup**\n• Company Alter → Statutory & Taxation → Enable GST = Yes\n• GST Registration Type: Regular / Composition\n• GSTIN: 15-digit number (27AABCU9603R1ZM format)\n• Ledger में GST Rate set करें: 5%, 12%, 18%, 28%\n\n**Important Shortcut Keys:**\n• **F2**: Change Date\n• **F5**: Payment Voucher\n• **F6**: Receipt Voucher\n• **F7**: Journal Voucher\n• **F8**: Sales Voucher\n• **F9**: Purchase Voucher\n• **Alt+F5**: Sales Return (Credit Note)\n• **Alt+F6**: Purchase Return (Debit Note)\n• **Alt+F2**: Change Period`, diagram: `┌──────────────────────────────────────────────┐\n│     Tally Prime — Navigation Map               │\n├──────────────────────────────────────────────┤\n│                                              │\n│  Gateway of Tally                            │\n│       │                                      │\n│       ├── Masters                            │\n│       │    ├── Accounts Info                  │\n│       │    │    ├── Groups (Create/Alter)     │\n│       │    │    └── Ledgers (Create/Alter)    │\n│       │    │                                 │\n│       │    ├── Inventory Info                 │\n│       │    │    ├── Stock Groups              │\n│       │    │    ├── Stock Items               │\n│       │    │    └── Units of Measure          │\n│       │    │                                 │\n│       │    └── Voucher Types                  │\n│       │                                      │\n│       ├── Transactions (Vouchers)             │\n│       │    ├── F5: Payment 💰                 │\n│       │    ├── F6: Receipt 📥                 │\n│       │    ├── F7: Journal 📋                 │\n│       │    ├── F8: Sales 🛒                   │\n│       │    ├── F9: Purchase 📦                │\n│       │    ├── Alt+F5: Credit Note            │\n│       │    └── Alt+F6: Debit Note             │\n│       │                                      │\n│       ├── Reports                            │\n│       │    ├── Balance Sheet                  │\n│       │    ├── Profit & Loss                  │\n│       │    ├── Trial Balance                  │\n│       │    ├── Day Book                       │\n│       │    ├── Cash/Bank Book                 │\n│       │    └── GST Reports                    │\n│       │                                      │\n│       └── GST (Statutory Reports)             │\n│            ├── GSTR-1 (Sales Return)          │\n│            ├── GSTR-3B (Summary Return)       │\n│            └── GSTR-9 (Annual Return)         │\n└──────────────────────────────────────────────┘` },
   ]},
 ]);
+tallyBook.chapters.push(...tallyExpandedChapters);
+tallyBook.totalPages = countPages(tallyBook.chapters);
+tallyBook.govtPdfUrl = "https://nios.ac.in/media/documents/vocational/accounting_with_tally.pdf";
+tallyBook.govtPdfLabel = "NIOS — Accounting with Tally (Official PDF)";
 
 const nursingBook = makeQuickBook("nursing", "Nursing & Health", "नर्सिंग और स्वास्थ्य", "🏥", "Patient Care, First Aid, Medicine Knowledge", [
   { title: "अध्याय 1: नर्सिंग का परिचय", pages: [
     { title: "नर्सिंग क्या है और क्यों ज़रूरी", content: `**नर्सिंग (Nursing)** स्वास्थ्य सेवा का वह क्षेत्र है जहां **मरीज़ की देखभाल, इलाज में सहायता, और स्वास्थ्य शिक्षा** दी जाती है।\n\n**नर्सिंग के प्रकार:**\n• **ANM** (Auxiliary Nurse Midwife) — 2 साल, 10वीं बाद, ग्रामीण स्वास्थ्य केंद्र\n• **GNM** (General Nursing & Midwifery) — 3.5 साल, 12वीं बाद\n• **B.Sc Nursing** — 4 साल, Degree course (12वीं Science)\n• **Post Basic B.Sc** — GNM के बाद 2 साल\n• **M.Sc Nursing** — Specialization (ICU, OT, Pediatric, Psychiatric)\n\n**Vital Signs — जीवन के संकेत (हर नर्स को आने चाहिए):**\n\n**1. Temperature (तापमान):**\n• **Normal**: 98.6°F / 37°C (Oral)\n• **Method**: Oral (मुंह), Axillary (बगल), Rectal (गुदा), Ear (कान)\n• **Fever**: >100.4°F (38°C) = Fever, >104°F = High Fever (Emergency)\n\n**2. Pulse (नाड़ी):**\n• **Normal**: 60-100 beats/min (Adult)\n• **Location**: Radial (कलाई), Carotid (गर्दन), Brachial (बांह)\n• **Method**: 2 fingers (index + middle) on radial artery, count 60 sec\n• Tachycardia: >100 bpm | Bradycardia: <60 bpm\n\n**3. Respiration (श्वसन):**\n• **Normal**: 12-20 breaths/min (Adult)\n• Count without patient knowing (they change if aware)\n• Dyspnea = difficulty breathing, Apnea = no breathing\n\n**4. Blood Pressure (रक्तचाप):**\n• **Normal**: 120/80 mmHg (Systolic/Diastolic)\n• **Hypertension**: >140/90 mmHg\n• **Hypotension**: <90/60 mmHg\n• **Equipment**: Sphygmomanometer + Stethoscope\n• **Method**: Cuff on arm → Inflate → Listen with stethoscope → Note readings\n\n**5. SpO2 (Oxygen Saturation):**\n• **Normal**: 95-100%\n• **Below 90%**: Oxygen support needed (Emergency)\n• **Equipment**: Pulse Oximeter (finger clip)`, diagram: `┌──────────────────────────────────────────────┐\n│     Vital Signs — Quick Reference Card          │\n├──────────────────────────────────────────────┤\n│                                              │\n│  Parameter     │ Normal      │ Abnormal      │\n│  ─────────────┼─────────────┼───────────────│\n│  Temperature  │ 98.6°F/37°C │ >100.4°F =    │\n│               │             │ Fever 🌡️       │\n│  ─────────────┼─────────────┼───────────────│\n│  Pulse        │ 60-100/min  │ <60 Brady     │\n│               │             │ >100 Tachy 💓  │\n│  ─────────────┼─────────────┼───────────────│\n│  Respiration  │ 12-20/min   │ <12 or >20    │\n│               │             │ = Distress 🫁  │\n│  ─────────────┼─────────────┼───────────────│\n│  BP           │ 120/80 mmHg │ >140/90 High  │\n│               │             │ <90/60 Low 💉  │\n│  ─────────────┼─────────────┼───────────────│\n│  SpO2         │ 95-100%     │ <90% = O2     │\n│               │             │ Emergency 🫧   │\n│  ─────────────┴─────────────┴───────────────│\n│                                              │\n│  BP Measurement Steps:                       │\n│  1. Patient seated, arm at heart level       │\n│  2. Cuff 1 inch above elbow crease          │\n│  3. Place stethoscope on brachial artery     │\n│  4. Inflate cuff to 180 mmHg                │\n│  5. Slowly release (2-3 mmHg/sec)           │\n│  6. First sound = Systolic (ऊपर का)          │\n│  7. Sound disappears = Diastolic (नीचे का)   │\n│  8. Record as Systolic/Diastolic             │\n└──────────────────────────────────────────────┘` },
   ]},
 ]);
+nursingBook.govtPdfUrl = "https://nios.ac.in/media/documents/vocational/community_health.pdf";
+nursingBook.govtPdfLabel = "NIOS — Community Health (Official PDF)";
 
 const constitutionBook = makeQuickBook("constitution", "Indian Constitution", "भारतीय संविधान", "⚖️", "मौलिक अधिकार, DPSP, Amendment, RTI", [
   { title: "अध्याय 1: संविधान का परिचय", pages: [
