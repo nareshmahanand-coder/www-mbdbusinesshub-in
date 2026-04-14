@@ -12,7 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { downloadCertificate } from "@/lib/generateCertificate";
-import { bookCategories, type Book, type BookPage, type Chapter } from "@/data/skillBooks";
+import { bookCategories, type Book, type BookPage, type Chapter, type PdfItem } from "@/data/skillBooks";
 
 /* ─── TTS ─── */
 const speakHindi = (text: string) => {
