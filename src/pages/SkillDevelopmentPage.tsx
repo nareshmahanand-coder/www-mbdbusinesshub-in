@@ -293,6 +293,7 @@ const SkillDevelopmentPage = () => {
   const [search, setSearch] = useState("");
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [businessIdea, setBusinessIdea] = useState("");
+  const [pdfSearch, setPdfSearch] = useState("");
 
   // All books flat for search
   const allBooks = bookCategories.flatMap(c => c.books.map(b => ({ ...b, categoryTitle: c.title })));
