@@ -347,13 +347,28 @@ const SkillDevelopmentPage = () => {
 
       {!search.trim() && (
         <div className="container mx-auto px-4 py-4 space-y-6">
-          {bookCategories.map(cat => (
+          {bookCategories.map(cat => {
+            const filteredPdfs = cat.pdfLibrary?.filter(p =>
+              !pdfSearch.trim() || p.titleHi.toLowerCase().includes(pdfSearch.toLowerCase()) || p.titleEn.toLowerCase().includes(pdfSearch.toLowerCase()) || p.tags.some(t => t.toLowerCase().includes(pdfSearch.toLowerCase()))
+            );
+
+            return (
             <div key={cat.id}>
-              <h2 className="text-sm font-bold font-hindi text-foreground mb-3 flex items-center gap-2">
+              <h2 className="text-sm font-bold font-hindi text-foreground mb-2 flex items-center gap-2">
                 <BookMarked className="h-4 w-4 text-primary" /> {cat.title}
                 <Badge variant="secondary" className="text-[9px]">{cat.books.length} Books</Badge>
+                {cat.pdfLibrary && <Badge className="text-[9px] bg-green-700 text-white">{cat.pdfLibrary.length} PDFs</Badge>}
               </h2>
-              <div className="grid grid-cols-1 gap-3">
+
+              {/* Category Description */}
+              {cat.descriptionHi && (
+                <p className="text-[11px] text-muted-foreground mb-3 leading-relaxed font-hindi bg-muted/50 p-2.5 rounded-lg border border-border">
+                  {cat.descriptionHi}
+                </p>
+              )}
+
+              {/* E-Books */}
+              <div className="grid grid-cols-1 gap-3 mb-3">
                 {cat.books.map(book => (
                   <Card key={book.id} className="cursor-pointer border-border hover:shadow-md hover:border-primary/30 transition-all active:scale-[0.98]"
                     onClick={() => setSelectedBook(book)}>
@@ -364,7 +379,7 @@ const SkillDevelopmentPage = () => {
                       <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-sm font-hindi text-foreground leading-tight">{book.titleHi}</h3>
                         <p className="text-[10px] text-muted-foreground mt-0.5">{book.description}</p>
-                        <div className="flex gap-2 mt-1.5">
+                        <div className="flex gap-2 mt-1.5 flex-wrap">
                           <Badge variant="outline" className="text-[9px]">📖 {book.totalPages} Pages</Badge>
                           <Badge variant="outline" className="text-[9px]">📚 {book.chapters.length} Chapters</Badge>
                           <Badge className="text-[9px] bg-green-600">🎓 Certificate</Badge>
@@ -375,8 +390,45 @@ const SkillDevelopmentPage = () => {
                   </Card>
                 ))}
               </div>
+
+              {/* PDF Library Grid */}
+              {cat.pdfLibrary && cat.pdfLibrary.length > 0 && (
+                <div className="mt-4 mb-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BookOpen className="h-4 w-4 text-green-700" />
+                    <h3 className="text-xs font-bold font-hindi text-foreground">📕 डिजिटल PDF लाइब्रेरी</h3>
+                    <Badge variant="secondary" className="text-[9px]">{cat.pdfLibrary.length} पुस्तकें</Badge>
+                  </div>
+
+                  {/* PDF Search */}
+                  <div className="relative mb-3">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input placeholder="PDF खोजें... मशरूम, मछली, बकरी..." value={pdfSearch} onChange={e => setPdfSearch(e.target.value)}
+                      className="pl-8 h-8 text-xs bg-muted/30 border-border" />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {(filteredPdfs || []).map(pdf => (
+                      <a key={pdf.id} href={pdf.pdfUrl} target="_blank" rel="noopener noreferrer"
+                        className="group flex flex-col items-center gap-1.5 p-3 rounded-xl border border-border bg-card hover:border-green-500 hover:shadow-md transition-all active:scale-[0.97]">
+                        <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-green-600 to-emerald-500 flex items-center justify-center text-lg shadow-sm group-hover:scale-110 transition-transform">
+                          {pdf.icon}
+                        </div>
+                        <p className="text-[10px] font-bold font-hindi text-foreground text-center leading-tight">{pdf.titleHi}</p>
+                        <div className="flex items-center gap-1 text-[9px] text-green-700 font-medium">
+                          <ExternalLink className="h-3 w-3" /> पुस्तक पढ़ें
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                  {filteredPdfs?.length === 0 && pdfSearch.trim() && (
+                    <p className="text-[10px] text-muted-foreground text-center py-3">कोई PDF नहीं मिली — "{pdfSearch}"</p>
+                  )}
+                </div>
+              )}
             </div>
-          ))}
+          );})}
+
 
           {/* Business Ideas */}
           <Card className="border-primary/30 bg-primary/5">
