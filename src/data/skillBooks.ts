@@ -1131,6 +1131,9 @@ export const bookCategories: BookCategory[] = [
       { id: "pdf-fish-farming", titleHi: "मछली पालन — संपूर्ण गाइड", titleEn: "Fish Farming Guide", icon: "🐟", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/agriculture/fish-farming-guide.pdf", tags: ["मछली", "fish", "पालन"] },
       { id: "pdf-pond-mgmt", titleHi: "तालाब प्रबंधन — Pond Management", titleEn: "Pond Management Booklet", icon: "🌊", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/agriculture/pond-management.pdf", tags: ["तालाब", "pond", "मछली"] },
       { id: "pdf-bakri-palan", titleHi: "बकरी पालन — IVRI गाइड", titleEn: "Goat Farming IVRI Guide", icon: "🐐", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/agriculture/bakri-palan-ivri.pdf", tags: ["बकरी", "goat", "पालन"] },
+      { id: "pdf-bater-palan", titleHi: "बटेर पालन — एक लाभकारी उद्यम", titleEn: "Quail Farming - A Profitable Enterprise", icon: "🐦", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/agriculture/bater_palan_labhkari_udyam.pdf", tags: ["बटेर", "quail", "पालन", "लाभकारी"] },
+      { id: "pdf-murgi-palan", titleHi: "मुर्गी पालन — संपूर्ण पाठ्यपुस्तक", titleEn: "Poultry Husbandry Textbook", icon: "🐔", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/agriculture/murgi_palan_poultry_husbandry.pdf", tags: ["मुर्गी", "poultry", "पालन", "कुक्कुट"] },
+      { id: "pdf-turkey-bater-emu", titleHi: "टर्की, बटेर एवं इमू पालन — पाठ्यपुस्तक", titleEn: "Turkey, Quail & Emu Farming", icon: "🦃", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/agriculture/turkey_bater_emu_palan.pdf", tags: ["टर्की", "बटेर", "इमू", "turkey", "emu"] },
     ],
   },
   {
