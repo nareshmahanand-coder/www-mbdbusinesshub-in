@@ -28,12 +28,23 @@ export interface Book {
   govtPdfLabel?: string; // Label for the govt PDF button
 }
 
+export interface PdfItem {
+  id: string;
+  titleHi: string;
+  titleEn: string;
+  icon: string;
+  pdfUrl: string;
+  tags: string[];
+}
+
 export interface BookCategory {
   id: string;
   title: string;
   titleHi: string;
   color: string;
+  descriptionHi?: string;
   books: Book[];
+  pdfLibrary?: PdfItem[];
 }
 
 /* ─── Helper: count pages ─── */
@@ -1104,10 +1115,23 @@ export const bookCategories: BookCategory[] = [
   },
   {
     id: "agriculture",
-    title: "आधुनिक कृषि",
+    title: "आधुनिक कृषि विज्ञान",
     titleHi: "Agriculture, Farming & Animal Husbandry",
     color: "from-lime-600 to-green-600",
+    descriptionHi: "यह भारत का सबसे व्यापक कृषि शिक्षा केंद्र है — जैविक खेती, मशरूम उत्पादन, मछली पालन, बकरी पालन, पशुपालन, तालाब प्रबंधन, और ICAR की नवीनतम तकनीकें। किसान भाई यहाँ से सीधे सरकारी पुस्तकें पढ़ सकते हैं और आधुनिक कृषि विज्ञान से अपनी आय दोगुनी कर सकते हैं। हर PDF असली सरकारी/संस्थान की पुस्तक है।",
     books: [agricultureFullBook],
+    pdfLibrary: [
+      { id: "pdf-organic-theory", titleHi: "जैविक खेती — सिद्धांत पुस्तक", titleEn: "Organic Grower Theory", icon: "🌿", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/agriculture/organic-grower-theory.pdf", tags: ["जैविक", "खेती", "organic"] },
+      { id: "pdf-organic-practical", titleHi: "जैविक उत्पाद — प्रैक्टिकल गाइड", titleEn: "Organic Grower Practical", icon: "🥬", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/agriculture/organic-grower-practical.pdf", tags: ["जैविक", "प्रैक्टिकल", "organic"] },
+      { id: "pdf-icar-2025", titleHi: "ICAR वार्षिक रिपोर्ट 2025 — आधुनिक कृषि", titleEn: "ICAR Annual Report 2025 Hindi", icon: "📊", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/agriculture/icar-2025-hindi.pdf", tags: ["ICAR", "आधुनिक", "तकनीक"] },
+      { id: "pdf-mushroom-theory", titleHi: "मशरूम की खेती — सिद्धांत", titleEn: "Mushroom Theory Book", icon: "🍄", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/agriculture/mushroom-theory.pdf", tags: ["मशरूम", "mushroom", "खेती"] },
+      { id: "pdf-mushroom-practical", titleHi: "मशरूम की खेती — प्रैक्टिकल गाइड", titleEn: "Mushroom Practical Book", icon: "🍄", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/agriculture/mushroom-practical.pdf", tags: ["मशरूम", "प्रैक्टिकल"] },
+      { id: "pdf-animal-husbandry", titleHi: "पशुपालन जानकारी (11th)", titleEn: "Animal Husbandry 11th", icon: "🐄", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/agriculture/animal-husbandry-11th.pdf", tags: ["पशुपालन", "animal", "dairy"] },
+      { id: "pdf-pashupalan", titleHi: "पशुपालन निर्देशिका — संपूर्ण गाइड", titleEn: "Pashupalan Nirdeshika Hindi", icon: "🐃", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/agriculture/pashupalan-nirdeshika.pdf", tags: ["पशुपालन", "निर्देशिका", "dairy"] },
+      { id: "pdf-fish-farming", titleHi: "मछली पालन — संपूर्ण गाइड", titleEn: "Fish Farming Guide", icon: "🐟", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/agriculture/fish-farming-guide.pdf", tags: ["मछली", "fish", "पालन"] },
+      { id: "pdf-pond-mgmt", titleHi: "तालाब प्रबंधन — Pond Management", titleEn: "Pond Management Booklet", icon: "🌊", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/agriculture/pond-management.pdf", tags: ["तालाब", "pond", "मछली"] },
+      { id: "pdf-bakri-palan", titleHi: "बकरी पालन — IVRI गाइड", titleEn: "Goat Farming IVRI Guide", icon: "🐐", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/agriculture/bakri-palan-ivri.pdf", tags: ["बकरी", "goat", "पालन"] },
+    ],
   },
   {
     id: "knowledge",
