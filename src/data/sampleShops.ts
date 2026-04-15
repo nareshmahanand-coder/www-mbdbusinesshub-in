@@ -371,6 +371,7 @@ export const categorySections: CategorySection[] = [
       "Umbrella Repair",
       "Stove/Gas Repair",
       "Knife Sharpening (धार वाला)",
+      "Scrap Dealer (कबाड़ी वाला)",
     ],
   },
   {
@@ -556,6 +557,7 @@ export const categoryIcons: Record<string, string> = {
   "Umbrella Repair": "☂️",
   "Stove/Gas Repair": "🔥",
   "Knife Sharpening (धार वाला)": "🔪",
+  "Scrap Dealer (कबाड़ी वाला)": "♻️",
   // Health & Wellness
   "Doctor (डॉक्टर)": "🩺",
   "Hospital (अस्पताल)": "🏥",
