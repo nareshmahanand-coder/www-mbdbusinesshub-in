@@ -329,7 +329,11 @@ export const categorySections: CategorySection[] = [
     sectionNameHindi: "स्वास्थ्य",
     categories: [
       "Pharmacy",
-      "Salon & Barber",
+      "Doctor (डॉक्टर)",
+      "Hospital (अस्पताल)",
+      "Ambulance (एम्बुलेंस)",
+      "Ayurvedic Shop (आयुर्वेदिक दुकान)",
+      "Massage Center (मसाज सेंटर)",
     ],
   },
   {
@@ -358,6 +362,7 @@ export const categorySections: CategorySection[] = [
     sectionName: "Daily Services",
     sectionNameHindi: "रोज़मर्रा की सेवाएं",
     categories: [
+      "Salon & Barber",
       "Laundry / Dry Clean (धोबी)",
       "Tailor (दरजी)",
       "Car/Bike Mechanic",
@@ -372,6 +377,9 @@ export const categorySections: CategorySection[] = [
     sectionName: "Education",
     sectionNameHindi: "शिक्षा",
     categories: [
+      "School (स्कूल)",
+      "College (कॉलेज)",
+      "Computer Training Center (कंप्यूटर ट्रेनिंग सेंटर)",
       "Home Tutors (ट्यूशन)",
       "Coaching Centers (कोचिंग)",
     ],
@@ -548,9 +556,18 @@ export const categoryIcons: Record<string, string> = {
   "Umbrella Repair": "☂️",
   "Stove/Gas Repair": "🔥",
   "Knife Sharpening (धार वाला)": "🔪",
+  // Health & Wellness
+  "Doctor (डॉक्टर)": "🩺",
+  "Hospital (अस्पताल)": "🏥",
+  "Ambulance (एम्बुलेंस)": "🚑",
+  "Ayurvedic Shop (आयुर्वेदिक दुकान)": "🌿",
+  "Massage Center (मसाज सेंटर)": "💆",
   // Education
+  "School (स्कूल)": "🏫",
+  "College (कॉलेज)": "🎓",
+  "Computer Training Center (कंप्यूटर ट्रेनिंग सेंटर)": "🖥️",
   "Home Tutors (ट्यूशन)": "📖",
-  "Coaching Centers (कोचिंग)": "🎓",
+  "Coaching Centers (कोचिंग)": "📚",
   // Vehicle Rentals
   "Car & Bike Rent (कार-बाइक किराया)": "🚗",
   "Heavy Vehicle / Truck Rent (ट्रक किराया)": "🚛",
