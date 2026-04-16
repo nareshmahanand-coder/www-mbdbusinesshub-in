@@ -69,6 +69,22 @@ export const bookCategories: BookCategory[] = [
         tags: ["computer", "hardware", "guide"],
       },
       {
+        id: "pdf-computer-course-i-vi",
+        titleHi: "कंप्यूटर कोर्स (I-VI) हिंदी",
+        titleEn: "Computer Course I-VI Hindi",
+        icon: "📘",
+        pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/computer/computer-course-i-vi-hindi.pdf",
+        tags: ["computer", "course", "hindi", "basics"],
+      },
+      {
+        id: "pdf-computer-office-631",
+        titleHi: "कंप्यूटर और ऑफिस — 631 हिंदी",
+        titleEn: "Computer and Office 631 Hindi Medium",
+        icon: "🖥️",
+        pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/computer/computer-office-631-hindi.pdf",
+        tags: ["computer", "office", "hindi", "631"],
+      },
+      {
         id: "pdf-computer-711-712",
         titleHi: "कंप्यूटर हार्डवेयर — पाठ्यक्रम 711-712",
         titleEn: "Computer Hardware Syllabus 711-712",
