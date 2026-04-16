@@ -51,7 +51,32 @@ export const bookCategories: BookCategory[] = [
     icon: "🖥️",
     color: "from-violet-600 to-purple-500",
     descriptionHi: "Tally Prime, Excel, PGDCA, Web Development, Python, और कंप्यूटर हार्डवेयर-सॉफ्टवेयर की पुस्तकें।",
-    pdfLibrary: [],
+    pdfLibrary: [
+      {
+        id: "pdf-ict-basic-seminar",
+        titleHi: "कंप्यूटर हार्डवेयर — ICT बेसिक सेमिनार",
+        titleEn: "ICT Basic Seminar Final",
+        icon: "💻",
+        pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/computer/ict-basic-seminar-final.pdf",
+        tags: ["computer", "hardware", "ICT", "seminar"],
+      },
+      {
+        id: "pdf-computer-hardware",
+        titleHi: "कंप्यूटर हार्डवेयर — संपूर्ण गाइड",
+        titleEn: "Computer Hardware Complete Guide",
+        icon: "🖥️",
+        pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/computer/computer-hardware.pdf",
+        tags: ["computer", "hardware", "guide"],
+      },
+      {
+        id: "pdf-computer-711-712",
+        titleHi: "कंप्यूटर हार्डवेयर — पाठ्यक्रम 711-712",
+        titleEn: "Computer Hardware Syllabus 711-712",
+        icon: "🔧",
+        pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/computer/711-712-revised-h.pdf",
+        tags: ["computer", "hardware", "syllabus", "711", "712"],
+      },
+    ],
   },
   {
     id: "medical",
