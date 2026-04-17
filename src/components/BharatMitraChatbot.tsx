@@ -393,6 +393,7 @@ const BharatMitraChatbot = () => {
   const handleComplaintSubmit = async () => {
     if (!complaintText.trim()) return;
     setComplaintLoading(true);
+    const trimmed = complaintText.trim();
     try {
       const userName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? null;
       const userPhone = user?.phone ?? user?.user_metadata?.phone ?? null;
@@ -401,8 +402,19 @@ const BharatMitraChatbot = () => {
         user_id: user?.id ?? null,
         user_name: userName,
         user_phone: userPhone,
-        complaint_text: complaintText.trim(),
+        complaint_text: trimmed,
       });
+
+      // Forward to Help Desk WhatsApp (9203645007) — message-only support
+      const waMsg =
+        `🛎️ *भारत दुकान — नई शिकायत*\n\n` +
+        `👤 नाम: ${userName ?? "Anonymous"}\n` +
+        `📞 फोन: ${userPhone ?? "N/A"}\n\n` +
+        `📝 शिकायत:\n${trimmed}`;
+      window.open(
+        `https://wa.me/919203645007?text=${encodeURIComponent(waMsg)}`,
+        "_blank",
+      );
 
       setComplaintSubmitted(true);
       setComplaintText("");
