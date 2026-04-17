@@ -22,14 +22,36 @@ const HelpPage = () => (
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              For all queries, complaints, and support requests, please email us:
+              For all queries, complaints, and support requests, please reach us through the channels below:
             </p>
+
+            {/* Email */}
             <a
               href="mailto:helpline.bharatdukaan@gmail.com"
-              className="mt-2 block text-lg font-semibold text-primary underline"
+              className="mt-3 flex items-center gap-2 text-base font-semibold text-primary underline break-all"
             >
+              <Mail className="h-4 w-4 shrink-0" />
               helpline.bharatdukaan@gmail.com
             </a>
+
+            {/* WhatsApp Help Desk */}
+            <a
+              href="https://wa.me/919203645007?text=नमस्ते%20भारत%20दुकान%20हेल्प%20डेस्क%20🙏"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 flex items-center gap-2 rounded-lg border border-green-500/40 bg-green-50 p-3 text-base font-semibold text-green-800 hover:bg-green-100"
+            >
+              <span className="text-xl">🟢</span>
+              <div className="flex flex-col">
+                <span>WhatsApp: +91 9203645007</span>
+                <span className="font-hindi text-xs font-normal text-green-700">
+                  हेल्प डेस्क (केवल व्हाट्सएप मैसेज)
+                </span>
+              </div>
+            </a>
+            <p className="mt-2 font-hindi text-xs font-semibold text-destructive">
+              ⚠️ कृपया कॉल न करें, केवल व्हाट्सएप सहायता।
+            </p>
             <p className="mt-2 text-xs text-muted-foreground">
               We typically respond within 24-48 hours.
             </p>
@@ -67,7 +89,7 @@ const HelpPage = () => (
             </CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            <p>All shops are verified by our admin team before listing. We take user safety seriously. Report any suspicious activity to our support email.</p>
+            <p>All shops are verified by our admin team before listing. We take user safety seriously. Report any suspicious activity to our support email or WhatsApp Help Desk.</p>
           </CardContent>
         </Card>
       </div>

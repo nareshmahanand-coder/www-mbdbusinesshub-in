@@ -351,10 +351,25 @@ const Index = () => {
               <h5 className="mb-3 font-bold text-primary-foreground">{t("support")}</h5>
               <div className="flex items-center gap-2 text-sm text-primary-foreground/70">
                 <Mail className="h-4 w-4" />
-                <a href="mailto:helpline.bharatdukaan@gmail.com" className="hover:text-primary-foreground">
+                <a href="mailto:helpline.bharatdukaan@gmail.com" className="hover:text-primary-foreground break-all">
                   helpline.bharatdukaan@gmail.com
                 </a>
               </div>
+              <a
+                href="https://wa.me/919203645007?text=नमस्ते%20भारत%20दुकान%20हेल्प%20डेस्क%20🙏"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 flex items-center gap-2 text-sm font-semibold text-[hsl(140,70%,70%)] hover:text-[hsl(140,80%,80%)]"
+              >
+                <span className="text-base">🟢</span>
+                <span>WhatsApp: +91 9203645007</span>
+              </a>
+              <p className="mt-1 font-hindi text-[11px] text-primary-foreground/60">
+                हेल्प डेस्क (केवल व्हाट्सएप मैसेज)
+              </p>
+              <p className="mt-1 font-hindi text-[10px] text-primary-foreground/40">
+                कृपया कॉल न करें, केवल व्हाट्सएप सहायता।
+              </p>
               <p className="mt-3 text-xs text-primary-foreground/40">{t("official_support")}</p>
             </div>
           </div>
