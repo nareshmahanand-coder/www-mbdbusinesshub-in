@@ -8,12 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { bookCategories, type BookCategory, type PdfItem } from "@/data/skillBooks";
+import { ExamDialog } from "@/components/skill/ExamDialog";
+import { Award } from "lucide-react";
 
 /* ═══════════════════════════════════
    CATEGORY PDF LIBRARY VIEW
    ═══════════════════════════════════ */
 const CategoryLibrary = ({ category, onBack }: { category: BookCategory; onBack: () => void }) => {
   const [pdfSearch, setPdfSearch] = useState("");
+  const [examOpen, setExamOpen] = useState(false);
 
   const filteredPdfs = category.pdfLibrary.filter(p =>
     !pdfSearch.trim() ||
