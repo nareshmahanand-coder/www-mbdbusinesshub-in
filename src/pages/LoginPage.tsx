@@ -229,7 +229,8 @@ const LoginPage = () => {
                 <Button
                   onClick={handleSendOtp}
                   disabled={phone.length !== 10 || loading || !recaptchaReady}
-                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base py-5 gap-2"
+                  style={{ backgroundColor: "#C71585" }}
+                  className="w-full text-white hover:opacity-90 hover:!bg-[#C71585] font-bold text-base py-5 gap-2 shadow-lg"
                 >
                   {loading ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
