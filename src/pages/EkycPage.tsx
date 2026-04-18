@@ -211,6 +211,9 @@ const EkycPage = () => {
             <p className="text-xs text-muted-foreground">
               Your KYC has been submitted. You'll get access once an admin approves it.
             </p>
+            <Button className="w-full" onClick={() => navigate("/", { replace: true })}>
+              Continue to App • ऐप पर जाएं
+            </Button>
             <Button variant="outline" className="w-full" onClick={() => refresh()}>
               <RefreshCw className="mr-2 h-4 w-4" /> Check Status
             </Button>
