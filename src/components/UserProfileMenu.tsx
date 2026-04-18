@@ -10,8 +10,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, LayoutDashboard, Store, Settings } from "lucide-react";
+import { User, LogOut, LayoutDashboard, Store, Settings, BadgeCheck, Clock } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useKycStatus } from "@/hooks/useKycStatus";
+import { Badge } from "@/components/ui/badge";
 
 const UserProfileMenu = () => {
   const { user, signOut } = useAuth();
