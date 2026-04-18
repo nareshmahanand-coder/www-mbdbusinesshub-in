@@ -107,6 +107,10 @@ const EkycPage = () => {
       toast.error("कृपया 12 अंकों का सही आधार नंबर दर्ज करें");
       return;
     }
+    if (!aadhaarFront || !aadhaarBack) {
+      toast.error("कृपया आधार कार्ड के दोनों तरफ की फोटो अपलोड करें • Upload both sides of Aadhaar");
+      return;
+    }
     if (!photo) {
       toast.error("कृपया Live Selfie लें");
       return;
