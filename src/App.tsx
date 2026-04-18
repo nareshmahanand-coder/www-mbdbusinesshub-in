@@ -23,7 +23,8 @@ import ServicesPage from "./pages/ServicesPage";
 import MyProfilePage from "./pages/MyProfilePage";
 import ShopProfilePage from "./pages/ShopProfilePage";
 import SkillDevelopmentPage from "./pages/SkillDevelopmentPage";
-import EkycPage, { isKycDone } from "./pages/EkycPage";
+import EkycPage from "./pages/EkycPage";
+import { useKycStatus } from "@/hooks/useKycStatus";
 
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
@@ -38,10 +39,11 @@ const FullScreenLoader = () => (
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
+  const { status, loading: kycLoading } = useKycStatus();
 
-  if (loading) return <FullScreenLoader />;
+  if (loading || kycLoading) return <FullScreenLoader />;
   if (!user) return <Navigate to="/login" replace />;
-  if (!isKycDone(user.id)) return <Navigate to="/ekyc" replace />;
+  if (status !== "approved") return <Navigate to="/ekyc" replace />;
 
   return <>{children}</>;
 };

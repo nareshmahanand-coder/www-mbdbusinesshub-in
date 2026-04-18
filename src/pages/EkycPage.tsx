@@ -4,21 +4,27 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Camera, ShieldCheck, RefreshCw, Loader2, Upload, X, CreditCard } from "lucide-react";
+import { Camera, ShieldCheck, RefreshCw, Loader2, Upload, X, CreditCard, AlertCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useKycStatus } from "@/hooks/useKycStatus";
 
 type Side = "front" | "back";
 
-const EKYC_KEY_PREFIX = "mbd-ekyc-done-";
-
-export const isKycDone = (userId?: string | null) => {
-  if (!userId) return false;
-  return localStorage.getItem(EKYC_KEY_PREFIX + userId) === "1";
+const dataUrlToBlob = (dataUrl: string): Blob => {
+  const [header, b64] = dataUrl.split(",");
+  const mime = header.match(/data:(.*?);/)?.[1] ?? "image/jpeg";
+  const bin = atob(b64);
+  const len = bin.length;
+  const buf = new Uint8Array(len);
+  for (let i = 0; i < len; i++) buf[i] = bin.charCodeAt(i);
+  return new Blob([buf], { type: mime });
 };
 
 const EkycPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { status, rejectionReason, loading, refresh } = useKycStatus();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -30,6 +36,13 @@ const EkycPage = () => {
   const [photo, setPhoto] = useState<string | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // If approved → redirect home. If pending → show waiting screen. If rejected → allow re-submit.
+  useEffect(() => {
+    if (!loading && status === "approved") navigate("/", { replace: true });
+  }, [status, loading, navigate]);
+
+  useEffect(() => () => stopCamera(), []);
 
   const handleAadhaarFile = (side: Side, file?: File) => {
     if (!file) return;
@@ -50,14 +63,6 @@ const EkycPage = () => {
     reader.readAsDataURL(file);
   };
 
-  useEffect(() => {
-    if (user && isKycDone(user.id)) navigate("/", { replace: true });
-  }, [user, navigate]);
-
-  useEffect(() => {
-    return () => stopCamera();
-  }, []);
-
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
@@ -73,7 +78,6 @@ const EkycPage = () => {
       });
       streamRef.current = stream;
       setCameraOn(true);
-      // wait next tick for video element
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -101,34 +105,119 @@ const EkycPage = () => {
     stopCamera();
   };
 
+  const uploadFile = async (path: string, blob: Blob) => {
+    const { error } = await supabase.storage
+      .from("kyc-documents")
+      .upload(path, blob, { upsert: true, contentType: blob.type });
+    if (error) throw error;
+    return path;
+  };
+
   const handleSubmit = async () => {
     const digits = aadhaar.replace(/\D/g, "");
-    if (digits.length !== 12) {
-      toast.error("कृपया 12 अंकों का सही आधार नंबर दर्ज करें");
-      return;
-    }
-    if (!aadhaarFront || !aadhaarBack) {
-      toast.error("कृपया आधार कार्ड के दोनों तरफ की फोटो अपलोड करें • Upload both sides of Aadhaar");
-      return;
-    }
-    if (!photo) {
-      toast.error("कृपया Live Selfie लें");
-      return;
-    }
+    if (digits.length !== 12) return toast.error("कृपया 12 अंकों का सही आधार नंबर दर्ज करें");
+    if (!aadhaarFront || !aadhaarBack) return toast.error("कृपया आधार कार्ड के दोनों तरफ की फोटो अपलोड करें");
+    if (!photo) return toast.error("कृपया Live Selfie लें");
     if (!user) return;
+
     setSubmitting(true);
-    // Simple local marker — server-side verification can be added later
-    localStorage.setItem(EKYC_KEY_PREFIX + user.id, "1");
-    setTimeout(() => {
-      toast.success("E-KYC पूर्ण हुआ • Verification successful");
-      navigate("/", { replace: true });
-    }, 600);
+    try {
+      const ts = Date.now();
+      const frontPath = `${user.id}/${ts}-aadhaar-front.jpg`;
+      const backPath = `${user.id}/${ts}-aadhaar-back.jpg`;
+      const selfiePath = `${user.id}/${ts}-selfie.jpg`;
+
+      await Promise.all([
+        uploadFile(frontPath, dataUrlToBlob(aadhaarFront)),
+        uploadFile(backPath, dataUrlToBlob(aadhaarBack)),
+        uploadFile(selfiePath, dataUrlToBlob(photo)),
+      ]);
+
+      // If a previous rejected request exists → update it; else insert new.
+      const { data: existing } = await supabase
+        .from("kyc_requests")
+        .select("id, status")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existing && existing.status === "rejected") {
+        const { error } = await supabase
+          .from("kyc_requests")
+          .update({
+            aadhaar_number: digits,
+            selfie_url: selfiePath,
+            aadhaar_front_url: frontPath,
+            aadhaar_back_url: backPath,
+            status: "pending",
+            rejection_reason: null,
+            reviewed_by: null,
+            reviewed_at: null,
+          })
+          .eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("kyc_requests").insert({
+          user_id: user.id,
+          aadhaar_number: digits,
+          selfie_url: selfiePath,
+          aadhaar_front_url: frontPath,
+          aadhaar_back_url: backPath,
+          status: "pending",
+        });
+        if (error) throw error;
+      }
+
+      toast.success("E-KYC सबमिट हो गया • Submitted for admin review");
+      await refresh();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Submit failed";
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const formatAadhaar = (v: string) => {
     const d = v.replace(/\D/g, "").slice(0, 12);
     return d.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
   };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </main>
+    );
+  }
+
+  // Pending state — waiting for admin review
+  if (status === "pending") {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-background to-muted/40 px-4 py-8 flex items-start justify-center">
+        <Card className="w-full max-w-md border-0 shadow-lg">
+          <CardHeader className="text-center pb-3">
+            <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-orange-500/10">
+              <Clock className="h-7 w-7 text-orange-500" />
+            </div>
+            <CardTitle className="text-xl">समीक्षा में • Under Review</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-center">
+            <p className="text-sm text-muted-foreground">
+              आपका KYC एडमिन के पास भेज दिया गया है। स्वीकृत होते ही आपको सूचना मिल जाएगी।
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Your KYC has been submitted. You'll get access once an admin approves it.
+            </p>
+            <Button variant="outline" className="w-full" onClick={() => refresh()}>
+              <RefreshCw className="mr-2 h-4 w-4" /> Check Status
+            </Button>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-background to-muted/40 px-4 py-8 flex items-start justify-center">
@@ -141,6 +230,17 @@ const EkycPage = () => {
           <p className="text-xs text-muted-foreground">सुरक्षित पहचान सत्यापन • Secure Identity Verification</p>
         </CardHeader>
         <CardContent className="space-y-5">
+          {status === "rejected" && (
+            <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 flex gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <div className="text-xs">
+                <p className="font-semibold text-destructive">आपका KYC अस्वीकार हो गया • KYC Rejected</p>
+                {rejectionReason && <p className="mt-1 text-muted-foreground">कारण: {rejectionReason}</p>}
+                <p className="mt-1 text-muted-foreground">कृपया सही दस्तावेज़ के साथ दोबारा सबमिट करें।</p>
+              </div>
+            </div>
+          )}
+
           {/* Aadhaar */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium">आधार नंबर • Aadhaar Number</label>
@@ -249,9 +349,9 @@ const EkycPage = () => {
             className="w-full h-12 text-base font-semibold bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
           >
             {submitting ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</>
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</>
             ) : (
-              <><ShieldCheck className="mr-2 h-5 w-5" /> Verify KYC • सत्यापन करें</>
+              <><ShieldCheck className="mr-2 h-5 w-5" /> Submit for Verification • सबमिट करें</>
             )}
           </Button>
         </CardContent>

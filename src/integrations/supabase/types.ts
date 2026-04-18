@@ -175,6 +175,51 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_requests: {
+        Row: {
+          aadhaar_back_url: string
+          aadhaar_front_url: string
+          aadhaar_number: string
+          created_at: string
+          id: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selfie_url: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aadhaar_back_url: string
+          aadhaar_front_url: string
+          aadhaar_number: string
+          created_at?: string
+          id?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_url: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aadhaar_back_url?: string
+          aadhaar_front_url?: string
+          aadhaar_number?: string
+          created_at?: string
+          id?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_url?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       matrimony_profiles: {
         Row: {
           aadhar_url: string | null
