@@ -43,7 +43,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (loading || kycLoading) return <FullScreenLoader />;
   if (!user) return <Navigate to="/login" replace />;
-  if (status !== "approved") return <Navigate to="/ekyc" replace />;
+  // Allow access for approved AND pending (temporarily_verified) users.
+  // Only block users who haven't submitted ("none") or were rejected.
+  if (status === "none" || status === "rejected") return <Navigate to="/ekyc" replace />;
 
   return <>{children}</>;
 };
