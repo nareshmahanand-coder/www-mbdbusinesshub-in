@@ -53,9 +53,25 @@ const CategoryLibrary = ({ category, onBack }: { category: BookCategory; onBack:
 
       <div className="container mx-auto px-4 py-4">
         {/* Description */}
-        <p className="text-[11px] text-muted-foreground mb-4 leading-relaxed font-hindi bg-muted/50 p-3 rounded-lg border border-border">
+        <p className="text-[11px] text-muted-foreground mb-3 leading-relaxed font-hindi bg-muted/50 p-3 rounded-lg border border-border">
           {category.descriptionHi}
         </p>
+
+        {/* परीक्षा केंद्र (Exam Center) */}
+        <button
+          onClick={() => setExamOpen(true)}
+          className="w-full mb-4 flex items-center justify-center gap-2 rounded-xl px-4 py-3 bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 text-white shadow-md hover:shadow-lg active:scale-[0.98] transition-all"
+        >
+          <Award className="h-5 w-5" />
+          <span className="text-sm font-bold font-hindi">परीक्षा दें और सर्टिफिकेट प्राप्त करें</span>
+        </button>
+
+        <ExamDialog
+          open={examOpen}
+          onClose={() => setExamOpen(false)}
+          categoryId={category.id}
+          categoryTitle={category.title}
+        />
 
         {category.pdfLibrary.length === 0 ? (
           /* Empty state */
