@@ -4,8 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Camera, ShieldCheck, RefreshCw, Loader2 } from "lucide-react";
+import { Camera, ShieldCheck, RefreshCw, Loader2, Upload, X, CreditCard } from "lucide-react";
 import { toast } from "sonner";
+
+type Side = "front" | "back";
 
 const EKYC_KEY_PREFIX = "mbd-ekyc-done-";
 
