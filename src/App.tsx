@@ -23,6 +23,7 @@ import ServicesPage from "./pages/ServicesPage";
 import MyProfilePage from "./pages/MyProfilePage";
 import ShopProfilePage from "./pages/ShopProfilePage";
 import SkillDevelopmentPage from "./pages/SkillDevelopmentPage";
+import EkycPage, { isKycDone } from "./pages/EkycPage";
 
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
@@ -40,7 +41,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (loading) return <FullScreenLoader />;
   if (!user) return <Navigate to="/login" replace />;
+  if (!isKycDone(user.id)) return <Navigate to="/ekyc" replace />;
 
+  return <>{children}</>;
+};
+
+const KycRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+  if (loading) return <FullScreenLoader />;
+  if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 };
 
@@ -60,6 +69,7 @@ const AppShell = () => {
     <>
       <Routes>
         <Route path="/login" element={<PublicLoginRoute><LoginPage /></PublicLoginRoute>} />
+        <Route path="/ekyc" element={<KycRoute><EkycPage /></KycRoute>} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
         <Route path="/merchant" element={<ProtectedRoute><MerchantPortal /></ProtectedRoute>} />
