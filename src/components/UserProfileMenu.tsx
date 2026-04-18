@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 const UserProfileMenu = () => {
   const { user, signOut } = useAuth();
   const { t } = useLanguage();
+  const { status } = useKycStatus();
 
   if (!user) return null;
 
