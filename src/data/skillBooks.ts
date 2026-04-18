@@ -274,6 +274,15 @@ export const bookCategories: BookCategory[] = [
     icon: "📜",
     color: "from-amber-600 to-yellow-500",
     descriptionHi: "भारतीय संविधान, विश्व इतिहास, भौतिक विज्ञान, रसायन विज्ञान, जीव विज्ञान और सामान्य ज्ञान की पुस्तकें।",
-    pdfLibrary: [],
+    pdfLibrary: [
+      { id: "pdf-constitution-coi", titleHi: "भारतीय संविधान — मूल पाठ (हिंदी)", titleEn: "Constitution of India Hindi", icon: "📜", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/knowledge/constitution-coi-hindi.pdf", tags: ["संविधान", "constitution", "भारत", "law"] },
+      { id: "pdf-constitution-detailed", titleHi: "भारतीय संविधान — विस्तृत अध्ययन", titleEn: "Indian Constitution Detailed Study", icon: "⚖️", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/knowledge/constitution-2023050186.pdf", tags: ["संविधान", "constitution", "अध्ययन"] },
+      { id: "pdf-history-bharat", titleHi: "इतिहास की पुस्तक — भारत का इतिहास", titleEn: "History Book Hindi", icon: "🏛️", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/knowledge/history-book-hindi.pdf", tags: ["इतिहास", "history", "भारत"] },
+      { id: "pdf-vishwa-itihas", titleHi: "विश्व इतिहास — World History", titleEn: "Vishwa Itihas (World History)", icon: "🌍", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/knowledge/vishwa-itihas.pdf", tags: ["विश्व", "इतिहास", "world history"] },
+      { id: "pdf-science-book", titleHi: "विज्ञान की पुस्तक — सामान्य विज्ञान", titleEn: "Science Book Hindi", icon: "🔬", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/knowledge/science-book.pdf", tags: ["विज्ञान", "science", "physics", "chemistry"] },
+      { id: "pdf-geography-book", titleHi: "भूगोल की पुस्तक — Geography", titleEn: "Geography Book Hindi", icon: "🗺️", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/knowledge/geography-book.pdf", tags: ["भूगोल", "geography", "नक्शा"] },
+      { id: "pdf-gk-general", titleHi: "जनरल नॉलेज — सामान्य ज्ञान संग्रह", titleEn: "General Knowledge GK", icon: "📚", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/knowledge/gk-general.pdf", tags: ["GK", "सामान्य ज्ञान", "general knowledge"] },
+      { id: "pdf-drishti-gk", titleHi: "दृष्टि सामान्य ज्ञान — GK Book", titleEn: "Drishti Samanya Gyan GK", icon: "🏆", pdfUrl: "https://tkenjzcyvnqnhgntmmen.supabase.co/storage/v1/object/public/skill-pdfs/knowledge/drishti-samanya-gyan.pdf", tags: ["दृष्टि", "GK", "सामान्य ज्ञान", "competitive"] },
+    ],
   },
 ];
