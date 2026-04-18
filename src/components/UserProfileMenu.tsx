@@ -53,7 +53,22 @@ const UserProfileMenu = () => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <div className="px-3 py-2">
-          <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
+            {(status === "approved" || status === "pending") && (
+              <Badge
+                variant="secondary"
+                className="h-5 gap-0.5 px-1.5 py-0 text-[10px] bg-green-100 text-green-700 hover:bg-green-100 border-0"
+                title={status === "approved" ? "Verified" : "Pending Admin Review"}
+              >
+                {status === "approved" ? (
+                  <><BadgeCheck className="h-3 w-3" /> Verified</>
+                ) : (
+                  <><Clock className="h-3 w-3" /> Verified</>
+                )}
+              </Badge>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground truncate">
             {user.email || user.phone}
           </p>
