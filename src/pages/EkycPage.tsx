@@ -169,8 +169,9 @@ const EkycPage = () => {
         if (error) throw error;
       }
 
-      toast.success("E-KYC सबमिट हो गया • Submitted for admin review");
+      toast.success("KYC Submitted Successfully! You can now explore the app while we review your documents.");
       await refresh();
+      navigate("/", { replace: true });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Submit failed";
       toast.error(msg);
