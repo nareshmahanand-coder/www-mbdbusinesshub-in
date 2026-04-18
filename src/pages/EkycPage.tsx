@@ -4,8 +4,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Camera, ShieldCheck, RefreshCw, Loader2 } from "lucide-react";
+import { Camera, ShieldCheck, RefreshCw, Loader2, Upload, X, CreditCard } from "lucide-react";
 import { toast } from "sonner";
+
+type Side = "front" | "back";
 
 const EKYC_KEY_PREFIX = "mbd-ekyc-done-";
 
@@ -21,9 +23,32 @@ const EkycPage = () => {
   const streamRef = useRef<MediaStream | null>(null);
 
   const [aadhaar, setAadhaar] = useState("");
+  const [aadhaarFront, setAadhaarFront] = useState<string | null>(null);
+  const [aadhaarBack, setAadhaarBack] = useState<string | null>(null);
+  const frontInputRef = useRef<HTMLInputElement | null>(null);
+  const backInputRef = useRef<HTMLInputElement | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const handleAadhaarFile = (side: Side, file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("कृपया केवल इमेज अपलोड करें • Please upload an image");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("फ़ाइल बहुत बड़ी है (अधिकतम 5MB) • File too large (max 5MB)");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      if (side === "front") setAadhaarFront(result);
+      else setAadhaarBack(result);
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     if (user && isKycDone(user.id)) navigate("/", { replace: true });
@@ -82,6 +107,10 @@ const EkycPage = () => {
       toast.error("कृपया 12 अंकों का सही आधार नंबर दर्ज करें");
       return;
     }
+    if (!aadhaarFront || !aadhaarBack) {
+      toast.error("कृपया आधार कार्ड के दोनों तरफ की फोटो अपलोड करें • Upload both sides of Aadhaar");
+      return;
+    }
     if (!photo) {
       toast.error("कृपया Live Selfie लें");
       return;
@@ -124,6 +153,60 @@ const EkycPage = () => {
               className="text-lg tracking-widest text-center h-12"
             />
             <p className="text-[11px] text-muted-foreground text-center">12 अंकों का आधार नंबर दर्ज करें</p>
+          </div>
+
+          {/* Aadhaar Card Photos */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-1.5">
+              <CreditCard className="h-4 w-4 text-[hsl(var(--primary))]" />
+              आधार कार्ड फोटो • Aadhaar Card Photo
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                { side: "front" as Side, label: "Front Side", hindi: "सामने", value: aadhaarFront, setter: setAadhaarFront, ref: frontInputRef },
+                { side: "back" as Side, label: "Back Side", hindi: "पीछे", value: aadhaarBack, setter: setAadhaarBack, ref: backInputRef },
+              ]).map((item) => (
+                <div key={item.side} className="space-y-1">
+                  <input
+                    ref={item.ref}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={(e) => handleAadhaarFile(item.side, e.target.files?.[0])}
+                  />
+                  {item.value ? (
+                    <div className="relative aspect-[1.6/1] w-full overflow-hidden rounded-xl border-2 border-[hsl(var(--primary))]/40 bg-muted">
+                      <img src={item.value} alt={`Aadhaar ${item.label}`} className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => item.setter(null)}
+                        className="absolute top-1 right-1 rounded-full bg-destructive/90 p-1 text-destructive-foreground shadow"
+                        aria-label="Remove"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1">
+                        <p className="text-[10px] font-medium text-white">{item.label} • {item.hindi}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => item.ref.current?.click()}
+                      className="flex aspect-[1.6/1] w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-[hsl(var(--primary))]/40 bg-[hsl(var(--primary))]/5 text-[hsl(var(--primary))] transition-colors hover:bg-[hsl(var(--primary))]/10"
+                    >
+                      <Upload className="h-5 w-5" />
+                      <span className="text-[11px] font-semibold leading-tight text-center px-1">
+                        Upload Aadhaar<br />{item.label}
+                      </span>
+                      <span className="text-[9px] text-muted-foreground">{item.hindi} वाला भाग</span>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-muted-foreground text-center">कैमरा से क्लिक करें या गैलरी से चुनें • Click or choose from gallery</p>
           </div>
 
           {/* Selfie */}
