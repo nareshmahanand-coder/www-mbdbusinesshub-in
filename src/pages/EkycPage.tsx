@@ -23,9 +23,32 @@ const EkycPage = () => {
   const streamRef = useRef<MediaStream | null>(null);
 
   const [aadhaar, setAadhaar] = useState("");
+  const [aadhaarFront, setAadhaarFront] = useState<string | null>(null);
+  const [aadhaarBack, setAadhaarBack] = useState<string | null>(null);
+  const frontInputRef = useRef<HTMLInputElement | null>(null);
+  const backInputRef = useRef<HTMLInputElement | null>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const handleAadhaarFile = (side: Side, file?: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("कृपया केवल इमेज अपलोड करें • Please upload an image");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("फ़ाइल बहुत बड़ी है (अधिकतम 5MB) • File too large (max 5MB)");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      if (side === "front") setAadhaarFront(result);
+      else setAadhaarBack(result);
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     if (user && isKycDone(user.id)) navigate("/", { replace: true });
