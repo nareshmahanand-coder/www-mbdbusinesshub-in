@@ -18,6 +18,7 @@ import {
   DropdownMenuLabel, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import KycReviewTab from "@/components/admin/KycReviewTab";
 
 interface MerchantPayment {
   shopId: string;
@@ -628,8 +629,13 @@ const AdminDashboard = () => {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="kyc" className="text-xs">🪪 E-KYC</TabsTrigger>
             <TabsTrigger value="slider" className="text-xs">🎠 Slider</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="kyc">
+            <KycReviewTab />
+          </TabsContent>
 
           {/* BHARAT GAURAV MEMBERSHIP SECTION */}
           <TabsContent value="memberships">
