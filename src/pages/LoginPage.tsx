@@ -229,8 +229,8 @@ const LoginPage = () => {
                 <Button
                   onClick={handleSendOtp}
                   disabled={phone.length !== 10 || loading || !recaptchaReady}
-                  style={{ backgroundColor: "#C71585" }}
-                  className="w-full text-white hover:opacity-90 hover:!bg-[#C71585] font-bold text-base py-5 gap-2 shadow-lg"
+                  style={{ backgroundColor: "#FF9933" }}
+                  className="w-full h-12 text-white hover:opacity-90 hover:!bg-[#FF9933] font-bold text-base gap-2 shadow-lg rounded-lg"
                 >
                   {loading ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -302,8 +302,8 @@ const LoginPage = () => {
             <Button
               onClick={handleGoogleLogin}
               disabled={loading}
-              style={{ backgroundColor: "#C71585" }}
-              className="w-full text-white hover:opacity-90 hover:!bg-[#C71585] font-bold text-base py-5 gap-2 shadow-lg border-0"
+              style={{ backgroundColor: "#FF9933" }}
+              className="w-full h-12 text-white hover:opacity-90 hover:!bg-[#FF9933] font-bold text-base gap-2 shadow-lg rounded-lg border-0"
             >
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
