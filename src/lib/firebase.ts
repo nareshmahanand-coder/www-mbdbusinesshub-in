@@ -10,12 +10,13 @@ declare global {
 }
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBfdOA2dNmXMQelLzGSGJKZi08AwE4B8ek",
-  authDomain: "mera-bharat-dukaan.firebaseapp.com",
-  projectId: "mera-bharat-dukaan",
-  storageBucket: "mera-bharat-dukaan.firebasestorage.app",
-  messagingSenderId: "577491645171",
-  appId: "1:577491645171:web:8f25a81fc8302ae62e3d86",
+  apiKey: "AIzaSyCaiLjzWiIsu3HKsG9RBDaRC84jMKrBMis",
+  authDomain: "mera-bharat-dukaan-64465.firebaseapp.com",
+  projectId: "mera-bharat-dukaan-64465",
+  storageBucket: "mera-bharat-dukaan-64465.firebasestorage.app",
+  messagingSenderId: "36966220674",
+  appId: "1:36966220674:web:8e746e004a38143c92c59b",
+  measurementId: "G-PVF8PKXMNC",
 };
 
 const app = initializeApp(firebaseConfig);
