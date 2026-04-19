@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isSuperUser: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -13,8 +14,11 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
+  isSuperUser: false,
   signOut: async () => {},
 });
+
+export const SUPERUSER_FLAG = "mbd-superuser";
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -22,6 +26,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSuperUser, setIsSuperUser] = useState<boolean>(
+    typeof window !== "undefined" && localStorage.getItem(SUPERUSER_FLAG) === "true"
+  );
   const syncedUserIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -76,11 +83,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     sessionStorage.removeItem("bharat-mitra-pending-greet");
+    localStorage.removeItem(SUPERUSER_FLAG);
+    setIsSuperUser(false);
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isSuperUser, signOut }}>
       {children}
     </AuthContext.Provider>
   );

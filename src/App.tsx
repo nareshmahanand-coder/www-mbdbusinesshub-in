@@ -40,17 +40,19 @@ const FullScreenLoader = () => (
 );
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isSuperUser } = useAuth();
   const { status, loading: kycLoading } = useKycStatus();
   const { isActive, loading: memLoading, refresh: refreshMembership } = useMembership();
 
-  if (loading || kycLoading) return <FullScreenLoader />;
+  if (loading) return <FullScreenLoader />;
   if (!user) return <Navigate to="/login" replace />;
-  // Allow access for approved AND pending (temporarily_verified) users.
-  // Only block users who haven't submitted ("none") or were rejected.
+
+  // Super User bypass: skip KYC + membership entirely
+  if (isSuperUser) return <>{children}</>;
+
+  if (kycLoading) return <FullScreenLoader />;
   if (status === "none" || status === "rejected") return <Navigate to="/ekyc" replace />;
 
-  // After KYC: enforce Bharat Gaurav Membership paywall
   if (memLoading) return <FullScreenLoader />;
   if (!isActive) {
     return (
