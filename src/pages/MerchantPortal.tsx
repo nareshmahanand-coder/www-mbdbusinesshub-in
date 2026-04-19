@@ -35,8 +35,6 @@ const MERCHANT_PLANS = [
 const MerchantPortal = () => {
   const { user } = useAuth();
   const [submitted, setSubmitted] = useState(false);
-  const [transactionId, setTransactionId] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState(PLANS[0].id);
   
   const [shopPhotos, setShopPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
