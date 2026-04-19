@@ -39,23 +39,19 @@ const MerchantPortal = () => {
   const [selectedPlan, setSelectedPlan] = useState(PLANS[0].id);
   
   const [shopPhotos, setShopPhotos] = useState<string[]>([]);
-  const [screenshotUrl, setScreenshotUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const shopPhotoRef = useRef<HTMLInputElement>(null);
-  const screenshotRef = useRef<HTMLInputElement>(null);
-  
+
   // KYC Documents
   const [aadharUrl, setAadharUrl] = useState("");
   const [panUrl, setPanUrl] = useState("");
   const [gstUrl, setGstUrl] = useState("");
   const [fssaiUrl, setFssaiUrl] = useState("");
-  
+
   const [form, setForm] = useState({
     shopName: "", shopNameHindi: "", category: "", address: "",
     pincode: "", whatsapp: "", phone: "", description: "",
   });
-
-  const currentPlan = PLANS.find((p) => p.id === selectedPlan)!;
 
   const handleFileUpload = async (file: File, folder: string): Promise<string | null> => {
     if (!user) { toast.error("Please login first"); return null; }
