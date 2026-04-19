@@ -161,7 +161,7 @@ serve(async (req) => {
     if (updErr) throw updErr;
 
     return new Response(
-      JSON.stringify({ ok: true, status: newStatus, face_detected, aadhaar_detected, confidence, reason }),
+      JSON.stringify({ ok: true, status: newStatus, face_detected, aadhaar_detected, aadhaar_number_ocr: ocrDigits, number_matches: numberMatches, confidence, reason }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
