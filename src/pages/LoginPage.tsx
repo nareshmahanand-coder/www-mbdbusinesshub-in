@@ -28,6 +28,58 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pin, setPin] = useState("");
+  const [pinLoading, setPinLoading] = useState(false);
+
+  const handleSuperUserPin = async () => {
+    if (pin !== SUPERUSER_PIN) {
+      toast.error("गलत PIN / Invalid PIN");
+      return;
+    }
+    setPinLoading(true);
+    try {
+      let { error: signInError } = await supabase.auth.signInWithPassword({
+        email: SUPERUSER_EMAIL,
+        password: SUPERUSER_PASSWORD,
+      });
+
+      if (signInError) {
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: SUPERUSER_EMAIL,
+          password: SUPERUSER_PASSWORD,
+          options: {
+            data: { full_name: "Super User", phone: "+910000000000" },
+            emailRedirectTo: window.location.origin,
+          },
+        });
+        if (signUpError && !signUpError.message.toLowerCase().includes("already")) {
+          toast.error(signUpError.message);
+          setPinLoading(false);
+          return;
+        }
+        const retry = await supabase.auth.signInWithPassword({
+          email: SUPERUSER_EMAIL,
+          password: SUPERUSER_PASSWORD,
+        });
+        if (retry.error) {
+          toast.error("Super User लॉगिन विफल। पुनः प्रयास करें।");
+          setPinLoading(false);
+          return;
+        }
+      }
+
+      localStorage.setItem(SUPERUSER_FLAG, "true");
+      toast.success("🛡️ Super User Mode सक्रिय / Bypass Active");
+      setPinDialogOpen(false);
+      setPinLoading(false);
+      navigate("/", { replace: true });
+    } catch (e: any) {
+      console.error("Super user login error:", e);
+      toast.error("लॉगिन विफल।");
+      setPinLoading(false);
+    }
+  };
 
   const handlePhoneLogin = async () => {
     if (phone.length !== 10) {
