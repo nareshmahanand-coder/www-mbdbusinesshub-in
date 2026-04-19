@@ -216,6 +216,15 @@ const LoginPage = () => {
               आगे बढ़ें / Continue to KYC
             </Button>
 
+            <Button
+              onClick={handleWhatsAppVerify}
+              disabled={phone.length !== 10 || loading}
+              className="w-full h-12 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold text-base gap-2 shadow-lg rounded-lg"
+            >
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageCircle className="h-5 w-5" />}
+              WhatsApp से Verify करें (Free)
+            </Button>
+
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-border" />
