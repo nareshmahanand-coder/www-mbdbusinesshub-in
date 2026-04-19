@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isSuperUser: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -13,8 +14,11 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
+  isSuperUser: false,
   signOut: async () => {},
 });
+
+export const SUPERUSER_FLAG = "mbd-superuser";
 
 export const useAuth = () => useContext(AuthContext);
 
