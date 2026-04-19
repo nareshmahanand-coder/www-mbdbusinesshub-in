@@ -6,20 +6,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { shopCategories } from "@/data/sampleShops";
-import { Store, Upload, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, Image } from "lucide-react";
+import { Store, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, Image, ExternalLink } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import PaymentQRSection from "@/components/PaymentQRSection";
 import KycDocUpload from "@/components/KycDocUpload";
 
-const UPI_ID = "Nmahanand1@ybl";
-const UPI_BASE = `upi://pay?pa=${UPI_ID}&pn=MeraBharatDukaan&cu=INR`;
-
-const PLANS = [
-  { id: "monthly", label: "मासिक प्लान (₹99)", labelEn: "Monthly Plan", price: 99, days: 30 },
-  { id: "yearly", label: "सालाना प्लान (₹999)", labelEn: "Yearly Plan", price: 999, days: 365 },
+const MERCHANT_PLANS = [
+  {
+    id: "monthly",
+    label: "मर्चेंट मंथली प्रीमियम",
+    price: 99,
+    days: 30,
+    link: "https://rzp.io/rzp/RNzm6FT",
+    theme: "saffron",
+  },
+  {
+    id: "yearly",
+    label: "मर्चेंट सालाना प्रीमियम",
+    price: 999,
+    days: 365,
+    link: "https://rzp.io/rzp/msyPNKn",
+    theme: "green",
+  },
 ];
 
 const MerchantPortal = () => {
