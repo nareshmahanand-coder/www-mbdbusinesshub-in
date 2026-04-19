@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Loader2, Crown, Sparkles } from "lucide-react";
+import { Loader2, Crown, CheckCircle2 } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import upiQr from "@/assets/upi-qr.jpeg";
 
-const UPI_ID = "Nmahanand1@ybl";
-const UPI_BASE = `upi://pay?pa=${UPI_ID}&pn=MeraBharatDukaan&cu=INR`;
+const RAZORPAY_LINKS = {
+  monthly: "https://rzp.io/rzp/SpppA2Rg",
+  yearly: "https://rzp.io/rzp/luIfc4L4",
+};
 
 interface MembershipOverlayProps {
   onActivated: () => void;
@@ -18,186 +18,147 @@ interface MembershipOverlayProps {
 
 const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
   const { user } = useAuth();
-  const [plan, setPlan] = useState<"monthly" | "yearly">("monthly");
-  const [transactionId, setTransactionId] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [verifying, setVerifying] = useState<"monthly" | "yearly" | null>(null);
+  const [paymentOpened, setPaymentOpened] = useState(false);
 
-  const planDetails = {
-    monthly: { price: 1, label: "₹1", duration: "1 महीना", days: 30 },
-    yearly: { price: 12, label: "₹12", duration: "1 साल", days: 365 },
+  const handlePay = (plan: "monthly" | "yearly") => {
+    window.open(RAZORPAY_LINKS[plan], "_blank", "noopener,noreferrer");
+    setPaymentOpened(true);
   };
 
-  const getUpiLink = (amount: number) => `${UPI_BASE}&am=${amount}`;
-
-  const handleSubmit = async () => {
-    if (!transactionId.trim()) {
-      toast.error("कृपया Transaction ID दर्ज करें");
-      return;
-    }
+  const activateMembership = async (plan: "monthly" | "yearly") => {
     if (!user) return;
-    setSubmitting(true);
+    setVerifying(plan);
 
+    const days = plan === "monthly" ? 30 : 365;
+    const amount = plan === "monthly" ? 1 : 12;
     const now = new Date();
     const endsAt = new Date(now);
-    endsAt.setDate(endsAt.getDate() + planDetails[plan].days);
+    endsAt.setDate(endsAt.getDate() + days);
 
     const { error } = await supabase.from("memberships").insert({
       user_id: user.id,
       plan,
-      amount: planDetails[plan].price,
-      transaction_id: transactionId.trim(),
+      amount,
       status: "approved",
       starts_at: now.toISOString().split("T")[0],
       ends_at: endsAt.toISOString().split("T")[0],
     });
 
+    setVerifying(null);
+
     if (error) {
-      toast.error("Submission failed. Please try again.");
-      setSubmitting(false);
+      toast.error("कुछ गड़बड़ हुई। दोबारा कोशिश करें।");
       return;
     }
 
-    toast.success("🎉 मेंबरशिप एक्टिव हो गई!");
-    setSubmitting(false);
+    toast.success("🎉 भारत गौरव मेंबरशिप एक्टिव!");
     onActivated();
   };
 
-  const handleDirectPay = () => {
-    // Auto-activate after clicking pay button
-    setTimeout(() => {
-      if (!transactionId.trim()) {
-        toast.info("UPI ऐप खुल रहा है... पेमेंट के बाद Transaction ID डालें");
-      }
-    }, 500);
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto py-4">
-      {/* Blurred backdrop */}
-      <div className="absolute inset-0 bg-background/60 backdrop-blur-md" />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto py-6 px-4">
+      {/* Heavy blur backdrop — non-dismissible */}
+      <div className="absolute inset-0 bg-background/40 backdrop-blur-xl" />
 
-      <Card className="relative z-10 mx-4 w-full max-w-md border-2 border-saffron/30 shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-        <CardHeader className="text-center space-y-2 pb-2">
+      <Card
+        className="relative z-10 w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-300 overflow-hidden border-0"
+        style={{
+          borderTop: "6px solid #FF9933",
+          borderBottom: "6px solid #138808",
+          borderLeft: "2px solid #FF9933",
+          borderRight: "2px solid #138808",
+        }}
+      >
+        <CardHeader className="text-center space-y-2 pb-3 bg-white">
           <img
             src={logoCircle}
             alt="Mera Bharat Dukaan"
-            className="mx-auto h-16 w-16 rounded-full object-cover shadow-lg border-4 border-saffron/40"
+            className="mx-auto h-16 w-16 rounded-full object-cover shadow-lg ring-4 ring-[#FF9933]/40"
           />
-          <CardTitle className="text-lg font-bold text-foreground flex items-center justify-center gap-2">
-            <Crown className="h-5 w-5 text-accent" /> भारत गौरव मेंबरशिप
+          <CardTitle className="text-xl font-extrabold text-[#1a237e] flex items-center justify-center gap-2 font-hindi">
+            <Crown className="h-6 w-6 text-[#FF9933]" />
+            भारत गौरव मेंबरशिप
           </CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Bharat Gaurav Membership — Unlock all features
+          <p className="text-[11px] text-muted-foreground font-semibold tracking-wide">
+            🇮🇳 DIGITAL INDIA INITIATIVE 🇮🇳
           </p>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="rounded-xl bg-accent/10 border border-accent/20 p-3 text-center">
-            <p className="font-hindi text-sm leading-relaxed text-foreground">
-              ऐप की सभी सुविधाओं का लाभ लेने के लिए{" "}
-              <span className="font-bold text-accent">भारत गौरव मेंबरशिप</span> लें।
-              <br />
-              पेमेंट करें और{" "}
-              <span className="font-bold text-green-india">तुरंत एक्सेस पाएं!</span>
+
+        <CardContent className="space-y-4 bg-white pt-4">
+          {/* Importance text */}
+          <div className="rounded-xl bg-gradient-to-br from-[#FF9933]/10 via-white to-[#138808]/10 border-2 border-[#1a237e]/20 p-4">
+            <p className="font-bold text-sm text-[#1a237e] mb-2 font-hindi">
+              भारत गौरव मेंबरशिप क्यों जरूरी है?
+            </p>
+            <p className="font-hindi text-[13px] leading-relaxed text-foreground">
+              यह <span className="font-bold text-[#FF9933]">डिजिटल इंडिया पहल</span> का एक हिस्सा है। यह मेंबरशिप आपको{" "}
+              <span className="font-bold text-[#1a237e]">'मेरा भारत दुकान'</span> की सभी प्रीमियम सेवाओं, सुरक्षित व्यापारिक लेनदेन और भविष्य की{" "}
+              <span className="font-bold text-[#138808]">सरकारी योजनाओं</span> का सीधा लाभ उठाने के लिए अधिकृत (Authorize) करती है। ऐप को अनलॉक करने के लिए कृपया अपनी सदस्यता चुनें।
             </p>
           </div>
 
-          {/* Plan Selection */}
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => setPlan("monthly")}
-              className={`rounded-xl border-2 p-3 text-center transition-all ${
-                plan === "monthly"
-                  ? "border-accent bg-accent/10 shadow-md"
-                  : "border-border bg-card hover:border-accent/50"
-              }`}
+          {/* Monthly Plan Button */}
+          <div className="space-y-2">
+            <Button
+              onClick={() => handlePay("monthly")}
+              className="w-full h-14 text-base font-extrabold text-white shadow-lg rounded-xl font-hindi"
+              style={{ backgroundColor: "#FF9933" }}
             >
-              <p className="text-2xl font-extrabold text-foreground">₹1</p>
-              <p className="text-xs text-muted-foreground font-hindi">मासिक / Monthly</p>
-            </button>
-            <button
-              onClick={() => setPlan("yearly")}
-              className={`rounded-xl border-2 p-3 text-center transition-all relative ${
-                plan === "yearly"
-                  ? "border-accent bg-accent/10 shadow-md"
-                  : "border-border bg-card hover:border-accent/50"
-              }`}
+              मंथली प्लान - ₹1 (ऑटो-डेबिट)
+            </Button>
+            {paymentOpened && (
+              <Button
+                onClick={() => activateMembership("monthly")}
+                disabled={verifying !== null}
+                variant="outline"
+                className="w-full h-10 text-xs font-bold border-2 border-[#FF9933] text-[#FF9933] font-hindi"
+              >
+                {verifying === "monthly" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-1" />
+                    मैंने ₹1 का पेमेंट कर दिया - अनलॉक करें
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+
+          {/* Yearly Plan Button */}
+          <div className="space-y-2">
+            <Button
+              onClick={() => handlePay("yearly")}
+              className="w-full h-14 text-base font-extrabold text-white shadow-lg rounded-xl font-hindi relative"
+              style={{ backgroundColor: "#138808" }}
             >
-              <span className="absolute -top-2 right-2 rounded-full bg-green-india px-2 py-0.5 text-[9px] font-bold text-primary-foreground">
+              <span className="absolute -top-2 right-3 rounded-full bg-[#1a237e] px-2 py-0.5 text-[9px] font-bold text-white">
                 BEST VALUE
               </span>
-              <p className="text-2xl font-extrabold text-foreground">₹12</p>
-              <p className="text-xs text-muted-foreground font-hindi">वार्षिक / Yearly</p>
-            </button>
-          </div>
-
-          {/* QR Code */}
-          <div className="flex justify-center">
-            <img
-              src={upiQr}
-              alt="Scan QR to Pay"
-              className="h-40 w-40 rounded-xl border-2 border-accent/30 shadow-md"
-            />
-          </div>
-
-          {/* UPI Direct Pay Buttons */}
-          <div className="space-y-2">
-            <a
-              href={getUpiLink(planDetails[plan].price)}
-              onClick={handleDirectPay}
-              className="block"
-            >
-              <Button className="w-full bg-[hsl(265,80%,45%)] hover:bg-[hsl(265,80%,40%)] text-primary-foreground font-bold text-base py-5 gap-2 shadow-lg">
-                📱 Pay {planDetails[plan].label} via UPI
+              सालाना प्लान - ₹12 (ऑटो-डेबिट)
+            </Button>
+            {paymentOpened && (
+              <Button
+                onClick={() => activateMembership("yearly")}
+                disabled={verifying !== null}
+                variant="outline"
+                className="w-full h-10 text-xs font-bold border-2 border-[#138808] text-[#138808] font-hindi"
+              >
+                {verifying === "yearly" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-1" />
+                    मैंने ₹12 का पेमेंट कर दिया - अनलॉक करें
+                  </>
+                )}
               </Button>
-            </a>
-            <div className="flex gap-2">
-              <a href={getUpiLink(planDetails[plan].price)} onClick={handleDirectPay} className="flex-1">
-                <Button variant="outline" className="w-full border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)] font-semibold text-xs">
-                  PhonePe
-                </Button>
-              </a>
-              <a href={getUpiLink(planDetails[plan].price)} onClick={handleDirectPay} className="flex-1">
-                <Button variant="outline" className="w-full border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)] font-semibold text-xs">
-                  GPay
-                </Button>
-              </a>
-              <a href={getUpiLink(planDetails[plan].price)} onClick={handleDirectPay} className="flex-1">
-                <Button variant="outline" className="w-full border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)] font-semibold text-xs">
-                  Paytm
-                </Button>
-              </a>
-            </div>
-            <p className="text-center text-[10px] text-muted-foreground">
-              UPI ID: <span className="font-mono font-bold text-foreground">{UPI_ID}</span>
-            </p>
-          </div>
-
-          {/* Transaction ID */}
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground font-hindi">
-              Transaction ID / UTR Number *
-            </label>
-            <Input
-              placeholder="e.g. 412345678901"
-              value={transactionId}
-              onChange={(e) => setTransactionId(e.target.value)}
-            />
-          </div>
-
-          <Button
-            onClick={handleSubmit}
-            disabled={submitting || !transactionId.trim()}
-            className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold text-base py-5 gap-2 shadow-lg"
-          >
-            {submitting ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Sparkles className="h-5 w-5" />
             )}
-            Submit & Activate Membership
-          </Button>
-          <p className="text-center text-[10px] text-muted-foreground font-hindi">
-            Transaction ID डालते ही मेंबरशिप तुरंत एक्टिव हो जाएगी ✓
+          </div>
+
+          <p className="text-center text-[11px] text-muted-foreground font-hindi pt-1">
+            पेमेंट के बाद नीचे दिए "अनलॉक करें" बटन पर टैप करें ✓
           </p>
         </CardContent>
       </Card>
