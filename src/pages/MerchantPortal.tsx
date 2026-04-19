@@ -203,59 +203,60 @@ const MerchantPortal = () => {
           </CardContent>
         </Card>
 
-        {/* Premium */}
-        <Card className="mb-6 border-2 border-accent">
+        {/* Premium - Tiranga themed Razorpay subscriptions */}
+        <Card
+          className="mb-6 overflow-hidden border-0 shadow-lg"
+          style={{
+            borderTop: "6px solid #FF9933",
+            borderBottom: "6px solid #138808",
+            background: "linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 50%, #ECFDF5 100%)",
+          }}
+        >
           <CardHeader className="text-center">
-            <Crown className="mx-auto mb-1 h-8 w-8 text-accent" />
-            <CardTitle className="font-hindi text-xl">प्रीमियम मेंबरशिप • Premium Membership</CardTitle>
-            <p className="font-hindi mt-2 text-sm text-muted-foreground">मात्र ₹99 में प्रीमियम मेंबर बनें।</p>
+            <Crown className="mx-auto mb-1 h-8 w-8 text-[#FF9933]" />
+            <CardTitle className="font-hindi text-xl text-foreground">
+              मर्चेंट पोर्टल प्रीमियम • Merchant Premium
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
-            <div className="grid grid-cols-2 gap-3">
-              {PLANS.map((plan) => (
-                <button key={plan.id} onClick={() => setSelectedPlan(plan.id)}
-                  className={`rounded-xl border-2 p-4 text-center transition-all ${selectedPlan === plan.id ? "border-accent bg-accent/10 shadow-md" : "border-border hover:border-accent/50"}`}>
-                  <p className="font-hindi text-sm font-bold text-foreground">{plan.label}</p>
-                  <p className="mt-1 text-2xl font-extrabold text-accent">₹{plan.price}</p>
-                  <p className="text-xs text-muted-foreground">{plan.days} days</p>
-                </button>
-              ))}
-            </div>
+            <p className="font-hindi text-sm leading-relaxed text-foreground/90 bg-white/60 rounded-lg p-3 border border-border">
+              <strong>मर्चेंट पोर्टल प्रीमियम क्यों चुनें?</strong> प्रीमियम मर्चेंट बनने पर आपको जीरो कमीशन बिक्री, एडवांस वेंडर डैशबोर्ड और अपनी दुकान को प्राथमिकता के साथ लिस्ट करने की सुविधा मिलती है। अपना पसंदीदा ऑटो-डेबिट प्लान चुनें और व्यापार बढ़ाएं।
+            </p>
+
             <ul className="space-y-2 font-hindi text-sm">
-              <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-india" /><span>आपकी दुकान ग्राहकों को सबसे पहले ऊपर दिखेगी।</span></li>
-              <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-india" /><span>दुकान के नाम के साथ <strong>'Verified'</strong> का निशान लगेगा।</span></li>
-              <li className="flex items-start gap-2"><Eye className="mt-0.5 h-5 w-5 shrink-0 text-green-india" /><span>ज्यादा से ज्यादा लोग आपकी दुकान देख पाएंगे।</span></li>
+              <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#138808]" /><span>0% कमीशन — पूरी कमाई आपकी।</span></li>
+              <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#138808]" /><span>दुकान के नाम के साथ <strong>'Verified'</strong> का निशान।</span></li>
+              <li className="flex items-start gap-2"><Eye className="mt-0.5 h-5 w-5 shrink-0 text-[#138808]" /><span>प्राथमिकता लिस्टिंग — सबसे ऊपर दिखेंगे।</span></li>
             </ul>
 
-            {/* UPI Direct Pay */}
-            <PaymentQRSection amount={currentPlan.price} label={`₹${currentPlan.price}`} />
-
-            {/* Payment proof - Transaction ID + Screenshot (Admin approval required) */}
-            <div className="space-y-3 rounded-lg bg-muted/50 p-4">
-              <p className="font-hindi text-sm font-semibold text-foreground">पेमेंट करने के बाद Transaction ID और Screenshot अपलोड करें</p>
-              <div>
-                <Label htmlFor="txnId" className="font-hindi">Transaction ID *</Label>
-                <Input id="txnId" placeholder="e.g., T2403081234567890" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} />
-              </div>
-              <div className="flex h-20 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-accent/50 transition-colors hover:border-accent"
-                onClick={() => screenshotRef.current?.click()}>
-                <input type="file" accept="image/*" ref={screenshotRef} className="hidden" onChange={handleScreenshotFileChange} />
-                <div className="text-center">
-                  {screenshotUrl ? (
-                    <img src={screenshotUrl} alt="Screenshot" className="h-16 rounded object-contain" />
-                  ) : (
-                    <>
-                      <Upload className="mx-auto h-5 w-5 text-accent" />
-                      <p className="mt-1 text-xs text-muted-foreground">{uploading ? "Uploading..." : "Upload Screenshot"}</p>
-                    </>
-                  )}
-                </div>
-              </div>
-              <Button onClick={handleScreenshotUpload} className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold text-base py-5">
-                <Upload className="mr-2 h-4 w-4" /> Submit Payment Proof
-              </Button>
-              <p className="text-center text-[10px] text-muted-foreground font-hindi">Admin अप्रूव करते ही आपकी दुकान Premium हो जाएगी</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {MERCHANT_PLANS.map((plan) => {
+                const isSaffron = plan.theme === "saffron";
+                const bg = isSaffron ? "#FF9933" : "#138808";
+                const hover = isSaffron ? "#E6841F" : "#0F6B06";
+                return (
+                  <button
+                    key={plan.id}
+                    onClick={() => handleSubscribe(plan)}
+                    className="group flex flex-col items-center justify-center gap-1 rounded-xl px-4 py-5 text-white font-bold shadow-md transition-all hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
+                    style={{ backgroundColor: bg }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hover)}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = bg)}
+                  >
+                    <span className="font-hindi text-base leading-tight">{plan.label}</span>
+                    <span className="text-2xl font-extrabold">₹{plan.price}</span>
+                    <span className="font-hindi text-xs opacity-95">ऑटो-डेबिट • {plan.days} दिन</span>
+                    <span className="mt-1 inline-flex items-center gap-1 text-xs opacity-95">
+                      Pay via Razorpay <ExternalLink className="h-3 w-3" />
+                    </span>
+                  </button>
+                );
+              })}
             </div>
+
+            <p className="text-center text-[11px] text-muted-foreground font-hindi">
+              पेमेंट सफल होते ही आपका मर्चेंट प्रीमियम तुरंत एक्टिव हो जाएगा।
+            </p>
           </CardContent>
         </Card>
 
