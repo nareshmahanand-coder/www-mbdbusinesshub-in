@@ -23,10 +23,10 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
-    // Fetch the KYC row
+    // Fetch the KYC row (incl. typed Aadhaar number for OCR matching)
     const { data: kyc, error: kycErr } = await supabase
       .from("kyc_requests")
-      .select("id, user_id, selfie_url, aadhaar_front_url, status")
+      .select("id, user_id, selfie_url, aadhaar_front_url, aadhaar_number, status")
       .eq("id", kycRequestId)
       .maybeSingle();
     if (kycErr || !kyc) throw new Error("KYC request not found");
@@ -35,6 +35,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const typedAadhaar = (kyc.aadhaar_number || "").replace(/\D/g, "");
 
     // Get signed URLs (bucket is private)
     const [{ data: selfieSigned }, { data: frontSigned }] = await Promise.all([
@@ -72,7 +73,7 @@ serve(async (req) => {
           {
             role: "system",
             content:
-              "You are a strict KYC document verifier for an Indian super-app. Analyse the SELFIE image and the AADHAAR FRONT image. Decide if (a) the selfie clearly shows ONE human face, and (b) the Aadhaar image clearly shows an Aadhaar card (look for the Aadhaar logo, the word 'AADHAAR' or 'आधार', a 12-digit number, and a photo). Be lenient on lighting/quality but strict on content. Reject obvious tampering, screenshots of screenshots, or fully unrelated images. Return your decision via the verify_kyc tool.",
+              "You are a strict KYC document verifier for an Indian super-app. Analyse the SELFIE image and the AADHAAR FRONT image. Decide if (a) the selfie clearly shows ONE human face, (b) the Aadhaar image clearly shows an Aadhaar card (look for the Aadhaar logo, the word 'AADHAAR' or 'आधार', a 12-digit number, and a photo). Then OCR the 12-digit Aadhaar number you can see on the card and return it as exactly 12 digits with no spaces (or empty string if you cannot read it). Be lenient on lighting/quality but strict on content. Return your decision via the verify_kyc tool.",
           },
           {
             role: "user",
@@ -81,6 +82,7 @@ serve(async (req) => {
               { type: "image_url", image_url: { url: `data:${selfieImg.mime};base64,${selfieImg.b64}` } },
               { type: "text", text: "Image 2: AADHAAR FRONT" },
               { type: "image_url", image_url: { url: `data:${frontImg.mime};base64,${frontImg.b64}` } },
+              { type: "text", text: `User typed Aadhaar number: ${typedAadhaar}. Verify if this matches the number printed on the card.` },
             ],
           },
         ],
@@ -95,10 +97,11 @@ serve(async (req) => {
                 properties: {
                   face_detected: { type: "boolean" },
                   aadhaar_detected: { type: "boolean" },
+                  aadhaar_number_ocr: { type: "string", description: "12-digit number read from the card, or empty string" },
                   confidence: { type: "number", description: "0-1" },
                   reason: { type: "string", description: "Short reason in Hindi/English" },
                 },
-                required: ["face_detected", "aadhaar_detected", "confidence", "reason"],
+                required: ["face_detected", "aadhaar_detected", "aadhaar_number_ocr", "confidence", "reason"],
                 additionalProperties: false,
               },
             },
@@ -128,17 +131,26 @@ serve(async (req) => {
     }
 
     const args = JSON.parse(toolCall.function.arguments);
-    const { face_detected, aadhaar_detected, confidence, reason } = args;
+    const { face_detected, aadhaar_detected, aadhaar_number_ocr, confidence, reason } = args;
+    const ocrDigits = String(aadhaar_number_ocr || "").replace(/\D/g, "");
+    const numberMatches = ocrDigits.length === 12 && typedAadhaar.length === 12 && ocrDigits === typedAadhaar;
 
     let newStatus = "pending";
     let updatePayload: Record<string, unknown> = { reviewed_at: new Date().toISOString() };
 
-    if (face_detected && aadhaar_detected && confidence >= 0.55) {
+    if (face_detected && aadhaar_detected && numberMatches && confidence >= 0.55) {
       newStatus = "approved";
       updatePayload = { ...updatePayload, status: "approved", rejection_reason: null };
+    } else if (face_detected && aadhaar_detected && ocrDigits.length === 12 && !numberMatches) {
+      // Hard reject: card is real but typed number doesn't match the card
+      newStatus = "rejected";
+      updatePayload = {
+        ...updatePayload,
+        status: "rejected",
+        rejection_reason: `AI: Aadhaar number mismatch. Card shows ${ocrDigits.slice(0, 4)}XXXXXXXX, you typed ${typedAadhaar.slice(0, 4)}XXXXXXXX.`,
+      };
     } else {
-      // Leave as pending so an admin can still review/approve manually.
-      // Don't auto-reject — too risky.
+      // Leave pending for admin review
       updatePayload = { ...updatePayload, rejection_reason: `AI: ${reason}` };
     }
 
@@ -149,7 +161,7 @@ serve(async (req) => {
     if (updErr) throw updErr;
 
     return new Response(
-      JSON.stringify({ ok: true, status: newStatus, face_detected, aadhaar_detected, confidence, reason }),
+      JSON.stringify({ ok: true, status: newStatus, face_detected, aadhaar_detected, aadhaar_number_ocr: ocrDigits, number_matches: numberMatches, confidence, reason }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {

@@ -8,7 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { Info, Phone, Loader2, ShieldCheck } from "lucide-react";
+import { Info, Phone, Loader2, ShieldCheck, MessageCircle } from "lucide-react";
+
+const HELPLINE_WA = "919203645007";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -65,6 +67,67 @@ const LoginPage = () => {
 
       sessionStorage.setItem("bharat-mitra-pending-greet", "true");
       toast.success("लॉगिन सफल! कृपया Aadhaar KYC पूरा करें।");
+      setLoading(false);
+      navigate("/ekyc", { replace: true });
+    } catch (error: any) {
+      console.error("Phone login error:", error);
+      toast.error("लॉगिन विफल। पुनः प्रयास करें।");
+      setLoading(false);
+    }
+  };
+
+  const handleWhatsAppVerify = async () => {
+    if (phone.length !== 10) {
+      toast.error("पहले 10 अंकों का मोबाइल नंबर दर्ज करें");
+      return;
+    }
+    setLoading(true);
+    try {
+      const fakeEmail = `${phone}@mbd.local`;
+      const password = `mbd_${phone}_secure`;
+
+      let { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: fakeEmail,
+        password,
+      });
+
+      if (signInError) {
+        const { error: signUpError } = await supabase.auth.signUp({
+          email: fakeEmail,
+          password,
+          options: {
+            data: { full_name: `User ${phone}`, phone: `+91${phone}` },
+            emailRedirectTo: window.location.origin,
+          },
+        });
+        if (signUpError) {
+          toast.error(signUpError.message || "खाता नहीं बना।");
+          setLoading(false);
+          return;
+        }
+        const retry = await supabase.auth.signInWithPassword({ email: fakeEmail, password });
+        signInData = retry.data;
+      }
+
+      const userId = signInData?.user?.id;
+      if (userId) {
+        await supabase
+          .from("profiles")
+          .update({
+            phone: `+91${phone}`,
+            phone_verified: true,
+            phone_verified_at: new Date().toISOString(),
+          })
+          .eq("id", userId);
+      }
+
+      const message = encodeURIComponent(
+        `नमस्ते Mera Bharat Dukaan!\nकृपया मेरा नंबर सत्यापित करें / Please verify my number.\n\nMobile: +91${phone}\nUser ID: ${userId ?? "new"}`,
+      );
+      window.open(`https://wa.me/${HELPLINE_WA}?text=${message}`, "_blank");
+
+      sessionStorage.setItem("bharat-mitra-pending-greet", "true");
+      toast.success("WhatsApp खुल रहा है। संदेश भेजें और वापस आएँ।");
       setLoading(false);
       navigate("/ekyc", { replace: true });
     } catch (error: any) {
@@ -151,6 +214,15 @@ const LoginPage = () => {
                 <ShieldCheck className="h-5 w-5" />
               )}
               आगे बढ़ें / Continue to KYC
+            </Button>
+
+            <Button
+              onClick={handleWhatsAppVerify}
+              disabled={phone.length !== 10 || loading}
+              className="w-full h-12 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold text-base gap-2 shadow-lg rounded-lg"
+            >
+              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageCircle className="h-5 w-5" />}
+              WhatsApp से Verify करें (Free)
             </Button>
 
             <div className="relative">
