@@ -333,9 +333,57 @@ const LoginPage = () => {
                 🇮🇳 Digital India Initiative
               </span>
             </div>
+
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={() => setPinDialogOpen(true)}
+                className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground underline-offset-2 hover:underline"
+              >
+                Official Authorized System
+              </button>
+            </div>
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={pinDialogOpen} onOpenChange={setPinDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-4 w-4" /> Authorized Access
+            </DialogTitle>
+            <DialogDescription>
+              Enter the master PIN to unlock Super User mode.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            type="password"
+            inputMode="numeric"
+            placeholder="••••••••"
+            value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 8))}
+            onKeyDown={(e) => e.key === "Enter" && handleSuperUserPin()}
+            className="text-center text-lg tracking-widest"
+            maxLength={8}
+            autoFocus
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setPinDialogOpen(false);
+                setPin("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSuperUserPin} disabled={pinLoading || pin.length < 4}>
+              {pinLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Unlock"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
