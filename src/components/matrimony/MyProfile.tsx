@@ -9,8 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { User, Crown, Image } from "lucide-react";
 import { toast } from "sonner";
 import KycDocUpload from "@/components/KycDocUpload";
-import PaymentQRSection from "@/components/PaymentQRSection";
 import type { MatrimonyProfile } from "@/pages/MatrimonyPage";
+
+const MARRIAGE_BUREAU_LINKS = {
+  monthly: "https://rzp.io/rzp/HgKKUeYD",
+  yearly: "https://rzp.io/rzp/WYucORA",
+};
 
 interface Props {
   user: any;
@@ -144,13 +148,69 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
         </Button>
 
         {myProfile && !myProfile.is_published && (
-          <Card className="border-[hsl(40,80%,70%)] bg-[hsl(40,80%,97%)]">
-            <CardContent className="p-4 text-center space-y-3">
-              <Crown className="mx-auto mb-1 h-8 w-8 text-[hsl(40,90%,50%)]" />
-              <h4 className="font-bold text-foreground font-hindi">प्रीमियम रजिस्ट्रेशन • Premium Registration</h4>
-              <p className="text-xs text-muted-foreground">Publish your profile and get contact requests</p>
-              <PaymentQRSection amount={99} label="₹99 / Month" />
-              <p className="font-hindi text-xs text-muted-foreground">पेमेंट करने के बाद Transaction ID और Screenshot अपलोड करें।</p>
+          <Card
+            className="overflow-hidden border-0 shadow-lg"
+            style={{
+              borderTop: "5px solid #FF9933",
+              borderBottom: "5px solid #138808",
+              borderLeft: "2px solid #FF9933",
+              borderRight: "2px solid #138808",
+            }}
+          >
+            <CardContent className="p-5 space-y-4 bg-gradient-to-br from-[#FF9933]/10 via-white to-[#138808]/10">
+              <div className="text-center space-y-1">
+                <Crown className="mx-auto h-9 w-9 text-[#FF9933]" />
+                <h4 className="font-extrabold text-[#1a237e] font-hindi text-base">
+                  मैरिज ब्यूरो प्रीमियम
+                </h4>
+                <p className="text-[11px] text-muted-foreground font-semibold tracking-wide">
+                  🇮🇳 Verified Profiles • Unlimited Contacts 🇮🇳
+                </p>
+              </div>
+
+              <div className="rounded-xl bg-white border-2 border-[#1a237e]/20 p-3">
+                <p className="font-bold text-xs text-[#1a237e] mb-1.5 font-hindi">
+                  मैरिज ब्यूरो प्रीमियम क्यों चुनें?
+                </p>
+                <p className="font-hindi text-[12px] leading-relaxed text-foreground">
+                  प्रीमियम मेंबर बनने पर आपको <span className="font-bold text-[#FF9933]">सत्यापित प्रोफाइल्स (Verified Profiles)</span> तक सीधी पहुँच, <span className="font-bold text-[#138808]">असीमित संपर्क विवरण</span> और प्राथमिकता के आधार पर मैचमेकिंग सहायता मिलती है। अपनी सुविधा के अनुसार प्लान चुनें।
+                </p>
+              </div>
+
+              <a
+                href={MARRIAGE_BUREAU_LINKS.monthly}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <Button
+                  className="w-full h-13 py-3 text-sm font-extrabold text-white shadow-lg rounded-xl font-hindi"
+                  style={{ backgroundColor: "#FF9933" }}
+                >
+                  मंथली प्रीमियम - ₹99 (ऑटो-डेबिट)
+                </Button>
+              </a>
+
+              <a
+                href={MARRIAGE_BUREAU_LINKS.yearly}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block"
+              >
+                <Button
+                  className="w-full h-13 py-3 text-sm font-extrabold text-white shadow-lg rounded-xl font-hindi relative"
+                  style={{ backgroundColor: "#138808" }}
+                >
+                  <span className="absolute -top-2 right-3 rounded-full bg-[#FF9933] px-2 py-0.5 text-[9px] font-bold text-white">
+                    BEST VALUE
+                  </span>
+                  सालाना प्रीमियम - ₹999 (ऑटो-डेबिट)
+                </Button>
+              </a>
+
+              <p className="text-center text-[10px] text-muted-foreground font-hindi">
+                सुरक्षित Razorpay ऑटो-डेबिट के माध्यम से ✓
+              </p>
             </CardContent>
           </Card>
         )}
