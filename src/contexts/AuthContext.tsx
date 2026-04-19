@@ -26,6 +26,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSuperUser, setIsSuperUser] = useState<boolean>(
+    typeof window !== "undefined" && localStorage.getItem(SUPERUSER_FLAG) === "true"
+  );
   const syncedUserIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
