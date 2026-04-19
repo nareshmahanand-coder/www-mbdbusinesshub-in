@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,112 +6,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
-import { sendOtp, renderRecaptcha, resetRecaptcha, type ConfirmationResult } from "@/lib/firebase";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { AlertTriangle, LogIn, Phone, Loader2, ShieldCheck } from "lucide-react";
-
-const getOtpErrorContent = (error: any) => {
-  const code = typeof error?.code === "string" ? error.code : undefined;
-  const details = [code, error?.message].filter(Boolean).join(" — ") || "Unknown error";
-
-  switch (code) {
-    case "auth/captcha-check-failed":
-    case "auth/invalid-app-credential":
-    case "auth/missing-app-credential":
-      return {
-        message: "reCAPTCHA सत्यापन विफल हुआ। कृपया checkbox दोबारा पूरा करें और फिर OTP भेजें।",
-        details,
-      };
-    case "auth/too-many-requests":
-      return {
-        message: "बहुत अधिक प्रयास। कुछ देर बाद पुनः प्रयास करें।",
-        details,
-      };
-    case "auth/quota-exceeded":
-      return {
-        message: "SMS quota पूरी हो चुकी है। कृपया बाद में पुनः प्रयास करें।",
-        details,
-      };
-    case "auth/invalid-phone-number":
-      return {
-        message: "मोबाइल नंबर अमान्य है। कृपया सही 10 अंकों का नंबर दर्ज करें।",
-        details,
-      };
-    default:
-      return {
-        message: "OTP भेजने में विफल। कृपया पुनः प्रयास करें।",
-        details,
-      };
-  }
-};
+import { Info, Phone, Loader2, ShieldCheck } from "lucide-react";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [phone, setPhone] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
-  const confirmationRef = useRef<ConfirmationResult | null>(null);
-  const [recaptchaReady, setRecaptchaReady] = useState(false);
-  const [otpError, setOtpError] = useState<{ message: string; details: string } | null>(null);
 
-  useEffect(() => {
-    renderRecaptcha("recaptcha-container")
-      .then(() => setRecaptchaReady(true))
-      .catch((err) => {
-        setRecaptchaReady(false);
-        console.error("reCAPTCHA render error:", err);
-      });
-  }, []);
-
-  const handleSendOtp = async () => {
+  const handlePhoneLogin = async () => {
     if (phone.length !== 10) {
       toast.error("कृपया 10 अंकों का मोबाइल नंबर दर्ज करें");
       return;
     }
 
-    setOtpError(null);
-    setLoading(true);
-
-    try {
-      const confirmation = await sendOtp(`+91${phone}`);
-      confirmationRef.current = confirmation;
-      setOtpSent(true);
-      toast.success(`OTP sent to +91 ${phone}`);
-    } catch (error: any) {
-      console.error("Firebase OTP error:", error);
-      const nextError = getOtpErrorContent(error);
-      setRecaptchaReady(false);
-      setOtpError(nextError);
-
-      try {
-        await resetRecaptcha("recaptcha-container");
-        setRecaptchaReady(true);
-      } catch (resetError) {
-        console.error("reCAPTCHA reset error:", resetError);
-      }
-
-      toast.error(nextError.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    setOtpError(null);
-
-    if (otp.length !== 6 || !confirmationRef.current) {
-      toast.error("कृपया सही 6 अंकों का OTP दर्ज करें");
-      return;
-    }
-
     setLoading(true);
     try {
-      // Verify OTP with Firebase
-      await confirmationRef.current.confirm(otp);
-
-      // Now sign into Supabase with fake-email pattern
+      // Temporary phone-only login (no OTP). Will be replaced by Aadhaar OTP via SurePass.
       const fakeEmail = `${phone}@mbd.local`;
       const password = `mbd_${phone}_secure`;
 
@@ -129,6 +41,7 @@ const LoginPage = () => {
               full_name: `User ${phone}`,
               phone: `+91${phone}`,
             },
+            emailRedirectTo: window.location.origin,
           },
         });
 
@@ -137,18 +50,26 @@ const LoginPage = () => {
           setLoading(false);
           return;
         }
+
+        // Try sign-in again after signup (in case email confirmation is off)
+        const { error: retrySignIn } = await supabase.auth.signInWithPassword({
+          email: fakeEmail,
+          password,
+        });
+        if (retrySignIn) {
+          toast.error("खाता बनाया गया, कृपया पुनः लॉगिन करें।");
+          setLoading(false);
+          return;
+        }
       }
 
       sessionStorage.setItem("bharat-mitra-pending-greet", "true");
-      toast.success("लॉगिन सफल! 🎉");
+      toast.success("लॉगिन सफल! कृपया Aadhaar KYC पूरा करें।");
       setLoading(false);
-      navigate("/", { replace: true });
+      navigate("/ekyc", { replace: true });
     } catch (error: any) {
-      console.error("OTP verify error:", error);
-      const msg = error?.code === "auth/invalid-verification-code"
-        ? "गलत OTP। कृपया सही OTP दर्ज करें।"
-        : "सत्यापन विफल। पुनः प्रयास करें।";
-      toast.error(msg);
+      console.error("Phone login error:", error);
+      toast.error("लॉगिन विफल। पुनः प्रयास करें।");
       setLoading(false);
     }
   };
@@ -191,102 +112,46 @@ const LoginPage = () => {
           <CardContent className="space-y-5">
             <div className="rounded-xl bg-saffron/10 border border-saffron/20 p-4 text-center">
               <p className="font-hindi text-sm leading-relaxed text-foreground">
-                अपना मोबाइल नंबर दर्ज करें और OTP के साथ सुरक्षित लॉगिन करें
+                अपना मोबाइल नंबर दर्ज करें। अगले चरण में Aadhaar KYC अनिवार्य है।
               </p>
             </div>
 
-            {otpError && (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>OTP request failed</AlertTitle>
-                <AlertDescription className="space-y-1 break-words">
-                  <p>{otpError.message}</p>
-                  <p className="text-xs">{otpError.details}</p>
-                </AlertDescription>
-              </Alert>
-            )}
+            <Alert className="border-saffron/40 bg-saffron/5">
+              <Info className="h-4 w-4" />
+              <AlertTitle className="text-sm">अस्थायी लॉगिन / Temporary Login</AlertTitle>
+              <AlertDescription className="text-xs">
+                फ़ोन OTP अभी बंद है। जल्द ही Aadhaar OTP (SurePass) से सत्यापन होगा।
+              </AlertDescription>
+            </Alert>
 
-            {!otpSent ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <span className="rounded-md border border-input bg-muted px-3 py-2 text-sm font-semibold text-muted-foreground">
-                    +91
-                  </span>
-                  <Input
-                    type="tel"
-                    placeholder="मोबाइल नंबर दर्ज करें"
-                    value={phone}
-                    onChange={(e) => {
-                      setOtpError(null);
-                      setPhone(e.target.value.replace(/\D/g, "").slice(0, 10));
-                    }}
-                    className="flex-1 text-lg"
-                    maxLength={10}
-                    autoFocus
-                  />
-                </div>
-                <div id="recaptcha-container" className="flex justify-center" />
-                <Button
-                  onClick={handleSendOtp}
-                  disabled={phone.length !== 10 || loading || !recaptchaReady}
-                  style={{ backgroundColor: "#FF9933" }}
-                  className="w-full h-12 text-white hover:opacity-90 hover:!bg-[#FF9933] font-bold text-base gap-2 shadow-lg rounded-lg"
-                >
-                  {loading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Phone className="h-5 w-5" />
-                  )}
-                  OTP भेजें / Get OTP
-                </Button>
-              </>
-            ) : (
-              <>
-                <div className="rounded-lg bg-green-india/10 border border-green-india/20 p-3 text-center">
-                  <p className="text-sm font-medium text-foreground">
-                    📩 OTP sent to <strong>+91 {phone}</strong>
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    कृपया अपने मोबाइल पर प्राप्त OTP दर्ज करें
-                  </p>
-                </div>
-                <Input
-                  type="tel"
-                  placeholder="6 अंकों का OTP दर्ज करें"
-                  value={otp}
-                  onChange={(e) => {
-                    setOtpError(null);
-                    setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
-                  }}
-                  className="text-center text-2xl tracking-[0.5em] font-bold"
-                  maxLength={6}
-                  autoFocus
-                />
-                <Button
-                  onClick={handleVerifyOtp}
-                  disabled={loading || otp.length !== 6}
-                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base py-5 gap-2"
-                >
-                  {loading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <ShieldCheck className="h-5 w-5" />
-                  )}
-                  सत्यापित करें / Verify & Login
-                </Button>
-                <button
-                  onClick={() => {
-                    setOtpSent(false);
-                    setOtp("");
-                    setOtpError(null);
-                    confirmationRef.current = null;
-                  }}
-                  className="w-full text-center text-sm text-muted-foreground hover:text-foreground"
-                >
-                  ← नंबर बदलें
-                </button>
-              </>
-            )}
+            <div className="flex items-center gap-2">
+              <span className="rounded-md border border-input bg-muted px-3 py-2 text-sm font-semibold text-muted-foreground">
+                +91
+              </span>
+              <Input
+                type="tel"
+                placeholder="मोबाइल नंबर दर्ज करें"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                className="flex-1 text-lg"
+                maxLength={10}
+                autoFocus
+              />
+            </div>
+
+            <Button
+              onClick={handlePhoneLogin}
+              disabled={phone.length !== 10 || loading}
+              style={{ backgroundColor: "#FF9933" }}
+              className="w-full h-12 text-white hover:opacity-90 hover:!bg-[#FF9933] font-bold text-base gap-2 shadow-lg rounded-lg"
+            >
+              {loading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <ShieldCheck className="h-5 w-5" />
+              )}
+              आगे बढ़ें / Continue to KYC
+            </Button>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -335,7 +200,6 @@ const LoginPage = () => {
           </CardContent>
         </Card>
       </div>
-
     </div>
   );
 };
