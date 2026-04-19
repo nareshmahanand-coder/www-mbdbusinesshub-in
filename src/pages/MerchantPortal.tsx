@@ -70,13 +70,6 @@ const MerchantPortal = () => {
     if (url) { setShopPhotos(prev => [...prev, url]); toast.success("Photo uploaded!"); }
   };
 
-  const handleScreenshotFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const url = await handleFileUpload(file, "payment");
-    if (url) { setScreenshotUrl(url); toast.success("Screenshot uploaded!"); }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.shopName || !form.category || !form.address || !form.pincode || !form.whatsapp) {
@@ -88,10 +81,9 @@ const MerchantPortal = () => {
     toast.success("Shop registration submitted for verification!");
   };
 
-  const handleScreenshotUpload = () => {
-    if (!transactionId.trim()) { toast.error("कृपया Transaction ID भरें"); return; }
-    if (!screenshotUrl) { toast.error("कृपया Screenshot upload करें"); return; }
-    toast.success("पेमेंट स्क्रीनशॉट अपलोड हो गया! Admin जल्द verify करेंगे।");
+  const handleSubscribe = (plan: typeof MERCHANT_PLANS[number]) => {
+    window.open(plan.link, "_blank", "noopener,noreferrer");
+    toast.success("Razorpay सब्सक्रिप्शन पेज खुल रहा है...");
   };
 
   if (submitted) {
