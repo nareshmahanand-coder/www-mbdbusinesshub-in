@@ -319,6 +319,7 @@ const BharatMitraChatbot = () => {
           messages: newHistory,
           userLat: loc?.lat,
           userLng: loc?.lng,
+          userId: user?.id,
         }),
       });
 

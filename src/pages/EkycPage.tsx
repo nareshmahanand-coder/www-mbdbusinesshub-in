@@ -158,18 +158,29 @@ const EkycPage = () => {
           .eq("id", existing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("kyc_requests").insert({
-          user_id: user.id,
-          aadhaar_number: digits,
-          selfie_url: selfiePath,
-          aadhaar_front_url: frontPath,
-          aadhaar_back_url: backPath,
-          status: "pending",
-        });
+        const { data: inserted, error } = await supabase
+          .from("kyc_requests")
+          .insert({
+            user_id: user.id,
+            aadhaar_number: digits,
+            selfie_url: selfiePath,
+            aadhaar_front_url: frontPath,
+            aadhaar_back_url: backPath,
+            status: "pending",
+          })
+          .select("id")
+          .single();
         if (error) throw error;
+
+        // Trigger AI auto-verification (non-blocking; admin can still override)
+        if (inserted?.id) {
+          supabase.functions
+            .invoke("kyc-auto-verify", { body: { kycRequestId: inserted.id } })
+            .catch((err) => console.warn("auto-verify failed", err));
+        }
       }
 
-      toast.success("KYC Submitted Successfully! You can now explore the app while we review your documents.");
+      toast.success("KYC Submitted! AI is verifying — आप ऐप पर जा सकते हैं।");
       await refresh();
       navigate("/", { replace: true });
     } catch (e) {

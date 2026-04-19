@@ -357,7 +357,10 @@ const MerchantDashboard = () => {
           <TabsContent value="products" className="mt-4 space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Add New Product</CardTitle>
+                <CardTitle className="text-lg">आज का रेट जोड़ें • Add Today's Rate</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  जितने ज्यादा प्रोडक्ट और सही रेट डालेंगे, उतने ज्यादा ग्राहक भारत मित्र AI आपकी दुकान पर भेजेगी। 💰
+                </p>
               </CardHeader>
               <CardContent className="space-y-3">
                 {!profile ? (
@@ -366,29 +369,29 @@ const MerchantDashboard = () => {
                   <>
                     <div className="grid gap-3 sm:grid-cols-2">
                       <Input
-                        placeholder="Product Name"
+                        placeholder="Product Name (e.g. Tomato 1kg)"
                         value={newProduct.name}
                         onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                       />
                       <Input
-                        placeholder="उत्पाद का नाम (हिन्दी)"
+                        placeholder="उत्पाद का नाम (जैसे टमाटर 1 किलो)"
                         value={newProduct.name_hindi}
                         onChange={(e) => setNewProduct({ ...newProduct, name_hindi: e.target.value })}
                       />
                       <Input
-                        placeholder="Price (₹)"
+                        placeholder="आज का रेट ₹ (Today's Price)"
                         type="number"
                         value={newProduct.price}
                         onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
                       />
                       <Input
-                        placeholder="Description"
+                        placeholder="Description / Offer"
                         value={newProduct.description}
                         onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                       />
                     </div>
                     <Button onClick={addProduct} size="sm">
-                      <Plus className="mr-1 h-4 w-4" /> Add Product
+                      <Plus className="mr-1 h-4 w-4" /> Add Rate
                     </Button>
                   </>
                 )}
