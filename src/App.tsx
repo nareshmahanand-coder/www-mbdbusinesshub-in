@@ -25,6 +25,8 @@ import ShopProfilePage from "./pages/ShopProfilePage";
 import SkillDevelopmentPage from "./pages/SkillDevelopmentPage";
 import EkycPage from "./pages/EkycPage";
 import { useKycStatus } from "@/hooks/useKycStatus";
+import { useMembership } from "@/hooks/useMembership";
+import MembershipOverlay from "@/components/MembershipOverlay";
 
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
@@ -40,12 +42,26 @@ const FullScreenLoader = () => (
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   const { status, loading: kycLoading } = useKycStatus();
+  const { isActive, loading: memLoading, refresh: refreshMembership } = useMembership();
 
   if (loading || kycLoading) return <FullScreenLoader />;
   if (!user) return <Navigate to="/login" replace />;
   // Allow access for approved AND pending (temporarily_verified) users.
   // Only block users who haven't submitted ("none") or were rejected.
   if (status === "none" || status === "rejected") return <Navigate to="/ekyc" replace />;
+
+  // After KYC: enforce Bharat Gaurav Membership paywall
+  if (memLoading) return <FullScreenLoader />;
+  if (!isActive) {
+    return (
+      <>
+        <div className="pointer-events-none select-none blur-xl overflow-hidden max-h-screen">
+          {children}
+        </div>
+        <MembershipOverlay onActivated={refreshMembership} />
+      </>
+    );
+  }
 
   return <>{children}</>;
 };
