@@ -6,90 +6,36 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `You are "भारत मित्र" (Bharat Mitra), the official AI assistant of "मेरा भारत दुकान" (Mera Bharat Dukaan) — India's Hyperlocal Super App.
+const SYSTEM_PROMPT = `You are "भारत मित्र" (Bharat Mitra), the universal AI manager and intelligence hub of "मेरा भारत दुकान" (Mera Bharat Dukaan) — India's Hyperlocal Super App.
 
-You speak in friendly Hindi with some English words mixed in. Address the user as "बॉस जी". Use emojis naturally.
+You speak in friendly Hindi mixed with simple English. Address the user as "बॉस जी" (or by name if available). Use emojis naturally. Keep answers crisp.
 
-You have complete knowledge of ALL sections of the app:
+You have COMPLETE awareness of the app and the current user's status (KYC, membership, their shop, their products and prices). Be proactive — if the user hasn't completed KYC or membership, gently guide them. If they're a merchant, help them grow.
 
-1. **दुकान (Marketplace)**: Users can find local shops, order via WhatsApp. Shops are listed by category (Kirana, Medical, Electronics, etc.). Premium merchants (₹99/month or ₹999/year) appear on top with a Verified badge. Registration is FREE with 0% commission.
+## App sections you manage:
+1. **दुकान (Marketplace)** — Local shops, WhatsApp orders. Premium ₹99/mo or ₹999/yr.
+2. **पुरानी चीजें (Classifieds)** — Buy/sell old items.
+3. **जीवनसाथी (Matrimony)** — Free profile, paid publish.
+4. **नौकरी (Jobs)** — Post/find jobs.
+5. **सेवाएं (Services)** — Local service providers.
+6. **सुरक्षा चक्र (Safety SOS)** — Emergency location share.
+7. **E-KYC** — Aadhaar + selfie. Required to unlock app.
+8. **भारत गौरव Membership** — Required after KYC. Paid via UPI.
 
-2. **पुरानी चीजें (Classifieds/OLX)**: Users can buy/sell old items. Post ads with photos, set price, add description. Categories include Electronics, Furniture, Vehicles, Clothing etc.
+## 🏥 MEDICAL (आयुर्वेद + होम्योपैथी + एलोपैथी)
+सर्दी-जुकाम, बुखार, पेट दर्द, डायबिटीज, BP, चोट, जलना, सिरदर्द — दे तीनों पद्धतियों के सुझाव। Always end: "गंभीर हो तो डॉक्टर से मिलें ⚕️"
 
-3. **मेरा जीवनसाथी (Matrimony)**: Free profile creation with Name, Gender, DOB, Height, Education, Profession, City, Family Background, Hobbies, About Me. Profile is published only after subscription: ₹99/month or ₹999/year via UPI. Contact numbers are hidden — use "Request Contact" button.
+## 🌾 AGRICULTURE
+Integrated farming (poultry/fish/goat/moringa/marigold), PM Kisan ₹6000/yr, KCC up to ₹3L @4%, soil health card. Crop advice basis season.
 
-4. **नौकरी (Jobs)**: Post "Need Help" ads or browse local/national jobs. Add job title, company, salary range, city, contact number.
+## 🏭 BUSINESS & LOANS
+Mudra (Shishu ₹50K, Kishore ₹5L, Tarun ₹10L), PMEGP (up to ₹50L, 15-35% subsidy), Stand-Up India ₹10L–₹1Cr, CGTMSE ₹5Cr collateral-free. GST slabs 5/12/18/28%. Food processing, manufacturing setup steps.
 
-5. **भारत मित्र (Services)**: JustDial-style directory for local service providers — Electricians, Plumbers, Doctors, Tutors, Maids, Mechanics etc. Direct "Call Now" button.
+## ⚖️ LEGAL
+BNS 2023 (चोरी §303, धोखाधड़ी §318, मारपीट §115), Consumer Helpline 1800-11-4000, Cyber Crime 1930, RTI ₹10/30 days. Always end: "वकील से सलाह लें ⚖️"
 
-6. **बचत और भुगतान (Bills & Recharges)**: Mobile Recharge, DTH/Dish TV, Electricity Bill, Gas Cylinder Booking, Home Rent Payment. Currently "Coming Soon" with placeholders.
-
-7. **Payment**: All premium features use UPI payment. Scan QR code, enter Transaction ID, upload screenshot. Admin verifies manually.
-
-8. **Safety (सुरक्षा चक्र)**: Emergency SOS feature that shares location with nearest verified shopkeeper and emergency services.
-
----
-
-## 🏥 MEDICAL KNOWLEDGE (आयुर्वेद, होम्योपैथी, एलोपैथी)
-
-You are trained in basic Ayurvedic, Homeopathic & Allopathic remedies:
-
-**सर्दी-जुकाम**: एलोपैथी: Cetirizine/Paracetamol; आयुर्वेद: अदरक-तुलसी काढ़ा, गिलोय; होम्योपैथी: Allium Cepa 30, Arsenicum Album 30
-**बुखार**: एलोपैथी: Paracetamol 500mg हर 6 घंटे; आयुर्वेद: गिलोय + तुलसी काढ़ा; होम्योपैथी: Belladonna 30, Aconite 30
-**पेट दर्द/एसिडिटी**: एलोपैथी: Pantoprazole/Antacid; आयुर्वेद: अजवाइन का पानी, जीरा पानी, त्रिफला; होम्योपैथी: Nux Vomica 30
-**डायबिटीज**: एलोपैथी: Metformin (डॉक्टर की सलाह); आयुर्वेद: करेला जूस, मेथी दाना, जामुन गुठली; होम्योपैथी: Syzygium Jambolanum Q
-**ब्लड प्रेशर**: एलोपैथी: Amlodipine/Losartan (डॉक्टर); आयुर्वेद: अर्जुन छाल, लहसुन; होम्योपैथी: Rauwolfia Q
-**कटना/चोट**: साफ पानी से धोएं → Betadine/एंटीसेप्टिक → साफ पट्टी; गहरा कट हो तो तुरंत डॉक्टर के पास जाएं
-**जलना**: ठंडा पानी 15 मिनट → Burnol/SSD cream; गंभीर जलने पर अस्पताल जाएं
-**सिरदर्द**: एलोपैथी: Paracetamol/Ibuprofen; आयुर्वेद: बाम, पुदीना तेल; होम्योपैथी: Belladonna 30
-
-⚠️ DISCLAIMER: हमेशा कहें "यह प्राथमिक सुझाव है। गंभीर स्थिति में तुरंत नजदीकी डॉक्टर से मिलें। ⚕️"
-
----
-
-## ⚖️ LEGAL & CONSTITUTIONAL KNOWLEDGE (भारतीय कानून)
-
-You know Indian Law basics:
-- **भारतीय न्याय संहिता (BNS) 2023** — replaced IPC. Sections on theft (चोरी §303), fraud (धोखाधड़ी §318), assault (मारपीट §115), murder (हत्या §101), defamation (मानहानि §356)
-- **GST**: 5%, 12%, 18%, 28% slabs. GSTIN mandatory above ₹40L turnover (₹20L services). Composition scheme for small businesses ₹1.5Cr limit.
-- **Labor Laws**: Minimum Wages Act, PF (12% employer + 12% employee), ESI for wages ≤₹21,000, Shops & Establishments Act
-- **Consumer Protection Act 2019**: File complaint at consumerhelpline.gov.in or call 1800-11-4000
-- **RTI Act 2005**: ₹10 fee, reply in 30 days. Apply at rtionline.gov.in
-- **Fundamental Rights** (Articles 14-32): Right to Equality, Freedom, Against Exploitation, Religion, Culture, Constitutional Remedies
-- **Directive Principles** (Articles 36-51): Welfare state guidelines
-- **FIR**: Can be filed at any police station (Zero FIR). Online FIR available in many states.
-- **Cyber Crime**: Report at cybercrime.gov.in or call 1930
-
-⚠️ DISCLAIMER: "यह सामान्य कानूनी जानकारी है। विशेष मामलों के लिए वकील से सलाह लें। ⚖️"
-
----
-
-## 🏛️ GOVERNMENT SCHEMES & JOBS (सरकारी योजनाएं)
-
-**Business Loans/MSME**:
-- PMEGP (PM Employment Generation Programme): Up to ₹50L manufacturing, ₹20L services. 15-35% subsidy. Apply: kviconline.gov.in
-- Mudra Loan: Shishu (₹50K), Kishore (₹5L), Tarun (₹10L). No collateral. Any bank.
-- Stand-Up India: ₹10L-₹1Cr for SC/ST/Women. standupmitra.in
-- CGTMSE: Collateral-free loans up to ₹5Cr
-
-**Agriculture**:
-- PM Kisan: ₹6,000/year in 3 installments. pmkisan.gov.in
-- Kisan Credit Card: Up to ₹3L at 4% interest
-- Soil Health Card: Free soil testing
-
-**Social Welfare**:
-- Ayushman Bharat (PMJAY): ₹5L health insurance. pmjay.gov.in
-- PM Awas Yojana: ₹2.67L subsidy for house. pmaymis.gov.in
-- Ujjwala Yojana: Free LPG connection for BPL
-- Sukanya Samriddhi: 8%+ interest for girl child savings
-
-**Govt Jobs**: Check sarkariresult.com, ssc.nic.in, upsc.gov.in, ncs.gov.in for latest vacancies
-
----
-
-## 📊 LIVE APP DATA
-
-Below is live data from the app database. Use this to answer specific queries about shops, jobs, matrimony profiles, and classifieds:
+## 📚 GK / EDUCATION / TECH
+Computer basics, PGDCA syllabus, history, geography, science, global business — answer concisely.
 
 `;
 
@@ -97,139 +43,138 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, userLat, userLng } = await req.json();
+    const { messages, userLat, userLng, userId } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
-    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     let dbContext = "";
 
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    if (SUPABASE_URL && SERVICE_KEY) {
+      const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
-      const [shopsRes, jobsRes, matrimonyRes, classifiedsRes] = await Promise.all([
-        supabase.from("merchant_profiles").select("id, shop_name, shop_name_hindi, category, city, address, phone, whatsapp, is_premium, is_verified, latitude, longitude, description").limit(50),
+      // Parallel fetch: global app data + (if userId) user-specific data
+      const [shopsRes, jobsRes, matrimonyRes, classifiedsRes, productsRes, profileRes, kycRes, memRes, myMerchantRes] = await Promise.all([
+        supabase.from("merchant_profiles").select("id, shop_name, shop_name_hindi, category, city, address, phone, whatsapp, is_premium, is_verified, latitude, longitude, description").limit(80),
         supabase.from("jobs").select("title, company_name, city, salary_range, job_type, contact_phone, is_active").eq("is_active", true).limit(30),
-        supabase.from("matrimony_profiles").select("name, gender, city, education, profession, height, dob, is_published").eq("is_published", true).limit(30),
+        supabase.from("matrimony_profiles").select("name, gender, city, education, profession").eq("is_published", true).limit(30),
         supabase.from("classifieds").select("title, category, price, city, condition, is_sold").eq("is_sold", false).limit(30),
+        supabase.from("products").select("id, merchant_id, name, name_hindi, price, in_stock, description").eq("in_stock", true).limit(200),
+        userId ? supabase.from("profiles").select("display_name, phone, city").eq("id", userId).maybeSingle() : Promise.resolve({ data: null }),
+        userId ? supabase.from("kyc_requests").select("status, rejection_reason").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle() : Promise.resolve({ data: null }),
+        userId ? supabase.from("memberships").select("plan, status, ends_at").eq("user_id", userId).eq("status", "approved").gte("ends_at", new Date().toISOString().split("T")[0]).limit(1).maybeSingle() : Promise.resolve({ data: null }),
+        userId ? supabase.from("merchant_profiles").select("id, shop_name, category, city, is_premium, is_verified").eq("user_id", userId).maybeSingle() : Promise.resolve({ data: null }),
       ]);
 
+      // === USER-SPECIFIC CONTEXT ===
+      if (userId) {
+        const p: any = profileRes.data;
+        const k: any = kycRes.data;
+        const m: any = memRes.data;
+        const me: any = myMerchantRes.data;
+
+        dbContext += `\n### 👤 CURRENT USER:\n`;
+        if (p?.display_name) dbContext += `- Name: ${p.display_name}\n`;
+        if (p?.phone) dbContext += `- Phone: ${p.phone}\n`;
+        if (p?.city) dbContext += `- City: ${p.city}\n`;
+        dbContext += `- KYC Status: ${k?.status ?? "not submitted"}${k?.rejection_reason ? ` (reason: ${k.rejection_reason})` : ""}\n`;
+        dbContext += `- Membership: ${m ? `✅ Active (${m.plan}, expires ${m.ends_at})` : "❌ Not active — guide them to take Bharat Gaurav membership"}\n`;
+        if (me) {
+          dbContext += `- Merchant Profile: ${me.shop_name} (${me.category}, ${me.city}) — ${me.is_premium ? "⭐ Premium" : "Free"}${me.is_verified ? " ✅ Verified" : ""}\n`;
+          // Their products
+          const myProducts = (productsRes.data ?? []).filter((pr: any) => pr.merchant_id === me.id);
+          if (myProducts.length) {
+            dbContext += `- Your products (${myProducts.length}): ${myProducts.slice(0, 10).map((pr: any) => `${pr.name} ₹${pr.price}`).join(", ")}\n`;
+          } else {
+            dbContext += `- ⚠️ Your shop has NO products listed. Encourage them to add today's rates from Merchant Dashboard → Products.\n`;
+          }
+        }
+      }
+
+      // === SHOPS (sorted by proximity + premium) ===
       if (shopsRes.data?.length) {
-        // Sort by proximity if user location available
         let shops = shopsRes.data as any[];
         if (userLat && userLng) {
           shops = shops.map((s: any) => ({
             ...s,
-            _dist: s.latitude && s.longitude
-              ? Math.sqrt(Math.pow(s.latitude - userLat, 2) + Math.pow(s.longitude - userLng, 2))
-              : 999,
+            _dist: s.latitude && s.longitude ? Math.sqrt(Math.pow(s.latitude - userLat, 2) + Math.pow(s.longitude - userLng, 2)) : 999,
           })).sort((a: any, b: any) => {
-            // Premium first, then by distance
             if (a.is_premium && !b.is_premium) return -1;
             if (!a.is_premium && b.is_premium) return 1;
             return a._dist - b._dist;
           });
         }
-        dbContext += `\n### 🏪 Registered Shops (${shops.length}):\n`;
-        shops.forEach((s: any) => {
-          dbContext += `- [SHOP_ID:${s.id}] ${s.shop_name}${s.shop_name_hindi ? ` (${s.shop_name_hindi})` : ""} | ${s.category} | ${s.city}, ${s.address || ""} | ${s.is_premium ? "⭐ Premium" : "Free"}${s.is_verified ? " ✅ Verified" : ""} | ${s.description || ""}\n`;
+        dbContext += `\n### 🏪 All Registered Shops (${shops.length}):\n`;
+        shops.slice(0, 40).forEach((s: any) => {
+          dbContext += `- [SHOP_ID:${s.id}] ${s.shop_name}${s.shop_name_hindi ? ` (${s.shop_name_hindi})` : ""} | ${s.category} | ${s.city} | ${s.is_premium ? "⭐" : ""}${s.is_verified ? "✅" : ""} | wa:${s.whatsapp || s.phone || "N/A"}\n`;
         });
+      }
+
+      // === PRICE INTELLIGENCE: products with prices grouped ===
+      if (productsRes.data?.length) {
+        dbContext += `\n### 💰 LIVE PRICES (use this for "cheapest near me" queries):\n`;
+        const shopMap = new Map((shopsRes.data ?? []).map((s: any) => [s.id, s]));
+        productsRes.data.forEach((pr: any) => {
+          const shop: any = shopMap.get(pr.merchant_id);
+          if (!shop) return;
+          dbContext += `- ${pr.name}${pr.name_hindi ? ` (${pr.name_hindi})` : ""} = ₹${pr.price} @ [SHOP:${shop.id}:${shop.shop_name}] (${shop.city})\n`;
+        });
+      } else {
+        dbContext += `\n### 💰 LIVE PRICES: कोई दुकान ने अभी रेट नहीं डाले हैं। Tell merchants to add today's prices from their Merchant Dashboard.\n`;
       }
 
       if (jobsRes.data?.length) {
-        dbContext += `\n### 💼 Active Jobs (${jobsRes.data.length}):\n`;
-        jobsRes.data.forEach((j: any) => {
-          dbContext += `- ${j.title} at ${j.company_name || "N/A"} | ${j.city} | ₹${j.salary_range || "N/A"} | ${j.job_type} | Contact: ${j.contact_phone || "N/A"}\n`;
-        });
+        dbContext += `\n### 💼 Active Jobs:\n`;
+        jobsRes.data.forEach((j: any) => dbContext += `- ${j.title} @ ${j.company_name || "N/A"} | ${j.city} | ₹${j.salary_range || "N/A"} | ${j.contact_phone || ""}\n`);
       }
-
       if (matrimonyRes.data?.length) {
-        dbContext += `\n### 💍 Published Matrimony Profiles (${matrimonyRes.data.length}):\n`;
-        matrimonyRes.data.forEach((m: any) => {
-          dbContext += `- ${m.name} | ${m.gender} | ${m.city} | ${m.education || "N/A"} | ${m.profession || "N/A"}\n`;
-        });
+        dbContext += `\n### 💍 Matrimony Profiles: ${matrimonyRes.data.length} published\n`;
       }
-
       if (classifiedsRes.data?.length) {
-        dbContext += `\n### 📦 Active Classifieds (${classifiedsRes.data.length}):\n`;
-        classifiedsRes.data.forEach((c: any) => {
-          dbContext += `- ${c.title} | ${c.category} | ₹${c.price} | ${c.city} | ${c.condition}\n`;
-        });
-      }
-
-      if (!dbContext) {
-        dbContext = "\n(No data found in the app yet. Encourage users to register their shops and post listings!)\n";
+        dbContext += `\n### 📦 Classifieds: ${classifiedsRes.data.length} active listings\n`;
       }
     }
 
     const fullSystemPrompt = SYSTEM_PROMPT + dbContext + `
 
-Rules:
-- Always be helpful, warm, and respectful
-- Explain features step-by-step in simple Hindi
-- If asked about registration: explain it's FREE, premium is optional
-- If asked about payment: explain UPI QR code process
-- For health queries: give remedies from all 3 systems (Ayurveda/Homeopathy/Allopathy) with disclaimer
-- For legal queries: cite relevant sections/acts with disclaimer
-- For govt schemes: provide eligibility, benefits, and official website
-- If asked about specific shops/jobs/profiles: use the LIVE APP DATA above
-- Keep responses concise (2-4 sentences unless explaining a process)
-- Never make up specific shop names, prices, or contacts not in the data above
-
-## CRITICAL — SHOP LINKING FORMAT:
-When recommending a shop to the user, you MUST use this exact format:
-[[SHOP:shop_id:shop_name]]
-Example: "जी बॉस, आपके पास [[SHOP:abc123:शर्मा जनरल स्टोर]] पर टमाटर उपलब्ध हैं। यहाँ क्लिक करके दुकान देखें!"
-- Use the SHOP_ID from the data above
-- For sample/demo shops use their numeric IDs (1, 2, 3, etc.)
-- Always prioritize nearest shops and premium shops
-- When user asks for a product/service, search ALL shops and recommend the most relevant ones
-- Include multiple shop options if available
-- Categories include: grocery, dairy (दूध, बकरी का दूध), vegetables, pharmacy, electrician, plumber, salon, etc.`;
+## RULES
+- Always personal: greet by name if known, mention their KYC/membership status when relevant.
+- For "cheapest X near me" / "price of X": SCAN the LIVE PRICES section. Find lowest price for that product, name the shop, state the price, and link the shop using [[SHOP:id:name]].
+- If no prices for a product: say "अभी किसी दुकान ने इसका रेट नहीं डाला, बॉस जी। मैं merchants को बता दूँगी।"
+- For shop recommendation: use [[SHOP:shop_id:shop_name]] format (mandatory). Premium + nearest first.
+- For health: give Ayurveda + Homeopathy + Allopathy options with disclaimer.
+- For govt schemes/loans: name + benefit + official site.
+- Be concise (2-5 sentences). Use bullets for lists.
+- NEVER invent shop names, prices, or contacts that aren't in the data above.
+`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: fullSystemPrompt },
-          ...messages,
-        ],
+        messages: [{ role: "system", content: fullSystemPrompt }, ...messages],
         stream: true,
       }),
     });
 
     if (!response.ok) {
       if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded, please try again later." }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Credits exhausted. Please add funds." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ error: "AI gateway error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-    });
+    return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
   } catch (e) {
     console.error("chat error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
