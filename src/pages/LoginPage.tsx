@@ -4,13 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { SUPERUSER_FLAG } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { Info, Phone, Loader2, ShieldCheck, MessageCircle } from "lucide-react";
+import { Info, Phone, Loader2, ShieldCheck, MessageCircle, Lock } from "lucide-react";
 
 const HELPLINE_WA = "919203645007";
+const SUPERUSER_PIN = "02032026";
+const SUPERUSER_EMAIL = "superuser@mbd.local";
+const SUPERUSER_PASSWORD = "MBD_SuperUser_02032026!";
 
 const LoginPage = () => {
   const navigate = useNavigate();
