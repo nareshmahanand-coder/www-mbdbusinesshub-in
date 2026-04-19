@@ -519,6 +519,8 @@ export type Database = {
           email: string | null
           id: string
           phone: string | null
+          phone_verified: boolean
+          phone_verified_at: string | null
           provider: string | null
           updated_at: string
         }
@@ -531,6 +533,8 @@ export type Database = {
           email?: string | null
           id: string
           phone?: string | null
+          phone_verified?: boolean
+          phone_verified_at?: string | null
           provider?: string | null
           updated_at?: string
         }
@@ -543,6 +547,8 @@ export type Database = {
           email?: string | null
           id?: string
           phone?: string | null
+          phone_verified?: boolean
+          phone_verified_at?: string | null
           provider?: string | null
           updated_at?: string
         }
