@@ -83,11 +83,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     sessionStorage.removeItem("bharat-mitra-pending-greet");
+    localStorage.removeItem(SUPERUSER_FLAG);
+    setIsSuperUser(false);
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isSuperUser, signOut }}>
       {children}
     </AuthContext.Provider>
   );
