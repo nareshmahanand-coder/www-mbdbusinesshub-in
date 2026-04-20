@@ -318,91 +318,186 @@ async function drawCertificateOnCanvas(data: CertificateData): Promise<string> {
   const ctx = canvas.getContext("2d")!;
 
   // BG
-  ctx.fillStyle = "#FFFBF0";
+  ctx.fillStyle = "#FFFDF5";
   ctx.fillRect(0, 0, W, H);
 
-  // Borders
-  ctx.strokeStyle = "#FF8C00";
-  ctx.lineWidth = 12;
-  ctx.strokeRect(32, 32, W - 64, H - 64);
-  ctx.strokeStyle = "#1a237e";
-  ctx.lineWidth = 5;
-  ctx.strokeRect(52, 52, W - 104, H - 104);
+  // Tiranga edge bars
+  ctx.fillStyle = "#FF9933"; ctx.fillRect(0, 0, W, 24); ctx.fillRect(0, 0, 24, H);
+  ctx.fillStyle = "#138808"; ctx.fillRect(0, H - 24, W, 24); ctx.fillRect(W - 24, 0, 24, H);
 
-  // Top tricolor
-  ctx.fillStyle = "#FF9933"; ctx.fillRect(52, 52, W - 104, 16);
-  ctx.fillStyle = "#FFFFFF"; ctx.fillRect(52, 68, W - 104, 16);
-  ctx.fillStyle = "#138808"; ctx.fillRect(52, 84, W - 104, 16);
+  // Inner frames
+  ctx.strokeStyle = "#1a237e"; ctx.lineWidth = 5; ctx.strokeRect(40, 40, W - 80, H - 80);
+  ctx.strokeStyle = "#FF8C00"; ctx.lineWidth = 2; ctx.strokeRect(52, 52, W - 104, H - 104);
 
-  // Brand
+  // Watermark CG state (very faint)
+  ctx.save();
+  ctx.globalAlpha = 0.18;
+  drawCgWatermarkCanvas(ctx, W / 2, H / 2 + 30, 520);
+  ctx.restore();
+
+  // Ashoka Chakra top center
+  drawAshokaChakraCanvas(ctx, W / 2, 130, 50);
+
+  // NGO Header
   ctx.textAlign = "center";
-  ctx.fillStyle = "#FF8C00";
+  ctx.fillStyle = "#138808";
   ctx.font = "bold 32px sans-serif";
-  ctx.fillText("मेरा भारत दुकान | MERA BHARAT DUKAAN", W / 2, 170);
+  ctx.fillText(NGO_NAME_HI, W / 2, 215);
+  ctx.fillStyle = "#444";
+  ctx.font = "20px sans-serif";
+  ctx.fillText(NGO_SHORT, W / 2, 245);
+  ctx.fillStyle = "#B40000";
+  ctx.font = "bold 18px sans-serif";
+  ctx.fillText(NGO_REG, W / 2, 270);
+
+  // Divider
+  ctx.strokeStyle = "#C8AA64"; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(180, 290); ctx.lineTo(W - 180, 290); ctx.stroke();
 
   // Title
   ctx.fillStyle = "#1a237e";
-  ctx.font = "bold 64px serif";
-  ctx.fillText("Skill Development Certificate", W / 2, 250);
+  ctx.font = "bold 56px serif";
+  ctx.fillText("Certificate of Completion", W / 2, 350);
   ctx.fillStyle = "#555";
-  ctx.font = "30px sans-serif";
-  ctx.fillText("कौशल विकास प्रमाणपत्र", W / 2, 295);
-
-  // Divider
-  ctx.strokeStyle = "#C8AA64";
-  ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(300, 330); ctx.lineTo(W - 300, 330); ctx.stroke();
-
-  ctx.fillStyle = "#444";
   ctx.font = "26px sans-serif";
-  ctx.fillText("This is to certify that / प्रमाणित किया जाता है कि", W / 2, 390);
+  ctx.fillText("कौशल विकास प्रमाणपत्र", W / 2, 385);
 
-  // Name
-  ctx.fillStyle = "#136408";
-  ctx.font = "bold 60px serif";
-  ctx.fillText(data.userName || "Student", W / 2, 480);
+  // Photo frame (left)
+  const pX = 130, pY = 440, pW = 200, pH = 240;
+  ctx.fillStyle = "#F2F2F2"; ctx.fillRect(pX, pY, pW, pH);
+  ctx.strokeStyle = "#1a237e"; ctx.lineWidth = 3; ctx.strokeRect(pX, pY, pW, pH);
+  if (data.userPhotoUrl) {
+    try {
+      const img = await loadImage(data.userPhotoUrl);
+      ctx.drawImage(img, pX + 4, pY + 4, pW - 8, pH - 8);
+    } catch { /* keep placeholder */ }
+  } else {
+    ctx.fillStyle = "#999"; ctx.font = "20px sans-serif"; ctx.fillText("Photo", pX + pW / 2, pY + pH / 2);
+  }
+  ctx.fillStyle = "#555"; ctx.font = "16px sans-serif";
+  ctx.fillText("Passport Photo", pX + pW / 2, pY + pH + 26);
 
-  // Course intro
-  ctx.fillStyle = "#444";
-  ctx.font = "26px sans-serif";
-  ctx.fillText("ने मेरा भारत दुकान के माध्यम से निम्नलिखित पाठ्यक्रम की परीक्षा सफलतापूर्वक उत्तीर्ण की है:", W / 2, 540);
-
-  ctx.fillStyle = "#1a237e";
-  ctx.font = "bold 40px serif";
-  ctx.fillText(`"${data.courseName}"`, W / 2, 605);
-
-  ctx.fillStyle = "#222";
-  ctx.font = "30px sans-serif";
-  ctx.fillText(`Score / अंक: ${data.scorePercent}%`, W / 2, 670);
-
-  // Stamp circle
-  ctx.strokeStyle = "#FF8C00";
-  ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.arc(W / 2, 850, 70, 0, Math.PI * 2); ctx.stroke();
-  ctx.fillStyle = "#FF8C00";
-  ctx.font = "bold 18px sans-serif";
-  ctx.fillText("MERA BHARAT", W / 2, 840);
-  ctx.fillText("DUKAAN", W / 2, 862);
-  ctx.fillStyle = "#1a237e";
-  ctx.font = "bold 14px sans-serif";
-  ctx.fillText("✓ VERIFIED", W / 2, 882);
-
-  ctx.fillStyle = "#666";
-  ctx.font = "20px sans-serif";
-  ctx.fillText("Authorized Digital Signature & Stamp", W / 2, 950);
-
-  // Date & ID
+  // Body (right of photo)
   ctx.textAlign = "left";
-  ctx.fillStyle = "#222";
-  ctx.font = "22px sans-serif";
-  ctx.fillText(`Date: ${data.date}`, 120, 980);
-  ctx.textAlign = "right";
-  ctx.fillText(`Cert ID: ${data.certificateId}`, W - 120, 980);
+  const bX = pX + pW + 60;
+  ctx.fillStyle = "#444"; ctx.font = "22px sans-serif";
+  ctx.fillText("This is to certify that / प्रमाणित किया जाता है कि", bX, 470);
 
-  // Bottom tricolor
-  ctx.fillStyle = "#FF9933"; ctx.fillRect(52, H - 100, W - 104, 16);
-  ctx.fillStyle = "#FFFFFF"; ctx.fillRect(52, H - 84, W - 104, 16);
-  ctx.fillStyle = "#138808"; ctx.fillRect(52, H - 68, W - 104, 16);
+  ctx.fillStyle = "#136408"; ctx.font = "bold 48px serif";
+  ctx.fillText(data.userName || "Student", bX, 530);
+
+  ctx.fillStyle = "#444"; ctx.font = "22px sans-serif";
+  ctx.fillText("ने निम्नलिखित पाठ्यक्रम सफलतापूर्वक पूर्ण किया है:", bX, 575);
+
+  ctx.fillStyle = "#1a237e"; ctx.font = "bold 32px serif";
+  ctx.fillText(`"${data.courseName}"`, bX, 620);
+
+  if (data.courseDuration) {
+    ctx.fillStyle = "#B45000"; ctx.font = "bold 22px sans-serif";
+    ctx.fillText(`अवधि / Duration: ${data.courseDuration}`, bX, 660);
+  }
+
+  ctx.fillStyle = "#222"; ctx.font = "22px sans-serif";
+  ctx.fillText(`प्राप्तांक / Score: ${data.scorePercent}%`, bX, 700);
+
+  // Footer Date (left)
+  ctx.textAlign = "center";
+  ctx.strokeStyle = "#333"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(120, H - 150); ctx.lineTo(380, H - 150); ctx.stroke();
+  ctx.fillStyle = "#444"; ctx.font = "18px sans-serif";
+  ctx.fillText(`Date / दिनांक: ${data.date}`, 250, H - 125);
+
+  // Right: Seal + Sign
+  const sX = W - 230, sY = H - 180;
+  ctx.strokeStyle = "#B40000"; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(sX, sY, 65, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(sX, sY, 50, 0, Math.PI * 2); ctx.stroke();
+  ctx.fillStyle = "#B40000"; ctx.font = "bold 11px sans-serif";
+  ctx.fillText("LIVE SHOW FOUNDATION", sX, sY - 8);
+  ctx.fillStyle = "#B40000"; ctx.font = "10px sans-serif";
+  ctx.fillText("लाइव शो फाउंडेशन", sX, sY + 8);
+  ctx.fillStyle = "#1a237e"; ctx.font = "bold 9px sans-serif";
+  ctx.fillText("✓ OFFICIAL SEAL", sX, sY + 24);
+
+  ctx.strokeStyle = "#333"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(W - 360, H - 110); ctx.lineTo(W - 100, H - 110); ctx.stroke();
+  ctx.fillStyle = "#444"; ctx.font = "16px sans-serif";
+  ctx.fillText("Authorised Signatory / अधिकृत हस्ताक्षर", W - 230, H - 88);
+
+  // Cert ID
+  ctx.fillStyle = "#1a237e"; ctx.font = "bold 18px sans-serif";
+  ctx.fillText(`Certificate ID: ${data.certificateId}`, W / 2, H - 55);
+  ctx.fillStyle = "#999"; ctx.font = "12px sans-serif";
+  ctx.fillText("Verify authenticity at merabharatdukaan.lovable.app", W / 2, H - 38);
 
   return canvas.toDataURL("image/png");
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+function drawAshokaChakraCanvas(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
+  ctx.strokeStyle = "#1a237e";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.22, 0, Math.PI * 2); ctx.stroke();
+  for (let i = 0; i < 24; i++) {
+    const a = (i * Math.PI) / 12;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    ctx.stroke();
+  }
+}
+
+function drawCgWatermarkCanvas(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: number) {
+  const h = w * 1.05;
+  const left = cx - w / 2;
+  const top = cy - h / 2;
+  const pts: [number, number][] = [
+    [0.45, 0.02], [0.62, 0.04], [0.78, 0.12], [0.86, 0.25], [0.92, 0.42],
+    [0.95, 0.6], [0.85, 0.74], [0.78, 0.85], [0.62, 0.92], [0.5, 0.98],
+    [0.36, 0.95], [0.22, 0.86], [0.12, 0.72], [0.06, 0.55], [0.05, 0.38],
+    [0.12, 0.22], [0.24, 0.1], [0.35, 0.04],
+  ];
+  // Tricolor bands clipped to polygon
+  ctx.save();
+  ctx.beginPath();
+  pts.forEach(([x, y], i) => {
+    const px = left + x * w;
+    const py = top + y * h;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  });
+  ctx.closePath();
+  ctx.clip();
+  ctx.fillStyle = "#FF9933"; ctx.fillRect(left, top, w, h / 3);
+  ctx.fillStyle = "#FFFFFF"; ctx.fillRect(left, top + h / 3, w, h / 3);
+  ctx.fillStyle = "#138808"; ctx.fillRect(left, top + (2 * h) / 3, w, h / 3);
+  ctx.restore();
+
+  // Outline
+  ctx.strokeStyle = "#1a237e";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  pts.forEach(([x, y], i) => {
+    const px = left + x * w;
+    const py = top + y * h;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  });
+  ctx.closePath();
+  ctx.stroke();
+
+  // Label
+  ctx.fillStyle = "#888";
+  ctx.font = "bold 22px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("CHHATTISGARH", cx, cy + 10);
 }
