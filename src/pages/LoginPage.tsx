@@ -228,7 +228,10 @@ const LoginPage = () => {
       <div className="h-1.5 w-full bg-gradient-to-r from-[#FF9933] via-white to-[#138808]" />
 
       <div className="flex flex-1 items-center justify-center px-4 py-10">
-        <Card className="w-full max-w-md border-0 shadow-2xl bg-white/70 backdrop-blur-md ring-1 ring-white/60">
+        <div className="w-full max-w-md rounded-3xl p-[3px] shadow-2xl" style={{
+          background: "linear-gradient(to bottom, #FF9933 0%, #FF9933 12%, #FFFFFF 35%, #FFFFFF 65%, #138808 88%, #138808 100%)",
+        }}>
+        <Card className="w-full border-0 shadow-none bg-white/95 backdrop-blur-md rounded-[22px]">
           <CardHeader className="text-center space-y-4 pb-2 pt-8">
             <div className="relative mx-auto w-fit">
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#FF9933] via-white to-[#138808] blur-md opacity-70" />
@@ -324,6 +327,7 @@ const LoginPage = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
 
       <Dialog open={pinDialogOpen} onOpenChange={setPinDialogOpen}>
