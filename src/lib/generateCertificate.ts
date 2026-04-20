@@ -29,126 +29,262 @@ export function generateCertificatePDF(data: CertificateData): jsPDF {
   const ph = doc.internal.pageSize.getHeight();
 
   // Background
-  doc.setFillColor(255, 251, 240);
+  doc.setFillColor(255, 253, 245);
   doc.rect(0, 0, pw, ph, "F");
 
-  // Outer borders
-  doc.setDrawColor(255, 140, 0);
-  doc.setLineWidth(3);
-  doc.rect(8, 8, pw - 16, ph - 16);
+  // Tiranga outer border (saffron / white / green stack)
+  doc.setFillColor(255, 153, 51); doc.rect(0, 0, pw, 6, "F");
+  doc.setFillColor(19, 136, 8); doc.rect(0, ph - 6, pw, 6, "F");
+  doc.setFillColor(255, 153, 51); doc.rect(0, 0, 6, ph, "F");
+  doc.setFillColor(19, 136, 8); doc.rect(pw - 6, 0, 6, ph, "F");
+
+  // Inner navy frame
   doc.setDrawColor(26, 35, 126);
-  doc.setLineWidth(1.2);
+  doc.setLineWidth(1.4);
+  doc.rect(10, 10, pw - 20, ph - 20);
+  doc.setDrawColor(255, 140, 0);
+  doc.setLineWidth(0.5);
   doc.rect(13, 13, pw - 26, ph - 26);
 
-  // Top tricolor band
-  doc.setFillColor(255, 153, 51);
-  doc.rect(13, 13, pw - 26, 4, "F");
-  doc.setFillColor(255, 255, 255);
-  doc.rect(13, 17, pw - 26, 4, "F");
-  doc.setFillColor(19, 136, 8);
-  doc.rect(13, 21, pw - 26, 4, "F");
+  // === Watermark: Chhattisgarh state outline (stylised) in tricolor ===
+  drawChhattisgarhWatermark(doc, pw / 2, ph / 2 + 8, 70);
 
-  let y = 42;
+  // === Top center: Ashoka Chakra ===
+  drawAshokaChakra(doc, pw / 2, 28, 9);
 
-  // Brand
+  // === NGO Header (top) ===
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(255, 140, 0);
-  doc.text("मेरा भारत दुकान | MERA BHARAT DUKAAN", pw / 2, y, { align: "center" });
-  y += 10;
-
-  // Title
-  doc.setFontSize(30);
-  doc.setTextColor(26, 35, 126);
-  doc.text("Skill Development Certificate", pw / 2, y, { align: "center" });
-  y += 8;
-  doc.setFontSize(14);
-  doc.setTextColor(80, 80, 80);
-  doc.text("कौशल विकास प्रमाणपत्र", pw / 2, y, { align: "center" });
-  y += 12;
+  doc.setFontSize(13);
+  doc.setTextColor(19, 136, 8);
+  doc.text(NGO_NAME_HI, pw / 2, 44, { align: "center" });
+  doc.setFontSize(9);
+  doc.setTextColor(60, 60, 60);
+  doc.text(NGO_SHORT, pw / 2, 50, { align: "center" });
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(180, 0, 0);
+  doc.text(NGO_REG, pw / 2, 55, { align: "center" });
 
   // Divider
   doc.setDrawColor(200, 170, 100);
-  doc.setLineWidth(0.5);
-  doc.line(50, y, pw - 50, y);
-  y += 10;
+  doc.setLineWidth(0.4);
+  doc.line(40, 59, pw - 40, 59);
 
-  // Body
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(13);
-  doc.setTextColor(60, 60, 60);
-  doc.text("This is to certify that / प्रमाणित किया जाता है कि", pw / 2, y, { align: "center" });
-  y += 14;
-
-  // Name
+  // Title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(26);
-  doc.setTextColor(19, 100, 8);
-  doc.text(data.userName || "Student", pw / 2, y, { align: "center" });
-  y += 12;
-
-  // Course line
-  doc.setFont("helvetica", "normal");
+  doc.setTextColor(26, 35, 126);
+  doc.text("Certificate of Completion", pw / 2, 72, { align: "center" });
   doc.setFontSize(12);
+  doc.setTextColor(80, 80, 80);
+  doc.text("कौशल विकास प्रमाणपत्र", pw / 2, 79, { align: "center" });
+
+  // === Left: User Photo Frame ===
+  const photoX = 25;
+  const photoY = 90;
+  const photoW = 35;
+  const photoH = 42;
+  doc.setDrawColor(26, 35, 126);
+  doc.setLineWidth(0.8);
+  doc.setFillColor(245, 245, 245);
+  doc.rect(photoX, photoY, photoW, photoH, "FD");
+  if (data.userPhotoUrl) {
+    try {
+      doc.addImage(data.userPhotoUrl, "JPEG", photoX + 1, photoY + 1, photoW - 2, photoH - 2);
+    } catch {
+      try { doc.addImage(data.userPhotoUrl, "PNG", photoX + 1, photoY + 1, photoW - 2, photoH - 2); } catch { /* ignore */ }
+    }
+  } else {
+    doc.setFontSize(8);
+    doc.setTextColor(140, 140, 140);
+    doc.text("Photo", photoX + photoW / 2, photoY + photoH / 2, { align: "center" });
+  }
+  doc.setFontSize(7);
+  doc.setTextColor(80, 80, 80);
+  doc.text("Passport Photo", photoX + photoW / 2, photoY + photoH + 4, { align: "center" });
+
+  // === Body (right of photo) ===
+  const bodyX = photoX + photoW + 10;
+  let by = 100;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
   doc.setTextColor(60, 60, 60);
-  doc.text("ने मेरा भारत दुकान के माध्यम से निम्नलिखित पाठ्यक्रम की परीक्षा सफलतापूर्वक उत्तीर्ण की है:", pw / 2, y, { align: "center" });
-  y += 12;
+  doc.text("This is to certify that / प्रमाणित किया जाता है कि", bodyX, by);
+  by += 10;
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor(26, 35, 126);
-  doc.text(`"${data.courseName}"`, pw / 2, y, { align: "center" });
-  y += 10;
+  doc.setFontSize(22);
+  doc.setTextColor(19, 100, 8);
+  doc.text(data.userName || "Student", bodyX, by);
+  by += 9;
 
-  // Score
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(13);
-  doc.setTextColor(40, 40, 40);
-  doc.text(`Score / अंक: ${data.scorePercent}%`, pw / 2, y, { align: "center" });
-  y += 14;
-
-  // Footer row — Date | Stamp | Cert ID
-  const footerY = ph - 38;
   doc.setFontSize(10);
-  doc.setTextColor(80, 80, 80);
+  doc.setTextColor(60, 60, 60);
+  doc.text("ने निम्नलिखित पाठ्यक्रम सफलतापूर्वक पूर्ण किया है:", bodyX, by);
+  by += 9;
 
-  // Date (left)
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  doc.setTextColor(26, 35, 126);
+  doc.text(`"${data.courseName}"`, bodyX, by);
+  by += 8;
+
+  if (data.courseDuration) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(180, 80, 0);
+    doc.text(`अवधि / Duration: ${data.courseDuration}`, bodyX, by);
+    by += 7;
+  }
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+  doc.setTextColor(40, 40, 40);
+  doc.text(`प्राप्तांक / Score: ${data.scorePercent}%`, bodyX, by);
+
+  // === Footer: Date (left) | Seal+Sign (right) | Cert ID (center bottom) ===
+  const footerY = ph - 32;
+
+  // Date - left
   doc.setDrawColor(40, 40, 40);
   doc.setLineWidth(0.3);
-  doc.line(25, footerY, 85, footerY);
-  doc.text(`Date: ${data.date}`, 55, footerY + 5, { align: "center" });
-
-  // Cert ID (right)
-  doc.line(pw - 85, footerY, pw - 25, footerY);
-  doc.text(`Cert ID: ${data.certificateId}`, pw - 55, footerY + 5, { align: "center" });
-
-  // Center stamp
-  doc.setDrawColor(255, 140, 0);
-  doc.setLineWidth(1);
-  doc.circle(pw / 2, footerY - 2, 12);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7);
-  doc.setTextColor(255, 140, 0);
-  doc.text("MERA BHARAT", pw / 2, footerY - 4, { align: "center" });
-  doc.text("DUKAAN", pw / 2, footerY, { align: "center" });
-  doc.setFontSize(6);
-  doc.setTextColor(26, 35, 126);
-  doc.text("✓ VERIFIED", pw / 2, footerY + 3, { align: "center" });
-
-  doc.setFont("helvetica", "normal");
+  doc.line(20, footerY, 75, footerY);
   doc.setFontSize(9);
-  doc.setTextColor(120, 120, 120);
-  doc.text("Authorized Digital Signature & Stamp", pw / 2, footerY + 12, { align: "center" });
+  doc.setTextColor(60, 60, 60);
+  doc.text(`Date / दिनांक: ${data.date}`, 47.5, footerY + 4, { align: "center" });
 
-  // Bottom tricolor band
-  doc.setFillColor(255, 153, 51);
-  doc.rect(13, ph - 25, pw - 26, 4, "F");
-  doc.setFillColor(255, 255, 255);
-  doc.rect(13, ph - 21, pw - 26, 4, "F");
-  doc.setFillColor(19, 136, 8);
-  doc.rect(13, ph - 17, pw - 26, 4, "F");
+  // Right: NGO Seal + Authorised Signatory
+  const sealCx = pw - 40;
+  const sealCy = footerY - 4;
+  doc.setDrawColor(180, 0, 0);
+  doc.setLineWidth(0.8);
+  doc.circle(sealCx, sealCy, 13);
+  doc.setLineWidth(0.3);
+  doc.circle(sealCx, sealCy, 10);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6);
+  doc.setTextColor(180, 0, 0);
+  doc.text("LIVE SHOW FOUNDATION", sealCx, sealCy - 3, { align: "center" });
+  doc.setFontSize(5);
+  doc.text("लाइव शो फाउंडेशन", sealCx, sealCy + 0.5, { align: "center" });
+  doc.setFontSize(5);
+  doc.setTextColor(26, 35, 126);
+  doc.text("✓ OFFICIAL SEAL", sealCx, sealCy + 4, { align: "center" });
+
+  doc.setDrawColor(40, 40, 40);
+  doc.setLineWidth(0.3);
+  doc.line(pw - 75, footerY + 6, pw - 20, footerY + 6);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(60, 60, 60);
+  doc.text("Authorised Signatory / अधिकृत हस्ताक्षर", pw - 47.5, footerY + 10, { align: "center" });
+
+  // Cert ID center bottom
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(26, 35, 126);
+  doc.text(`Certificate ID: ${data.certificateId}`, pw / 2, ph - 14, { align: "center" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(120, 120, 120);
+  doc.text("Verify authenticity at merabharatdukaan.lovable.app", pw / 2, ph - 10, { align: "center" });
 
   return doc;
+}
+
+/* Ashoka Chakra — 24 spokes navy wheel */
+function drawAshokaChakra(doc: jsPDF, cx: number, cy: number, r: number) {
+  doc.setDrawColor(26, 35, 126);
+  doc.setLineWidth(0.6);
+  doc.circle(cx, cy, r);
+  doc.setLineWidth(0.3);
+  doc.circle(cx, cy, r * 0.25);
+  for (let i = 0; i < 24; i++) {
+    const a = (i * Math.PI) / 12;
+    const x2 = cx + Math.cos(a) * r;
+    const y2 = cy + Math.sin(a) * r;
+    doc.line(cx, cy, x2, y2);
+  }
+}
+
+/* Stylised Chhattisgarh state map watermark (low-opacity tricolor blocks)
+   Approximated as a simplified polygon filled with three horizontal bands. */
+function drawChhattisgarhWatermark(doc: jsPDF, cx: number, cy: number, w: number) {
+  // Very faint
+  const h = w * 1.05;
+  const left = cx - w / 2;
+  const top = cy - h / 2;
+  // Saffron / white / green bands as background squares (clipped visually)
+  // jsPDF lacks clipping easily—use very light fills shaped like CG outline approximation (diamond-ish).
+  // Polygon points (approximate CG silhouette, normalised 0..1 in w x h bbox)
+  const pts: [number, number][] = [
+    [0.45, 0.02], [0.62, 0.04], [0.78, 0.12], [0.86, 0.25], [0.92, 0.42],
+    [0.95, 0.6], [0.85, 0.74], [0.78, 0.85], [0.62, 0.92], [0.5, 0.98],
+    [0.36, 0.95], [0.22, 0.86], [0.12, 0.72], [0.06, 0.55], [0.05, 0.38],
+    [0.12, 0.22], [0.24, 0.1], [0.35, 0.04],
+  ];
+  // Draw three colored bands then re-stroke polygon outline
+  // Top band (saffron)
+  doc.setFillColor(255, 220, 180);
+  drawClippedBand(doc, pts, left, top, w, h, 0, 0.33);
+  doc.setFillColor(245, 245, 245);
+  drawClippedBand(doc, pts, left, top, w, h, 0.33, 0.66);
+  doc.setFillColor(200, 240, 200);
+  drawClippedBand(doc, pts, left, top, w, h, 0.66, 1);
+
+  // Outline
+  doc.setDrawColor(26, 35, 126);
+  doc.setLineWidth(0.4);
+  for (let i = 0; i < pts.length; i++) {
+    const [x1, y1] = pts[i];
+    const [x2, y2] = pts[(i + 1) % pts.length];
+    doc.line(left + x1 * w, top + y1 * h, left + x2 * w, top + y2 * h);
+  }
+
+  // Label
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(180, 180, 180);
+  doc.text("CHHATTISGARH", cx, cy + 2, { align: "center" });
+}
+
+/* Approximate band fill: draws the polygon as one filled shape limited to a vertical band.
+   Since jsPDF clipping is awkward, we just fill the full polygon with each color but use
+   thin overlapping rectangles within the band region for a layered effect. */
+function drawClippedBand(
+  doc: jsPDF,
+  pts: [number, number][],
+  left: number,
+  top: number,
+  w: number,
+  h: number,
+  yStart: number,
+  yEnd: number,
+) {
+  // Use jsPDF triangle/lines approach: build a horizontal-strip approximation
+  const strips = 30;
+  for (let s = 0; s < strips; s++) {
+    const t = yStart + ((yEnd - yStart) * s) / strips;
+    const t2 = yStart + ((yEnd - yStart) * (s + 1)) / strips;
+    const yMid = (t + t2) / 2;
+    // Find polygon x-range at yMid by scanline
+    const ys = yMid;
+    let xMin = 1, xMax = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const [x1, y1] = pts[i];
+      const [x2, y2] = pts[(i + 1) % pts.length];
+      if ((y1 <= ys && y2 > ys) || (y2 <= ys && y1 > ys)) {
+        const xi = x1 + ((ys - y1) / (y2 - y1)) * (x2 - x1);
+        if (xi < xMin) xMin = xi;
+        if (xi > xMax) xMax = xi;
+      }
+    }
+    if (xMax > xMin) {
+      doc.rect(left + xMin * w, top + t * h, (xMax - xMin) * w, (t2 - t) * h, "F");
+    }
+  }
 }
 
 export function downloadCertificate(data: CertificateData) {
