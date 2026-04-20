@@ -175,50 +175,12 @@ const BharatMitraChatbot = () => {
     const cleanText = cleanForSpeech(text);
     if (!cleanText) return;
 
-    // ===== Studio-quality ElevenLabs (Matilda) — Hindi + English (all users) =====
-    {
-      try {
-        synth.cancel();
-        if (elevenAudioRef.current) {
-          elevenAudioRef.current.pause();
-          elevenAudioRef.current = null;
-        }
-        setIsSpeaking(true);
-        if (msgId) setSpeakingMsgId(msgId);
-        supabase.functions
-          .invoke("elevenlabs-tts", { body: { text: cleanText, voice: "aria" } })
-          .then(({ data, error }) => {
-            if (error || !data?.audioContent) throw error ?? new Error("no audio");
-            const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
-            elevenAudioRef.current = audio;
-            audio.onended = () => {
-              setIsSpeaking(false); setSpeakingMsgId(null); elevenAudioRef.current = null;
-              if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
-            };
-            audio.onerror = () => {
-              setIsSpeaking(false); setSpeakingMsgId(null); elevenAudioRef.current = null;
-              if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
-            };
-            audio.play().catch(() => { setIsSpeaking(false); setSpeakingMsgId(null); });
-          })
-          .catch((e) => {
-            console.warn("ElevenLabs failed, falling back to browser TTS:", e);
-            setIsSpeaking(false); setSpeakingMsgId(null);
-            // fall back to browser TTS
-            speakBrowser();
-          });
-        return;
-      } catch (e) {
-        console.warn("ElevenLabs invoke error:", e);
-      }
-    }
-
-    const speak = () => {
+    // Browser TTS fallback (declared early so ElevenLabs catch can call it)
+    const speakBrowser = () => {
       const utterance = new SpeechSynthesisUtterance(cleanText);
       const voices = synth.getVoices();
       const target = (langCode ?? "hi-IN").toLowerCase();
       const targetPrefix = target.split("-")[0];
-      // Prefer modern, natural voices (Google Neural / Wavenet / Microsoft Online Natural)
       const isNatural = (v: SpeechSynthesisVoice) => {
         const n = v.name.toLowerCase();
         return n.includes("natural") || n.includes("neural") || n.includes("wavenet") ||
@@ -236,7 +198,6 @@ const BharatMitraChatbot = () => {
         voices.find((v) => v.lang.toLowerCase().includes("in")) ?? null;
       if (preferredVoice) { utterance.voice = preferredVoice; utterance.lang = preferredVoice.lang; }
       else { utterance.lang = langCode ?? "hi-IN"; }
-      // Smooth, friendly, human-like delivery (Gemini-style)
       utterance.rate = 0.98; utterance.pitch = 1.0; utterance.volume = 1;
       utterance.onstart = () => { setIsSpeaking(true); if (msgId) setSpeakingMsgId(msgId); };
       utterance.onend = () => {
@@ -247,15 +208,58 @@ const BharatMitraChatbot = () => {
         setIsSpeaking(false); setSpeakingMsgId(null);
         if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
       };
-      synth.cancel(); synth.speak(utterance);
+      synth.cancel();
+      if (synth.getVoices().length === 0) {
+        synth.onvoiceschanged = () => { synth.onvoiceschanged = null; synth.speak(utterance); };
+        window.setTimeout(() => synth.speak(utterance), 350);
+      } else {
+        synth.speak(utterance);
+      }
     };
-    const speakBrowser = speak;
-    if (synth.getVoices().length === 0) {
-      synth.onvoiceschanged = () => { synth.onvoiceschanged = null; speak(); };
-      window.setTimeout(speak, 350);
-      return;
+
+    // ===== Studio-quality ElevenLabs (Matilda) — Hindi + English (all users) =====
+    {
+      try {
+        synth.cancel();
+        if (elevenAudioRef.current) {
+          elevenAudioRef.current.pause();
+          elevenAudioRef.current = null;
+        }
+        setIsSpeaking(true);
+        if (msgId) setSpeakingMsgId(msgId);
+        supabase.functions
+          .invoke("elevenlabs-tts", { body: { text: cleanText, voice: "aria" } })
+          .then(({ data, error }) => {
+            if (error) throw error;
+            if (data?.fallback || !data?.audioContent) {
+              setIsSpeaking(false); setSpeakingMsgId(null);
+              speakBrowser();
+              return;
+            }
+            const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
+            elevenAudioRef.current = audio;
+            audio.onended = () => {
+              setIsSpeaking(false); setSpeakingMsgId(null); elevenAudioRef.current = null;
+              if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
+            };
+            audio.onerror = () => {
+              setIsSpeaking(false); setSpeakingMsgId(null); elevenAudioRef.current = null;
+              if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
+            };
+            audio.play().catch(() => { setIsSpeaking(false); setSpeakingMsgId(null); });
+          })
+          .catch((e) => {
+            console.warn("ElevenLabs failed, falling back to browser TTS:", e);
+            setIsSpeaking(false); setSpeakingMsgId(null);
+            speakBrowser();
+          });
+        return;
+      } catch (e) {
+        console.warn("ElevenLabs invoke error:", e);
+      }
     }
-    speak();
+
+    speakBrowser();
   }, [isPremium]);
 
   // STT — Web Speech API
