@@ -76,6 +76,7 @@ const BharatMitraChatbot = () => {
   const [safeWalkActive, setSafeWalkActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [wakeListening, setWakeListening] = useState(false);
 
   // Chat window draggable state
   const [chatPos, setChatPos] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
@@ -85,6 +86,8 @@ const BharatMitraChatbot = () => {
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const greetingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recognitionRef = useRef<any>(null);
+  const wakeRecogRef = useRef<any>(null);
+  const wakeShouldRunRef = useRef<boolean>(false);
 
   // Initialize chat position — right side, above center to not block search
   const initChatPos = useCallback(() => {
