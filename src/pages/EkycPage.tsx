@@ -117,6 +117,7 @@ const EkycPage = () => {
   const handleSubmit = async () => {
     const digits = aadhaar.replace(/\D/g, "");
     if (digits.length !== 12) return toast.error("कृपया 12 अंकों का सही आधार नंबर दर्ज करें");
+    if (linkedMobile.length !== 10) return toast.error("कृपया आधार से लिंक 10 अंकों का मोबाइल नंबर दर्ज करें • Please enter a valid 10-digit linked mobile number");
     if (!aadhaarFront || !aadhaarBack) return toast.error("कृपया आधार कार्ड के दोनों तरफ की फोटो अपलोड करें");
     if (!photo) return toast.error("कृपया Live Selfie लें");
     if (!user) return;
