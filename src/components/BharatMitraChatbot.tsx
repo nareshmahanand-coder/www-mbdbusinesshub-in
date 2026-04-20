@@ -170,8 +170,8 @@ const BharatMitraChatbot = () => {
     const cleanText = cleanForSpeech(text);
     if (!cleanText) return;
 
-    // ===== Premium: Studio-quality ElevenLabs (Matilda) — Hindi + English =====
-    if (isPremium) {
+    // ===== Studio-quality ElevenLabs (Matilda) — Hindi + English (all users) =====
+    {
       try {
         synth.cancel();
         if (elevenAudioRef.current) {
