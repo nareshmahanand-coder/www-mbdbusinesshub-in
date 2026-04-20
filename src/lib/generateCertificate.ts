@@ -6,13 +6,22 @@ export interface CertificateData {
   scorePercent: number;
   date: string;
   certificateId: string;
+  /** Course duration text e.g. "3 महीने का कोर्स" */
+  courseDuration?: string;
+  /** Data URL or remote URL of user's passport photo */
+  userPhotoUrl?: string;
 }
 
 export function generateCertificateId(): string {
   const ts = Date.now().toString(36).toUpperCase();
   const rand = Math.random().toString(36).slice(2, 7).toUpperCase();
-  return `MBD-${ts}-${rand}`;
+  return `LSF-${ts}-${rand}`;
 }
+
+/* NGO Constants */
+const NGO_NAME_HI = "लाइव शो शिक्षा एवं सामाजिक कल्याण समिति";
+const NGO_SHORT = "लाइव शो फाउंडेशन (Live Show Foundation)";
+const NGO_REG = "Reg. No. 122202059372";
 
 export function generateCertificatePDF(data: CertificateData): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
