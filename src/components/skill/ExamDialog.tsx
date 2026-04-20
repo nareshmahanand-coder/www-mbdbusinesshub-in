@@ -8,6 +8,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
 import { GraduationCap, RotateCcw, Download, Image as ImageIcon, CheckCircle2, XCircle, Camera, Timer, ShieldAlert, Lock } from "lucide-react";
 import { buildQuizForCategory, type QuizQuestion } from "@/data/categoryQuizzes";
+
+interface BilingualQuestion extends QuizQuestion {
+  q_en?: string;
+  options_en?: string[];
+}
 import {
   downloadCertificate,
   downloadCertificateImage,
@@ -35,7 +40,8 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
   const [name, setName] = useState("");
   const [duration, setDuration] = useState("3 महीने का कोर्स");
   const [photoUrl, setPhotoUrl] = useState<string>("");
-  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [questions, setQuestions] = useState<BilingualQuestion[]>([]);
+  const [translating, setTranslating] = useState(false);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [current, setCurrent] = useState(0);
   const [certId, setCertId] = useState("");
@@ -194,14 +200,46 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
     reader.readAsDataURL(file);
   };
 
-  const startExam = () => {
+  const startExam = async () => {
     if (!name.trim() || name.trim().length < 2) return;
-    setQuestions(buildQuizForCategory(categoryId));
+    const baseQs = buildQuizForCategory(categoryId);
+    setQuestions(baseQs);
     setAnswers({});
     setCurrent(0);
     setQSecs(PER_QUESTION_SECS);
     setTotalSecs(TOTAL_EXAM_SECS);
     setPhase("quiz");
+
+    // Fetch English translations in background — bilingual display
+    const cacheKey = `quizTrans:${categoryId}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const trans = JSON.parse(cached);
+        if (Array.isArray(trans) && trans.length === baseQs.length) {
+          setQuestions(baseQs.map((q, i) => ({ ...q, q_en: trans[i]?.q_en, options_en: trans[i]?.options_en })));
+          return;
+        }
+      } catch { /* ignore */ }
+    }
+    setTranslating(true);
+    try {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/translate-quiz`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+        body: JSON.stringify({ questions: baseQs.map((q) => ({ q: q.q, options: q.options })) }),
+      });
+      if (resp.ok) {
+        const { translations } = await resp.json();
+        sessionStorage.setItem(cacheKey, JSON.stringify(translations));
+        setQuestions(baseQs.map((q, i) => ({ ...q, q_en: translations[i]?.q_en, options_en: translations[i]?.options_en })));
+      }
+    } catch (e) {
+      console.error("translation fetch failed", e);
+    } finally {
+      setTranslating(false);
+    }
   };
 
   const reset = () => {
@@ -376,7 +414,16 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
             <Progress value={(qSecs / PER_QUESTION_SECS) * 100} className={`h-1.5 ${qSecs <= 10 ? "[&>div]:bg-red-600" : ""}`} />
 
             <div className="space-y-3 pt-2">
-              <p className="text-sm font-hindi font-semibold leading-relaxed">{q.q}</p>
+              <div className="space-y-1.5">
+                <p className="text-sm font-hindi font-semibold leading-relaxed">{q.q}</p>
+                {q.q_en ? (
+                  <p className="text-xs text-muted-foreground italic leading-relaxed border-l-2 border-accent/40 pl-2">
+                    {q.q_en}
+                  </p>
+                ) : translating ? (
+                  <p className="text-[10px] text-muted-foreground italic">Translating to English…</p>
+                ) : null}
+              </div>
               <RadioGroup
                 value={answers[current]?.toString() ?? ""}
                 onValueChange={(v) => {
@@ -392,7 +439,14 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
                     className="flex items-start gap-2 rounded-md border border-border p-2.5 cursor-pointer hover:bg-muted/50"
                   >
                     <RadioGroupItem value={i.toString()} id={`opt-${current}-${i}`} className="mt-0.5" />
-                    <span className="text-xs font-hindi leading-relaxed">{opt}</span>
+                    <div className="flex-1 space-y-0.5">
+                      <span className="block text-xs font-hindi leading-relaxed">{opt}</span>
+                      {q.options_en?.[i] && (
+                        <span className="block text-[11px] text-muted-foreground italic leading-relaxed">
+                          {q.options_en[i]}
+                        </span>
+                      )}
+                    </div>
                   </label>
                 ))}
               </RadioGroup>

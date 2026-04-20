@@ -17,14 +17,34 @@ import SafetyOverlay from "./chatbot/SafetyOverlay";
 import BloodDonorTab from "./chatbot/BloodDonorTab";
 import HealthTab from "./chatbot/HealthTab";
 
+const DEFAULT_INTRO = "नमस्ते / जय जोहार! 🙏 मैं भारत मित्र हूँ। मैं भारत की सभी भाषाएं — Hindi, English, Chhattisgarhi, Odia, Bengali, Tamil आदि — समझ सकती हूँ और आपकी हर तरह से मदद करने के लिए तैयार हूँ। आप किसी भी भाषा में पूछें, मैं उसी भाषा में जवाब दूँगी।";
+
 const WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
   sender: "bot",
-  text: "नमस्ते बॉस जी! 🙏 मेरा भारत दुकान में आपका स्वागत है। मैं आपकी भारत मित्र हूँ। दुकान ढूंढें, ऑर्डर करें, या मदद मांगें — सब कुछ यहीं! कुछ भी पूछें, मैं AI से जवाब दूँगी:",
+  text: DEFAULT_INTRO,
 };
 
 const LOGIN_GREETING = "मेरा भारत दुकान में आपका स्वागत है, मैं हूँ भारत मित्र, आपकी क्या सेवा कर सकती हूँ?";
 const WELCOME_AUDIO_TEXT = "मेरा भारत दुकान में, मैं आपकी भारत मित्र आपका स्वागत करती हूँ।";
+
+/** Map Indian state → warm regional greeting + tts language code */
+const REGION_GREETINGS: Record<string, { text: string; lang: string }> = {
+  "Chhattisgarh":   { text: "जय जोहार! 🙏 मेरा भारत दुकान ऐप में आपका स्वागत है। मैं भारत मित्र हूँ — आपकी क्या मदद कर सकती हूँ?", lang: "hi-IN" },
+  "Odisha":         { text: "ନମସ୍କାର! 🙏 ମେରା ଭାରତ ଦୁକାନ ଆପ୍‌କୁ ସ୍ୱାଗତ। ମୁଁ ଭାରତ ମିତ୍ର — ଆପଣଙ୍କୁ କିପରି ସାହାଯ୍ୟ କରିପାରିବି?", lang: "or-IN" },
+  "West Bengal":    { text: "নমস্কার! 🙏 মেরা ভারত দুকান অ্যাপে আপনাকে স্বাগতম। আমি ভারত মিত্র — আপনাকে কীভাবে সাহায্য করতে পারি?", lang: "bn-IN" },
+  "Tamil Nadu":     { text: "வணக்கம்! 🙏 மேரா பாரத் துகான் ஆப்பிற்கு வரவேற்கிறேன். நான் பாரத் மித்ரா — எப்படி உதவலாம்?", lang: "ta-IN" },
+  "Karnataka":      { text: "ನಮಸ್ಕಾರ! 🙏 ಮೇರಾ ಭಾರತ್ ದುಕಾನ್ ಆಪ್‌ಗೆ ಸ್ವಾಗತ. ನಾನು ಭಾರತ ಮಿತ್ರ — ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ?", lang: "kn-IN" },
+  "Andhra Pradesh": { text: "నమస్కారం! 🙏 మేరా భారత్ దుకాన్ యాప్‌కి స్వాగతం. నేను భారత్ మిత్ర — ఎలా సహాయం చేయగలను?", lang: "te-IN" },
+  "Telangana":      { text: "నమస్కారం! 🙏 మేరా భారత్ దుకాన్ యాప్‌కి స్వాగతం. నేను భారత్ మిత్ర — ఎలా సహాయం చేయగలను?", lang: "te-IN" },
+  "Kerala":         { text: "നമസ്കാരം! 🙏 മേരാ ഭാരത് ദുകാൻ ആപ്പിലേക്ക് സ്വാഗതം. ഞാൻ ഭാരത് മിത്ര — എങ്ങനെ സഹായിക്കാം?", lang: "ml-IN" },
+  "Maharashtra":    { text: "नमस्कार! 🙏 मेरा भारत दुकान अ‍ॅपवर आपले स्वागत. मी भारत मित्र — कशी मदत करू?", lang: "mr-IN" },
+  "Gujarat":        { text: "નમસ્તે! 🙏 મેરા ભારત દુકાન એપ્પમાં આપનું સ્વાગત. હું ભારત મિત્ર — હું તમારી શી મદદ કરી શકું?", lang: "gu-IN" },
+  "Punjab":         { text: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ! 🙏 ਮੇਰਾ ਭਾਰਤ ਦੁਕਾਨ ਐਪ ਵਿੱਚ ਤੁਹਾਡਾ ਸੁਆਗਤ ਹੈ। ਮੈਂ ਭਾਰਤ ਮਿੱਤਰ — ਕਿਵੇਂ ਮਦਦ ਕਰਾਂ?", lang: "pa-IN" },
+  "Assam":          { text: "নমস্কাৰ! 🙏 মেৰা ভাৰত দুকান এপত আপোনাক স্বাগতম। মই ভাৰত মিত্ৰ — কেনেদৰে সহায় কৰিব পাৰোঁ?", lang: "as-IN" },
+};
+
+const DEFAULT_GREETING = { text: "नमस्ते बॉस जी! 🙏 मैं भारत मित्र हूँ। मैं भारत की सभी भाषाएं समझ सकती हूँ और आपकी हर तरह से मदद करने के लिए तैयार हूँ।", lang: "hi-IN" };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bharat-mitra-chat`;
 
@@ -50,6 +70,7 @@ const BharatMitraChatbot = () => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [safetyActivated, setSafetyActivated] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [userState, setUserState] = useState<string | null>(null);
   const [safeWalkActive, setSafeWalkActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
@@ -101,18 +122,22 @@ const BharatMitraChatbot = () => {
 
   useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
 
-  // TTS — speak a specific message
-  const speakText = useCallback((text: string, msgId?: string) => {
+  // TTS — speak a specific message in a given language
+  const speakText = useCallback((text: string, msgId?: string, langCode?: string) => {
     if (!("speechSynthesis" in window)) return;
     const synth = window.speechSynthesis;
     const speak = () => {
       const utterance = new SpeechSynthesisUtterance(text);
       const voices = synth.getVoices();
+      const target = (langCode ?? "hi-IN").toLowerCase();
+      const targetPrefix = target.split("-")[0];
       const preferredVoice =
-        voices.find((voice) => voice.lang.toLowerCase().startsWith("hi")) ??
-        voices.find((voice) => voice.lang.toLowerCase().includes("in")) ?? null;
+        voices.find((v) => v.lang.toLowerCase() === target) ??
+        voices.find((v) => v.lang.toLowerCase().startsWith(targetPrefix)) ??
+        voices.find((v) => v.lang.toLowerCase().startsWith("hi")) ??
+        voices.find((v) => v.lang.toLowerCase().includes("in")) ?? null;
       if (preferredVoice) { utterance.voice = preferredVoice; utterance.lang = preferredVoice.lang; }
-      else { utterance.lang = "hi-IN"; }
+      else { utterance.lang = langCode ?? "hi-IN"; }
       utterance.rate = 0.92; utterance.pitch = 1.05; utterance.volume = 1;
       utterance.onstart = () => { setIsSpeaking(true); if (msgId) setSpeakingMsgId(msgId); };
       utterance.onend = () => { setIsSpeaking(false); setSpeakingMsgId(null); };
@@ -249,6 +274,45 @@ const BharatMitraChatbot = () => {
       );
     });
 
+  // Reverse-geocode → Indian state name (uses free Nominatim, no API key)
+  const detectUserState = async (lat: number, lng: number): Promise<string | null> => {
+    try {
+      const resp = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=en`,
+        { headers: { "Accept": "application/json" } }
+      );
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      const state = data?.address?.state ?? null;
+      return state;
+    } catch {
+      return null;
+    }
+  };
+
+  // On open: detect state, prepend a regional greeting message + speak it
+  const playRegionalGreeting = async () => {
+    // Default audio first (so users hear something instantly)
+    speakText(WELCOME_AUDIO_TEXT, undefined, "hi-IN");
+
+    const loc = userLocation ?? (await getUserLocation());
+    if (!loc) return;
+    const state = await detectUserState(loc.lat, loc.lng);
+    if (!state) return;
+    setUserState(state);
+    const greet = REGION_GREETINGS[state] ?? DEFAULT_GREETING;
+    setMessages((prev) => {
+      // Replace the welcome message with the regional one (only once)
+      if (prev.some((m) => m.id === "regional-welcome")) return prev;
+      return [
+        { id: "regional-welcome", sender: "bot", text: greet.text },
+        ...prev.filter((m) => m.id !== "welcome"),
+        { id: "intro-multilang", sender: "bot", text: DEFAULT_INTRO },
+      ];
+    });
+    setTimeout(() => speakText(greet.text, "regional-welcome", greet.lang), 1200);
+  };
+
   const activateSafetyMode = async () => {
     setSafetyActivated(true);
     const msg = "🚨 बॉस जी, सुरक्षा चक्र एक्टिव! आपकी लोकेशन शेयर की जा रही है...";
@@ -321,6 +385,7 @@ const BharatMitraChatbot = () => {
           userLat: loc?.lat,
           userLng: loc?.lng,
           userId: user?.id,
+          userState,
         }),
       });
 
@@ -441,7 +506,7 @@ const BharatMitraChatbot = () => {
         style={{ right: 12, top: "50%", transform: "translateY(-50%)", touchAction: "none" }}
       >
         <button
-          onClick={() => { initChatPos(); setOpen(true); setTimeout(() => speakText(WELCOME_AUDIO_TEXT), 400); }}
+          onClick={() => { initChatPos(); setOpen(true); setTimeout(() => playRegionalGreeting(), 300); }}
           className="relative h-20 w-20 overflow-hidden rounded-full border-[3px] border-destructive shadow-2xl transition-transform hover:scale-110 animate-bharat-mitra-pulse"
           style={{
             boxShadow: "0 0 20px 6px hsl(var(--destructive) / 0.5), 0 0 40px 14px hsl(var(--destructive) / 0.3), 0 0 60px 20px hsl(var(--primary) / 0.2)",
