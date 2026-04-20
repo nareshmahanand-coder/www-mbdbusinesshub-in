@@ -207,89 +207,131 @@ const FamilySafetyPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-saffron/5 pb-24">
-      <AppHeader />
-      <div className="container mx-auto max-w-lg px-4 py-6 space-y-5">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1">
-          <ArrowLeft className="h-4 w-4" /> Back
-        </Button>
+    <div className="min-h-screen pb-24">
+      {/* Tiranga background: Saffron → White → Green */}
+      <div className="absolute inset-0 -z-0 bg-gradient-to-b from-[hsl(28,100%,55%)] via-white to-[hsl(122,55%,40%)] opacity-95" />
+      <div className="relative z-10">
+        <AppHeader />
+        <div className="container mx-auto max-w-lg px-4 py-6 space-y-5">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="gap-1 bg-white/70 backdrop-blur"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back
+          </Button>
 
-        {/* Kavach (Shield) hero with MBD branding */}
-        <div className="relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary via-primary to-[#1a237e] p-6 text-center shadow-2xl">
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 20% 20%, hsl(var(--saffron)) 0, transparent 40%), radial-gradient(circle at 80% 80%, hsl(var(--green-india)) 0, transparent 40%)",
-            }}
-          />
-          <div className="relative z-10 flex flex-col items-center">
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.3em] text-primary-foreground/80">
-              Mera Bharat Dukaan
-            </p>
-            <svg viewBox="0 0 100 110" className="h-28 w-28 drop-shadow-xl">
-              <defs>
-                <linearGradient id="kavachGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--saffron))" />
-                  <stop offset="50%" stopColor="#fff" />
-                  <stop offset="100%" stopColor="hsl(var(--green-india))" />
-                </linearGradient>
-              </defs>
-              <path
-                d="M50 4 L92 18 V52 C92 78 74 98 50 106 C26 98 8 78 8 52 V18 Z"
-                fill="url(#kavachGrad)"
-                stroke="#fff"
-                strokeWidth="2"
-              />
-              <circle cx="50" cy="55" r="14" fill="none" stroke="#1a237e" strokeWidth="2" />
-              {Array.from({ length: 24 }).map((_, i) => {
-                const a = (i * Math.PI) / 12;
-                const x1 = 50 + Math.cos(a) * 14;
-                const y1 = 55 + Math.sin(a) * 14;
-                const x2 = 50 + Math.cos(a) * 18;
-                const y2 = 55 + Math.sin(a) * 18;
-                return (
-                  <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#1a237e" strokeWidth="1" />
-                );
-              })}
-              <circle cx="50" cy="55" r="2" fill="#1a237e" />
-            </svg>
-            <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-primary-foreground">
-              सुरक्षा कवच
-            </h1>
-            <p className="text-sm font-semibold text-primary-foreground/90">
-              Family Safety Circle
-            </p>
-            <p className="mt-2 max-w-xs text-xs text-primary-foreground/80">
-              आपके परिवार की ढाल — एक टैप पर परिवार और 500m के दुकानदारों तक मदद पहुँचे।
-            </p>
+          {/* Bharat Kavach hero — Tiranga themed */}
+          <div className="relative overflow-hidden rounded-2xl border-4 border-[#1a237e]/20 shadow-2xl">
+            {/* Tiranga bands inside the card */}
+            <div className="absolute inset-0">
+              <div className="h-1/3 bg-[hsl(28,100%,55%)]" />
+              <div className="h-1/3 bg-white" />
+              <div className="h-1/3 bg-[hsl(122,55%,40%)]" />
+            </div>
 
-            <Button
-              onClick={handleSos}
-              disabled={sosLoading}
-              className="mt-5 w-full bg-destructive py-7 text-lg font-extrabold text-destructive-foreground shadow-lg ring-4 ring-destructive/30 hover:bg-destructive/90"
-            >
-              {sosLoading ? (
-                <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-              ) : (
-                <Siren className="mr-2 h-6 w-6" />
+            <div className="relative z-10 px-5 py-7 text-center">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.3em] text-[#1a237e]">
+                Mera Bharat Dukaan
+              </p>
+
+              {/* Title: Family Safety [भारत कवच] */}
+              <h1 className="leading-tight">
+                <span className="block text-sm font-medium text-[#1a237e]/80">
+                  Family Safety
+                </span>
+                <span className="font-hindi block text-4xl font-black tracking-tight text-[#1a237e] drop-shadow-sm sm:text-5xl">
+                  [भारत कवच]
+                </span>
+              </h1>
+
+              {/* Strong shield (कवच) icon */}
+              <div className="my-4 flex justify-center">
+                <svg viewBox="0 0 100 110" className="h-32 w-32 drop-shadow-2xl">
+                  <defs>
+                    <linearGradient id="kavachGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(28,100%,55%)" />
+                      <stop offset="50%" stopColor="#fff" />
+                      <stop offset="100%" stopColor="hsl(122,55%,40%)" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="M50 4 L92 18 V52 C92 78 74 98 50 106 C26 98 8 78 8 52 V18 Z"
+                    fill="url(#kavachGrad)"
+                    stroke="#1a237e"
+                    strokeWidth="3"
+                  />
+                  {/* Ashoka Chakra inside shield */}
+                  <circle cx="50" cy="55" r="16" fill="none" stroke="#1a237e" strokeWidth="2.5" />
+                  {Array.from({ length: 24 }).map((_, i) => {
+                    const a = (i * Math.PI) / 12;
+                    const x1 = 50 + Math.cos(a) * 16;
+                    const y1 = 55 + Math.sin(a) * 16;
+                    const x2 = 50 + Math.cos(a) * 21;
+                    const y2 = 55 + Math.sin(a) * 21;
+                    return (
+                      <line
+                        key={i}
+                        x1={x1}
+                        y1={y1}
+                        x2={x2}
+                        y2={y2}
+                        stroke="#1a237e"
+                        strokeWidth="1.4"
+                      />
+                    );
+                  })}
+                  <circle cx="50" cy="55" r="2.5" fill="#1a237e" />
+                  {/* Shield bolt highlight */}
+                  <path
+                    d="M50 26 L46 50 L52 50 L48 70 L60 46 L54 46 Z"
+                    fill="#1a237e"
+                    opacity="0.85"
+                  />
+                </svg>
+              </div>
+
+              <p className="mx-auto mb-5 max-w-xs text-xs font-semibold text-[#1a237e]">
+                आपके परिवार की ढाल — एक टैप पर परिवार और 500m के दुकानदारों तक मदद पहुँचे।
+              </p>
+
+              {/* Circular SOS button — Tiranga ring + bold red core */}
+              <div className="relative mx-auto h-40 w-40">
+                <div className="absolute inset-0 rounded-full bg-[conic-gradient(from_0deg,hsl(28,100%,55%)_0_33%,#ffffff_33%_66%,hsl(122,55%,40%)_66%_100%)] p-[6px] shadow-2xl">
+                  <button
+                    onClick={handleSos}
+                    disabled={sosLoading}
+                    aria-label="SOS भेजें"
+                    className="group relative flex h-full w-full items-center justify-center rounded-full bg-[hsl(0,85%,45%)] text-white ring-4 ring-white transition-transform hover:scale-105 active:scale-95 disabled:opacity-70"
+                  >
+                    <span className="absolute inset-0 animate-ping rounded-full bg-[hsl(0,85%,45%)]/40" />
+                    <div className="relative flex flex-col items-center">
+                      {sosLoading ? (
+                        <Loader2 className="h-10 w-10 animate-spin" />
+                      ) : (
+                        <Siren className="h-10 w-10 drop-shadow" />
+                      )}
+                      <span className="mt-1 text-2xl font-black tracking-wider">SOS</span>
+                      <span className="font-hindi text-[10px] font-bold opacity-95">भेजें</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {lastLoc && (
+                <a
+                  href={googleMapsLink(lastLoc.lat, lastLoc.lng)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-5 inline-flex items-center justify-center gap-1 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-[#1a237e] underline backdrop-blur"
+                >
+                  <MapPin className="h-3 w-3" />
+                  Last known location ({new Date(lastLoc.recorded_at).toLocaleTimeString()})
+                </a>
               )}
-              🚨 SOS भेजें
-            </Button>
-
-            {lastLoc && (
-              <a
-                href={googleMapsLink(lastLoc.lat, lastLoc.lng)}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 flex items-center justify-center gap-1 text-xs text-primary-foreground/90 underline"
-              >
-                <MapPin className="h-3 w-3" />
-                Last known location ({new Date(lastLoc.recorded_at).toLocaleTimeString()})
-              </a>
-            )}
+            </div>
           </div>
-        </div>
 
         {/* Incoming invites */}
         {pendingInvites.length > 0 && (
