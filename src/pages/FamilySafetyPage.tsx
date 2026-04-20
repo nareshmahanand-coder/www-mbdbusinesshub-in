@@ -207,46 +207,89 @@ const FamilySafetyPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-gradient-to-b from-primary/5 via-background to-saffron/5 pb-24">
       <AppHeader />
       <div className="container mx-auto max-w-lg px-4 py-6 space-y-5">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-1">
           <ArrowLeft className="h-4 w-4" /> Back
         </Button>
 
-        {/* SOS button */}
-        <Card className="border-2 border-destructive/40 bg-destructive/5">
-          <CardContent className="pt-6 text-center space-y-3">
-            <Shield className="mx-auto h-10 w-10 text-destructive" />
-            <h2 className="font-bold text-lg">Family Safety Circle</h2>
-            <p className="text-xs text-muted-foreground">
-              Emergency में एक टैप पर परिवार + नज़दीकी दुकानदार को लोकेशन भेजें।
+        {/* Kavach (Shield) hero with MBD branding */}
+        <div className="relative overflow-hidden rounded-2xl border-2 border-primary/40 bg-gradient-to-br from-primary via-primary to-[#1a237e] p-6 text-center shadow-2xl">
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 20% 20%, hsl(var(--saffron)) 0, transparent 40%), radial-gradient(circle at 80% 80%, hsl(var(--green-india)) 0, transparent 40%)",
+            }}
+          />
+          <div className="relative z-10 flex flex-col items-center">
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.3em] text-primary-foreground/80">
+              Mera Bharat Dukaan
             </p>
+            <svg viewBox="0 0 100 110" className="h-28 w-28 drop-shadow-xl">
+              <defs>
+                <linearGradient id="kavachGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="hsl(var(--saffron))" />
+                  <stop offset="50%" stopColor="#fff" />
+                  <stop offset="100%" stopColor="hsl(var(--green-india))" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M50 4 L92 18 V52 C92 78 74 98 50 106 C26 98 8 78 8 52 V18 Z"
+                fill="url(#kavachGrad)"
+                stroke="#fff"
+                strokeWidth="2"
+              />
+              <circle cx="50" cy="55" r="14" fill="none" stroke="#1a237e" strokeWidth="2" />
+              {Array.from({ length: 24 }).map((_, i) => {
+                const a = (i * Math.PI) / 12;
+                const x1 = 50 + Math.cos(a) * 14;
+                const y1 = 55 + Math.sin(a) * 14;
+                const x2 = 50 + Math.cos(a) * 18;
+                const y2 = 55 + Math.sin(a) * 18;
+                return (
+                  <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#1a237e" strokeWidth="1" />
+                );
+              })}
+              <circle cx="50" cy="55" r="2" fill="#1a237e" />
+            </svg>
+            <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-primary-foreground">
+              सुरक्षा कवच
+            </h1>
+            <p className="text-sm font-semibold text-primary-foreground/90">
+              Family Safety Circle
+            </p>
+            <p className="mt-2 max-w-xs text-xs text-primary-foreground/80">
+              आपके परिवार की ढाल — एक टैप पर परिवार और 500m के दुकानदारों तक मदद पहुँचे।
+            </p>
+
             <Button
               onClick={handleSos}
               disabled={sosLoading}
-              className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90 font-bold py-6 text-base"
+              className="mt-5 w-full bg-destructive py-7 text-lg font-extrabold text-destructive-foreground shadow-lg ring-4 ring-destructive/30 hover:bg-destructive/90"
             >
               {sosLoading ? (
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                <Loader2 className="mr-2 h-6 w-6 animate-spin" />
               ) : (
-                <Siren className="mr-2 h-5 w-5" />
+                <Siren className="mr-2 h-6 w-6" />
               )}
               🚨 SOS भेजें
             </Button>
+
             {lastLoc && (
               <a
                 href={googleMapsLink(lastLoc.lat, lastLoc.lng)}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-center gap-1 text-xs text-primary underline"
+                className="mt-3 flex items-center justify-center gap-1 text-xs text-primary-foreground/90 underline"
               >
                 <MapPin className="h-3 w-3" />
                 Last known location ({new Date(lastLoc.recorded_at).toLocaleTimeString()})
               </a>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Incoming invites */}
         {pendingInvites.length > 0 && (
