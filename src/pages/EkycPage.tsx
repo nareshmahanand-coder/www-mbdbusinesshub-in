@@ -380,7 +380,7 @@ const EkycPage = () => {
           {/* Submit */}
           <Button
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || linkedMobile.length !== 10 || aadhaar.replace(/\D/g, "").length !== 12}
             className="w-full h-12 text-base font-semibold bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
           >
             {submitting ? (
