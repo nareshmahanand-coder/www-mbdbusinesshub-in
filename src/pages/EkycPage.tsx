@@ -272,6 +272,24 @@ const EkycPage = () => {
             <p className="text-[11px] text-muted-foreground text-center">12 अंकों का आधार नंबर दर्ज करें</p>
           </div>
 
+          {/* Linked Mobile Number */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Linked Mobile Number • <span className="font-hindi">आधार से लिंक मोबाइल नंबर</span></label>
+            <Input
+              inputMode="numeric"
+              type="tel"
+              placeholder="98XXXXXXXX"
+              value={linkedMobile}
+              onChange={(e) => setLinkedMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+              maxLength={10}
+              className="text-lg tracking-widest text-center h-12"
+            />
+            <p className="text-[11px] text-muted-foreground text-center leading-snug">
+              Please enter the mobile number linked with your Aadhaar Card<br />
+              <span className="font-hindi">कृपया वही मोबाइल नंबर डालें जो आपके आधार कार्ड से लिंक है।</span>
+            </p>
+          </div>
+
           {/* Aadhaar Card Photos */}
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-1.5">
