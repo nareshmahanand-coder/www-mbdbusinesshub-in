@@ -1,4 +1,6 @@
 import jsPDF from "jspdf";
+import ngoSealUrl from "@/assets/ngo-seal.png";
+import ngoSignatureUrl from "@/assets/ngo-signature.png";
 
 export interface CertificateData {
   userName: string;
