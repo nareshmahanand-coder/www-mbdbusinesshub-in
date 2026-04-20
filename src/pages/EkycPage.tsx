@@ -29,6 +29,7 @@ const EkycPage = () => {
   const streamRef = useRef<MediaStream | null>(null);
 
   const [aadhaar, setAadhaar] = useState("");
+  const [linkedMobile, setLinkedMobile] = useState("");
   const [aadhaarFront, setAadhaarFront] = useState<string | null>(null);
   const [aadhaarBack, setAadhaarBack] = useState<string | null>(null);
   const frontInputRef = useRef<HTMLInputElement | null>(null);
