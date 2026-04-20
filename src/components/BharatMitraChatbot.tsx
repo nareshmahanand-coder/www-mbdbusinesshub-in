@@ -632,6 +632,15 @@ const BharatMitraChatbot = () => {
         <span className="font-hindi text-sm font-black text-destructive drop-shadow-[0_0_8px_hsl(var(--destructive)/0.6)] select-none whitespace-nowrap">
           भारत मित्र <span className="font-sans text-xs font-bold tracking-wide">AI</span>
         </span>
+        {isPremium && wakeListening && (
+          <span className="mt-0.5 flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[9px] font-bold text-primary shadow ring-1 ring-primary/40">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#138808] opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#138808]" />
+            </span>
+            "भारत मित्र" बोलें
+          </span>
+        )}
       </div>
     );
   }
