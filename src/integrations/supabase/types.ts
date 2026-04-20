@@ -14,6 +14,173 @@ export type Database = {
   }
   public: {
     Tables: {
+      blood_donations: {
+        Row: {
+          blood_group: string
+          certificate_no: string
+          city: string | null
+          donated_at: string
+          donor_id: string
+          donor_user_id: string
+          id: string
+          request_id: string | null
+          requester_id: string
+        }
+        Insert: {
+          blood_group: string
+          certificate_no?: string
+          city?: string | null
+          donated_at?: string
+          donor_id: string
+          donor_user_id: string
+          id?: string
+          request_id?: string | null
+          requester_id: string
+        }
+        Update: {
+          blood_group?: string
+          certificate_no?: string
+          city?: string | null
+          donated_at?: string
+          donor_id?: string
+          donor_user_id?: string
+          id?: string
+          request_id?: string | null
+          requester_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blood_donations_donor_id_fkey"
+            columns: ["donor_id"]
+            isOneToOne: false
+            referencedRelation: "blood_donors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blood_donations_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "blood_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blood_donors: {
+        Row: {
+          aadhaar_last4: string | null
+          address: string | null
+          age: number
+          blood_group: string
+          city: string | null
+          created_at: string
+          donation_count: number
+          height_cm: number | null
+          id: string
+          is_active: boolean
+          is_eligible: boolean
+          last_donation_date: string | null
+          name: string
+          phone: string
+          photo_url: string | null
+          updated_at: string
+          user_id: string
+          weight_kg: number
+        }
+        Insert: {
+          aadhaar_last4?: string | null
+          address?: string | null
+          age: number
+          blood_group: string
+          city?: string | null
+          created_at?: string
+          donation_count?: number
+          height_cm?: number | null
+          id?: string
+          is_active?: boolean
+          is_eligible?: boolean
+          last_donation_date?: string | null
+          name: string
+          phone: string
+          photo_url?: string | null
+          updated_at?: string
+          user_id: string
+          weight_kg: number
+        }
+        Update: {
+          aadhaar_last4?: string | null
+          address?: string | null
+          age?: number
+          blood_group?: string
+          city?: string | null
+          created_at?: string
+          donation_count?: number
+          height_cm?: number | null
+          id?: string
+          is_active?: boolean
+          is_eligible?: boolean
+          last_donation_date?: string | null
+          name?: string
+          phone?: string
+          photo_url?: string | null
+          updated_at?: string
+          user_id?: string
+          weight_kg?: number
+        }
+        Relationships: []
+      }
+      blood_requests: {
+        Row: {
+          blood_group: string
+          city: string | null
+          created_at: string
+          fulfilled_at: string | null
+          id: string
+          matched_donor_id: string | null
+          message: string | null
+          requester_id: string
+          requester_name: string | null
+          requester_phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          blood_group: string
+          city?: string | null
+          created_at?: string
+          fulfilled_at?: string | null
+          id?: string
+          matched_donor_id?: string | null
+          message?: string | null
+          requester_id: string
+          requester_name?: string | null
+          requester_phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          blood_group?: string
+          city?: string | null
+          created_at?: string
+          fulfilled_at?: string | null
+          id?: string
+          matched_donor_id?: string | null
+          message?: string | null
+          requester_id?: string
+          requester_name?: string | null
+          requester_phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blood_requests_matched_donor_id_fkey"
+            columns: ["matched_donor_id"]
+            isOneToOne: false
+            referencedRelation: "blood_donors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classifieds: {
         Row: {
           category: string | null
