@@ -17,14 +17,34 @@ import SafetyOverlay from "./chatbot/SafetyOverlay";
 import BloodDonorTab from "./chatbot/BloodDonorTab";
 import HealthTab from "./chatbot/HealthTab";
 
+const DEFAULT_INTRO = "नमस्ते / जय जोहार! 🙏 मैं भारत मित्र हूँ। मैं भारत की सभी भाषाएं — Hindi, English, Chhattisgarhi, Odia, Bengali, Tamil आदि — समझ सकती हूँ और आपकी हर तरह से मदद करने के लिए तैयार हूँ। आप किसी भी भाषा में पूछें, मैं उसी भाषा में जवाब दूँगी।";
+
 const WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
   sender: "bot",
-  text: "नमस्ते बॉस जी! 🙏 मेरा भारत दुकान में आपका स्वागत है। मैं आपकी भारत मित्र हूँ। दुकान ढूंढें, ऑर्डर करें, या मदद मांगें — सब कुछ यहीं! कुछ भी पूछें, मैं AI से जवाब दूँगी:",
+  text: DEFAULT_INTRO,
 };
 
 const LOGIN_GREETING = "मेरा भारत दुकान में आपका स्वागत है, मैं हूँ भारत मित्र, आपकी क्या सेवा कर सकती हूँ?";
 const WELCOME_AUDIO_TEXT = "मेरा भारत दुकान में, मैं आपकी भारत मित्र आपका स्वागत करती हूँ।";
+
+/** Map Indian state → warm regional greeting + tts language code */
+const REGION_GREETINGS: Record<string, { text: string; lang: string }> = {
+  "Chhattisgarh":   { text: "जय जोहार! 🙏 मेरा भारत दुकान ऐप में आपका स्वागत है। मैं भारत मित्र हूँ — आपकी क्या मदद कर सकती हूँ?", lang: "hi-IN" },
+  "Odisha":         { text: "ନମସ୍କାର! 🙏 ମେରା ଭାରତ ଦୁକାନ ଆପ୍‌କୁ ସ୍ୱାଗତ। ମୁଁ ଭାରତ ମିତ୍ର — ଆପଣଙ୍କୁ କିପରି ସାହାଯ୍ୟ କରିପାରିବି?", lang: "or-IN" },
+  "West Bengal":    { text: "নমস্কার! 🙏 মেরা ভারত দুকান অ্যাপে আপনাকে স্বাগতম। আমি ভারত মিত্র — আপনাকে কীভাবে সাহায্য করতে পারি?", lang: "bn-IN" },
+  "Tamil Nadu":     { text: "வணக்கம்! 🙏 மேரா பாரத் துகான் ஆப்பிற்கு வரவேற்கிறேன். நான் பாரத் மித்ரா — எப்படி உதவலாம்?", lang: "ta-IN" },
+  "Karnataka":      { text: "ನಮಸ್ಕಾರ! 🙏 ಮೇರಾ ಭಾರತ್ ದುಕಾನ್ ಆಪ್‌ಗೆ ಸ್ವಾಗತ. ನಾನು ಭಾರತ ಮಿತ್ರ — ಹೇಗೆ ಸಹಾಯ ಮಾಡಲಿ?", lang: "kn-IN" },
+  "Andhra Pradesh": { text: "నమస్కారం! 🙏 మేరా భారత్ దుకాన్ యాప్‌కి స్వాగతం. నేను భారత్ మిత్ర — ఎలా సహాయం చేయగలను?", lang: "te-IN" },
+  "Telangana":      { text: "నమస్కారం! 🙏 మేరా భారత్ దుకాన్ యాప్‌కి స్వాగతం. నేను భారత్ మిత్ర — ఎలా సహాయం చేయగలను?", lang: "te-IN" },
+  "Kerala":         { text: "നമസ്കാരം! 🙏 മേരാ ഭാരത് ദുകാൻ ആപ്പിലേക്ക് സ്വാഗതം. ഞാൻ ഭാരത് മിത്ര — എങ്ങനെ സഹായിക്കാം?", lang: "ml-IN" },
+  "Maharashtra":    { text: "नमस्कार! 🙏 मेरा भारत दुकान अ‍ॅपवर आपले स्वागत. मी भारत मित्र — कशी मदत करू?", lang: "mr-IN" },
+  "Gujarat":        { text: "નમસ્તે! 🙏 મેરા ભારત દુકાન એપ્પમાં આપનું સ્વાગત. હું ભારત મિત્ર — હું તમારી શી મદદ કરી શકું?", lang: "gu-IN" },
+  "Punjab":         { text: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ! 🙏 ਮੇਰਾ ਭਾਰਤ ਦੁਕਾਨ ਐਪ ਵਿੱਚ ਤੁਹਾਡਾ ਸੁਆਗਤ ਹੈ। ਮੈਂ ਭਾਰਤ ਮਿੱਤਰ — ਕਿਵੇਂ ਮਦਦ ਕਰਾਂ?", lang: "pa-IN" },
+  "Assam":          { text: "নমস্কাৰ! 🙏 মেৰা ভাৰত দুকান এপত আপোনাক স্বাগতম। মই ভাৰত মিত্ৰ — কেনেদৰে সহায় কৰিব পাৰোঁ?", lang: "as-IN" },
+};
+
+const DEFAULT_GREETING = { text: "नमस्ते बॉस जी! 🙏 मैं भारत मित्र हूँ। मैं भारत की सभी भाषाएं समझ सकती हूँ और आपकी हर तरह से मदद करने के लिए तैयार हूँ।", lang: "hi-IN" };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bharat-mitra-chat`;
 
@@ -50,6 +70,7 @@ const BharatMitraChatbot = () => {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [safetyActivated, setSafetyActivated] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [userState, setUserState] = useState<string | null>(null);
   const [safeWalkActive, setSafeWalkActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
