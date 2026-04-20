@@ -349,6 +349,40 @@ const BharatMitraChatbot = () => {
   }, []);
   useEffect(() => { startLiveListenRef.current = startLiveListen; }, [startLiveListen]);
 
+  // First-time master intro (once ever) + Daily short welcome (every 24h).
+  // Triggers automatically when the user lands on the Home Page.
+  useEffect(() => {
+    if (location.pathname !== "/") return;
+    if (open) return;
+    const introDone = localStorage.getItem(INTRO_DONE_KEY) === "true";
+    const lastDaily = parseInt(localStorage.getItem(LAST_DAILY_KEY) || "0", 10);
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+
+    let scriptToPlay: string | null = null;
+    if (!introDone) {
+      scriptToPlay = FIRST_TIME_MASTER_SCRIPT;
+      localStorage.setItem(INTRO_DONE_KEY, "true");
+      localStorage.setItem(LAST_DAILY_KEY, String(now));
+    } else if (now - lastDaily > dayMs) {
+      scriptToPlay = DAILY_WELCOME_SCRIPT;
+      localStorage.setItem(LAST_DAILY_KEY, String(now));
+    }
+    if (!scriptToPlay) return;
+
+    const t = setTimeout(() => {
+      initChatPos();
+      setOpen(true);
+      setLiveMode(true);
+      liveModeRef.current = true;
+      const id = `auto-${Date.now()}`;
+      setMessages((prev) => [...prev, { id, sender: "bot", text: scriptToPlay! }]);
+      speakText(scriptToPlay!, id, "hi-IN");
+    }, 1200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
   const triggerPendingGreeting = useCallback(() => {
     if (location.pathname !== "/") return;
     if (sessionStorage.getItem("bharat-mitra-pending-greet") !== "true") return;
