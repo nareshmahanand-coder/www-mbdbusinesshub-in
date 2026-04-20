@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
-import { GraduationCap, Award, RotateCcw, Download, Image as ImageIcon, CheckCircle2, XCircle } from "lucide-react";
+import { GraduationCap, Award, RotateCcw, Download, Image as ImageIcon, CheckCircle2, XCircle, Camera } from "lucide-react";
 import { buildQuizForCategory, type QuizQuestion } from "@/data/categoryQuizzes";
 import {
   downloadCertificate,
@@ -14,6 +14,7 @@ import {
   generateCertificateId,
   type CertificateData,
 } from "@/lib/generateCertificate";
+import { supabase } from "@/integrations/supabase/client";
 
 type Phase = "name" | "quiz" | "result";
 
@@ -27,10 +28,37 @@ interface Props {
 export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) => {
   const [phase, setPhase] = useState<Phase>("name");
   const [name, setName] = useState("");
+  const [duration, setDuration] = useState("3 महीने का कोर्स");
+  const [photoUrl, setPhotoUrl] = useState<string>("");
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [current, setCurrent] = useState(0);
   const [certId, setCertId] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  // Pre-fill from profile when opened
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("display_name, avatar_url")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (prof?.display_name && !name) setName(prof.display_name);
+      if (prof?.avatar_url && !photoUrl) setPhotoUrl(prof.avatar_url);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const handlePhotoFile = (file: File) => {
+    if (file.size > 4 * 1024 * 1024) return;
+    const reader = new FileReader();
+    reader.onload = () => setPhotoUrl(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
   const startExam = () => {
     if (!name.trim() || name.trim().length < 2) return;
@@ -43,6 +71,8 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
   const reset = () => {
     setPhase("name");
     setName("");
+    setPhotoUrl("");
+    setDuration("3 महीने का कोर्स");
     setQuestions([]);
     setAnswers({});
     setCurrent(0);
@@ -76,6 +106,8 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
     scorePercent: percent,
     date: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" }),
     certificateId: certId,
+    courseDuration: duration,
+    userPhotoUrl: photoUrl || undefined,
   };
 
   const answeredCount = Object.keys(answers).length;
