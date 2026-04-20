@@ -218,30 +218,52 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-saffron/10 via-background to-green-india/10">
-      <div className="h-1 w-full bg-gradient-to-r from-saffron via-white to-green-india" />
+    <div
+      className="min-h-screen flex flex-col"
+      style={{
+        background:
+          "linear-gradient(to bottom, #FFE6CC 0%, #FFF4E6 25%, #FFFFFF 50%, #E8F5E9 75%, #C8E6C9 100%)",
+      }}
+    >
+      <div className="h-1.5 w-full bg-gradient-to-r from-[#FF9933] via-white to-[#138808]" />
 
-      <div className="flex flex-1 items-center justify-center px-4 py-8">
-        <Card className="w-full max-w-md border-2 border-saffron/30 shadow-2xl">
-          <CardHeader className="text-center space-y-3 pb-2">
-            <img
-              src={logoCircle}
-              alt="Mera Bharat Dukaan"
-              className="mx-auto h-24 w-24 rounded-full object-cover shadow-lg border-4 border-saffron/40"
-            />
-            <CardTitle className="text-2xl font-bold text-foreground">
-              मेरा भारत दुकान
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Mera Bharat Dukaan — Digital India Marketplace
-            </p>
+      <div className="flex flex-1 items-center justify-center px-4 py-10">
+        <Card className="w-full max-w-md border-0 shadow-2xl bg-white/70 backdrop-blur-md ring-1 ring-white/60">
+          <CardHeader className="text-center space-y-4 pb-2 pt-8">
+            <div className="relative mx-auto w-fit">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#FF9933] via-white to-[#138808] blur-md opacity-70" />
+              <img
+                src={logoCircle}
+                alt="Mera Bharat Dukaan"
+                className="relative mx-auto h-28 w-28 rounded-full object-cover shadow-xl border-4 border-white"
+              />
+            </div>
+            <div className="space-y-1">
+              <CardTitle
+                className="text-3xl font-extrabold tracking-tight text-[#0B1F4B]"
+                style={{ fontFamily: "'Georgia', 'Times New Roman', serif", letterSpacing: "0.5px" }}
+              >
+                मेरा भारत दुकान
+              </CardTitle>
+              <p className="text-sm font-bold text-[#0B1F4B]/80 tracking-wide uppercase">
+                Mera Bharat Dukaan
+              </p>
+              <p className="text-xs text-muted-foreground italic">
+                Digital India Marketplace · डिजिटल भारत
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-1.5 pt-1">
+              <span className="h-1 w-8 rounded-full bg-[#FF9933]" />
+              <span className="h-1 w-8 rounded-full bg-white border border-border" />
+              <span className="h-1 w-8 rounded-full bg-[#138808]" />
+            </div>
           </CardHeader>
 
-          <CardContent className="space-y-5 flex flex-col items-center justify-center min-h-[280px]">
+          <CardContent className="space-y-6 flex flex-col items-center justify-center px-6 pb-8 pt-6">
             <Button
               onClick={handleWhatsAppVerify}
               disabled={loading}
-              className="w-full h-14 bg-[#0B6623] hover:bg-[#094f1b] text-white font-bold text-base gap-2 shadow-lg rounded-lg"
+              className="w-full h-14 bg-[#0B6623] hover:bg-[#094f1b] active:bg-[#073d15] text-white font-extrabold text-base gap-3 shadow-lg shadow-[#0B6623]/30 rounded-xl border-0 tracking-wide"
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageCircle className="h-5 w-5" />}
               WhatsApp से Verify करें
@@ -249,10 +271,10 @@ const LoginPage = () => {
 
             <div className="relative w-full">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
+                <span className="w-full border-t border-foreground/10" />
               </div>
               <div className="relative flex justify-center text-xs">
-                <span className="bg-card px-3 text-muted-foreground">
+                <span className="bg-white/80 px-3 font-semibold text-muted-foreground rounded-full">
                   या / OR
                 </span>
               </div>
@@ -261,7 +283,7 @@ const LoginPage = () => {
             <Button
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full h-14 bg-[#1f1f1f] hover:bg-black text-white font-bold text-base gap-3 shadow-lg rounded-lg border-0"
+              className="w-full h-14 bg-[#FF9933] hover:bg-[#e6852b] active:bg-[#cc7424] text-white font-extrabold text-base gap-3 shadow-lg shadow-[#FF9933]/30 rounded-xl border-0 tracking-wide"
             >
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -280,13 +302,13 @@ const LoginPage = () => {
 
             <p className="text-center text-xs text-muted-foreground pt-2">
               By continuing, you agree to our{" "}
-              <a href="/terms" className="underline hover:text-foreground">
+              <a href="/terms" className="underline hover:text-foreground font-medium">
                 Terms of Service & Privacy Policy
               </a>
             </p>
 
             <div className="text-center">
-              <span className="inline-block rounded-full bg-green-india/10 px-3 py-1 text-[10px] font-semibold text-green-india">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 border border-[#138808]/20 px-3 py-1 text-[10px] font-bold text-[#0B1F4B] shadow-sm">
                 🇮🇳 Digital India Initiative
               </span>
             </div>
