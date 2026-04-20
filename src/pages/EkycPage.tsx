@@ -246,6 +246,19 @@ const EkycPage = () => {
           </div>
           <CardTitle className="text-xl">E-KYC सत्यापन</CardTitle>
           <p className="text-xs text-muted-foreground">सुरक्षित पहचान सत्यापन • Secure Identity Verification</p>
+          {/* Bharat Kavach Tiranga badge */}
+          <div className="mx-auto mt-3 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1 shadow-sm">
+            <span className="flex h-4 w-6 overflow-hidden rounded-sm border border-border">
+              <span className="flex-1 bg-[#FF9933]" />
+              <span className="flex-1 bg-white" />
+              <span className="flex-1 bg-[#138808]" />
+            </span>
+            <ShieldCheck className="h-3.5 w-3.5 text-[#138808]" />
+            <span className="text-[11px] font-bold tracking-wide">
+              <span className="text-muted-foreground">Verified by</span>{" "}
+              <span className="font-hindi text-[hsl(var(--primary))]">भारत कवच</span>
+            </span>
+          </div>
         </CardHeader>
         <CardContent className="space-y-5">
           {status === "rejected" && (
