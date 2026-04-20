@@ -16,6 +16,7 @@ import {
 import SafetyOverlay from "./chatbot/SafetyOverlay";
 import BloodDonorTab from "./chatbot/BloodDonorTab";
 import HealthTab from "./chatbot/HealthTab";
+import { useMembership } from "@/hooks/useMembership";
 
 const DEFAULT_INTRO = "नमस्ते / जय जोहार! 🙏 मैं भारत मित्र हूँ। मैं भारत की सभी भाषाएं — Hindi, English, Chhattisgarhi, Odia, Bengali, Tamil आदि — समझ सकती हूँ और आपकी हर तरह से मदद करने के लिए तैयार हूँ। आप किसी भी भाषा में पूछें, मैं उसी भाषा में जवाब दूँगी।";
 
@@ -55,6 +56,7 @@ interface AiMessage {
 
 const BharatMitraChatbot = () => {
   const { user } = useAuth();
+  const { isActive: isPremium } = useMembership();
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
