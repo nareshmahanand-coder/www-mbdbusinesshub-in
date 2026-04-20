@@ -100,9 +100,17 @@ serve(async (req) => {
     if (!r.ok) {
       const err = await r.text();
       console.error("ElevenLabs TTS error:", r.status, err);
-      return new Response(JSON.stringify({ error: "TTS failed", detail: err }), {
-        status: r.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      let parsed: any = {};
+      try { parsed = JSON.parse(err); } catch {}
+      const isPaymentRequired = r.status === 402 || parsed?.detail?.code === "paid_plan_required";
+      return new Response(
+        JSON.stringify({
+          error: isPaymentRequired ? "PAYMENT_REQUIRED" : "SERVICE_UNAVAILABLE",
+          fallback: true,
+          detail: parsed?.detail ?? err,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const buf = await r.arrayBuffer();
