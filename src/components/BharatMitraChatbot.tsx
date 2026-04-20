@@ -297,6 +297,28 @@ const BharatMitraChatbot = () => {
     setIsListening(true);
   }, [isListening]);
 
+  // Live conversation: continuous listen → auto-send on final result
+  const startLiveListen = useCallback(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    try { recognitionRef.current?.stop(); } catch {}
+    const recog = new SR();
+    recog.lang = "hi-IN";
+    recog.interimResults = false;
+    recog.continuous = false;
+    recog.maxAlternatives = 1;
+    recog.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setIsListening(false);
+      if (transcript && sendVoiceRef.current) sendVoiceRef.current(transcript);
+    };
+    recog.onerror = () => setIsListening(false);
+    recog.onend = () => setIsListening(false);
+    recognitionRef.current = recog;
+    try { recog.start(); setIsListening(true); } catch {}
+  }, []);
+  useEffect(() => { startLiveListenRef.current = startLiveListen; }, [startLiveListen]);
+
   const triggerPendingGreeting = useCallback(() => {
     if (location.pathname !== "/") return;
     if (sessionStorage.getItem("bharat-mitra-pending-greet") !== "true") return;
