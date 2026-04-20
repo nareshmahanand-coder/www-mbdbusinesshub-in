@@ -414,7 +414,16 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
             <Progress value={(qSecs / PER_QUESTION_SECS) * 100} className={`h-1.5 ${qSecs <= 10 ? "[&>div]:bg-red-600" : ""}`} />
 
             <div className="space-y-3 pt-2">
-              <p className="text-sm font-hindi font-semibold leading-relaxed">{q.q}</p>
+              <div className="space-y-1.5">
+                <p className="text-sm font-hindi font-semibold leading-relaxed">{q.q}</p>
+                {q.q_en ? (
+                  <p className="text-xs text-muted-foreground italic leading-relaxed border-l-2 border-accent/40 pl-2">
+                    {q.q_en}
+                  </p>
+                ) : translating ? (
+                  <p className="text-[10px] text-muted-foreground italic">Translating to English…</p>
+                ) : null}
+              </div>
               <RadioGroup
                 value={answers[current]?.toString() ?? ""}
                 onValueChange={(v) => {
@@ -430,7 +439,14 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
                     className="flex items-start gap-2 rounded-md border border-border p-2.5 cursor-pointer hover:bg-muted/50"
                   >
                     <RadioGroupItem value={i.toString()} id={`opt-${current}-${i}`} className="mt-0.5" />
-                    <span className="text-xs font-hindi leading-relaxed">{opt}</span>
+                    <div className="flex-1 space-y-0.5">
+                      <span className="block text-xs font-hindi leading-relaxed">{opt}</span>
+                      {q.options_en?.[i] && (
+                        <span className="block text-[11px] text-muted-foreground italic leading-relaxed">
+                          {q.options_en[i]}
+                        </span>
+                      )}
+                    </div>
                   </label>
                 ))}
               </RadioGroup>
