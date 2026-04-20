@@ -126,19 +126,68 @@ const BharatMitraChatbot = () => {
   const speakText = useCallback((text: string, msgId?: string, langCode?: string) => {
     if (!("speechSynthesis" in window)) return;
     const synth = window.speechSynthesis;
+    // Strip markdown/special characters so TTS reads only the actual words.
+    const cleanForSpeech = (raw: string): string => {
+      let t = raw;
+      // Remove code fences and inline code
+      t = t.replace(/```[\s\S]*?```/g, " ");
+      t = t.replace(/`([^`]*)`/g, "$1");
+      // Images & links → keep label only
+      t = t.replace(/!\[[^\]]*\]\([^)]*\)/g, " ");
+      t = t.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+      // Custom shop tokens like [[SHOP:id:name]] → keep name
+      t = t.replace(/\[\[SHOP:[^:\]]+:([^\]]+)\]\]/gi, "$1");
+      t = t.replace(/\[SHOP[^\]]*\]/gi, " ");
+      t = t.replace(/\[SHOP_ID:[^\]]+\]/gi, " ");
+      // Headings, blockquotes, list bullets at line start
+      t = t.replace(/^\s{0,3}#{1,6}\s+/gm, "");
+      t = t.replace(/^\s{0,3}>\s?/gm, "");
+      t = t.replace(/^\s*[-*+]\s+/gm, "");
+      t = t.replace(/^\s*\d+\.\s+/gm, "");
+      // Bold / italic / strikethrough markers
+      t = t.replace(/\*\*([^*]+)\*\*/g, "$1");
+      t = t.replace(/\*([^*]+)\*/g, "$1");
+      t = t.replace(/__([^_]+)__/g, "$1");
+      t = t.replace(/_([^_]+)_/g, "$1");
+      t = t.replace(/~~([^~]+)~~/g, "$1");
+      // Remaining stray markdown / decorative chars
+      t = t.replace(/[#*_~`>|]+/g, " ");
+      // Horizontal rules and long dashes
+      t = t.replace(/-{2,}/g, " ");
+      // Emojis and pictographs (don't read aloud)
+      t = t.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{2B00}-\u{2BFF}\u{1F000}-\u{1F02F}\u{FE0F}]/gu, " ");
+      // Collapse whitespace and tidy punctuation spacing
+      t = t.replace(/\s+([,.!?;:।])/g, "$1");
+      t = t.replace(/\s{2,}/g, " ").trim();
+      return t;
+    };
+    const cleanText = cleanForSpeech(text);
+    if (!cleanText) return;
     const speak = () => {
-      const utterance = new SpeechSynthesisUtterance(text);
+      const utterance = new SpeechSynthesisUtterance(cleanText);
       const voices = synth.getVoices();
       const target = (langCode ?? "hi-IN").toLowerCase();
       const targetPrefix = target.split("-")[0];
+      // Prefer modern, natural voices (Google Neural / Wavenet / Microsoft Online Natural)
+      const isNatural = (v: SpeechSynthesisVoice) => {
+        const n = v.name.toLowerCase();
+        return n.includes("natural") || n.includes("neural") || n.includes("wavenet") ||
+               n.includes("google") || n.includes("online");
+      };
+      const langMatch = (v: SpeechSynthesisVoice, exact: boolean) =>
+        exact ? v.lang.toLowerCase() === target : v.lang.toLowerCase().startsWith(targetPrefix);
       const preferredVoice =
-        voices.find((v) => v.lang.toLowerCase() === target) ??
-        voices.find((v) => v.lang.toLowerCase().startsWith(targetPrefix)) ??
+        voices.find((v) => langMatch(v, true) && isNatural(v)) ??
+        voices.find((v) => langMatch(v, false) && isNatural(v)) ??
+        voices.find((v) => langMatch(v, true)) ??
+        voices.find((v) => langMatch(v, false)) ??
+        voices.find((v) => v.lang.toLowerCase().startsWith("hi") && isNatural(v)) ??
         voices.find((v) => v.lang.toLowerCase().startsWith("hi")) ??
         voices.find((v) => v.lang.toLowerCase().includes("in")) ?? null;
       if (preferredVoice) { utterance.voice = preferredVoice; utterance.lang = preferredVoice.lang; }
       else { utterance.lang = langCode ?? "hi-IN"; }
-      utterance.rate = 0.92; utterance.pitch = 1.05; utterance.volume = 1;
+      // Smooth, friendly, human-like delivery (Gemini-style)
+      utterance.rate = 0.98; utterance.pitch = 1.0; utterance.volume = 1;
       utterance.onstart = () => { setIsSpeaking(true); if (msgId) setSpeakingMsgId(msgId); };
       utterance.onend = () => { setIsSpeaking(false); setSpeakingMsgId(null); };
       utterance.onerror = () => { setIsSpeaking(false); setSpeakingMsgId(null); };
