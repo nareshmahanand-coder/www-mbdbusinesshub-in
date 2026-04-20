@@ -46,9 +46,10 @@ const modules = [
     to: "/family-safety",
     icon: Shield,
     label: "Family Safety",
-    sublabel: "SOS & परिवार",
-    bg: "bg-[hsl(0,85%,95%)]",
-    iconBg: "bg-[hsl(0,85%,50%)]",
+    sublabel: "[भारत कवच]",
+    bg: "bg-gradient-to-br from-[hsl(28,100%,92%)] via-white to-[hsl(122,55%,88%)]",
+    iconBg: "bg-[#1a237e]",
+    isKavach: true,
   },
 ];
 
