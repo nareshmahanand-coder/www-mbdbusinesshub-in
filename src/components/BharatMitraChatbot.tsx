@@ -772,7 +772,7 @@ const BharatMitraChatbot = () => {
             setOpen(true);
             setLiveMode(true);
             liveModeRef.current = true;
-            const intro = AVATAR_INTRO_SCRIPT;
+            const intro = FIRST_TIME_MASTER_SCRIPT;
             setMessages((prev) => [...prev, { id: `intro-${Date.now()}`, sender: "bot", text: intro }]);
             setTimeout(() => speakText(intro, undefined, "hi-IN"), 200);
           }}
