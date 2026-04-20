@@ -57,6 +57,37 @@ const CategoryLibrary = ({ category, onBack }: { category: BookCategory; onBack:
           {category.descriptionHi}
         </p>
 
+        {/* Certificate Preview */}
+        <div className="mb-3 rounded-xl border-2 border-orange-400 bg-gradient-to-br from-orange-50 via-white to-green-50 dark:from-orange-950/20 dark:via-background dark:to-green-950/20 p-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            {/* Mini certificate mock */}
+            <div className="relative shrink-0 w-[110px] h-[78px] rounded border-2 border-blue-900 bg-white overflow-hidden shadow">
+              <div className="absolute inset-x-0 top-0 h-1.5 bg-orange-500" />
+              <div className="absolute inset-x-0 bottom-0 h-1.5 bg-green-700" />
+              <div className="flex flex-col items-center justify-center h-full text-center px-1">
+                <div className="text-[6px] font-bold text-green-700 leading-tight">लाइव शो फाउंडेशन</div>
+                <div className="text-[5px] text-red-700 font-bold">Reg. 122202059372</div>
+                <div className="w-6 h-6 rounded-full border-[1.5px] border-blue-900 my-0.5 relative">
+                  <div className="absolute inset-1 rounded-full border border-blue-900/50" />
+                </div>
+                <div className="text-[5px] text-blue-900 font-bold">Certificate</div>
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1 mb-0.5">
+                <Award className="h-3.5 w-3.5 text-orange-600" />
+                <p className="text-[11px] font-bold font-hindi text-foreground">सरकारी शैली का प्रमाणपत्र</p>
+              </div>
+              <p className="text-[9px] font-hindi text-muted-foreground leading-snug">
+                परीक्षा पूरा करने के बाद आपको यह सर्टिफिकेट प्रदान किया जाएगा।
+              </p>
+              <p className="text-[8px] font-hindi text-orange-700 dark:text-orange-400 mt-0.5">
+                Issued by: लाइव शो शिक्षा एवं सामाजिक कल्याण समिति
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* परीक्षा केंद्र (Exam Center) */}
         <button
           onClick={() => setExamOpen(true)}
