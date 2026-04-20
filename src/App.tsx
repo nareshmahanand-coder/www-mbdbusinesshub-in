@@ -24,7 +24,10 @@ import MyProfilePage from "./pages/MyProfilePage";
 import ShopProfilePage from "./pages/ShopProfilePage";
 import SkillDevelopmentPage from "./pages/SkillDevelopmentPage";
 import EkycPage from "./pages/EkycPage";
+import FamilySafetyPage from "./pages/FamilySafetyPage";
+import FamilyInvitePage from "./pages/FamilyInvitePage";
 import { useKycStatus } from "@/hooks/useKycStatus";
+import { useLastKnownLocation } from "@/hooks/useLastKnownLocation";
 import { useMembership } from "@/hooks/useMembership";
 import MembershipOverlay from "@/components/MembershipOverlay";
 
@@ -87,6 +90,7 @@ const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
 
 
 const AppShell = () => {
+  useLastKnownLocation();
   return (
     <>
       <Routes>
@@ -107,6 +111,8 @@ const AppShell = () => {
         <Route path="/my-profile" element={<ProtectedRoute><MyProfilePage /></ProtectedRoute>} />
         <Route path="/shop/:id" element={<ProtectedRoute><ShopProfilePage /></ProtectedRoute>} />
         <Route path="/skills" element={<ProtectedRoute><SkillDevelopmentPage /></ProtectedRoute>} />
+        <Route path="/family-safety" element={<ProtectedRoute><FamilySafetyPage /></ProtectedRoute>} />
+        <Route path="/family-invite/:token" element={<FamilyInvitePage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <BharatMitraChatbot />
