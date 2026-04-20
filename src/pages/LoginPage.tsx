@@ -236,60 +236,17 @@ const LoginPage = () => {
             </p>
           </CardHeader>
 
-          <CardContent className="space-y-5">
-            <div className="rounded-xl bg-saffron/10 border border-saffron/20 p-4 text-center">
-              <p className="font-hindi text-sm leading-relaxed text-foreground">
-                अपना मोबाइल नंबर दर्ज करें। अगले चरण में Aadhaar KYC अनिवार्य है।
-              </p>
-            </div>
-
-            <Alert className="border-saffron/40 bg-saffron/5">
-              <Info className="h-4 w-4" />
-              <AlertTitle className="text-sm">अस्थायी लॉगिन / Temporary Login</AlertTitle>
-              <AlertDescription className="text-xs">
-                फ़ोन OTP अभी बंद है। जल्द ही Aadhaar OTP (SurePass) से सत्यापन होगा।
-              </AlertDescription>
-            </Alert>
-
-            <div className="flex items-center gap-2">
-              <span className="rounded-md border border-input bg-muted px-3 py-2 text-sm font-semibold text-muted-foreground">
-                +91
-              </span>
-              <Input
-                type="tel"
-                placeholder="मोबाइल नंबर दर्ज करें"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                className="flex-1 text-lg"
-                maxLength={10}
-                autoFocus
-              />
-            </div>
-
-            <Button
-              onClick={handlePhoneLogin}
-              disabled={phone.length !== 10 || loading}
-              style={{ backgroundColor: "#FF9933" }}
-              className="w-full h-12 text-white hover:opacity-90 hover:!bg-[#FF9933] font-bold text-base gap-2 shadow-lg rounded-lg"
-            >
-              {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <ShieldCheck className="h-5 w-5" />
-              )}
-              आगे बढ़ें / Continue to KYC
-            </Button>
-
+          <CardContent className="space-y-5 flex flex-col items-center justify-center min-h-[280px]">
             <Button
               onClick={handleWhatsAppVerify}
-              disabled={phone.length !== 10 || loading}
-              className="w-full h-12 bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold text-base gap-2 shadow-lg rounded-lg"
+              disabled={loading}
+              className="w-full h-14 bg-[#0B6623] hover:bg-[#094f1b] text-white font-bold text-base gap-2 shadow-lg rounded-lg"
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageCircle className="h-5 w-5" />}
-              WhatsApp से Verify करें (Free)
+              WhatsApp से Verify करें
             </Button>
 
-            <div className="relative">
+            <div className="relative w-full">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-border" />
               </div>
@@ -303,8 +260,7 @@ const LoginPage = () => {
             <Button
               onClick={handleGoogleLogin}
               disabled={loading}
-              style={{ backgroundColor: "#FF9933" }}
-              className="w-full h-12 text-white hover:opacity-90 hover:!bg-[#FF9933] font-bold text-base gap-2 shadow-lg rounded-lg border-0"
+              className="w-full h-14 bg-[#1f1f1f] hover:bg-black text-white font-bold text-base gap-3 shadow-lg rounded-lg border-0"
             >
               {loading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -318,7 +274,7 @@ const LoginPage = () => {
                   </svg>
                 </span>
               )}
-              Login with Google
+              Google Email से लॉगिन करें
             </Button>
 
             <p className="text-center text-xs text-muted-foreground pt-2">
