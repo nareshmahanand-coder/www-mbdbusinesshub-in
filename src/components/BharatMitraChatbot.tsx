@@ -777,7 +777,8 @@ const BharatMitraChatbot = () => {
       >
         <div className="relative pointer-events-none">
           <img src={assistantAvatar} alt="भारत मित्र"
-            className={`h-10 w-10 rounded-full border-2 border-primary-foreground/30 object-cover ${isSpeaking ? "bharat-mitra-speaking" : ""}`}
+            className={`h-10 w-10 rounded-full border-2 object-cover ${isSpeaking ? "bharat-mitra-speaking border-primary-foreground/30" : isListening ? "border-transparent ring-2 ring-offset-2 ring-offset-primary animate-pulse" : "border-primary-foreground/30"}`}
+            style={isListening ? { boxShadow: "0 0 0 2px #FF9933, 0 0 0 4px #ffffff, 0 0 0 6px #138808, 0 0 14px 4px rgba(255,153,51,0.6)" } : undefined}
           />
           {isSpeaking && (
             <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-accent">
