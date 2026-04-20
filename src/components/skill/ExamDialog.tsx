@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Badge } from "@/components/ui/badge";
-import { GraduationCap, Award, RotateCcw, Download, Image as ImageIcon, CheckCircle2, XCircle, Camera } from "lucide-react";
+import { GraduationCap, RotateCcw, Download, Image as ImageIcon, CheckCircle2, XCircle, Camera, Timer, ShieldAlert, Lock } from "lucide-react";
 import { buildQuizForCategory, type QuizQuestion } from "@/data/categoryQuizzes";
 import {
   downloadCertificate,
@@ -16,7 +16,12 @@ import {
 } from "@/lib/generateCertificate";
 import { supabase } from "@/integrations/supabase/client";
 
-type Phase = "name" | "quiz" | "result";
+type Phase = "name" | "quiz" | "result" | "locked" | "terminated";
+
+const PER_QUESTION_SECS = 30;
+const TOTAL_EXAM_SECS = 30 * 60; // 30 minutes
+const COOLDOWN_HOURS = 24;
+const lockKey = (catId: string) => `examLock:${catId}`;
 
 interface Props {
   open: boolean;
@@ -34,11 +39,28 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [current, setCurrent] = useState(0);
   const [certId, setCertId] = useState("");
+  const [qSecs, setQSecs] = useState(PER_QUESTION_SECS);
+  const [totalSecs, setTotalSecs] = useState(TOTAL_EXAM_SECS);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  const [terminationReason, setTerminationReason] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const phaseRef = useRef<Phase>("name");
+  useEffect(() => { phaseRef.current = phase; }, [phase]);
 
-  // Pre-fill from profile when opened
+  // Pre-fill from profile + check 24h lockout when opened
   useEffect(() => {
     if (!open) return;
+    const raw = localStorage.getItem(lockKey(categoryId));
+    if (raw) {
+      const until = parseInt(raw, 10);
+      if (until > Date.now()) {
+        setLockedUntil(until);
+        setPhase("locked");
+        return;
+      } else {
+        localStorage.removeItem(lockKey(categoryId));
+      }
+    }
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -53,6 +75,118 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  // Apply 24h lockout & terminate
+  const applyLockout = (reason: string) => {
+    const until = Date.now() + COOLDOWN_HOURS * 60 * 60 * 1000;
+    localStorage.setItem(lockKey(categoryId), String(until));
+    setLockedUntil(until);
+    setTerminationReason(reason);
+    setPhase("terminated");
+  };
+
+  // Auto-advance: skipped questions are locked (cannot revisit)
+  const advanceQuestion = () => {
+    setCurrent((c) => {
+      if (c >= questions.length - 1) {
+        // last question — auto submit
+        setCertId(generateCertificateId());
+        setPhase("result");
+        return c;
+      }
+      setQSecs(PER_QUESTION_SECS);
+      return c + 1;
+    });
+  };
+
+  // Per-question 30s timer
+  useEffect(() => {
+    if (phase !== "quiz") return;
+    setQSecs(PER_QUESTION_SECS);
+    const id = setInterval(() => {
+      setQSecs((s) => {
+        if (s <= 1) {
+          clearInterval(id);
+          // time up — skip & lock this question
+          setTimeout(advanceQuestion, 0);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, current]);
+
+  // Global 30-min timer
+  useEffect(() => {
+    if (phase !== "quiz") return;
+    const id = setInterval(() => {
+      setTotalSecs((s) => {
+        if (s <= 1) {
+          clearInterval(id);
+          setCertId(generateCertificateId());
+          setPhase("result");
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [phase]);
+
+  // Anti-cheat: tab/app switch, blur, screenshot blocking
+  useEffect(() => {
+    if (phase !== "quiz") return;
+
+    const onVis = () => {
+      if (document.hidden && phaseRef.current === "quiz") {
+        applyLockout("आपने ऐप छोड़ दिया / दूसरी विंडो पर गए");
+      }
+    };
+    const onBlur = () => {
+      if (phaseRef.current === "quiz") {
+        applyLockout("परीक्षा विंडो से फोकस हटाया गया");
+      }
+    };
+    const blockKey = (e: KeyboardEvent) => {
+      // Block PrintScreen, Ctrl/Cmd+P, Ctrl+Shift+S, Win+Shift+S, F12, etc.
+      const k = e.key;
+      if (
+        k === "PrintScreen" ||
+        ((e.ctrlKey || e.metaKey) && (k === "p" || k === "P" || k === "s" || k === "S")) ||
+        ((e.ctrlKey || e.metaKey) && e.shiftKey && (k === "s" || k === "S" || k === "i" || k === "I")) ||
+        k === "F12"
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        navigator.clipboard?.writeText("").catch(() => {});
+      }
+    };
+    const onContext = (e: MouseEvent) => e.preventDefault();
+    const onCopy = (e: ClipboardEvent) => e.preventDefault();
+
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("blur", onBlur);
+    window.addEventListener("keydown", blockKey, true);
+    window.addEventListener("keyup", (e) => { if (e.key === "PrintScreen") navigator.clipboard?.writeText("").catch(() => {}); }, true);
+    document.addEventListener("contextmenu", onContext);
+    document.addEventListener("copy", onCopy);
+
+    // Disable text selection during exam
+    const prevUserSelect = document.body.style.userSelect;
+    document.body.style.userSelect = "none";
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("keydown", blockKey, true);
+      document.removeEventListener("contextmenu", onContext);
+      document.removeEventListener("copy", onCopy);
+      document.body.style.userSelect = prevUserSelect;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase]);
+
   const handlePhotoFile = (file: File) => {
     if (file.size > 4 * 1024 * 1024) return;
     const reader = new FileReader();
@@ -65,6 +199,8 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
     setQuestions(buildQuizForCategory(categoryId));
     setAnswers({});
     setCurrent(0);
+    setQSecs(PER_QUESTION_SECS);
+    setTotalSecs(TOTAL_EXAM_SECS);
     setPhase("quiz");
   };
 
@@ -77,9 +213,17 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
     setAnswers({});
     setCurrent(0);
     setCertId("");
+    setQSecs(PER_QUESTION_SECS);
+    setTotalSecs(TOTAL_EXAM_SECS);
+    setTerminationReason("");
   };
 
   const handleClose = () => {
+    if (phaseRef.current === "quiz") {
+      // Closing during exam = cheating attempt
+      applyLockout("परीक्षा बीच में बंद की गई");
+      return;
+    }
     onClose();
     setTimeout(reset, 300);
   };
@@ -95,11 +239,6 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
   const percent = questions.length ? Math.round((score / questions.length) * 100) : 0;
   const passed = percent >= 60;
 
-  const submit = () => {
-    setCertId(generateCertificateId());
-    setPhase("result");
-  };
-
   const certData: CertificateData = {
     userName: name.trim(),
     courseName: categoryTitle,
@@ -110,12 +249,19 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
     userPhotoUrl: photoUrl || undefined,
   };
 
-  const answeredCount = Object.keys(answers).length;
   const q = questions[current];
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  const lockRemaining = lockedUntil ? Math.max(0, lockedUntil - Date.now()) : 0;
+  const lockHrs = Math.floor(lockRemaining / 3600000);
+  const lockMins = Math.floor((lockRemaining % 3600000) / 60000);
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent
+        className="max-w-lg max-h-[90vh] overflow-y-auto select-none"
+        onContextMenu={(e) => e.preventDefault()}
+        style={phase === "quiz" ? { WebkitUserSelect: "none", userSelect: "none" } as React.CSSProperties : undefined}
+      >
         {/* ───────── PHASE 1: NAME ───────── */}
         {phase === "name" && (
           <>
@@ -128,7 +274,10 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
             <div className="space-y-4 pt-2">
               <div className="rounded-lg bg-muted/50 border border-border p-3 space-y-1.5">
                 <p className="text-xs font-hindi flex items-center gap-1.5"><Badge className="text-[9px]">50</Badge> बहुविकल्पीय प्रश्न</p>
+                <p className="text-xs font-hindi flex items-center gap-1.5"><Badge className="text-[9px] bg-blue-700">30 sec</Badge> प्रति प्रश्न (छूटा तो वापस नहीं मिलेगा)</p>
+                <p className="text-xs font-hindi flex items-center gap-1.5"><Badge className="text-[9px] bg-purple-700">30 min</Badge> कुल समय</p>
                 <p className="text-xs font-hindi flex items-center gap-1.5"><Badge className="text-[9px] bg-green-700">60%</Badge> उत्तीर्ण अंक अनिवार्य</p>
+                <p className="text-xs font-hindi flex items-center gap-1.5"><Badge className="text-[9px] bg-red-600">⚠️</Badge> ऐप बदलने पर 24 घंटे लॉक</p>
                 <p className="text-xs font-hindi flex items-center gap-1.5"><Badge className="text-[9px] bg-orange-600">🏆</Badge> सफलता पर डिजिटल प्रमाणपत्र</p>
               </div>
               <div className="space-y-2">
@@ -185,13 +334,25 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
                 </select>
               </div>
 
+              <div className="rounded-md border border-red-400 bg-red-50 dark:bg-red-950/30 p-2.5 space-y-1">
+                <p className="text-[10px] font-hindi text-red-900 dark:text-red-200 font-bold flex items-center gap-1">
+                  <ShieldAlert className="h-3 w-3" /> सख्त नियम (Anti-Cheat):
+                </p>
+                <ul className="text-[10px] font-hindi text-red-800 dark:text-red-300 list-disc pl-4 space-y-0.5">
+                  <li>ऐप मिनिमाइज़ / दूसरी विंडो पर जाने पर परीक्षा रद्द</li>
+                  <li>स्क्रीनशॉट / स्क्रीन रिकॉर्डिंग ब्लॉक</li>
+                  <li>एक बार छूटा प्रश्न दोबारा नहीं मिलेगा</li>
+                  <li>नियम तोड़ने पर 24 घंटे का लॉक</li>
+                </ul>
+              </div>
+
               <div className="rounded-md border border-orange-300 bg-orange-50 dark:bg-orange-950/30 p-2.5">
                 <p className="text-[10px] font-hindi text-orange-900 dark:text-orange-200 leading-relaxed">
                   <strong>जारीकर्ता:</strong> लाइव शो शिक्षा एवं सामाजिक कल्याण समिति (Reg. No. 122202059372)
                 </p>
               </div>
 
-              <Button onClick={startExam} disabled={name.trim().length < 2} className="w-full">
+              <Button onClick={startExam} disabled={name.trim().length < 2 || !photoUrl} className="w-full">
                 <GraduationCap className="h-4 w-4 mr-1" /> परीक्षा शुरू करें
               </Button>
             </div>
@@ -202,18 +363,27 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
         {phase === "quiz" && q && (
           <>
             <DialogHeader>
-              <DialogTitle className="flex items-center justify-between text-sm">
-                <span className="font-hindi">प्रश्न {current + 1} / {questions.length}</span>
-                <Badge variant="secondary" className="text-[10px]">उत्तर: {answeredCount}/50</Badge>
+              <DialogTitle className="flex items-center justify-between text-sm gap-2">
+                <span className="font-hindi">प्रश्न {current + 1}/{questions.length}</span>
+                <div className="flex items-center gap-1.5">
+                  <Badge className={`text-[10px] ${qSecs <= 10 ? "bg-red-600 animate-pulse" : "bg-blue-700"}`}>
+                    <Timer className="h-2.5 w-2.5 mr-0.5" /> {qSecs}s
+                  </Badge>
+                  <Badge variant="secondary" className="text-[10px]">कुल {fmt(totalSecs)}</Badge>
+                </div>
               </DialogTitle>
             </DialogHeader>
-            <Progress value={((current + 1) / questions.length) * 100} className="h-1.5" />
+            <Progress value={(qSecs / PER_QUESTION_SECS) * 100} className={`h-1.5 ${qSecs <= 10 ? "[&>div]:bg-red-600" : ""}`} />
 
             <div className="space-y-3 pt-2">
               <p className="text-sm font-hindi font-semibold leading-relaxed">{q.q}</p>
               <RadioGroup
                 value={answers[current]?.toString() ?? ""}
-                onValueChange={(v) => setAnswers((a) => ({ ...a, [current]: parseInt(v) }))}
+                onValueChange={(v) => {
+                  setAnswers((a) => ({ ...a, [current]: parseInt(v) }));
+                  // auto-advance ~400ms after selecting (so user sees their pick)
+                  setTimeout(() => advanceQuestion(), 400);
+                }}
               >
                 {q.options.map((opt, i) => (
                   <label
@@ -228,23 +398,60 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
               </RadioGroup>
             </div>
 
-            <div className="flex gap-2 pt-3">
-              <Button variant="outline" size="sm" disabled={current === 0} onClick={() => setCurrent((c) => c - 1)} className="flex-1">
-                ← पिछला
+            <div className="pt-2">
+              <Button size="sm" variant="outline" onClick={advanceQuestion} className="w-full">
+                छोड़ें / Skip →
               </Button>
-              {current < questions.length - 1 ? (
-                <Button size="sm" onClick={() => setCurrent((c) => c + 1)} className="flex-1">
-                  अगला →
-                </Button>
-              ) : (
-                <Button size="sm" onClick={submit} disabled={answeredCount < questions.length} className="flex-1 bg-green-700 hover:bg-green-800">
-                  परीक्षा पूरी करें
-                </Button>
-              )}
+              <p className="text-[10px] text-red-600 font-hindi text-center mt-1.5">
+                ⚠️ छूटा प्रश्न दोबारा नहीं मिलेगा। ऐप मत बदलें वरना परीक्षा रद्द हो जाएगी।
+              </p>
             </div>
-            {answeredCount < questions.length && current === questions.length - 1 && (
-              <p className="text-[10px] text-orange-600 font-hindi text-center">सभी 50 प्रश्नों के उत्तर देना अनिवार्य है</p>
-            )}
+          </>
+        )}
+
+        {/* ───────── PHASE: TERMINATED (cheating) ───────── */}
+        {phase === "terminated" && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-center font-hindi text-base text-red-600 flex items-center justify-center gap-2">
+                <ShieldAlert className="h-5 w-5" /> परीक्षा रद्द
+              </DialogTitle>
+            </DialogHeader>
+            <div className="text-center py-4 space-y-3">
+              <XCircle className="h-16 w-16 text-red-600 mx-auto" />
+              <div className="rounded-lg border border-red-500 bg-red-50 dark:bg-red-950/30 p-3 space-y-1.5">
+                <p className="font-hindi font-bold text-red-800 dark:text-red-300 text-sm">नियम का उल्लंघन</p>
+                <p className="text-[11px] text-red-700 dark:text-red-400 font-hindi">{terminationReason}</p>
+                <p className="text-[11px] text-red-700 dark:text-red-400 font-hindi font-bold mt-2">
+                  आप अगले 24 घंटे तक परीक्षा नहीं दे सकते।
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => { onClose(); setTimeout(reset, 300); }}>
+                बंद करें
+              </Button>
+            </div>
+          </>
+        )}
+
+        {/* ───────── PHASE: LOCKED (24h cooldown) ───────── */}
+        {phase === "locked" && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-center font-hindi text-base flex items-center justify-center gap-2">
+                <Lock className="h-5 w-5 text-orange-600" /> परीक्षा लॉक
+              </DialogTitle>
+            </DialogHeader>
+            <div className="text-center py-4 space-y-3">
+              <Lock className="h-16 w-16 text-orange-600 mx-auto" />
+              <div className="rounded-lg border border-orange-500 bg-orange-50 dark:bg-orange-950/30 p-3">
+                <p className="font-hindi font-bold text-orange-900 dark:text-orange-200 text-sm">
+                  कृपया {lockHrs} घंटे {lockMins} मिनट बाद पुनः प्रयास करें
+                </p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => { onClose(); setTimeout(reset, 300); }}>
+                बंद करें
+              </Button>
+            </div>
           </>
         )}
 
@@ -270,9 +477,12 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
                   <p className="text-[11px] text-green-700 dark:text-green-400 font-hindi">आपने सफलतापूर्वक परीक्षा उत्तीर्ण की है। अपना प्रमाणपत्र डाउनलोड करें।</p>
                 </div>
               ) : (
-                <div className="rounded-lg border border-orange-500 bg-orange-50 dark:bg-orange-950/30 p-3">
+                <div className="rounded-lg border border-orange-500 bg-orange-50 dark:bg-orange-950/30 p-3 space-y-1">
                   <p className="text-[12px] text-orange-800 dark:text-orange-300 font-hindi font-semibold">
-                    फिर से प्रयास करें! सफलता के लिए 60% अंक अनिवार्य हैं।
+                    Please Try Again — कृपया पुनः प्रयास करें
+                  </p>
+                  <p className="text-[10px] text-orange-700 dark:text-orange-400 font-hindi">
+                    सफलता के लिए 60% अंक अनिवार्य। परीक्षा 24 घंटे के लिए लॉक।
                   </p>
                 </div>
               )}
@@ -289,8 +499,21 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
                 </div>
               )}
 
-              <Button variant="outline" size="sm" onClick={reset} className="mt-2">
-                <RotateCcw className="h-3.5 w-3.5 mr-1" /> {passed ? "नई परीक्षा" : "फिर से प्रयास करें"}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!passed) {
+                    // Lock for 24h on fail
+                    const until = Date.now() + COOLDOWN_HOURS * 60 * 60 * 1000;
+                    localStorage.setItem(lockKey(categoryId), String(until));
+                  }
+                  onClose();
+                  setTimeout(reset, 300);
+                }}
+                className="mt-2"
+              >
+                <RotateCcw className="h-3.5 w-3.5 mr-1" /> बंद करें
               </Button>
             </div>
           </>
