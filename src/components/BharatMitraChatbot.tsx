@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
-import { X, Send, HelpCircle, AlertTriangle, ShoppingBag, Heart, Shield, Volume2, Droplets, Megaphone, PhoneCall, Mic, MicOff } from "lucide-react";
+import { X, Send, HelpCircle, AlertTriangle, ShoppingBag, Heart, Shield, Volume2, Droplets, Megaphone, PhoneCall, Mic, MicOff, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,6 +52,7 @@ const BharatMitraChatbot = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [safeWalkActive, setSafeWalkActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   // Chat window draggable state
   const [chatPos, setChatPos] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
@@ -470,22 +471,32 @@ const BharatMitraChatbot = () => {
 
   return (
     <div
-      className="fixed z-50 flex flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl animate-scale-in"
-      style={{
-        left: chatPos.x,
-        top: chatPos.y,
-        width: chatW,
-        height: chatH,
-        touchAction: "none",
-        transition: draggingChat ? "none" : "box-shadow 0.3s ease",
-      }}
+      className={`fixed z-50 flex flex-col overflow-hidden border border-border bg-background shadow-2xl animate-scale-in ${
+        isMaximized
+          ? "inset-2 sm:inset-4 md:inset-8 rounded-2xl mx-auto my-auto max-w-5xl max-h-[95vh]"
+          : "rounded-2xl"
+      }`}
+      style={
+        isMaximized
+          ? { touchAction: "auto", transition: "all 0.25s ease" }
+          : {
+              left: chatPos.x,
+              top: chatPos.y,
+              width: chatW,
+              height: chatH,
+              touchAction: "none",
+              transition: draggingChat ? "none" : "all 0.25s ease",
+            }
+      }
     >
       {/* Draggable Header */}
       <div
-        className="flex items-center gap-3 bg-primary px-4 py-3 cursor-grab active:cursor-grabbing select-none"
-        onPointerDown={handleChatPointerDown}
-        onPointerMove={handleChatPointerMove}
-        onPointerUp={handleChatPointerUp}
+        className={`flex items-center gap-3 bg-primary px-4 py-3 select-none ${
+          isMaximized ? "" : "cursor-grab active:cursor-grabbing"
+        }`}
+        onPointerDown={isMaximized ? undefined : handleChatPointerDown}
+        onPointerMove={isMaximized ? undefined : handleChatPointerMove}
+        onPointerUp={isMaximized ? undefined : handleChatPointerUp}
       >
         <div className="relative pointer-events-none">
           <img src={assistantAvatar} alt="भारत मित्र"
@@ -500,7 +511,7 @@ const BharatMitraChatbot = () => {
         <div className="flex-1 pointer-events-none">
           <h4 className="text-sm font-bold text-primary-foreground">🇮🇳 भारत मित्र AI</h4>
           <p className="text-[10px] text-primary-foreground/60">
-            {isAiLoading ? "सोच रही हूँ..." : safeWalkActive ? "🛡️ Safe Walk Active" : isSpeaking ? "बोल रही हूँ..." : "खींचकर कहीं भी ले जाएं ↕️"}
+            {isAiLoading ? "सोच रही हूँ..." : safeWalkActive ? "🛡️ Safe Walk Active" : isSpeaking ? "बोल रही हूँ..." : isMaximized ? "फुल स्क्रीन मोड" : "खींचकर कहीं भी ले जाएं ↕️"}
           </p>
         </div>
         <div className="flex items-center gap-1" style={{ pointerEvents: "auto" }}>
@@ -512,6 +523,13 @@ const BharatMitraChatbot = () => {
           <button onClick={() => addBotMessage(getLocalDeal())}
             className="rounded-full p-1.5 text-primary-foreground/50 hover:text-primary-foreground transition-colors" title="आज के डील्स">
             <Megaphone className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setIsMaximized((v) => !v)}
+            className="rounded-full p-1.5 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-colors"
+            title={isMaximized ? "छोटा करें" : "बड़ा करें"}
+          >
+            {isMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </button>
           <button onClick={() => { setOpen(false); setActiveTab(null); window.speechSynthesis?.cancel(); setIsListening(false); recognitionRef.current?.stop(); }} className="text-primary-foreground/70 hover:text-primary-foreground">
             <X className="h-5 w-5" />
@@ -527,20 +545,32 @@ const BharatMitraChatbot = () => {
       )}
 
       {/* Tab Buttons */}
-      <div className="flex border-b border-border overflow-x-auto">
+      <div className={`border-b border-border ${
+        isMaximized
+          ? "grid grid-cols-3 sm:grid-cols-6 gap-1 p-2 bg-muted/30"
+          : "flex overflow-x-auto"
+      }`}>
         {tabs.map((tab) => (
           <button key={tab.id}
             onClick={() => {
               if (tab.id === "safety") { activateSafetyMode(); return; }
               setActiveTab(activeTab === tab.id ? null : tab.id);
             }}
-            className={`flex flex-1 items-center justify-center gap-0.5 py-2 text-[9px] font-medium transition-colors ${
-              tab.id === "safety" ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
-              : tab.id === "blood" ? activeTab === tab.id ? "border-b-2 border-destructive bg-destructive/5 text-destructive" : "text-destructive/60 hover:text-destructive"
-              : activeTab === tab.id ? "border-b-2 border-accent bg-accent/5 text-accent" : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={
+              isMaximized
+                ? `flex flex-col items-center justify-center gap-1 rounded-lg py-3 text-xs font-semibold transition-all hover:scale-[1.03] ${
+                    tab.id === "safety" ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
+                    : tab.id === "blood" ? activeTab === tab.id ? "bg-destructive/15 text-destructive ring-2 ring-destructive" : "bg-card text-destructive/70 hover:bg-destructive/5 border border-border"
+                    : activeTab === tab.id ? "bg-accent/15 text-accent ring-2 ring-accent" : "bg-card text-foreground hover:bg-muted border border-border"
+                  }`
+                : `flex flex-1 items-center justify-center gap-0.5 py-2 text-[9px] font-medium transition-colors ${
+                    tab.id === "safety" ? "bg-destructive/10 text-destructive hover:bg-destructive/20"
+                    : tab.id === "blood" ? activeTab === tab.id ? "border-b-2 border-destructive bg-destructive/5 text-destructive" : "text-destructive/60 hover:text-destructive"
+                    : activeTab === tab.id ? "border-b-2 border-accent bg-accent/5 text-accent" : "text-muted-foreground hover:text-foreground"
+                  }`
+            }
           >
-            <tab.icon className="h-3 w-3" />
+            <tab.icon className={isMaximized ? "h-5 w-5" : "h-3 w-3"} />
             {tab.label}
           </button>
         ))}
