@@ -77,6 +77,9 @@ const BharatMitraChatbot = () => {
   const [isListening, setIsListening] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [wakeListening, setWakeListening] = useState(false);
+  const [liveMode, setLiveMode] = useState(false);
+  const liveModeRef = useRef(false);
+  useEffect(() => { liveModeRef.current = liveMode; }, [liveMode]);
 
   // Chat window draggable state
   const [chatPos, setChatPos] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
