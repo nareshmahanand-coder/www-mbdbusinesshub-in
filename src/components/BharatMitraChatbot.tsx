@@ -291,7 +291,7 @@ const BharatMitraChatbot = () => {
   };
 
   // On open: detect state, prepend a regional greeting message + speak it
-  const playRegionalGreeting = useCallback(async () => {
+  const playRegionalGreeting = async () => {
     // Default audio first (so users hear something instantly)
     speakText(WELCOME_AUDIO_TEXT, undefined, "hi-IN");
 
@@ -311,8 +311,7 @@ const BharatMitraChatbot = () => {
       ];
     });
     setTimeout(() => speakText(greet.text, "regional-welcome", greet.lang), 1200);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userLocation, speakText]);
+  };
 
   const activateSafetyMode = async () => {
     setSafetyActivated(true);
