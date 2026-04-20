@@ -191,8 +191,14 @@ const BharatMitraChatbot = () => {
             if (error || !data?.audioContent) throw error ?? new Error("no audio");
             const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
             elevenAudioRef.current = audio;
-            audio.onended = () => { setIsSpeaking(false); setSpeakingMsgId(null); elevenAudioRef.current = null; };
-            audio.onerror = () => { setIsSpeaking(false); setSpeakingMsgId(null); elevenAudioRef.current = null; };
+            audio.onended = () => {
+              setIsSpeaking(false); setSpeakingMsgId(null); elevenAudioRef.current = null;
+              if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
+            };
+            audio.onerror = () => {
+              setIsSpeaking(false); setSpeakingMsgId(null); elevenAudioRef.current = null;
+              if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
+            };
             audio.play().catch(() => { setIsSpeaking(false); setSpeakingMsgId(null); });
           })
           .catch((e) => {
@@ -233,8 +239,14 @@ const BharatMitraChatbot = () => {
       // Smooth, friendly, human-like delivery (Gemini-style)
       utterance.rate = 0.98; utterance.pitch = 1.0; utterance.volume = 1;
       utterance.onstart = () => { setIsSpeaking(true); if (msgId) setSpeakingMsgId(msgId); };
-      utterance.onend = () => { setIsSpeaking(false); setSpeakingMsgId(null); };
-      utterance.onerror = () => { setIsSpeaking(false); setSpeakingMsgId(null); };
+      utterance.onend = () => {
+        setIsSpeaking(false); setSpeakingMsgId(null);
+        if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
+      };
+      utterance.onerror = () => {
+        setIsSpeaking(false); setSpeakingMsgId(null);
+        if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
+      };
       synth.cancel(); synth.speak(utterance);
     };
     const speakBrowser = speak;
