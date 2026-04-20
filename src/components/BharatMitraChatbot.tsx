@@ -122,18 +122,22 @@ const BharatMitraChatbot = () => {
 
   useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
 
-  // TTS — speak a specific message
-  const speakText = useCallback((text: string, msgId?: string) => {
+  // TTS — speak a specific message in a given language
+  const speakText = useCallback((text: string, msgId?: string, langCode?: string) => {
     if (!("speechSynthesis" in window)) return;
     const synth = window.speechSynthesis;
     const speak = () => {
       const utterance = new SpeechSynthesisUtterance(text);
       const voices = synth.getVoices();
+      const target = (langCode ?? "hi-IN").toLowerCase();
+      const targetPrefix = target.split("-")[0];
       const preferredVoice =
-        voices.find((voice) => voice.lang.toLowerCase().startsWith("hi")) ??
-        voices.find((voice) => voice.lang.toLowerCase().includes("in")) ?? null;
+        voices.find((v) => v.lang.toLowerCase() === target) ??
+        voices.find((v) => v.lang.toLowerCase().startsWith(targetPrefix)) ??
+        voices.find((v) => v.lang.toLowerCase().startsWith("hi")) ??
+        voices.find((v) => v.lang.toLowerCase().includes("in")) ?? null;
       if (preferredVoice) { utterance.voice = preferredVoice; utterance.lang = preferredVoice.lang; }
-      else { utterance.lang = "hi-IN"; }
+      else { utterance.lang = langCode ?? "hi-IN"; }
       utterance.rate = 0.92; utterance.pitch = 1.05; utterance.volume = 1;
       utterance.onstart = () => { setIsSpeaking(true); if (msgId) setSpeakingMsgId(msgId); };
       utterance.onend = () => { setIsSpeaking(false); setSpeakingMsgId(null); };
@@ -269,6 +273,46 @@ const BharatMitraChatbot = () => {
         () => resolve(null)
       );
     });
+
+  // Reverse-geocode → Indian state name (uses free Nominatim, no API key)
+  const detectUserState = async (lat: number, lng: number): Promise<string | null> => {
+    try {
+      const resp = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=en`,
+        { headers: { "Accept": "application/json" } }
+      );
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      const state = data?.address?.state ?? null;
+      return state;
+    } catch {
+      return null;
+    }
+  };
+
+  // On open: detect state, prepend a regional greeting message + speak it
+  const playRegionalGreeting = useCallback(async () => {
+    // Default audio first (so users hear something instantly)
+    speakText(WELCOME_AUDIO_TEXT, undefined, "hi-IN");
+
+    const loc = userLocation ?? (await getUserLocation());
+    if (!loc) return;
+    const state = await detectUserState(loc.lat, loc.lng);
+    if (!state) return;
+    setUserState(state);
+    const greet = REGION_GREETINGS[state] ?? DEFAULT_GREETING;
+    setMessages((prev) => {
+      // Replace the welcome message with the regional one (only once)
+      if (prev.some((m) => m.id === "regional-welcome")) return prev;
+      return [
+        { id: "regional-welcome", sender: "bot", text: greet.text },
+        ...prev.filter((m) => m.id !== "welcome"),
+        { id: "intro-multilang", sender: "bot", text: DEFAULT_INTRO },
+      ];
+    });
+    setTimeout(() => speakText(greet.text, "regional-welcome", greet.lang), 1200);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userLocation, speakText]);
 
   const activateSafetyMode = async () => {
     setSafetyActivated(true);
