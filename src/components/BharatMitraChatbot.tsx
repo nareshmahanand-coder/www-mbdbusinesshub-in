@@ -255,6 +255,66 @@ const BharatMitraChatbot = () => {
     }, 700);
   }, [location.pathname, speakText]);
 
+  // ===== Wake-word listener (Premium only): "भारत मित्र" / "bharat mitra" =====
+  // Uses free browser SpeechRecognition — no extra API key, no ElevenLabs.
+  useEffect(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR || !isPremium || open) {
+      // Stop any running wake recognizer
+      wakeShouldRunRef.current = false;
+      try { wakeRecogRef.current?.stop(); } catch {}
+      setWakeListening(false);
+      return;
+    }
+
+    const recog = new SR();
+    recog.lang = "hi-IN";
+    recog.continuous = true;
+    recog.interimResults = true;
+    recog.maxAlternatives = 1;
+
+    const WAKE_PATTERNS = [
+      /भारत\s*मित्र/i,
+      /bharat\s*mitra/i,
+      /bharath\s*mitra/i,
+    ];
+
+    recog.onresult = (event: any) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript: string = event.results[i][0].transcript || "";
+        if (WAKE_PATTERNS.some((p) => p.test(transcript))) {
+          // Stop wake loop, open chat, greet
+          wakeShouldRunRef.current = false;
+          try { recog.stop(); } catch {}
+          setWakeListening(false);
+          initChatPos();
+          setOpen(true);
+          const greet = "जी बॉस, मैं सुन रही हूँ। बताइए क्या सेवा करूँ?";
+          setMessages((prev) => [...prev, { id: `wake-${Date.now()}`, sender: "bot", text: greet }]);
+          speakText(greet, undefined, "hi-IN");
+          return;
+        }
+      }
+    };
+    recog.onerror = () => { /* ignore — restart in onend */ };
+    recog.onend = () => {
+      setWakeListening(false);
+      if (wakeShouldRunRef.current) {
+        try { recog.start(); setWakeListening(true); } catch {}
+      }
+    };
+
+    wakeRecogRef.current = recog;
+    wakeShouldRunRef.current = true;
+    try { recog.start(); setWakeListening(true); } catch {}
+
+    return () => {
+      wakeShouldRunRef.current = false;
+      try { recog.stop(); } catch {}
+      setWakeListening(false);
+    };
+  }, [isPremium, open, initChatPos, speakText]);
+
   useEffect(() => {
     triggerPendingGreeting();
     return () => { if (greetingTimeoutRef.current) clearTimeout(greetingTimeoutRef.current); };
