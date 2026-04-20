@@ -186,7 +186,7 @@ const BharatMitraChatbot = () => {
         setIsSpeaking(true);
         if (msgId) setSpeakingMsgId(msgId);
         supabase.functions
-          .invoke("elevenlabs-tts", { body: { text: cleanText, voice: "matilda" } })
+          .invoke("elevenlabs-tts", { body: { text: cleanText, voice: "aria" } })
           .then(({ data, error }) => {
             if (error || !data?.audioContent) throw error ?? new Error("no audio");
             const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
