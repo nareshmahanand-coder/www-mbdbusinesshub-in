@@ -46,9 +46,10 @@ const modules = [
     to: "/family-safety",
     icon: Shield,
     label: "Family Safety",
-    sublabel: "SOS & परिवार",
-    bg: "bg-[hsl(0,85%,95%)]",
-    iconBg: "bg-[hsl(0,85%,50%)]",
+    sublabel: "[भारत कवच]",
+    bg: "bg-gradient-to-br from-[hsl(28,100%,92%)] via-white to-[hsl(122,55%,88%)]",
+    iconBg: "bg-[#1a237e]",
+    isKavach: true,
   },
 ];
 
@@ -67,7 +68,14 @@ const SuperAppNav = () => {
                 <m.icon className="h-4.5 w-4.5 text-white" />
               </div>
               <div className="text-left">
-                <p className="font-hindi text-sm font-bold leading-tight text-foreground">{m.label}</p>
+                {(m as any).isKavach ? (
+                  <p className="leading-tight">
+                    <span className="text-[11px] font-medium text-foreground/80">Family Safety </span>
+                    <span className="font-hindi text-base font-extrabold tracking-tight text-[#1a237e]">[भारत कवच]</span>
+                  </p>
+                ) : (
+                  <p className="font-hindi text-sm font-bold leading-tight text-foreground">{m.label}</p>
+                )}
                 <p className="text-[10px] text-muted-foreground">{m.sublabel}</p>
               </div>
             </Link>
