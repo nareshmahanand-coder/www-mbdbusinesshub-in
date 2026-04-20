@@ -68,7 +68,14 @@ const SuperAppNav = () => {
                 <m.icon className="h-4.5 w-4.5 text-white" />
               </div>
               <div className="text-left">
-                <p className="font-hindi text-sm font-bold leading-tight text-foreground">{m.label}</p>
+                {(m as any).isKavach ? (
+                  <p className="leading-tight">
+                    <span className="text-[11px] font-medium text-foreground/80">Family Safety </span>
+                    <span className="font-hindi text-base font-extrabold tracking-tight text-[#1a237e]">[भारत कवच]</span>
+                  </p>
+                ) : (
+                  <p className="font-hindi text-sm font-bold leading-tight text-foreground">{m.label}</p>
+                )}
                 <p className="text-[10px] text-muted-foreground">{m.sublabel}</p>
               </div>
             </Link>
