@@ -232,9 +232,14 @@ const FamilySafetyPage = () => {
             </div>
 
             <div className="relative z-10 px-5 py-7 text-center">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.3em] text-[#1a237e]">
-                Mera Bharat Dukaan
-              </p>
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 shadow-md ring-1 ring-[#1a237e]/20 backdrop-blur">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1a237e] text-[10px] font-black text-white">
+                  M
+                </span>
+                <span className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-[#1a237e]">
+                  Mera Bharat Dukaan
+                </span>
+              </div>
 
               {/* Title: Family Safety [भारत कवच] */}
               <h1 className="leading-tight">
