@@ -29,6 +29,18 @@ const WELCOME_MESSAGE: ChatMessage = {
 const LOGIN_GREETING = "मेरा भारत दुकान में आपका स्वागत है, मैं हूँ भारत मित्र, आपकी क्या सेवा कर सकती हूँ?";
 const WELCOME_AUDIO_TEXT = "मेरा भारत दुकान में, मैं आपकी भारत मित्र आपका स्वागत करती हूँ।";
 
+// Full introduction played when the user taps the Bharat Mitra avatar.
+const AVATAR_INTRO_SCRIPT = [
+  "नमस्ते! मेरा भारत दुकान में आपका स्वागत है। मैं भारत मित्र, आपकी डिजिटल मार्गदर्शक हूँ।",
+  "यह प्लेटफॉर्म आपको सीधे बाजार से जोड़ता है, जहाँ आप सामान खरीद और बेच सकते हैं।",
+  "शिक्षा और कौशल विकास क्षेत्र में आप विभिन्न कोर्स कर सकते हैं। लाइव शो शिक्षा एवं सामाजिक कल्याण समिति और लाइव शो फाउंडेशन के प्रोग्राम के माध्यम से आप स्टेट लेवल एनजीओ द्वारा मान्यता प्राप्त सर्टिफिकेट प्राप्त कर सकते हैं। आप यहाँ एग्जाम देकर अपनी काबिलियत साबित कर सकते हैं और फ्री ऑफ कॉस्ट सर्टिफिकेट हासिल कर सकते हैं।",
+  "हमारा मैरिज ब्यूरो निन्यानवे और नौ सौ निन्यानवे रुपये के किफायती पैकेजेस में आपको सही जीवनसाथी चुनने में मदद करता है।",
+  "जॉब सेक्शन में आप अपनी जरूरत के हिसाब से वर्कर ढूंढ सकते हैं या काम के लिए आवेदन कर सकते हैं।",
+  "परिवार की सुरक्षा के लिए भारत कवच और मात्र एक रुपये और बारह रुपये वाली भारत गौरव मेंबरशिप का लाभ उठाना न भूलें।",
+  "मैं आपको यह भी बता सकती हूँ कि यहाँ अपनी दुकान कैसे जोड़ें या फोटो कैसे अपलोड करें। बस मुझे बताइये कि आप क्या सीखना चाहते हैं।",
+  "अब बताइये, मैं आपकी और क्या मदद कर सकती हूँ?",
+].join(" ");
+
 /** Map Indian state → warm regional greeting + tts language code */
 const REGION_GREETINGS: Record<string, { text: string; lang: string }> = {
   "Chhattisgarh":   { text: "जय जोहार! 🙏 मेरा भारत दुकान ऐप में आपका स्वागत है। मैं भारत मित्र हूँ — आपकी क्या मदद कर सकती हूँ?", lang: "hi-IN" },
@@ -710,9 +722,9 @@ const BharatMitraChatbot = () => {
             setOpen(true);
             setLiveMode(true);
             liveModeRef.current = true;
-            const greet = "जी बॉस, मैं सुन रही हूँ। बताइए क्या सेवा करूँ?";
-            setMessages((prev) => [...prev, { id: `live-${Date.now()}`, sender: "bot", text: greet }]);
-            setTimeout(() => speakText(greet, undefined, "hi-IN"), 200);
+            const intro = AVATAR_INTRO_SCRIPT;
+            setMessages((prev) => [...prev, { id: `intro-${Date.now()}`, sender: "bot", text: intro }]);
+            setTimeout(() => speakText(intro, undefined, "hi-IN"), 200);
           }}
           className="relative h-20 w-20 overflow-hidden rounded-full border-[3px] border-destructive shadow-2xl transition-transform hover:scale-110 animate-bharat-mitra-pulse"
           style={{
