@@ -57,8 +57,17 @@ const CategoryLibrary = ({ category, onBack }: { category: BookCategory; onBack:
           {category.descriptionHi}
         </p>
 
+        {/* NGO Certification Banner */}
+        <div className="mb-3 rounded-lg border border-orange-300 bg-gradient-to-r from-orange-50 via-white to-green-50 dark:from-orange-950/20 dark:via-background dark:to-green-950/20 px-3 py-2 text-center">
+          <p className="text-[11px] font-bold font-hindi text-foreground leading-snug">
+            लाइव शो शिक्षा एवं सामाजिक कल्याण समिति <span className="text-orange-700 dark:text-orange-400">(State Level NGO)</span> द्वारा प्रमाणित सर्टिफिकेट
+          </p>
+          <p className="text-[9px] font-bold text-red-700 dark:text-red-400 mt-0.5">Reg. No. 122202059372</p>
+        </div>
+
         {/* Certificate Preview */}
-        <div className="mb-3 rounded-xl border-2 border-orange-400 bg-gradient-to-br from-orange-50 via-white to-green-50 dark:from-orange-950/20 dark:via-background dark:to-green-950/20 p-3 shadow-sm">
+        <div className="relative mb-3 rounded-xl border-2 border-orange-400 bg-gradient-to-br from-orange-50 via-white to-green-50 dark:from-orange-950/20 dark:via-background dark:to-green-950/20 p-3 shadow-sm">
+          <span className="absolute top-1 right-2 text-[8px] font-bold text-red-700 dark:text-red-400">Reg. No. 122202059372</span>
           <div className="flex items-center gap-3">
             {/* Mini certificate mock */}
             <div className="relative shrink-0 w-[110px] h-[78px] rounded border-2 border-blue-900 bg-white overflow-hidden shadow">
@@ -76,10 +85,10 @@ const CategoryLibrary = ({ category, onBack }: { category: BookCategory; onBack:
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1 mb-0.5">
                 <Award className="h-3.5 w-3.5 text-orange-600" />
-                <p className="text-[11px] font-bold font-hindi text-foreground">सरकारी शैली का प्रमाणपत्र</p>
+                <p className="text-[11px] font-bold font-hindi text-foreground">लाइव शो फाउंडेशन सर्टिफिकेट प्रोग्राम</p>
               </div>
               <p className="text-[9px] font-hindi text-muted-foreground leading-snug">
-                परीक्षा पूरा करने के बाद आपको यह सर्टिफिकेट प्रदान किया जाएगा।
+                कोर्स और परीक्षा पूर्ण करें, डिजिटल सर्टिफिकेट प्राप्त करें।
               </p>
               <p className="text-[8px] font-hindi text-orange-700 dark:text-orange-400 mt-0.5">
                 Issued by: लाइव शो शिक्षा एवं सामाजिक कल्याण समिति
@@ -94,7 +103,7 @@ const CategoryLibrary = ({ category, onBack }: { category: BookCategory; onBack:
           className="w-full mb-4 flex items-center justify-center gap-2 rounded-xl px-4 py-3 bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 text-white shadow-md hover:shadow-lg active:scale-[0.98] transition-all"
         >
           <Award className="h-5 w-5" />
-          <span className="text-sm font-bold font-hindi">परीक्षा दें और सर्टिफिकेट प्राप्त करें</span>
+          <span className="text-sm font-bold font-hindi">कोर्स और परीक्षा पूर्ण करें, डिजिटल सर्टिफिकेट प्राप्त करें</span>
         </button>
 
         <ExamDialog
