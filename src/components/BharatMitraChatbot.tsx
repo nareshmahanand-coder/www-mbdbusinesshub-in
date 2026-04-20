@@ -29,6 +29,20 @@ const WELCOME_MESSAGE: ChatMessage = {
 const LOGIN_GREETING = "मेरा भारत दुकान में आपका स्वागत है, मैं हूँ भारत मित्र, आपकी क्या सेवा कर सकती हूँ?";
 const WELCOME_AUDIO_TEXT = "मेरा भारत दुकान में, मैं आपकी भारत मित्र आपका स्वागत करती हूँ।";
 
+// First-time master introduction (played once per user, stored in localStorage).
+const FIRST_TIME_MASTER_SCRIPT = [
+  "नमस्ते! मेरा भारत दुकान में आपका स्वागत है। मैं आपकी भारत मित्र हूँ।",
+  "मैं विज्ञान, कानून, सरकारी योजनाओं, सब्सिडी, लोन और सरकारी नौकरियों के बारे में सब जानती हूँ। मैं आपको एलोपैथिक, आयुर्वेदिक और होम्योपैथिक दवाइयों की जानकारी भी दे सकती हूँ।",
+  "महिला सुरक्षा के लिए हमारे पास SOS सिस्टम है — यह एक आपातकालीन सुविधा है जो तुरंत आपकी लोकेशन आपके परिवार और पास के मर्चेंट्स तक पहुँचाती है। आप यहाँ ब्लड डोनेशन की जानकारी ले सकते हैं और किसी भी वेंडर की शिकायत दर्ज कर सकते हैं।",
+  "लाइव शो फाउंडेशन के माध्यम से आप कौशल विकास कोर्स कर सर्टिफिकेट भी पा सकते हैं।",
+  "मैं हर भाषा में आपकी मदद कर सकती हूँ। आप किस भाषा में बात करना चाहेंगे?",
+].join(" ");
+
+const DAILY_WELCOME_SCRIPT = "नमस्ते! आज मैं आपकी क्या मदद कर सकती हूँ?";
+
+const INTRO_DONE_KEY = "bharat-mitra-intro-done";
+const LAST_DAILY_KEY = "bharat-mitra-last-daily";
+
 // Full introduction played when the user taps the Bharat Mitra avatar.
 const AVATAR_INTRO_SCRIPT = [
   "नमस्ते! मेरा भारत दुकान में आपका स्वागत है। मैं भारत मित्र, आपकी डिजिटल मार्गदर्शक हूँ।",
@@ -334,6 +348,40 @@ const BharatMitraChatbot = () => {
     try { recog.start(); setIsListening(true); } catch {}
   }, []);
   useEffect(() => { startLiveListenRef.current = startLiveListen; }, [startLiveListen]);
+
+  // First-time master intro (once ever) + Daily short welcome (every 24h).
+  // Triggers automatically when the user lands on the Home Page.
+  useEffect(() => {
+    if (location.pathname !== "/") return;
+    if (open) return;
+    const introDone = localStorage.getItem(INTRO_DONE_KEY) === "true";
+    const lastDaily = parseInt(localStorage.getItem(LAST_DAILY_KEY) || "0", 10);
+    const now = Date.now();
+    const dayMs = 24 * 60 * 60 * 1000;
+
+    let scriptToPlay: string | null = null;
+    if (!introDone) {
+      scriptToPlay = FIRST_TIME_MASTER_SCRIPT;
+      localStorage.setItem(INTRO_DONE_KEY, "true");
+      localStorage.setItem(LAST_DAILY_KEY, String(now));
+    } else if (now - lastDaily > dayMs) {
+      scriptToPlay = DAILY_WELCOME_SCRIPT;
+      localStorage.setItem(LAST_DAILY_KEY, String(now));
+    }
+    if (!scriptToPlay) return;
+
+    const t = setTimeout(() => {
+      initChatPos();
+      setOpen(true);
+      setLiveMode(true);
+      liveModeRef.current = true;
+      const id = `auto-${Date.now()}`;
+      setMessages((prev) => [...prev, { id, sender: "bot", text: scriptToPlay! }]);
+      speakText(scriptToPlay!, id, "hi-IN");
+    }, 1200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   const triggerPendingGreeting = useCallback(() => {
     if (location.pathname !== "/") return;
