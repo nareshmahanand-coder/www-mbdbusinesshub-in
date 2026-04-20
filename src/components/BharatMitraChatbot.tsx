@@ -77,6 +77,9 @@ const BharatMitraChatbot = () => {
   const [isListening, setIsListening] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [wakeListening, setWakeListening] = useState(false);
+  const [liveMode, setLiveMode] = useState(false);
+  const liveModeRef = useRef(false);
+  useEffect(() => { liveModeRef.current = liveMode; }, [liveMode]);
 
   // Chat window draggable state
   const [chatPos, setChatPos] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
@@ -89,6 +92,8 @@ const BharatMitraChatbot = () => {
   const wakeRecogRef = useRef<any>(null);
   const wakeShouldRunRef = useRef<boolean>(false);
   const elevenAudioRef = useRef<HTMLAudioElement | null>(null);
+  const sendVoiceRef = useRef<((text: string) => void) | null>(null);
+  const startLiveListenRef = useRef<(() => void) | null>(null);
 
   // Initialize chat position — right side, above center to not block search
   const initChatPos = useCallback(() => {
@@ -186,8 +191,14 @@ const BharatMitraChatbot = () => {
             if (error || !data?.audioContent) throw error ?? new Error("no audio");
             const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
             elevenAudioRef.current = audio;
-            audio.onended = () => { setIsSpeaking(false); setSpeakingMsgId(null); elevenAudioRef.current = null; };
-            audio.onerror = () => { setIsSpeaking(false); setSpeakingMsgId(null); elevenAudioRef.current = null; };
+            audio.onended = () => {
+              setIsSpeaking(false); setSpeakingMsgId(null); elevenAudioRef.current = null;
+              if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
+            };
+            audio.onerror = () => {
+              setIsSpeaking(false); setSpeakingMsgId(null); elevenAudioRef.current = null;
+              if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
+            };
             audio.play().catch(() => { setIsSpeaking(false); setSpeakingMsgId(null); });
           })
           .catch((e) => {
@@ -228,8 +239,14 @@ const BharatMitraChatbot = () => {
       // Smooth, friendly, human-like delivery (Gemini-style)
       utterance.rate = 0.98; utterance.pitch = 1.0; utterance.volume = 1;
       utterance.onstart = () => { setIsSpeaking(true); if (msgId) setSpeakingMsgId(msgId); };
-      utterance.onend = () => { setIsSpeaking(false); setSpeakingMsgId(null); };
-      utterance.onerror = () => { setIsSpeaking(false); setSpeakingMsgId(null); };
+      utterance.onend = () => {
+        setIsSpeaking(false); setSpeakingMsgId(null);
+        if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
+      };
+      utterance.onerror = () => {
+        setIsSpeaking(false); setSpeakingMsgId(null);
+        if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
+      };
       synth.cancel(); synth.speak(utterance);
     };
     const speakBrowser = speak;
@@ -279,6 +296,28 @@ const BharatMitraChatbot = () => {
     recognition.start();
     setIsListening(true);
   }, [isListening]);
+
+  // Live conversation: continuous listen → auto-send on final result
+  const startLiveListen = useCallback(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    try { recognitionRef.current?.stop(); } catch {}
+    const recog = new SR();
+    recog.lang = "hi-IN";
+    recog.interimResults = false;
+    recog.continuous = false;
+    recog.maxAlternatives = 1;
+    recog.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setIsListening(false);
+      if (transcript && sendVoiceRef.current) sendVoiceRef.current(transcript);
+    };
+    recog.onerror = () => setIsListening(false);
+    recog.onend = () => setIsListening(false);
+    recognitionRef.current = recog;
+    try { recog.start(); setIsListening(true); } catch {}
+  }, []);
+  useEffect(() => { startLiveListenRef.current = startLiveListen; }, [startLiveListen]);
 
   const triggerPendingGreeting = useCallback(() => {
     if (location.pathname !== "/") return;
@@ -605,6 +644,13 @@ const BharatMitraChatbot = () => {
       setIsAiLoading(false);
     }
   };
+  // Always keep sendVoiceRef in sync with latest handleSend closure
+  sendVoiceRef.current = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    setInput(trimmed);
+    setTimeout(() => handleSend(), 0);
+  };
 
   const handleComplaintSubmit = async () => {
     if (!complaintText.trim()) return;
@@ -655,7 +701,15 @@ const BharatMitraChatbot = () => {
         style={{ right: 12, top: "50%", transform: "translateY(-50%)", touchAction: "none" }}
       >
         <button
-          onClick={() => { initChatPos(); setOpen(true); setTimeout(() => playRegionalGreeting(), 300); }}
+          onClick={() => {
+            initChatPos();
+            setOpen(true);
+            setLiveMode(true);
+            liveModeRef.current = true;
+            const greet = "जी बॉस, मैं सुन रही हूँ। बताइए क्या सेवा करूँ?";
+            setMessages((prev) => [...prev, { id: `live-${Date.now()}`, sender: "bot", text: greet }]);
+            setTimeout(() => speakText(greet, undefined, "hi-IN"), 200);
+          }}
           className="relative h-20 w-20 overflow-hidden rounded-full border-[3px] border-destructive shadow-2xl transition-transform hover:scale-110 animate-bharat-mitra-pulse"
           style={{
             boxShadow: "0 0 20px 6px hsl(var(--destructive) / 0.5), 0 0 40px 14px hsl(var(--destructive) / 0.3), 0 0 60px 20px hsl(var(--primary) / 0.2)",
@@ -723,7 +777,8 @@ const BharatMitraChatbot = () => {
       >
         <div className="relative pointer-events-none">
           <img src={assistantAvatar} alt="भारत मित्र"
-            className={`h-10 w-10 rounded-full border-2 border-primary-foreground/30 object-cover ${isSpeaking ? "bharat-mitra-speaking" : ""}`}
+            className={`h-10 w-10 rounded-full border-2 object-cover ${isSpeaking ? "bharat-mitra-speaking border-primary-foreground/30" : isListening ? "border-transparent ring-2 ring-offset-2 ring-offset-primary animate-pulse" : "border-primary-foreground/30"}`}
+            style={isListening ? { boxShadow: "0 0 0 2px #FF9933, 0 0 0 4px #ffffff, 0 0 0 6px #138808, 0 0 14px 4px rgba(255,153,51,0.6)" } : undefined}
           />
           {isSpeaking && (
             <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-accent">
