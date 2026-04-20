@@ -472,9 +472,10 @@ const FamilySafetyPage = () => {
           </CardContent>
         </Card>
 
-        <p className="text-center text-[11px] text-muted-foreground">
-          🔒 Privacy: Location सिर्फ Accept किए गए परिवार को दिखती है।
-        </p>
+          <p className="rounded-md bg-white/80 px-3 py-2 text-center text-[11px] font-semibold text-[#1a237e] backdrop-blur">
+            🔒 Privacy: Location सिर्फ Accept किए गए परिवार को दिखती है।
+          </p>
+        </div>
       </div>
     </div>
   );
