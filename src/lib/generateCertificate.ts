@@ -412,22 +412,29 @@ async function drawCertificateOnCanvas(data: CertificateData): Promise<string> {
   ctx.fillStyle = "#444"; ctx.font = "18px sans-serif";
   ctx.fillText(`Date / दिनांक: ${data.date}`, 250, H - 125);
 
-  // Right: Seal + Sign
-  const sX = W - 230, sY = H - 180;
-  ctx.strokeStyle = "#B40000"; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.arc(sX, sY, 65, 0, Math.PI * 2); ctx.stroke();
-  ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(sX, sY, 50, 0, Math.PI * 2); ctx.stroke();
-  ctx.fillStyle = "#B40000"; ctx.font = "bold 11px sans-serif";
-  ctx.fillText("LIVE SHOW FOUNDATION", sX, sY - 8);
-  ctx.fillStyle = "#B40000"; ctx.font = "10px sans-serif";
-  ctx.fillText("लाइव शो फाउंडेशन", sX, sY + 8);
-  ctx.fillStyle = "#1a237e"; ctx.font = "bold 9px sans-serif";
-  ctx.fillText("✓ OFFICIAL SEAL", sX, sY + 24);
+  // Real seal + signature images (bottom-right)
+  try {
+    const sealImg = await loadImage(ngoSealUrl);
+    const sealSize = 170;
+    const sealCx = W - 100 - sealSize / 2;
+    const sealCy = H - 220;
+    ctx.drawImage(sealImg, sealCx - sealSize / 2, sealCy - sealSize / 2, sealSize, sealSize);
 
-  ctx.strokeStyle = "#333"; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(W - 360, H - 110); ctx.lineTo(W - 100, H - 110); ctx.stroke();
-  ctx.fillStyle = "#444"; ctx.font = "16px sans-serif";
-  ctx.fillText("Authorised Signatory / अधिकृत हस्ताक्षर", W - 230, H - 88);
+    const sigImg = await loadImage(ngoSignatureUrl);
+    const sigW = 200, sigH = 90;
+    const sigX = sealCx - sealSize / 2 - sigW + 10;
+    const sigY = H - 200;
+    ctx.drawImage(sigImg, sigX, sigY, sigW, sigH);
+
+    // Signature line under both
+    ctx.strokeStyle = "#333"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(sigX, H - 110); ctx.lineTo(W - 100, H - 110); ctx.stroke();
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#444"; ctx.font = "16px sans-serif";
+    ctx.fillText("Authorised Signatory / अधिकृत हस्ताक्षर", (sigX + W - 100) / 2, H - 90);
+    ctx.fillStyle = "#888"; ctx.font = "13px sans-serif";
+    ctx.fillText("लाइव शो फाउंडेशन (Live Show Foundation)", (sigX + W - 100) / 2, H - 72);
+  } catch { /* ignore */ }
 
   // Cert ID
   ctx.fillStyle = "#1a237e"; ctx.font = "bold 18px sans-serif";
