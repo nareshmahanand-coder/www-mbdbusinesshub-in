@@ -47,8 +47,9 @@ const EkycPage = () => {
 
   const handleAadhaarFile = (side: Side, file?: File) => {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("कृपया केवल इमेज अपलोड करें • Please upload an image");
+    const allowed = ["image/jpeg", "image/jpg", "image/png", "application/pdf"];
+    if (!allowed.includes(file.type)) {
+      toast.error("केवल JPEG, PNG या PDF फ़ाइल अपलोड करें • Only JPEG, PNG or PDF allowed");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
