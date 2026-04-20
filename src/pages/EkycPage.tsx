@@ -47,8 +47,9 @@ const EkycPage = () => {
 
   const handleAadhaarFile = (side: Side, file?: File) => {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("कृपया केवल इमेज अपलोड करें • Please upload an image");
+    const allowed = ["image/jpeg", "image/jpg", "image/png", "application/pdf"];
+    if (!allowed.includes(file.type)) {
+      toast.error("केवल JPEG, PNG या PDF फ़ाइल अपलोड करें • Only JPEG, PNG or PDF allowed");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -245,6 +246,19 @@ const EkycPage = () => {
           </div>
           <CardTitle className="text-xl">E-KYC सत्यापन</CardTitle>
           <p className="text-xs text-muted-foreground">सुरक्षित पहचान सत्यापन • Secure Identity Verification</p>
+          {/* Bharat Kavach Tiranga badge */}
+          <div className="mx-auto mt-3 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1 shadow-sm">
+            <span className="flex h-4 w-6 overflow-hidden rounded-sm border border-border">
+              <span className="flex-1 bg-[#FF9933]" />
+              <span className="flex-1 bg-white" />
+              <span className="flex-1 bg-[#138808]" />
+            </span>
+            <ShieldCheck className="h-3.5 w-3.5 text-[#138808]" />
+            <span className="text-[11px] font-bold tracking-wide">
+              <span className="text-muted-foreground">Verified by</span>{" "}
+              <span className="font-hindi text-[hsl(var(--primary))]">भारत कवच</span>
+            </span>
+          </div>
         </CardHeader>
         <CardContent className="space-y-5">
           {status === "rejected" && (
@@ -300,19 +314,38 @@ const EkycPage = () => {
               {([
                 { side: "front" as Side, label: "Front Side", hindi: "सामने", value: aadhaarFront, setter: setAadhaarFront, ref: frontInputRef },
                 { side: "back" as Side, label: "Back Side", hindi: "पीछे", value: aadhaarBack, setter: setAadhaarBack, ref: backInputRef },
-              ]).map((item) => (
+              ]).map((item) => {
+                const isPdf = item.value?.startsWith("data:application/pdf");
+                return (
                 <div key={item.side} className="space-y-1">
+                  {/* Camera input (capture) */}
                   <input
                     ref={item.ref}
+                    type="file"
+                    accept="image/jpeg,image/png,application/pdf"
+                    className="hidden"
+                    data-mode="gallery"
+                    onChange={(e) => handleAadhaarFile(item.side, e.target.files?.[0])}
+                  />
+                  {/* Hidden camera-only input */}
+                  <input
                     type="file"
                     accept="image/*"
                     capture="environment"
                     className="hidden"
+                    id={`cam-${item.side}`}
                     onChange={(e) => handleAadhaarFile(item.side, e.target.files?.[0])}
                   />
                   {item.value ? (
                     <div className="relative aspect-[1.6/1] w-full overflow-hidden rounded-xl border-2 border-[hsl(var(--primary))]/40 bg-muted">
-                      <img src={item.value} alt={`Aadhaar ${item.label}`} className="h-full w-full object-cover" />
+                      {isPdf ? (
+                        <div className="flex h-full w-full flex-col items-center justify-center bg-[hsl(var(--primary))]/5 text-[hsl(var(--primary))]">
+                          <CreditCard className="h-7 w-7" />
+                          <span className="text-[10px] font-semibold mt-1">PDF Uploaded</span>
+                        </div>
+                      ) : (
+                        <img src={item.value} alt={`Aadhaar ${item.label}`} className="h-full w-full object-cover" />
+                      )}
                       <button
                         type="button"
                         onClick={() => item.setter(null)}
@@ -326,22 +359,45 @@ const EkycPage = () => {
                       </div>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => item.ref.current?.click()}
-                      className="flex aspect-[1.6/1] w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-[hsl(var(--primary))]/40 bg-[hsl(var(--primary))]/5 text-[hsl(var(--primary))] transition-colors hover:bg-[hsl(var(--primary))]/10"
-                    >
-                      <Upload className="h-5 w-5" />
-                      <span className="text-[11px] font-semibold leading-tight text-center px-1">
-                        Upload Aadhaar<br />{item.label}
+                    <div className="flex aspect-[1.6/1] w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[hsl(var(--primary))]/40 bg-[hsl(var(--primary))]/5 p-2">
+                      <span className="text-[10px] font-semibold text-[hsl(var(--primary))] leading-tight text-center">
+                        {item.label}<br /><span className="font-hindi">({item.hindi})</span>
                       </span>
-                      <span className="text-[9px] text-muted-foreground">{item.hindi} वाला भाग</span>
-                    </button>
+                      <div className="flex w-full gap-1">
+                        <button
+                          type="button"
+                          onClick={() => document.getElementById(`cam-${item.side}`)?.click()}
+                          className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-md bg-[#FF9933] px-1 py-1.5 text-white shadow-sm hover:opacity-90"
+                        >
+                          <Camera className="h-3.5 w-3.5" />
+                          <span className="text-[8px] font-bold leading-none">Camera</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => item.ref.current?.click()}
+                          className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-md bg-[#138808] px-1 py-1.5 text-white shadow-sm hover:opacity-90"
+                        >
+                          <Upload className="h-3.5 w-3.5" />
+                          <span className="text-[8px] font-bold leading-none">Gallery</span>
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
-            <p className="text-[11px] text-muted-foreground text-center">कैमरा से क्लिक करें या गैलरी से चुनें • Click or choose from gallery</p>
+            <div className="rounded-lg border border-[hsl(var(--primary))]/20 bg-[hsl(var(--primary))]/5 p-2.5 text-center">
+              <p className="text-[11px] font-medium font-hindi text-foreground leading-snug">
+                आप कैमरा से फोटो खींच सकते हैं या अपनी गैलरी से फोटो चुन सकते हैं।
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                You can take a photo with the camera or choose one from your gallery.
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Accepted formats: JPEG, PNG, PDF (max 5MB)
+              </p>
+            </div>
           </div>
 
           {/* Selfie */}
