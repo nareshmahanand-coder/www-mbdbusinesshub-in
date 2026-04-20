@@ -127,6 +127,45 @@ export type Database = {
           },
         ]
       }
+      family_members: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          id: string
+          invite_token: string
+          member_name: string
+          member_phone: string
+          member_user_id: string | null
+          owner_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          invite_token?: string
+          member_name: string
+          member_phone: string
+          member_user_id?: string | null
+          owner_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          id?: string
+          invite_token?: string
+          member_name?: string
+          member_phone?: string
+          member_user_id?: string | null
+          owner_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       jobs: {
         Row: {
           city: string | null
@@ -216,6 +255,36 @@ export type Database = {
           selfie_url?: string
           status?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      last_known_locations: {
+        Row: {
+          accuracy: number | null
+          battery_level: number | null
+          latitude: number
+          longitude: number
+          reason: string | null
+          recorded_at: string
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          battery_level?: number | null
+          latitude: number
+          longitude: number
+          reason?: string | null
+          recorded_at?: string
+          user_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          battery_level?: number | null
+          latitude?: number
+          longitude?: number
+          reason?: string | null
+          recorded_at?: string
           user_id?: string
         }
         Relationships: []
@@ -645,6 +714,86 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sos_alert_recipients: {
+        Row: {
+          alert_id: string
+          distance_meters: number | null
+          id: string
+          notified_at: string
+          recipient_merchant_id: string | null
+          recipient_name: string | null
+          recipient_phone: string | null
+          recipient_type: string
+          recipient_user_id: string | null
+        }
+        Insert: {
+          alert_id: string
+          distance_meters?: number | null
+          id?: string
+          notified_at?: string
+          recipient_merchant_id?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          recipient_type: string
+          recipient_user_id?: string | null
+        }
+        Update: {
+          alert_id?: string
+          distance_meters?: number | null
+          id?: string
+          notified_at?: string
+          recipient_merchant_id?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          recipient_type?: string
+          recipient_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sos_alert_recipients_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "sos_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sos_alerts: {
+        Row: {
+          accuracy: number | null
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          message: string | null
+          resolved_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          message?: string | null
+          resolved_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          message?: string | null
+          resolved_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
