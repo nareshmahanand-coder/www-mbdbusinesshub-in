@@ -72,9 +72,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const KycRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isSuperUser } = useAuth();
   if (loading) return <FullScreenLoader />;
   if (!user) return <Navigate to="/login" replace />;
+  // Super User skips KYC entirely — straight to home
+  if (isSuperUser) return <Navigate to="/" replace />;
   return <>{children}</>;
 };
 
