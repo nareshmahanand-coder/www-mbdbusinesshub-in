@@ -16,6 +16,7 @@ import {
 import SafetyOverlay from "./chatbot/SafetyOverlay";
 import BloodDonorTab from "./chatbot/BloodDonorTab";
 import HealthTab from "./chatbot/HealthTab";
+import { useMembership } from "@/hooks/useMembership";
 
 const DEFAULT_INTRO = "नमस्ते / जय जोहार! 🙏 मैं भारत मित्र हूँ। मैं भारत की सभी भाषाएं — Hindi, English, Chhattisgarhi, Odia, Bengali, Tamil आदि — समझ सकती हूँ और आपकी हर तरह से मदद करने के लिए तैयार हूँ। आप किसी भी भाषा में पूछें, मैं उसी भाषा में जवाब दूँगी।";
 
@@ -55,6 +56,7 @@ interface AiMessage {
 
 const BharatMitraChatbot = () => {
   const { user } = useAuth();
+  const { isActive: isPremium } = useMembership();
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -74,6 +76,7 @@ const BharatMitraChatbot = () => {
   const [safeWalkActive, setSafeWalkActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [wakeListening, setWakeListening] = useState(false);
 
   // Chat window draggable state
   const [chatPos, setChatPos] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
@@ -83,6 +86,8 @@ const BharatMitraChatbot = () => {
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const greetingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recognitionRef = useRef<any>(null);
+  const wakeRecogRef = useRef<any>(null);
+  const wakeShouldRunRef = useRef<boolean>(false);
 
   // Initialize chat position — right side, above center to not block search
   const initChatPos = useCallback(() => {
@@ -249,6 +254,66 @@ const BharatMitraChatbot = () => {
       speakText(LOGIN_GREETING);
     }, 700);
   }, [location.pathname, speakText]);
+
+  // ===== Wake-word listener (Premium only): "भारत मित्र" / "bharat mitra" =====
+  // Uses free browser SpeechRecognition — no extra API key, no ElevenLabs.
+  useEffect(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR || !isPremium || open) {
+      // Stop any running wake recognizer
+      wakeShouldRunRef.current = false;
+      try { wakeRecogRef.current?.stop(); } catch {}
+      setWakeListening(false);
+      return;
+    }
+
+    const recog = new SR();
+    recog.lang = "hi-IN";
+    recog.continuous = true;
+    recog.interimResults = true;
+    recog.maxAlternatives = 1;
+
+    const WAKE_PATTERNS = [
+      /भारत\s*मित्र/i,
+      /bharat\s*mitra/i,
+      /bharath\s*mitra/i,
+    ];
+
+    recog.onresult = (event: any) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript: string = event.results[i][0].transcript || "";
+        if (WAKE_PATTERNS.some((p) => p.test(transcript))) {
+          // Stop wake loop, open chat, greet
+          wakeShouldRunRef.current = false;
+          try { recog.stop(); } catch {}
+          setWakeListening(false);
+          initChatPos();
+          setOpen(true);
+          const greet = "जी बॉस, मैं सुन रही हूँ। बताइए क्या सेवा करूँ?";
+          setMessages((prev) => [...prev, { id: `wake-${Date.now()}`, sender: "bot", text: greet }]);
+          speakText(greet, undefined, "hi-IN");
+          return;
+        }
+      }
+    };
+    recog.onerror = () => { /* ignore — restart in onend */ };
+    recog.onend = () => {
+      setWakeListening(false);
+      if (wakeShouldRunRef.current) {
+        try { recog.start(); setWakeListening(true); } catch {}
+      }
+    };
+
+    wakeRecogRef.current = recog;
+    wakeShouldRunRef.current = true;
+    try { recog.start(); setWakeListening(true); } catch {}
+
+    return () => {
+      wakeShouldRunRef.current = false;
+      try { recog.stop(); } catch {}
+      setWakeListening(false);
+    };
+  }, [isPremium, open, initChatPos, speakText]);
 
   useEffect(() => {
     triggerPendingGreeting();
@@ -567,6 +632,15 @@ const BharatMitraChatbot = () => {
         <span className="font-hindi text-sm font-black text-destructive drop-shadow-[0_0_8px_hsl(var(--destructive)/0.6)] select-none whitespace-nowrap">
           भारत मित्र <span className="font-sans text-xs font-bold tracking-wide">AI</span>
         </span>
+        {isPremium && wakeListening && (
+          <span className="mt-0.5 flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[9px] font-bold text-primary shadow ring-1 ring-primary/40">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#138808] opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#138808]" />
+            </span>
+            "भारत मित्र" बोलें
+          </span>
+        )}
       </div>
     );
   }
@@ -730,7 +804,29 @@ const BharatMitraChatbot = () => {
                 </button>
               ))}
             </div>
-            <div className="flex gap-2 border-t border-border p-3">
+            <div className="relative flex gap-2 border-t border-border p-3">
+              {isListening && (
+                <div className="absolute inset-x-0 -top-7 mx-auto flex w-fit items-center gap-1 rounded-full bg-background/95 px-3 py-1 shadow-lg ring-1 ring-border">
+                  <span className="text-[10px] font-bold text-primary">सुन रही हूँ</span>
+                  <div className="flex items-end gap-[2px]">
+                    {[0, 1, 2, 3, 4, 5, 6].map((i) => {
+                      const color = i < 2 ? "#FF9933" : i < 5 ? "#ffffff" : "#138808";
+                      return (
+                        <span
+                          key={i}
+                          className="inline-block w-[3px] rounded-sm"
+                          style={{
+                            height: `${6 + ((i * 3) % 12)}px`,
+                            background: color,
+                            boxShadow: `0 0 6px ${color}`,
+                            animation: `bharatWave 0.9s ease-in-out ${i * 0.08}s infinite alternate`,
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <div className="relative flex-1">
                 <Input value={input} onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSend()}
