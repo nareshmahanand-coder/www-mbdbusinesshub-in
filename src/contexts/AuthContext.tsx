@@ -31,6 +31,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
   const syncedUserIdsRef = useRef<Set<string>>(new Set());
 
+  // Keep isSuperUser in sync with localStorage (covers same-tab updates from LoginPage)
+  useEffect(() => {
+    const checkFlag = () => {
+      const active = localStorage.getItem(SUPERUSER_FLAG) === "true";
+      setIsSuperUser((prev) => (prev !== active ? active : prev));
+    };
+    window.addEventListener("storage", checkFlag);
+    window.addEventListener("mbd-superuser-changed", checkFlag);
+    const interval = window.setInterval(checkFlag, 1000);
+    return () => {
+      window.removeEventListener("storage", checkFlag);
+      window.removeEventListener("mbd-superuser-changed", checkFlag);
+      window.clearInterval(interval);
+    };
+  }, []);
+
   useEffect(() => {
     const syncProfile = async (activeSession: Session | null) => {
       const activeUser = activeSession?.user;
@@ -84,6 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     sessionStorage.removeItem("bharat-mitra-pending-greet");
     localStorage.removeItem(SUPERUSER_FLAG);
+    window.dispatchEvent(new Event("mbd-superuser-changed"));
     setIsSuperUser(false);
     await supabase.auth.signOut();
   };

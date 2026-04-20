@@ -70,6 +70,7 @@ const LoginPage = () => {
       }
 
       localStorage.setItem(SUPERUSER_FLAG, "true");
+      window.dispatchEvent(new Event("mbd-superuser-changed"));
       toast.success("🛡️ Super User Mode सक्रिय / Bypass Active");
       setPinDialogOpen(false);
       setPinLoading(false);
