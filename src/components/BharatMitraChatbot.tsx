@@ -92,6 +92,8 @@ const BharatMitraChatbot = () => {
   const wakeRecogRef = useRef<any>(null);
   const wakeShouldRunRef = useRef<boolean>(false);
   const elevenAudioRef = useRef<HTMLAudioElement | null>(null);
+  const sendVoiceRef = useRef<((text: string) => void) | null>(null);
+  const startLiveListenRef = useRef<(() => void) | null>(null);
 
   // Initialize chat position — right side, above center to not block search
   const initChatPos = useCallback(() => {
