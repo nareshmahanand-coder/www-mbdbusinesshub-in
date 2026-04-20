@@ -29,6 +29,7 @@ const EkycPage = () => {
   const streamRef = useRef<MediaStream | null>(null);
 
   const [aadhaar, setAadhaar] = useState("");
+  const [linkedMobile, setLinkedMobile] = useState("");
   const [aadhaarFront, setAadhaarFront] = useState<string | null>(null);
   const [aadhaarBack, setAadhaarBack] = useState<string | null>(null);
   const frontInputRef = useRef<HTMLInputElement | null>(null);
@@ -116,6 +117,7 @@ const EkycPage = () => {
   const handleSubmit = async () => {
     const digits = aadhaar.replace(/\D/g, "");
     if (digits.length !== 12) return toast.error("कृपया 12 अंकों का सही आधार नंबर दर्ज करें");
+    if (linkedMobile.length !== 10) return toast.error("कृपया आधार से लिंक 10 अंकों का मोबाइल नंबर दर्ज करें • Please enter a valid 10-digit linked mobile number");
     if (!aadhaarFront || !aadhaarBack) return toast.error("कृपया आधार कार्ड के दोनों तरफ की फोटो अपलोड करें");
     if (!photo) return toast.error("कृपया Live Selfie लें");
     if (!user) return;
@@ -270,6 +272,24 @@ const EkycPage = () => {
             <p className="text-[11px] text-muted-foreground text-center">12 अंकों का आधार नंबर दर्ज करें</p>
           </div>
 
+          {/* Linked Mobile Number */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Linked Mobile Number • <span className="font-hindi">आधार से लिंक मोबाइल नंबर</span></label>
+            <Input
+              inputMode="numeric"
+              type="tel"
+              placeholder="98XXXXXXXX"
+              value={linkedMobile}
+              onChange={(e) => setLinkedMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+              maxLength={10}
+              className="text-lg tracking-widest text-center h-12"
+            />
+            <p className="text-[11px] text-muted-foreground text-center leading-snug">
+              Please enter the mobile number linked with your Aadhaar Card<br />
+              <span className="font-hindi">कृपया वही मोबाइल नंबर डालें जो आपके आधार कार्ड से लिंक है।</span>
+            </p>
+          </div>
+
           {/* Aadhaar Card Photos */}
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-1.5">
@@ -360,7 +380,7 @@ const EkycPage = () => {
           {/* Submit */}
           <Button
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || linkedMobile.length !== 10 || aadhaar.replace(/\D/g, "").length !== 12}
             className="w-full h-12 text-base font-semibold bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
           >
             {submitting ? (
