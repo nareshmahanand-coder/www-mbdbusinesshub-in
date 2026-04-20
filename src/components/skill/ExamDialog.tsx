@@ -143,6 +143,54 @@ export const ExamDialog = ({ open, onClose, categoryId, categoryTitle }: Props) 
                 />
                 <p className="text-[10px] text-muted-foreground">यह नाम प्रमाणपत्र पर छपेगा</p>
               </div>
+
+              <div className="space-y-2">
+                <Label className="font-hindi text-sm">पासपोर्ट साइज फोटो *</Label>
+                <div className="flex items-center gap-3">
+                  <div className="h-20 w-16 rounded border-2 border-dashed border-border bg-muted/40 flex items-center justify-center overflow-hidden shrink-0">
+                    {photoUrl ? (
+                      <img src={photoUrl} alt="user" className="h-full w-full object-cover" />
+                    ) : (
+                      <Camera className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <Button type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()} className="w-full text-xs">
+                      <Camera className="h-3.5 w-3.5 mr-1" /> {photoUrl ? "फोटो बदलें" : "फोटो अपलोड करें"}
+                    </Button>
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept="image/*"
+                      capture="user"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && handlePhotoFile(e.target.files[0])}
+                    />
+                    <p className="text-[9px] text-muted-foreground font-hindi">यह फोटो आपके सर्टिफिकेट पर छपेगी</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="font-hindi text-sm">कोर्स अवधि चुनें</Label>
+                <select
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-xs font-hindi"
+                >
+                  <option value="1 महीने का कोर्स">1 महीने का कोर्स</option>
+                  <option value="3 महीने का कोर्स">3 महीने का कोर्स</option>
+                  <option value="6 महीने का डिप्लोमा">6 महीने का डिप्लोमा</option>
+                  <option value="1 वर्ष का डिप्लोमा">1 वर्ष का डिप्लोमा</option>
+                </select>
+              </div>
+
+              <div className="rounded-md border border-orange-300 bg-orange-50 dark:bg-orange-950/30 p-2.5">
+                <p className="text-[10px] font-hindi text-orange-900 dark:text-orange-200 leading-relaxed">
+                  <strong>जारीकर्ता:</strong> लाइव शो शिक्षा एवं सामाजिक कल्याण समिति (Reg. No. 122202059372)
+                </p>
+              </div>
+
               <Button onClick={startExam} disabled={name.trim().length < 2} className="w-full">
                 <GraduationCap className="h-4 w-4 mr-1" /> परीक्षा शुरू करें
               </Button>
