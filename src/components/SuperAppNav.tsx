@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ShoppingBag, Heart, Briefcase, MapPin, GraduationCap } from "lucide-react";
+import { ShoppingBag, Heart, Briefcase, MapPin, GraduationCap, Shield } from "lucide-react";
 
 const modules = [
   {
@@ -41,6 +41,14 @@ const modules = [
     sublabel: "Skill Development",
     bg: "bg-[hsl(270,80%,95%)]",
     iconBg: "bg-[hsl(270,80%,40%)]",
+  },
+  {
+    to: "/family-safety",
+    icon: Shield,
+    label: "Family Safety",
+    sublabel: "SOS & परिवार",
+    bg: "bg-[hsl(0,85%,95%)]",
+    iconBg: "bg-[hsl(0,85%,50%)]",
   },
 ];
 
