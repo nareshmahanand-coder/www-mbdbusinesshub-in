@@ -804,7 +804,7 @@ const BharatMitraChatbot = () => {
                 </button>
               ))}
             </div>
-            <div className="flex gap-2 border-t border-border p-3">
+            <div className="relative flex gap-2 border-t border-border p-3">
               {isListening && (
                 <div className="absolute inset-x-0 -top-7 mx-auto flex w-fit items-center gap-1 rounded-full bg-background/95 px-3 py-1 shadow-lg ring-1 ring-border">
                   <span className="text-[10px] font-bold text-primary">सुन रही हूँ</span>
