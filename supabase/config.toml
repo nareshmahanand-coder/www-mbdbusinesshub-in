@@ -2,3 +2,6 @@ project_id = "tkenjzcyvnqnhgntmmen"
 
 [functions.translate-quiz]
 verify_jwt = false
+
+[functions.elevenlabs-tts]
+verify_jwt = false

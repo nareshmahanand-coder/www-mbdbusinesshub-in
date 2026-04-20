@@ -88,6 +88,7 @@ const BharatMitraChatbot = () => {
   const recognitionRef = useRef<any>(null);
   const wakeRecogRef = useRef<any>(null);
   const wakeShouldRunRef = useRef<boolean>(false);
+  const elevenAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Initialize chat position — right side, above center to not block search
   const initChatPos = useCallback(() => {
@@ -168,6 +169,39 @@ const BharatMitraChatbot = () => {
     };
     const cleanText = cleanForSpeech(text);
     if (!cleanText) return;
+
+    // ===== Premium: Studio-quality ElevenLabs (Matilda) — Hindi + English =====
+    if (isPremium) {
+      try {
+        synth.cancel();
+        if (elevenAudioRef.current) {
+          elevenAudioRef.current.pause();
+          elevenAudioRef.current = null;
+        }
+        setIsSpeaking(true);
+        if (msgId) setSpeakingMsgId(msgId);
+        supabase.functions
+          .invoke("elevenlabs-tts", { body: { text: cleanText, voice: "matilda" } })
+          .then(({ data, error }) => {
+            if (error || !data?.audioContent) throw error ?? new Error("no audio");
+            const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
+            elevenAudioRef.current = audio;
+            audio.onended = () => { setIsSpeaking(false); setSpeakingMsgId(null); elevenAudioRef.current = null; };
+            audio.onerror = () => { setIsSpeaking(false); setSpeakingMsgId(null); elevenAudioRef.current = null; };
+            audio.play().catch(() => { setIsSpeaking(false); setSpeakingMsgId(null); });
+          })
+          .catch((e) => {
+            console.warn("ElevenLabs failed, falling back to browser TTS:", e);
+            setIsSpeaking(false); setSpeakingMsgId(null);
+            // fall back to browser TTS
+            speakBrowser();
+          });
+        return;
+      } catch (e) {
+        console.warn("ElevenLabs invoke error:", e);
+      }
+    }
+
     const speak = () => {
       const utterance = new SpeechSynthesisUtterance(cleanText);
       const voices = synth.getVoices();
@@ -198,13 +232,14 @@ const BharatMitraChatbot = () => {
       utterance.onerror = () => { setIsSpeaking(false); setSpeakingMsgId(null); };
       synth.cancel(); synth.speak(utterance);
     };
+    const speakBrowser = speak;
     if (synth.getVoices().length === 0) {
       synth.onvoiceschanged = () => { synth.onvoiceschanged = null; speak(); };
       window.setTimeout(speak, 350);
       return;
     }
     speak();
-  }, []);
+  }, [isPremium]);
 
   // STT — Web Speech API
   const toggleListening = useCallback(() => {
