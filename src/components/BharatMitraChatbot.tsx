@@ -645,6 +645,24 @@ const BharatMitraChatbot = () => {
     }
   };
 
+  // Wire voice-driven send: appends user message and triggers handleSend
+  useEffect(() => {
+    sendVoiceRef.current = (text: string) => {
+      setInput(text);
+      setTimeout(() => {
+        // call handleSend via a synthesized flow
+        const trimmed = text.trim();
+        if (!trimmed) return;
+        setInput("");
+        addUserMessage(trimmed);
+        // reuse handleSend logic by setting input then dispatching:
+        // simplest: call handleSend directly by re-setting input
+        setInput(trimmed);
+        setTimeout(() => handleSend(), 0);
+      }, 50);
+    };
+  });
+
   const handleComplaintSubmit = async () => {
     if (!complaintText.trim()) return;
     setComplaintLoading(true);
