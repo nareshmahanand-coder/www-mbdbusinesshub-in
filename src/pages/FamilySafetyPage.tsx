@@ -232,9 +232,14 @@ const FamilySafetyPage = () => {
             </div>
 
             <div className="relative z-10 px-5 py-7 text-center">
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.3em] text-[#1a237e]">
-                Mera Bharat Dukaan
-              </p>
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 shadow-md ring-1 ring-[#1a237e]/20 backdrop-blur">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#1a237e] text-[10px] font-black text-white">
+                  M
+                </span>
+                <span className="text-[11px] font-extrabold uppercase tracking-[0.25em] text-[#1a237e]">
+                  Mera Bharat Dukaan
+                </span>
+              </div>
 
               {/* Title: Family Safety [भारत कवच] */}
               <h1 className="leading-tight">
@@ -242,28 +247,21 @@ const FamilySafetyPage = () => {
                   Family Safety
                 </span>
                 <span className="font-hindi block text-4xl font-black tracking-tight text-[#1a237e] drop-shadow-sm sm:text-5xl">
-                  [भारत कवच]
+                  भारत कवच
                 </span>
               </h1>
 
               {/* Strong shield (कवच) icon */}
               <div className="my-4 flex justify-center">
                 <svg viewBox="0 0 100 110" className="h-32 w-32 drop-shadow-2xl">
-                  <defs>
-                    <linearGradient id="kavachGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="hsl(28,100%,55%)" />
-                      <stop offset="50%" stopColor="#fff" />
-                      <stop offset="100%" stopColor="hsl(122,55%,40%)" />
-                    </linearGradient>
-                  </defs>
                   <path
                     d="M50 4 L92 18 V52 C92 78 74 98 50 106 C26 98 8 78 8 52 V18 Z"
-                    fill="url(#kavachGrad)"
-                    stroke="#1a237e"
+                    fill="hsl(0, 85%, 45%)"
+                    stroke="#ffffff"
                     strokeWidth="3"
                   />
                   {/* Ashoka Chakra inside shield */}
-                  <circle cx="50" cy="55" r="16" fill="none" stroke="#1a237e" strokeWidth="2.5" />
+                  <circle cx="50" cy="55" r="16" fill="none" stroke="#ffffff" strokeWidth="2.5" />
                   {Array.from({ length: 24 }).map((_, i) => {
                     const a = (i * Math.PI) / 12;
                     const x1 = 50 + Math.cos(a) * 16;
@@ -277,17 +275,17 @@ const FamilySafetyPage = () => {
                         y1={y1}
                         x2={x2}
                         y2={y2}
-                        stroke="#1a237e"
+                        stroke="#ffffff"
                         strokeWidth="1.4"
                       />
                     );
                   })}
-                  <circle cx="50" cy="55" r="2.5" fill="#1a237e" />
+                  <circle cx="50" cy="55" r="2.5" fill="#ffffff" />
                   {/* Shield bolt highlight */}
                   <path
                     d="M50 26 L46 50 L52 50 L48 70 L60 46 L54 46 Z"
-                    fill="#1a237e"
-                    opacity="0.85"
+                    fill="#ffffff"
+                    opacity="0.95"
                   />
                 </svg>
               </div>
