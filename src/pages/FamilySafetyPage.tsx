@@ -369,7 +369,7 @@ const FamilySafetyPage = () => {
                           onClick={() => resendInvite(m)}
                           title="Resend invite"
                         >
-                          <MessageCircle className="h-4 w-4 text-green-600" />
+                          <MessageCircle className="h-4 w-4 text-primary" />
                         </Button>
                       )}
                       <Button

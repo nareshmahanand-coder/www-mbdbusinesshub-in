@@ -111,7 +111,7 @@ const FamilyInvitePage = () => {
       <div className="min-h-screen bg-background">
         <AppHeader />
         <div className="container mx-auto max-w-md px-4 py-10 text-center">
-          <CheckCircle2 className="mx-auto h-10 w-10 text-green-600" />
+          <CheckCircle2 className="mx-auto h-10 w-10 text-primary" />
           <p className="mt-3 font-bold">यह invite पहले ही accept हो चुका है ✅</p>
           <Button asChild className="mt-4">
             <Link to="/family-safety">Family Safety खोलें</Link>
