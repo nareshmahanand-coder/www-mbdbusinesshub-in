@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
-import { X, Send, HelpCircle, AlertTriangle, ShoppingBag, Heart, Shield, Volume2, Droplets, Megaphone, PhoneCall, Mic, MicOff } from "lucide-react";
+import { X, Send, HelpCircle, AlertTriangle, ShoppingBag, Heart, Shield, Volume2, Droplets, Megaphone, PhoneCall, Mic, MicOff, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,6 +52,7 @@ const BharatMitraChatbot = () => {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [safeWalkActive, setSafeWalkActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   // Chat window draggable state
   const [chatPos, setChatPos] = useState<{ x: number; y: number }>({ x: -1, y: -1 });
