@@ -1,4 +1,6 @@
 import jsPDF from "jspdf";
+import ngoSealUrl from "@/assets/ngo-seal.png";
+import ngoSignatureUrl from "@/assets/ngo-signature.png";
 
 export interface CertificateData {
   userName: string;
@@ -156,30 +158,33 @@ export function generateCertificatePDF(data: CertificateData): jsPDF {
   doc.text(`Date / दिनांक: ${data.date}`, 47.5, footerY + 4, { align: "center" });
 
   // Right: NGO Seal + Authorised Signatory
-  const sealCx = pw - 40;
-  const sealCy = footerY - 4;
-  doc.setDrawColor(180, 0, 0);
-  doc.setLineWidth(0.8);
-  doc.circle(sealCx, sealCy, 13);
-  doc.setLineWidth(0.3);
-  doc.circle(sealCx, sealCy, 10);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(6);
-  doc.setTextColor(180, 0, 0);
-  doc.text("LIVE SHOW FOUNDATION", sealCx, sealCy - 3, { align: "center" });
-  doc.setFontSize(5);
-  doc.text("लाइव शो फाउंडेशन", sealCx, sealCy + 0.5, { align: "center" });
-  doc.setFontSize(5);
-  doc.setTextColor(26, 35, 126);
-  doc.text("✓ OFFICIAL SEAL", sealCx, sealCy + 4, { align: "center" });
+  // Real NGO seal image (top) + signature image (overlapping bottom-left of seal)
+  const sealSize = 32; // mm
+  const sealX = pw - 20 - sealSize; // right-aligned with 20mm right margin
+  const sealY = footerY - sealSize / 2 - 6;
+  try {
+    doc.addImage(ngoSealUrl, "PNG", sealX, sealY, sealSize, sealSize);
+  } catch { /* ignore */ }
 
+  // Signature image - positioned to the LEFT of seal, slightly overlapping signature line
+  const sigW = 30, sigH = 14;
+  const sigX = sealX - sigW - 4;
+  const sigY = footerY - sigH + 2;
+  try {
+    doc.addImage(ngoSignatureUrl, "PNG", sigX, sigY, sigW, sigH);
+  } catch { /* ignore */ }
+
+  // Signature line spanning under both signature and seal
   doc.setDrawColor(40, 40, 40);
   doc.setLineWidth(0.3);
-  doc.line(pw - 75, footerY + 6, pw - 20, footerY + 6);
+  doc.line(sigX, footerY + 4, pw - 20, footerY + 4);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(60, 60, 60);
-  doc.text("Authorised Signatory / अधिकृत हस्ताक्षर", pw - 47.5, footerY + 10, { align: "center" });
+  doc.text("Authorised Signatory / अधिकृत हस्ताक्षर", (sigX + pw - 20) / 2, footerY + 8, { align: "center" });
+  doc.setFontSize(7);
+  doc.setTextColor(120, 120, 120);
+  doc.text("लाइव शो फाउंडेशन (Live Show Foundation)", (sigX + pw - 20) / 2, footerY + 12, { align: "center" });
 
   // Cert ID center bottom
   doc.setFont("helvetica", "bold");
@@ -407,22 +412,29 @@ async function drawCertificateOnCanvas(data: CertificateData): Promise<string> {
   ctx.fillStyle = "#444"; ctx.font = "18px sans-serif";
   ctx.fillText(`Date / दिनांक: ${data.date}`, 250, H - 125);
 
-  // Right: Seal + Sign
-  const sX = W - 230, sY = H - 180;
-  ctx.strokeStyle = "#B40000"; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.arc(sX, sY, 65, 0, Math.PI * 2); ctx.stroke();
-  ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(sX, sY, 50, 0, Math.PI * 2); ctx.stroke();
-  ctx.fillStyle = "#B40000"; ctx.font = "bold 11px sans-serif";
-  ctx.fillText("LIVE SHOW FOUNDATION", sX, sY - 8);
-  ctx.fillStyle = "#B40000"; ctx.font = "10px sans-serif";
-  ctx.fillText("लाइव शो फाउंडेशन", sX, sY + 8);
-  ctx.fillStyle = "#1a237e"; ctx.font = "bold 9px sans-serif";
-  ctx.fillText("✓ OFFICIAL SEAL", sX, sY + 24);
+  // Real seal + signature images (bottom-right)
+  try {
+    const sealImg = await loadImage(ngoSealUrl);
+    const sealSize = 170;
+    const sealCx = W - 100 - sealSize / 2;
+    const sealCy = H - 220;
+    ctx.drawImage(sealImg, sealCx - sealSize / 2, sealCy - sealSize / 2, sealSize, sealSize);
 
-  ctx.strokeStyle = "#333"; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(W - 360, H - 110); ctx.lineTo(W - 100, H - 110); ctx.stroke();
-  ctx.fillStyle = "#444"; ctx.font = "16px sans-serif";
-  ctx.fillText("Authorised Signatory / अधिकृत हस्ताक्षर", W - 230, H - 88);
+    const sigImg = await loadImage(ngoSignatureUrl);
+    const sigW = 200, sigH = 90;
+    const sigX = sealCx - sealSize / 2 - sigW + 10;
+    const sigY = H - 200;
+    ctx.drawImage(sigImg, sigX, sigY, sigW, sigH);
+
+    // Signature line under both
+    ctx.strokeStyle = "#333"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(sigX, H - 110); ctx.lineTo(W - 100, H - 110); ctx.stroke();
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#444"; ctx.font = "16px sans-serif";
+    ctx.fillText("Authorised Signatory / अधिकृत हस्ताक्षर", (sigX + W - 100) / 2, H - 90);
+    ctx.fillStyle = "#888"; ctx.font = "13px sans-serif";
+    ctx.fillText("लाइव शो फाउंडेशन (Live Show Foundation)", (sigX + W - 100) / 2, H - 72);
+  } catch { /* ignore */ }
 
   // Cert ID
   ctx.fillStyle = "#1a237e"; ctx.font = "bold 18px sans-serif";
