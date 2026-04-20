@@ -581,7 +581,7 @@ const BharatMitraChatbot = () => {
             <div className="flex flex-wrap gap-1.5 border-t border-border px-3 py-2">
               {FAQ_BUTTONS.map((faq, i) => (
                 <button key={i} onClick={() => handleFaq(faq)}
-                  className="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-[10px] font-medium text-accent-foreground transition-colors hover:bg-accent/20">
+                  className="rounded-full border border-[#FF9933]/60 bg-[#FF9933]/25 px-2.5 py-1 text-[10px] font-bold text-[#0a1a5e] transition-colors hover:bg-[#FF9933]/40">
                   {faq.label}
                 </button>
               ))}
