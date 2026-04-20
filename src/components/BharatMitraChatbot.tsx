@@ -805,6 +805,28 @@ const BharatMitraChatbot = () => {
               ))}
             </div>
             <div className="flex gap-2 border-t border-border p-3">
+              {isListening && (
+                <div className="absolute inset-x-0 -top-7 mx-auto flex w-fit items-center gap-1 rounded-full bg-background/95 px-3 py-1 shadow-lg ring-1 ring-border">
+                  <span className="text-[10px] font-bold text-primary">सुन रही हूँ</span>
+                  <div className="flex items-end gap-[2px]">
+                    {[0, 1, 2, 3, 4, 5, 6].map((i) => {
+                      const color = i < 2 ? "#FF9933" : i < 5 ? "#ffffff" : "#138808";
+                      return (
+                        <span
+                          key={i}
+                          className="inline-block w-[3px] rounded-sm"
+                          style={{
+                            height: `${6 + ((i * 3) % 12)}px`,
+                            background: color,
+                            boxShadow: `0 0 6px ${color}`,
+                            animation: `bharatWave 0.9s ease-in-out ${i * 0.08}s infinite alternate`,
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <div className="relative flex-1">
                 <Input value={input} onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSend()}
