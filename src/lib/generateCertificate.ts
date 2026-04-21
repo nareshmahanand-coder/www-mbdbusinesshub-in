@@ -61,45 +61,45 @@ export function generateCertificatePDF(data: CertificateData): jsPDF {
 
   // Name (handwritten on first blank)
   doc.setFontSize(13);
-  doc.text(data.userName || "—", 95, 159);
+  doc.text(data.userName || "—", 96, 162);
 
   // Father / Husband name
   doc.setFontSize(12);
-  doc.text(data.fatherName || "—", 78, 171);
+  doc.text(data.fatherName || "—", 80, 174);
 
   // Course name OR "Blood Donation"
   doc.setFontSize(12);
   doc.setTextColor(180, 30, 30);
   if (data.type === "blood") {
-    doc.text("Blood Donation", 118, 187);
+    doc.text("Blood Donation", 120, 195);
   } else {
-    doc.text(data.courseName || "—", 118, 187);
+    doc.text(data.courseName || "—", 120, 195);
   }
 
   // Duration
   doc.setTextColor(20, 20, 60);
   doc.setFontSize(11);
-  doc.text(data.courseDuration || "—", 67, 205);
+  doc.text(data.courseDuration || "—", 68, 213);
 
   // Grade
-  doc.text(data.grade || (data.scorePercent != null ? `${data.scorePercent}%` : "A"), 138, 205);
+  doc.text(data.grade || (data.scorePercent != null ? `${data.scorePercent}%` : "A"), 138, 213);
 
   // ─── Authentication overlays: Signature (LEFT) + Seal (RIGHT) ──────
   // Signature on the left, above "President's Signature" line
   try {
-    doc.addImage(ngoSignatureUrl, "PNG", 58, 245, 45, 16);
+    doc.addImage(ngoSignatureUrl, "PNG", 58, 240, 42, 14);
   } catch { /* ignore */ }
 
   // Round NGO Seal on the right, above "Seal of NGO" line
   try {
-    doc.addImage(ngoSealUrl, "PNG", 132, 240, 30, 30);
+    doc.addImage(ngoSealUrl, "PNG", 142, 232, 26, 26);
   } catch { /* ignore */ }
 
   // ─── Date + Cert ID ────────────────────────────────────────────────
   doc.setFont("times", "normal");
   doc.setFontSize(10);
   doc.setTextColor(20, 20, 60);
-  doc.text(data.date, 38, 261);
+  doc.text(data.date, 36, 263);
 
   // Unique Certificate ID — bottom right (small, doesn't break design)
   doc.setFontSize(8);
