@@ -824,6 +824,155 @@ const BloodDonorTab = () => {
           </Button>
         </div>
       )}
+
+      {/* ============================================ CERTIFICATE REGISTRATION */}
+      {mode === "certificate" && (
+        <div className="space-y-2">
+          <div className="rounded border border-amber-300 bg-amber-50 p-2">
+            <p className="text-[10px] font-semibold text-amber-900">
+              ⚠️ Official Certificate तभी जारी होगा जब: (1) आप लाइव फोटो + अस्पताल रसीद अपलोड करें (2) रक्त प्राप्तकर्ता "रक्त मिल गया" क्लिक करे (3) Admin verify करे।
+            </p>
+          </div>
+          <Field label="पूरा नाम *" value={cert.name} onChange={(v) => setCert({ ...cert, name: v })} />
+          <Field label="पिता / पति का नाम" value={cert.fatherName} onChange={(v) => setCert({ ...cert, fatherName: v })} />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-[10px]">Blood Group *</Label>
+              <select
+                value={cert.bloodGroup}
+                onChange={(e) => setCert({ ...cert, bloodGroup: e.target.value })}
+                className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+              >
+                {BLOOD_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+            <Field label="रक्तदान की तारीख *" type="date" value={cert.donationDate} onChange={(v) => setCert({ ...cert, donationDate: v })} />
+          </div>
+          <Field label="शहर" value={cert.city} onChange={(v) => setCert({ ...cert, city: v })} />
+          <Field label="अस्पताल का नाम" value={cert.hospitalName} onChange={(v) => setCert({ ...cert, hospitalName: v })} />
+          <div>
+            <Label className="text-[10px]">अस्पताल का पता</Label>
+            <Textarea value={cert.hospitalAddress} onChange={(e) => setCert({ ...cert, hospitalAddress: e.target.value })} className="min-h-[50px] text-xs" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-[10px] flex items-center gap-1"><Camera className="h-3 w-3" /> लाइव फोटो *</Label>
+              <input
+                type="file" accept="image/*" capture="user"
+                onChange={(e) => setCert({ ...cert, livePhotoFile: e.target.files?.[0] || null })}
+                className="h-8 w-full text-[10px]"
+              />
+              {cert.livePhotoFile && <p className="text-[9px] text-emerald-700">✓ {cert.livePhotoFile.name}</p>}
+            </div>
+            <div>
+              <Label className="text-[10px] flex items-center gap-1"><FileText className="h-3 w-3" /> अस्पताल रसीद *</Label>
+              <input
+                type="file" accept="image/*"
+                onChange={(e) => setCert({ ...cert, receiptFile: e.target.files?.[0] || null })}
+                className="h-8 w-full text-[10px]"
+              />
+              {cert.receiptFile && <p className="text-[9px] text-emerald-700">✓ {cert.receiptFile.name}</p>}
+            </div>
+          </div>
+
+          <Button
+            onClick={handleSubmitCertificate}
+            disabled={submitting}
+            className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+            I want this certificate — Register
+          </Button>
+        </div>
+      )}
+
+      {/* ============================================ MY DONATIONS */}
+      {mode === "myDonations" && (
+        <div className="space-y-2">
+          {donationsLoading ? (
+            <p className="py-6 text-center text-xs text-muted-foreground"><Loader2 className="inline h-4 w-4 animate-spin mr-1" />Loading…</p>
+          ) : myDonations.length === 0 ? (
+            <p className="py-6 text-center text-xs text-muted-foreground">अभी कोई रक्तदान दर्ज नहीं है। "सर्टिफिकेट" टैब से रजिस्टर करें।</p>
+          ) : myDonations.map((d) => (
+            <div key={d.id} className="rounded-lg border border-border bg-background p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-sm font-bold">{d.donor_name || "—"} <span className="ml-1 rounded bg-destructive px-1.5 text-[10px] text-destructive-foreground">{d.blood_group}</span></p>
+                  <p className="text-[10px] text-muted-foreground">{d.donation_date_text || new Date(d.donated_at).toLocaleDateString("en-IN")} • {d.hospital_name || "—"}</p>
+                  <p className="text-[9px] font-mono text-muted-foreground">Cert No: {d.certificate_no}</p>
+                </div>
+                {d.admin_verified ? (
+                  <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[9px] font-bold text-white">✓ Approved</span>
+                ) : d.verification_status === "rejected" ? (
+                  <span className="rounded-full bg-red-600 px-2 py-0.5 text-[9px] font-bold text-white">✗ Rejected</span>
+                ) : (
+                  <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-bold text-white">⏳ Pending</span>
+                )}
+              </div>
+              <div className="mt-2">
+                {d.admin_verified ? (
+                  <Button
+                    onClick={() => handleDownloadOfficial(d)}
+                    className="h-8 w-full bg-emerald-600 text-xs text-white hover:bg-emerald-700"
+                  >
+                    <Download className="mr-1 h-3 w-3" /> Download Official Certificate
+                  </Button>
+                ) : (
+                  <button
+                    onClick={() => toast({ title: "अभी जारी नहीं हुआ", description: PENDING_MSG, variant: "destructive" })}
+                    className="flex h-8 w-full items-center justify-center gap-1 rounded bg-muted text-[11px] font-bold text-muted-foreground"
+                  >
+                    <Lock className="h-3 w-3" /> Locked — Awaiting Verification
+                  </button>
+                )}
+              </div>
+              {d.admin_notes && <p className="mt-1 text-[10px] italic text-muted-foreground">Note: {d.admin_notes}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ============================================ SAMPLE PREVIEW DIALOG */}
+      <Dialog open={sampleOpen} onOpenChange={setSampleOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Eye className="h-5 w-5" /> रक्तदान प्रमाण पत्र — नमूना
+            </DialogTitle>
+            <DialogDescription className="text-[11px]">
+              यह केवल प्रदर्शन के लिए है। Original certificate Admin verification के बाद ही जारी होता है।
+            </DialogDescription>
+          </DialogHeader>
+          <div
+            className="relative overflow-hidden rounded border bg-white"
+            onContextMenu={(e) => e.preventDefault()}
+            style={{ userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" }}
+          >
+            {samplePreviewUrl ? (
+              <img
+                src={samplePreviewUrl}
+                alt="Sample certificate preview — non-downloadable"
+                draggable={false}
+                className="pointer-events-none w-full select-none"
+                style={{ WebkitUserDrag: "none" } as any}
+              />
+            ) : (
+              <div className="flex h-64 items-center justify-center text-xs text-muted-foreground">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating preview…
+              </div>
+            )}
+            {/* Hard overlay to block long-press save */}
+            <div className="absolute inset-0" onContextMenu={(e) => e.preventDefault()} />
+          </div>
+          <Button
+            onClick={() => { setSampleOpen(false); setMode("certificate"); }}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            <FileText className="mr-2 h-4 w-4" /> I want this certificate — Register
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
