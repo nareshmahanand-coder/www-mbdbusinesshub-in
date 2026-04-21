@@ -65,15 +65,15 @@ export function generateCertificatePDF(data: CertificateData): jsPDF {
 
   // Father / Husband name
   doc.setFontSize(12);
-  doc.text(data.fatherName || "—", 80, 164);
+  doc.text(data.fatherName || "—", 80, 167);
 
   // Course name OR "Blood Donation"
   doc.setFontSize(12);
   doc.setTextColor(180, 30, 30);
   if (data.type === "blood") {
-    doc.text("Blood Donation", 122, 191);
+    doc.text("Blood Donation", 122, 186);
   } else {
-    doc.text(data.courseName || "—", 122, 191);
+    doc.text(data.courseName || "—", 122, 186);
   }
 
   // Duration
