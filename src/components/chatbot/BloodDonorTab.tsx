@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { Phone, MessageCircle, Droplets, UserPlus, Search, CheckCircle2, Award, MapPin, Loader2 } from "lucide-react";
+import { Phone, MessageCircle, Droplets, UserPlus, Search, CheckCircle2, Award, MapPin, Loader2, Eye, FileText, ShieldCheck, Camera, X, Download, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import {
-  generateDonorCertificatePDF,
-  generateDonorCertNo,
-} from "@/lib/generateDonorCertificate";
+  generateRaktadanCertificatePDF,
+  generateRaktadanCertNo,
+  renderRaktadanPreviewDataUrl,
+} from "@/lib/generateRaktadanCertificate";
 
 const BLOOD_GROUPS = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
 const FILTER_GROUPS = ["All", ...BLOOD_GROUPS];
@@ -19,7 +21,10 @@ const NGO_NAME = "लाइव शो शिक्षा एवं सामा�
 const NGO_NOTE =
   "लाइव शो शिक्षा एवं सामाजिक कल्याण समिति की तरफ से आपको रक्तदान करने पर विशेष प्रोत्साहन प्रमाण-पत्र (Certificate) प्रदान किया जाएगा।";
 
-type Mode = "browse" | "register" | "request";
+const PENDING_MSG =
+  "आपका प्रमाणपत्र तभी जारी किया जाएगा जब रक्त प्राप्त करने वाला व्यक्ति पुष्टि करेगा और आपके द्वारा अपलोड की गई अस्पताल की रसीद और फोटो की जांच पूरी हो जाएगी।";
+
+type Mode = "browse" | "register" | "request" | "certificate" | "myDonations";
 
 interface Donor {
   id: string;
