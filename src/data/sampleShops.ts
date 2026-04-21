@@ -665,6 +665,7 @@ export const categorySections: CategorySection[] = [
 export const shopCategories: string[] = [...new Set(categorySections.flatMap((s) => s.categories))];
 
 export const categoryIcons: Record<string, string> = {
+  "Nanda Agro Farm": "🌾",
   "General Store": "🛒",
   "Clothing & Fashion": "👗",
   "Electronics": "📱",

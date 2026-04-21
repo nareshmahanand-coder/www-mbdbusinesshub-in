@@ -69,6 +69,10 @@ const Index = () => {
 
     // Premium Priority: premium+verified shops first, then sort by rating as proxy for distance
     return filtered.sort((a, b) => {
+      // Nanda Agro Farm flagship units are pinned to the absolute top
+      const aFlag = a.flagship ? 1 : 0;
+      const bFlag = b.flagship ? 1 : 0;
+      if (bFlag !== aFlag) return bFlag - aFlag;
       const aPremium = a.premium && a.verified ? 1 : 0;
       const bPremium = b.premium && b.verified ? 1 : 0;
       if (bPremium !== aPremium) return bPremium - aPremium;

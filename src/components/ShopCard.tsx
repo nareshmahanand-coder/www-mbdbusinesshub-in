@@ -82,7 +82,13 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
   const totalReviews = (shop.reviewCount || 0) + reviews.filter(r => r.userName === "You").length;
 
   return (
-    <Card className={`group relative overflow-hidden transition-all hover:shadow-xl ${shop.premium ? "ring-2 ring-saffron shadow-[0_0_16px_hsl(var(--saffron)/0.35)] border-saffron" : ""}`}>
+    <Card className={`group relative overflow-hidden transition-all hover:shadow-xl ${
+      shop.flagship
+        ? "ring-2 ring-[hsl(45,90%,55%)] shadow-[0_0_24px_hsl(45,90%,55%,0.45)] border-[hsl(45,90%,55%)] bg-gradient-to-br from-background to-[hsl(45,80%,50%,0.06)]"
+        : shop.premium
+        ? "ring-2 ring-saffron shadow-[0_0_16px_hsl(var(--saffron)/0.35)] border-saffron"
+        : ""
+    }`}>
       <div className="absolute right-0 top-0 h-1 w-full tiranga-stripe" />
       <CardContent className="p-5">
         <div className="mb-3 flex items-start justify-between">
@@ -96,7 +102,11 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
             <p className="font-hindi text-sm text-muted-foreground">{shop.nameHindi}</p>
           </div>
           <div className="flex flex-col items-end gap-1">
-            {shop.premium ? (
+            {shop.flagship ? (
+              <Badge className="bg-gradient-to-r from-[hsl(45,90%,50%)] via-[hsl(40,95%,55%)] to-[hsl(35,90%,50%)] text-[hsl(140,40%,12%)] text-[10px] font-extrabold px-3 py-0.5 shadow-lg">
+                🌾 FLAGSHIP
+              </Badge>
+            ) : shop.premium ? (
               <Badge className="bg-gradient-to-r from-saffron to-[hsl(35,90%,50%)] text-primary-foreground text-[10px] font-bold px-3 py-0.5 shadow-md animate-pulse">
                 ⭐ Premium ✓
               </Badge>
