@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
+import NandaDehydratedSection from "@/components/NandaDehydratedSection";
 
 const NANDA_WHATSAPP = "918305161361";
 
@@ -234,6 +235,9 @@ const NandaFarmSection = () => {
               </div>
             </div>
           </div>
+
+          {/* Dehydrated Vegetables — सूखी सब्जियां */}
+          <NandaDehydratedSection />
 
           {/* Zero Waste Banner */}
           <div className="rounded-2xl border-2 border-[hsl(45,80%,50%)]/30 bg-gradient-to-r from-[hsl(140,25%,18%)] via-[hsl(140,20%,14%)] to-[hsl(45,30%,16%)] p-6 shadow-xl">
