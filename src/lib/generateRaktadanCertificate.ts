@@ -143,24 +143,11 @@ async function renderPreviewToCanvas(d: RaktadanCertificateData): Promise<string
       if (!ctx) return reject(new Error("no canvas ctx"));
       ctx.drawImage(img, 0, 0);
 
-      // Overlay donor name centered
+      // Overlay ONLY donor name on the sample preview — no blood group / date / address.
       ctx.fillStyle = "#a01420";
       ctx.font = `bold ${Math.round(img.width * 0.045)}px Georgia, serif`;
       ctx.textAlign = "center";
-      ctx.fillText(d.donorName || "—", img.width / 2, img.height * 0.45);
-
-      ctx.fillStyle = "#1a237e";
-      ctx.font = `bold ${Math.round(img.width * 0.028)}px Georgia, serif`;
-      ctx.fillText(
-        `Blood Group: ${d.bloodGroup}`,
-        img.width / 2,
-        img.height * 0.52
-      );
-      ctx.fillText(
-        `Date: ${d.donationDate}`,
-        img.width / 2,
-        img.height * 0.56
-      );
+      ctx.fillText(d.donorName || "—", img.width / 2, img.height * 0.51);
 
       // Diagonal watermark
       ctx.save();
