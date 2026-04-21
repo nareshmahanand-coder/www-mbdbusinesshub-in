@@ -9,7 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { bookCategories, type BookCategory, type PdfItem } from "@/data/skillBooks";
 import { ExamDialog } from "@/components/skill/ExamDialog";
-import { Award } from "lucide-react";
+import { Award, Eye } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import certificateTemplateUrl from "@/assets/certificate-template.jpg";
 
 /* ═══════════════════════════════════
    CATEGORY PDF LIBRARY VIEW
@@ -17,6 +19,7 @@ import { Award } from "lucide-react";
 const CategoryLibrary = ({ category, onBack }: { category: BookCategory; onBack: () => void }) => {
   const [pdfSearch, setPdfSearch] = useState("");
   const [examOpen, setExamOpen] = useState(false);
+  const [sampleOpen, setSampleOpen] = useState(false);
 
   const filteredPdfs = category.pdfLibrary.filter(p =>
     !pdfSearch.trim() ||
@@ -105,6 +108,48 @@ const CategoryLibrary = ({ category, onBack }: { category: BookCategory; onBack:
           <Award className="h-5 w-5" />
           <span className="text-sm font-bold font-hindi">कोर्स और परीक्षा पूर्ण करें, डिजिटल सर्टिफिकेट प्राप्त करें</span>
         </button>
+
+        {/* View Sample Certificate (clean master template, no seal/signature) */}
+        <button
+          onClick={() => setSampleOpen(true)}
+          className="w-full mb-4 flex items-center justify-center gap-2 rounded-xl px-4 py-3 border-2 border-orange-500 bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-300 shadow-sm hover:bg-orange-100 dark:hover:bg-orange-950/30 active:scale-[0.98] transition-all"
+        >
+          <Eye className="h-5 w-5" />
+          <span className="text-sm font-bold font-hindi">नमूना प्रमाण पत्र देखें (View Sample Certificate)</span>
+        </button>
+
+        <Dialog open={sampleOpen} onOpenChange={setSampleOpen}>
+          <DialogContent className="max-w-md p-3">
+            <DialogHeader>
+              <DialogTitle className="text-sm font-hindi text-center">
+                नमूना प्रमाण पत्र — Sample Certificate
+              </DialogTitle>
+              <DialogDescription className="text-[10px] text-center font-hindi">
+                यह केवल एक झलक है। परीक्षा पास करने के बाद आपका असली हस्ताक्षरित प्रमाण पत्र जारी होगा।
+              </DialogDescription>
+            </DialogHeader>
+            <div
+              className="relative rounded-lg overflow-hidden border border-border bg-white select-none"
+              onContextMenu={(e) => e.preventDefault()}
+            >
+              <img
+                src={certificateTemplateUrl}
+                alt="Sample certificate preview"
+                draggable={false}
+                className="pointer-events-none w-full select-none"
+              />
+              {/* Diagonal SAMPLE watermark so it can't be misused */}
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <span className="rotate-[-25deg] text-5xl font-black text-orange-600/30 tracking-widest">
+                  नमूना • SAMPLE
+                </span>
+              </div>
+            </div>
+            <p className="text-[10px] text-center text-muted-foreground font-hindi mt-1">
+              📌 असली प्रमाण पत्र पर NGO की मुहर और अध्यक्ष के हस्ताक्षर होंगे।
+            </p>
+          </DialogContent>
+        </Dialog>
 
         <ExamDialog
           open={examOpen}
