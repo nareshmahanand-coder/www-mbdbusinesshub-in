@@ -1,17 +1,21 @@
 import jsPDF from "jspdf";
 import ngoSealUrl from "@/assets/ngo-seal.png";
 import ngoSignatureUrl from "@/assets/ngo-signature.png";
+import certTemplateUrl from "@/assets/certificate-template.jpg";
 
 export interface CertificateData {
   userName: string;
+  fatherName?: string;
   courseName: string;
-  scorePercent: number;
+  scorePercent?: number;
   date: string;
   certificateId: string;
-  /** Course duration text e.g. "3 महीने का कोर्स" */
   courseDuration?: string;
-  /** Data URL or remote URL of user's passport photo */
   userPhotoUrl?: string;
+  /** "skill" (default) or "blood" — controls which placeholder gets filled */
+  type?: "skill" | "blood";
+  /** Optional grade text e.g. "A+", "Excellent" */
+  grade?: string;
 }
 
 export function generateCertificateId(): string {
@@ -20,181 +24,87 @@ export function generateCertificateId(): string {
   return `LSF-${ts}-${rand}`;
 }
 
-/* NGO Constants */
-const NGO_NAME_HI = "लाइव शो शिक्षा एवं सामाजिक कल्याण समिति";
-const NGO_SHORT = "लाइव शो फाउंडेशन (Live Show Foundation)";
-const NGO_REG = "Reg. No. 122202059372";
-
+/**
+ * Master template-based certificate.
+ * Uses certificate-template.jpg as the background and overlays dynamic
+ * text + NGO seal + president's signature precisely on the printed placeholders.
+ */
 export function generateCertificatePDF(data: CertificateData): jsPDF {
-  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
-  const pw = doc.internal.pageSize.getWidth();
-  const ph = doc.internal.pageSize.getHeight();
+  // Template image is portrait — use A4 portrait to match.
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+  const pw = doc.internal.pageSize.getWidth();   // 210
+  const ph = doc.internal.pageSize.getHeight();  // 297
 
-  // Background
-  doc.setFillColor(255, 253, 245);
-  doc.rect(0, 0, pw, ph, "F");
+  // 1) Draw template as full-page background
+  try {
+    doc.addImage(certTemplateUrl, "JPEG", 0, 0, pw, ph);
+  } catch {
+    // fallback white bg
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, pw, ph, "F");
+  }
 
-  // Tiranga outer border (saffron / white / green stack)
-  doc.setFillColor(255, 153, 51); doc.rect(0, 0, pw, 6, "F");
-  doc.setFillColor(19, 136, 8); doc.rect(0, ph - 6, pw, 6, "F");
-  doc.setFillColor(255, 153, 51); doc.rect(0, 0, 6, ph, "F");
-  doc.setFillColor(19, 136, 8); doc.rect(pw - 6, 0, 6, ph, "F");
+  // ─── Dynamic text overlays ──────────────────────────────────────────
+  // Coordinates calibrated against template placeholders (image is ~1000x1378).
+  // pw=210mm, ph=297mm. Placeholder lines roughly at:
+  //   • Name line:      y ≈ 145mm, name x ≈ 90→200mm
+  //   • Father line:    y ≈ 156mm, x ≈ 65→170mm
+  //   • Course slot:    y ≈ 178mm, x ≈ 115→200mm  (skill)
+  //   • Duration slot:  y ≈ 200mm, x ≈ 60→100mm
+  //   • Grade slot:     y ≈ 200mm, x ≈ 130→180mm
+  //   • Seal (right):   x ≈ 130, y ≈ 235  (centered on seal line)
+  //   • Signature(L):   x ≈ 65,  y ≈ 230
+  //   • Date line:      x ≈ 35,  y ≈ 268
 
-  // Inner navy frame
-  doc.setDrawColor(26, 35, 126);
-  doc.setLineWidth(1.4);
-  doc.rect(10, 10, pw - 20, ph - 20);
-  doc.setDrawColor(255, 140, 0);
-  doc.setLineWidth(0.5);
-  doc.rect(13, 13, pw - 26, ph - 26);
+  doc.setTextColor(20, 20, 60);
+  doc.setFont("times", "bold");
 
-  // === Watermark: Chhattisgarh state outline (stylised) in tricolor ===
-  drawChhattisgarhWatermark(doc, pw / 2, ph / 2 + 8, 70);
-
-  // === Top center: Ashoka Chakra ===
-  drawAshokaChakra(doc, pw / 2, 28, 9);
-
-  // === NGO Header (top) ===
-  doc.setFont("helvetica", "bold");
+  // Name (handwritten on first blank)
   doc.setFontSize(13);
-  doc.setTextColor(19, 136, 8);
-  doc.text(NGO_NAME_HI, pw / 2, 44, { align: "center" });
-  doc.setFontSize(9);
-  doc.setTextColor(60, 60, 60);
-  doc.text(NGO_SHORT, pw / 2, 50, { align: "center" });
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(180, 0, 0);
-  doc.text(NGO_REG, pw / 2, 55, { align: "center" });
+  doc.text(data.userName || "—", 92, 144);
 
-  // Divider
-  doc.setDrawColor(200, 170, 100);
-  doc.setLineWidth(0.4);
-  doc.line(40, 59, pw - 40, 59);
-
-  // Title
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(26);
-  doc.setTextColor(26, 35, 126);
-  doc.text("Certificate of Completion", pw / 2, 72, { align: "center" });
+  // Father / Husband name
   doc.setFontSize(12);
-  doc.setTextColor(80, 80, 80);
-  doc.text("कौशल विकास प्रमाणपत्र", pw / 2, 79, { align: "center" });
+  doc.text(data.fatherName || "—", 75, 156);
 
-  // === Left: User Photo Frame ===
-  const photoX = 25;
-  const photoY = 90;
-  const photoW = 35;
-  const photoH = 42;
-  doc.setDrawColor(26, 35, 126);
-  doc.setLineWidth(0.8);
-  doc.setFillColor(245, 245, 245);
-  doc.rect(photoX, photoY, photoW, photoH, "FD");
-  if (data.userPhotoUrl) {
-    try {
-      doc.addImage(data.userPhotoUrl, "JPEG", photoX + 1, photoY + 1, photoW - 2, photoH - 2);
-    } catch {
-      try { doc.addImage(data.userPhotoUrl, "PNG", photoX + 1, photoY + 1, photoW - 2, photoH - 2); } catch { /* ignore */ }
-    }
+  // Course name OR "Blood Donation"
+  doc.setFontSize(12);
+  doc.setTextColor(180, 30, 30);
+  if (data.type === "blood") {
+    doc.text("Blood Donation", 145, 178);
   } else {
-    doc.setFontSize(8);
-    doc.setTextColor(140, 140, 140);
-    doc.text("Photo", photoX + photoW / 2, photoY + photoH / 2, { align: "center" });
+    doc.text(data.courseName || "—", 145, 178);
   }
-  doc.setFontSize(7);
-  doc.setTextColor(80, 80, 80);
-  doc.text("Passport Photo", photoX + photoW / 2, photoY + photoH + 4, { align: "center" });
 
-  // === Body (right of photo) ===
-  const bodyX = photoX + photoW + 10;
-  let by = 100;
-
-  doc.setFont("helvetica", "normal");
+  // Duration
+  doc.setTextColor(20, 20, 60);
   doc.setFontSize(11);
-  doc.setTextColor(60, 60, 60);
-  doc.text("This is to certify that / प्रमाणित किया जाता है कि", bodyX, by);
-  by += 10;
+  doc.text(data.courseDuration || "—", 65, 200);
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor(19, 100, 8);
-  doc.text(data.userName || "Student", bodyX, by);
-  by += 9;
+  // Grade
+  doc.text(data.grade || (data.scorePercent != null ? `${data.scorePercent}%` : "A"), 138, 200);
 
-  doc.setFont("helvetica", "normal");
+  // ─── Authentication overlays: Signature (LEFT) + Seal (RIGHT) ──────
+  // Signature on the left, above "President's Signature" line
+  try {
+    doc.addImage(ngoSignatureUrl, "PNG", 58, 218, 45, 16);
+  } catch { /* ignore */ }
+
+  // Round NGO Seal on the right, above "Seal of NGO" line
+  try {
+    doc.addImage(ngoSealUrl, "PNG", 130, 213, 32, 32);
+  } catch { /* ignore */ }
+
+  // ─── Date + Cert ID ────────────────────────────────────────────────
+  doc.setFont("times", "normal");
   doc.setFontSize(10);
-  doc.setTextColor(60, 60, 60);
-  doc.text("ने निम्नलिखित पाठ्यक्रम सफलतापूर्वक पूर्ण किया है:", bodyX, by);
-  by += 9;
+  doc.setTextColor(20, 20, 60);
+  doc.text(data.date, 38, 268);
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(15);
-  doc.setTextColor(26, 35, 126);
-  doc.text(`"${data.courseName}"`, bodyX, by);
-  by += 8;
-
-  if (data.courseDuration) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(180, 80, 0);
-    doc.text(`अवधि / Duration: ${data.courseDuration}`, bodyX, by);
-    by += 7;
-  }
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.setTextColor(40, 40, 40);
-  doc.text(`प्राप्तांक / Score: ${data.scorePercent}%`, bodyX, by);
-
-  // === Footer: Date (left) | Seal+Sign (right) | Cert ID (center bottom) ===
-  const footerY = ph - 32;
-
-  // Date - left
-  doc.setDrawColor(40, 40, 40);
-  doc.setLineWidth(0.3);
-  doc.line(20, footerY, 75, footerY);
-  doc.setFontSize(9);
-  doc.setTextColor(60, 60, 60);
-  doc.text(`Date / दिनांक: ${data.date}`, 47.5, footerY + 4, { align: "center" });
-
-  // Right: NGO Seal + Authorised Signatory
-  // Real NGO seal image (top) + signature image (overlapping bottom-left of seal)
-  const sealSize = 32; // mm
-  const sealX = pw - 20 - sealSize; // right-aligned with 20mm right margin
-  const sealY = footerY - sealSize / 2 - 6;
-  try {
-    doc.addImage(ngoSealUrl, "PNG", sealX, sealY, sealSize, sealSize);
-  } catch { /* ignore */ }
-
-  // Signature image - positioned to the LEFT of seal, slightly overlapping signature line
-  const sigW = 30, sigH = 14;
-  const sigX = sealX - sigW - 4;
-  const sigY = footerY - sigH + 2;
-  try {
-    doc.addImage(ngoSignatureUrl, "PNG", sigX, sigY, sigW, sigH);
-  } catch { /* ignore */ }
-
-  // Signature line spanning under both signature and seal
-  doc.setDrawColor(40, 40, 40);
-  doc.setLineWidth(0.3);
-  doc.line(sigX, footerY + 4, pw - 20, footerY + 4);
-  doc.setFont("helvetica", "normal");
+  // Unique Certificate ID — bottom right (small, doesn't break design)
   doc.setFontSize(8);
-  doc.setTextColor(60, 60, 60);
-  doc.text("Authorised Signatory / अधिकृत हस्ताक्षर", (sigX + pw - 20) / 2, footerY + 8, { align: "center" });
-  doc.setFontSize(7);
-  doc.setTextColor(120, 120, 120);
-  doc.text("लाइव शो फाउंडेशन (Live Show Foundation)", (sigX + pw - 20) / 2, footerY + 12, { align: "center" });
-
-  // Cert ID center bottom
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(26, 35, 126);
-  doc.text(`Certificate ID: ${data.certificateId}`, pw / 2, ph - 14, { align: "center" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(120, 120, 120);
-  doc.text("Verify authenticity at merabharatdukaan.lovable.app", pw / 2, ph - 10, { align: "center" });
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Cert ID: ${data.certificateId}`, pw - 15, ph - 8, { align: "right" });
 
   return doc;
 }
