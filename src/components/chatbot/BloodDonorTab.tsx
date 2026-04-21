@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { Phone, MessageCircle, Droplets, UserPlus, Search, CheckCircle2, Award, MapPin, Loader2 } from "lucide-react";
+import { Phone, MessageCircle, Droplets, UserPlus, Search, CheckCircle2, Award, MapPin, Loader2, Eye, FileText, ShieldCheck, Camera, X, Download, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import {
-  generateDonorCertificatePDF,
-  generateDonorCertNo,
-} from "@/lib/generateDonorCertificate";
+  generateRaktadanCertificatePDF,
+  generateRaktadanCertNo,
+  renderRaktadanPreviewDataUrl,
+} from "@/lib/generateRaktadanCertificate";
 
 const BLOOD_GROUPS = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
 const FILTER_GROUPS = ["All", ...BLOOD_GROUPS];
@@ -19,7 +21,10 @@ const NGO_NAME = "लाइव शो शिक्षा एवं सामा�
 const NGO_NOTE =
   "लाइव शो शिक्षा एवं सामाजिक कल्याण समिति की तरफ से आपको रक्तदान करने पर विशेष प्रोत्साहन प्रमाण-पत्र (Certificate) प्रदान किया जाएगा।";
 
-type Mode = "browse" | "register" | "request";
+const PENDING_MSG =
+  "आपका प्रमाणपत्र तभी जारी किया जाएगा जब रक्त प्राप्त करने वाला व्यक्ति पुष्टि करेगा और आपके द्वारा अपलोड की गई अस्पताल की रसीद और फोटो की जांच पूरी हो जाएगी।";
+
+type Mode = "browse" | "register" | "request" | "certificate" | "myDonations";
 
 interface Donor {
   id: string;
@@ -57,6 +62,31 @@ const BloodDonorTab = () => {
   const [myRequests, setMyRequests] = useState<BloodRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  // Sample preview dialog
+  const [sampleOpen, setSampleOpen] = useState(false);
+  const [samplePreviewUrl, setSamplePreviewUrl] = useState<string | null>(null);
+  const [samplePreviewName, setSamplePreviewName] = useState("आपका नाम");
+
+  // My Donations (gated PDF)
+  const [myDonations, setMyDonations] = useState<any[]>([]);
+  const [donationsLoading, setDonationsLoading] = useState(false);
+
+  // Certificate registration form (donor-self uploads proof)
+  const [cert, setCert] = useState({
+    name: "",
+    fatherName: "",
+    bloodGroup: "O+",
+    address: "",
+    city: "",
+    hospitalName: "",
+    hospitalAddress: "",
+    donationDate: todayISO(),
+    livePhotoUrl: "",
+    receiptUrl: "",
+    livePhotoFile: null as File | null,
+    receiptFile: null as File | null,
+  });
 
   // Register form
   const [reg, setReg] = useState({
@@ -296,7 +326,7 @@ const BloodDonorTab = () => {
       return;
     }
 
-    // 2. Insert donation row (DB generates certificate_no)
+    // 2. Insert donation row (admin must verify before signed PDF is released)
     const { data: donation, error: donErr } = await supabase
       .from("blood_donations")
       .insert({
@@ -306,6 +336,10 @@ const BloodDonorTab = () => {
         requester_id: user.id,
         blood_group: donor.blood_group,
         city: donor.city,
+        donor_name: donor.name,
+        receiver_confirmed: true,
+        receiver_confirmed_at: new Date().toISOString(),
+        verification_status: "receiver_confirmed",
       })
       .select()
       .single();
@@ -326,35 +360,114 @@ const BloodDonorTab = () => {
       return;
     }
 
-    // 4. Generate certificate PDF (downloads automatically) + WhatsApp share
-    const certNo = donation?.certificate_no || generateDonorCertNo();
-    const doc = generateDonorCertificatePDF({
-      donorName: donor.name,
-      bloodGroup: donor.blood_group,
-      city: donor.city || "",
-      date: new Date().toLocaleDateString("en-IN"),
-      certificateNo: certNo,
-      recipientName: request.requester_name || undefined,
-    });
-    doc.save(`Blood-Donor-Certificate-${donor.name.replace(/\s+/g, "_")}.pdf`);
-
-    // 5. Update local state
+    // 4. Update local state
     setMyRequests((p) => p.filter((r) => r.id !== request.id));
 
-    // 6. Thank-you + WhatsApp share to donor
+    // 5. Thank-you + ask donor to upload proof for official certificate
     const thankMsg = encodeURIComponent(
-      `🙏 धन्यवाद ${donor.name} जी!\n\nआपने एक जीवन बचाया है। ${NGO_NAME} की तरफ़ से आपको रक्तदान प्रमाण-पत्र (Cert No: ${certNo}) प्रदान किया जा रहा है।\n\n— मेरा भारत दुकान | भारत मित्र AI`
+      `🙏 धन्यवाद ${donor.name} जी!\n\nआपने एक जीवन बचाया है। ${NGO_NAME} की तरफ़ से आपको रक्तदान प्रमाण-पत्र प्रदान किया जाएगा।\n\nकृपया भारत मित्र ऐप में जाकर "मेरे रक्तदान" टैब में अपनी लाइव फोटो + अस्पताल की रसीद अपलोड करें — Admin verification के बाद आपका Official Certificate जारी होगा।\n\n— मेरा भारत दुकान | भारत मित्र AI`
     );
     const waUrl = `https://wa.me/${donor.phone.replace(/\D/g, "")}?text=${thankMsg}`;
     window.open(waUrl, "_blank", "noopener,noreferrer");
 
     toast({
-      title: "🎉 धन्यवाद नोट भेजा गया",
-      description: `सर्टिफिकेट डाउनलोड हो गया (Cert No: ${certNo}) और डोनर को व्हाट्सएप पर धन्यवाद संदेश भेजा गया।`,
+      title: "🎉 पुष्टि दर्ज कर ली गई",
+      description: `डोनर को धन्यवाद नोट भेज दिया। Admin verification के बाद Certificate (Cert No: ${donation?.certificate_no}) रिलीज़ होगा।`,
     });
   };
 
   /* ============================================================ RENDER */
+
+  /* ------------- My donations (donor side) ------------- */
+  const loadMyDonations = async () => {
+    if (!user) return;
+    setDonationsLoading(true);
+    const { data } = await supabase
+      .from("blood_donations")
+      .select("*")
+      .eq("donor_user_id", user.id)
+      .order("donated_at", { ascending: false });
+    setMyDonations(data || []);
+    setDonationsLoading(false);
+  };
+
+  /* ------------- Upload proof file to blood-proof bucket ------------- */
+  const uploadProofFile = async (file: File, kind: "live" | "receipt"): Promise<string | null> => {
+    if (!user) { toast({ title: "लॉगिन ज़रूरी है", variant: "destructive" }); return null; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "फ़ाइल बहुत बड़ी (5MB max)", variant: "destructive" }); return null; }
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${user.id}/${kind}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("blood-proof").upload(path, file);
+    if (error) { toast({ title: "Upload failed", description: error.message, variant: "destructive" }); return null; }
+    const { data: pub } = supabase.storage.from("blood-proof").getPublicUrl(path);
+    return pub.publicUrl;
+  };
+
+  /* ------------- Submit certificate registration (donor self-creates pending row) ------------- */
+  const handleSubmitCertificate = async () => {
+    if (!user) { toast({ title: "लॉगिन ज़रूरी है", variant: "destructive" }); return; }
+    if (!cert.name.trim() || !cert.bloodGroup || !cert.donationDate) {
+      toast({ title: "अधूरी जानकारी", description: "नाम, ब्लड ग्रुप और तारीख ज़रूरी है।", variant: "destructive" });
+      return;
+    }
+    if (!cert.livePhotoFile || !cert.receiptFile) {
+      toast({ title: "Proof ज़रूरी है", description: "लाइव फोटो और अस्पताल रसीद दोनों अपलोड करें।", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+    const [livePhotoUrl, receiptUrl] = await Promise.all([
+      uploadProofFile(cert.livePhotoFile, "live"),
+      uploadProofFile(cert.receiptFile, "receipt"),
+    ]);
+    if (!livePhotoUrl || !receiptUrl) { setSubmitting(false); return; }
+
+    const { error } = await supabase.from("blood_donations").insert({
+      donor_user_id: user.id,
+      requester_id: user.id, // self-issued path: donor is the requester until matched
+      blood_group: cert.bloodGroup,
+      city: cert.city || null,
+      donor_name: cert.name.trim(),
+      father_name: cert.fatherName.trim() || null,
+      hospital_name: cert.hospitalName.trim() || null,
+      hospital_address: cert.hospitalAddress.trim() || null,
+      donation_date_text: cert.donationDate,
+      donor_live_photo_url: livePhotoUrl,
+      hospital_receipt_url: receiptUrl,
+      verification_status: "proof_uploaded",
+    });
+    setSubmitting(false);
+    if (error) { toast({ title: "त्रुटि", description: error.message, variant: "destructive" }); return; }
+    toast({
+      title: "✅ Submitted for verification",
+      description: PENDING_MSG,
+    });
+    setMode("myDonations");
+    void loadMyDonations();
+  };
+
+  /* ------------- Download OFFICIAL certificate (only if approved) ------------- */
+  const handleDownloadOfficial = (d: any) => {
+    if (!d.admin_verified) {
+      toast({
+        title: "अभी जारी नहीं हुआ",
+        description: PENDING_MSG,
+        variant: "destructive",
+      });
+      return;
+    }
+    const doc = generateRaktadanCertificatePDF({
+      donorName: d.donor_name || "—",
+      fatherName: d.father_name || undefined,
+      bloodGroup: d.blood_group,
+      donationDate: d.donation_date_text || new Date(d.donated_at).toLocaleDateString("en-IN"),
+      hospitalName: d.hospital_name || undefined,
+      hospitalAddress: d.hospital_address || undefined,
+      city: d.city || undefined,
+      certificateNo: d.certificate_no || generateRaktadanCertNo(),
+    });
+    const safe = (d.donor_name || "donor").replace(/\s+/g, "_");
+    doc.save(`Raktadan-Official-${safe}.pdf`);
+  };
 
   return (
     <div className="flex flex-col gap-3 p-3">
@@ -369,37 +482,82 @@ const BloodDonorTab = () => {
         <p className="mt-1 text-[10px] leading-snug text-muted-foreground">{NGO_NOTE}</p>
       </div>
 
+      {/* Sample preview CTA */}
+      <button
+        onClick={async () => {
+          setSamplePreviewName(reg.name || "आपका नाम");
+          setSampleOpen(true);
+          if (!samplePreviewUrl) {
+            try {
+              const url = await renderRaktadanPreviewDataUrl({
+                donorName: reg.name || "आपका नाम",
+                bloodGroup: reg.blood_group,
+                donationDate: new Date().toLocaleDateString("en-IN"),
+                certificateNo: "SAMPLE-PREVIEW",
+                sample: true,
+              });
+              setSamplePreviewUrl(url);
+            } catch {
+              toast({ title: "Preview load failed", variant: "destructive" });
+            }
+          }
+        }}
+        className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-destructive bg-destructive/5 px-3 py-2 text-xs font-bold text-destructive hover:bg-destructive/10"
+      >
+        <Eye className="h-4 w-4" /> View Sample Certificate (नमूना देखें)
+      </button>
+
       {/* Mode tabs */}
-      <div className="grid grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-5 gap-1">
         <button
           onClick={() => setMode("browse")}
-          className={`flex flex-col items-center gap-0.5 rounded-md px-2 py-1.5 text-[10px] font-bold transition-colors ${
+          className={`flex flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[9px] font-bold transition-colors ${
             mode === "browse"
               ? "bg-destructive text-destructive-foreground"
               : "border border-border bg-background text-foreground hover:bg-muted"
           }`}
         >
-          <Search className="h-3.5 w-3.5" /> डोनर खोजें
+          <Search className="h-3 w-3" /> खोजें
         </button>
         <button
           onClick={() => setMode("register")}
-          className={`flex flex-col items-center gap-0.5 rounded-md px-2 py-1.5 text-[10px] font-bold transition-colors ${
+          className={`flex flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[9px] font-bold transition-colors ${
             mode === "register"
               ? "bg-destructive text-destructive-foreground"
               : "border border-border bg-background text-foreground hover:bg-muted"
           }`}
         >
-          <UserPlus className="h-3.5 w-3.5" /> डोनर बनें
+          <UserPlus className="h-3 w-3" /> डोनर बनें
         </button>
         <button
           onClick={() => setMode("request")}
-          className={`flex flex-col items-center gap-0.5 rounded-md px-2 py-1.5 text-[10px] font-bold transition-colors ${
+          className={`flex flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[9px] font-bold transition-colors ${
             mode === "request"
               ? "bg-destructive text-destructive-foreground"
               : "border border-border bg-background text-foreground hover:bg-muted"
           }`}
         >
-          <Droplets className="h-3.5 w-3.5" /> Blood चाहिए
+          <Droplets className="h-3 w-3" /> चाहिए
+        </button>
+        <button
+          onClick={() => setMode("certificate")}
+          className={`flex flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[9px] font-bold transition-colors ${
+            mode === "certificate"
+              ? "bg-destructive text-destructive-foreground"
+              : "border border-border bg-background text-foreground hover:bg-muted"
+          }`}
+        >
+          <FileText className="h-3 w-3" /> सर्टिफिकेट
+        </button>
+        <button
+          onClick={() => { setMode("myDonations"); void loadMyDonations(); }}
+          className={`flex flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[9px] font-bold transition-colors ${
+            mode === "myDonations"
+              ? "bg-destructive text-destructive-foreground"
+              : "border border-border bg-background text-foreground hover:bg-muted"
+          }`}
+        >
+          <ShieldCheck className="h-3 w-3" /> मेरे
         </button>
       </div>
 
@@ -666,6 +824,155 @@ const BloodDonorTab = () => {
           </Button>
         </div>
       )}
+
+      {/* ============================================ CERTIFICATE REGISTRATION */}
+      {mode === "certificate" && (
+        <div className="space-y-2">
+          <div className="rounded border border-amber-300 bg-amber-50 p-2">
+            <p className="text-[10px] font-semibold text-amber-900">
+              ⚠️ Official Certificate तभी जारी होगा जब: (1) आप लाइव फोटो + अस्पताल रसीद अपलोड करें (2) रक्त प्राप्तकर्ता "रक्त मिल गया" क्लिक करे (3) Admin verify करे।
+            </p>
+          </div>
+          <Field label="पूरा नाम *" value={cert.name} onChange={(v) => setCert({ ...cert, name: v })} />
+          <Field label="पिता / पति का नाम" value={cert.fatherName} onChange={(v) => setCert({ ...cert, fatherName: v })} />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-[10px]">Blood Group *</Label>
+              <select
+                value={cert.bloodGroup}
+                onChange={(e) => setCert({ ...cert, bloodGroup: e.target.value })}
+                className="h-8 w-full rounded-md border border-input bg-background px-2 text-xs"
+              >
+                {BLOOD_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+            <Field label="रक्तदान की तारीख *" type="date" value={cert.donationDate} onChange={(v) => setCert({ ...cert, donationDate: v })} />
+          </div>
+          <Field label="शहर" value={cert.city} onChange={(v) => setCert({ ...cert, city: v })} />
+          <Field label="अस्पताल का नाम" value={cert.hospitalName} onChange={(v) => setCert({ ...cert, hospitalName: v })} />
+          <div>
+            <Label className="text-[10px]">अस्पताल का पता</Label>
+            <Textarea value={cert.hospitalAddress} onChange={(e) => setCert({ ...cert, hospitalAddress: e.target.value })} className="min-h-[50px] text-xs" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-[10px] flex items-center gap-1"><Camera className="h-3 w-3" /> लाइव फोटो *</Label>
+              <input
+                type="file" accept="image/*" capture="user"
+                onChange={(e) => setCert({ ...cert, livePhotoFile: e.target.files?.[0] || null })}
+                className="h-8 w-full text-[10px]"
+              />
+              {cert.livePhotoFile && <p className="text-[9px] text-emerald-700">✓ {cert.livePhotoFile.name}</p>}
+            </div>
+            <div>
+              <Label className="text-[10px] flex items-center gap-1"><FileText className="h-3 w-3" /> अस्पताल रसीद *</Label>
+              <input
+                type="file" accept="image/*"
+                onChange={(e) => setCert({ ...cert, receiptFile: e.target.files?.[0] || null })}
+                className="h-8 w-full text-[10px]"
+              />
+              {cert.receiptFile && <p className="text-[9px] text-emerald-700">✓ {cert.receiptFile.name}</p>}
+            </div>
+          </div>
+
+          <Button
+            onClick={handleSubmitCertificate}
+            disabled={submitting}
+            className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+            I want this certificate — Register
+          </Button>
+        </div>
+      )}
+
+      {/* ============================================ MY DONATIONS */}
+      {mode === "myDonations" && (
+        <div className="space-y-2">
+          {donationsLoading ? (
+            <p className="py-6 text-center text-xs text-muted-foreground"><Loader2 className="inline h-4 w-4 animate-spin mr-1" />Loading…</p>
+          ) : myDonations.length === 0 ? (
+            <p className="py-6 text-center text-xs text-muted-foreground">अभी कोई रक्तदान दर्ज नहीं है। "सर्टिफिकेट" टैब से रजिस्टर करें।</p>
+          ) : myDonations.map((d) => (
+            <div key={d.id} className="rounded-lg border border-border bg-background p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-sm font-bold">{d.donor_name || "—"} <span className="ml-1 rounded bg-destructive px-1.5 text-[10px] text-destructive-foreground">{d.blood_group}</span></p>
+                  <p className="text-[10px] text-muted-foreground">{d.donation_date_text || new Date(d.donated_at).toLocaleDateString("en-IN")} • {d.hospital_name || "—"}</p>
+                  <p className="text-[9px] font-mono text-muted-foreground">Cert No: {d.certificate_no}</p>
+                </div>
+                {d.admin_verified ? (
+                  <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[9px] font-bold text-white">✓ Approved</span>
+                ) : d.verification_status === "rejected" ? (
+                  <span className="rounded-full bg-red-600 px-2 py-0.5 text-[9px] font-bold text-white">✗ Rejected</span>
+                ) : (
+                  <span className="rounded-full bg-amber-500 px-2 py-0.5 text-[9px] font-bold text-white">⏳ Pending</span>
+                )}
+              </div>
+              <div className="mt-2">
+                {d.admin_verified ? (
+                  <Button
+                    onClick={() => handleDownloadOfficial(d)}
+                    className="h-8 w-full bg-emerald-600 text-xs text-white hover:bg-emerald-700"
+                  >
+                    <Download className="mr-1 h-3 w-3" /> Download Official Certificate
+                  </Button>
+                ) : (
+                  <button
+                    onClick={() => toast({ title: "अभी जारी नहीं हुआ", description: PENDING_MSG, variant: "destructive" })}
+                    className="flex h-8 w-full items-center justify-center gap-1 rounded bg-muted text-[11px] font-bold text-muted-foreground"
+                  >
+                    <Lock className="h-3 w-3" /> Locked — Awaiting Verification
+                  </button>
+                )}
+              </div>
+              {d.admin_notes && <p className="mt-1 text-[10px] italic text-muted-foreground">Note: {d.admin_notes}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ============================================ SAMPLE PREVIEW DIALOG */}
+      <Dialog open={sampleOpen} onOpenChange={setSampleOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Eye className="h-5 w-5" /> रक्तदान प्रमाण पत्र — नमूना
+            </DialogTitle>
+            <DialogDescription className="text-[11px]">
+              यह केवल प्रदर्शन के लिए है। Original certificate Admin verification के बाद ही जारी होता है।
+            </DialogDescription>
+          </DialogHeader>
+          <div
+            className="relative overflow-hidden rounded border bg-white"
+            onContextMenu={(e) => e.preventDefault()}
+            style={{ userSelect: "none", WebkitUserSelect: "none", WebkitTouchCallout: "none" }}
+          >
+            {samplePreviewUrl ? (
+              <img
+                src={samplePreviewUrl}
+                alt="Sample certificate preview — non-downloadable"
+                draggable={false}
+                className="pointer-events-none w-full select-none"
+                style={{ WebkitUserDrag: "none" } as any}
+              />
+            ) : (
+              <div className="flex h-64 items-center justify-center text-xs text-muted-foreground">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating preview…
+              </div>
+            )}
+            {/* Hard overlay to block long-press save */}
+            <div className="absolute inset-0" onContextMenu={(e) => e.preventDefault()} />
+          </div>
+          <Button
+            onClick={() => { setSampleOpen(false); setMode("certificate"); }}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            <FileText className="mr-2 h-4 w-4" /> I want this certificate — Register
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -16,37 +16,82 @@ export type Database = {
     Tables: {
       blood_donations: {
         Row: {
+          admin_notes: string | null
+          admin_verified: boolean
+          admin_verified_at: string | null
+          admin_verified_by: string | null
           blood_group: string
           certificate_no: string
           city: string | null
           donated_at: string
-          donor_id: string
+          donation_date_text: string | null
+          donor_id: string | null
+          donor_live_photo_url: string | null
+          donor_name: string | null
           donor_user_id: string
+          father_name: string | null
+          hospital_address: string | null
+          hospital_name: string | null
+          hospital_receipt_url: string | null
           id: string
+          receiver_confirmed: boolean
+          receiver_confirmed_at: string | null
           request_id: string | null
-          requester_id: string
+          requester_id: string | null
+          updated_at: string
+          verification_status: string
         }
         Insert: {
+          admin_notes?: string | null
+          admin_verified?: boolean
+          admin_verified_at?: string | null
+          admin_verified_by?: string | null
           blood_group: string
           certificate_no?: string
           city?: string | null
           donated_at?: string
-          donor_id: string
+          donation_date_text?: string | null
+          donor_id?: string | null
+          donor_live_photo_url?: string | null
+          donor_name?: string | null
           donor_user_id: string
+          father_name?: string | null
+          hospital_address?: string | null
+          hospital_name?: string | null
+          hospital_receipt_url?: string | null
           id?: string
+          receiver_confirmed?: boolean
+          receiver_confirmed_at?: string | null
           request_id?: string | null
-          requester_id: string
+          requester_id?: string | null
+          updated_at?: string
+          verification_status?: string
         }
         Update: {
+          admin_notes?: string | null
+          admin_verified?: boolean
+          admin_verified_at?: string | null
+          admin_verified_by?: string | null
           blood_group?: string
           certificate_no?: string
           city?: string | null
           donated_at?: string
-          donor_id?: string
+          donation_date_text?: string | null
+          donor_id?: string | null
+          donor_live_photo_url?: string | null
+          donor_name?: string | null
           donor_user_id?: string
+          father_name?: string | null
+          hospital_address?: string | null
+          hospital_name?: string | null
+          hospital_receipt_url?: string | null
           id?: string
+          receiver_confirmed?: boolean
+          receiver_confirmed_at?: string | null
           request_id?: string | null
-          requester_id?: string
+          requester_id?: string | null
+          updated_at?: string
+          verification_status?: string
         }
         Relationships: [
           {
