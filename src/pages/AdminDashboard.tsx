@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import KycReviewTab from "@/components/admin/KycReviewTab";
+import RaktadanReviewTab from "@/components/admin/RaktadanReviewTab";
 
 interface MerchantPayment {
   shopId: string;
@@ -630,11 +631,16 @@ const AdminDashboard = () => {
               )}
             </TabsTrigger>
             <TabsTrigger value="kyc" className="text-xs">🪪 E-KYC</TabsTrigger>
+            <TabsTrigger value="raktadan" className="text-xs">🩸 रक्तदान</TabsTrigger>
             <TabsTrigger value="slider" className="text-xs">🎠 Slider</TabsTrigger>
           </TabsList>
 
           <TabsContent value="kyc">
             <KycReviewTab />
+          </TabsContent>
+
+          <TabsContent value="raktadan">
+            <RaktadanReviewTab />
           </TabsContent>
 
           {/* BHARAT GAURAV MEMBERSHIP SECTION */}
