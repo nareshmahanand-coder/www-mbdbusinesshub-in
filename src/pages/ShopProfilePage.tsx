@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Phone, MessageCircle, ShieldCheck, ArrowLeft, Store, Navigation } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
+import NandaPortalView from "@/components/NandaPortalView";
 
 interface ShopData {
   id: string;
@@ -107,6 +108,25 @@ const ShopProfilePage = () => {
           </Button>
         </div>
       </div>
+    );
+  }
+
+  // Nanda Agro Farm flagship units get a fully branded premium portal
+  if (shop && shop.id.startsWith("nanda-")) {
+    const sample = sampleShops.find((s) => s.id === shop.id);
+    return (
+      <NandaPortalView
+        shop={{
+          id: shop.id,
+          name: shop.name,
+          nameHindi: shop.nameHindi,
+          tagline: sample?.tagline,
+          priceLabel: sample?.priceLabel,
+          description: shop.description,
+          city: shop.city,
+          address: shop.address,
+        }}
+      />
     );
   }
 

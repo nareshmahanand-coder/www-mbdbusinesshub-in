@@ -13,6 +13,54 @@ const orderOnWhatsApp = (productHi: string) => {
 
 const subCategories = [
   {
+    portalId: "nanda-acqua",
+    icon: "💧",
+    title: "नंदा एक्वा",
+    titleEn: "Nanda Acqua Water",
+    desc: "100% शुद्ध मिनरल वाटर — ₹20/1 LTR। Home delivery + bulk events।",
+    color: "from-[hsl(200,80%,50%)] to-[hsl(210,80%,40%)]",
+  },
+  {
+    portalId: "nanda-rishi-bhok-atta",
+    icon: "🌾",
+    title: "ऋषि भोग आटा",
+    titleEn: "Rishi Bhok Atta",
+    desc: "5-तत्व आयुर्वेदिक पाचक आटा — ₹60/किलो। FSSAI Approved।",
+    color: "from-[hsl(35,80%,50%)] to-[hsl(25,80%,40%)]",
+  },
+  {
+    portalId: "nanda-garlic",
+    icon: "🧄",
+    title: "छिला हुआ लहसुन",
+    titleEn: "Peeled Garlic",
+    desc: "हाथ से छिला ताज़ा लहसुन — ₹220 / 500g।",
+    color: "from-[hsl(50,40%,50%)] to-[hsl(50,40%,40%)]",
+  },
+  {
+    portalId: "nanda-chicken-chips",
+    icon: "🍗",
+    title: "देसी चिकन चिप्स",
+    titleEn: "Desi Chicken Chips",
+    desc: "High-protein crunchy snack — ₹10 / 15g, ₹100 / 80g।",
+    color: "from-[hsl(25,85%,50%)] to-[hsl(15,85%,40%)]",
+  },
+  {
+    portalId: "nanda-meat",
+    icon: "🐔",
+    title: "नंदा मीट & पोल्ट्री",
+    titleEn: "Meat & Poultry",
+    desc: "देसी मुर्गा, बकरा, अंडे — Antibiotic free, हलाल कट।",
+    color: "from-[hsl(0,65%,45%)] to-[hsl(0,65%,35%)]",
+  },
+  {
+    portalId: "nanda-dry-fruits",
+    icon: "🥜",
+    title: "नंदा ड्राई फ्रूट्स",
+    titleEn: "Dry Fruits",
+    desc: "बादाम, काजू, किशमिश, अखरोट — premium quality।",
+    color: "from-[hsl(30,70%,40%)] to-[hsl(30,70%,30%)]",
+  },
+  {
     icon: "🐟",
     title: "ताज़ा मछली",
     titleEn: "Live Fish",
@@ -125,6 +173,17 @@ const NandaFarmSection = () => {
                   >
                     📱 WhatsApp ऑर्डर करें
                   </Button>
+                  {(cat as any).portalId && (
+                    <Link to={`/shop/${(cat as any).portalId}`}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 w-full border-[hsl(45,80%,55%)] text-[hsl(45,80%,70%)] hover:bg-[hsl(45,80%,50%)]/10"
+                      >
+                        ⭐ Premium Portal खोलें
+                      </Button>
+                    </Link>
+                  )}
                 </CardContent>
               </Card>
             ))}
