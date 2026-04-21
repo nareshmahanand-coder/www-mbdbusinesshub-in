@@ -35,34 +35,29 @@ export function generateRaktadanCertificatePDF(d: RaktadanCertificateData): jsPD
   }
 
   // ---- Overlay donor data on the printed blank lines of the template ----
-  // Template lines (approx mm on A4):
-  //   Donor Name line:  starts ~88mm, y ≈ 132
-  //   Blood Group:      x ≈ 56,  y ≈ 165
-  //   Date of Donation: x ≈ 132, y ≈ 165
-  //   Address:          x ≈ 76,  y ≈ 175
-  //   Date (footer):    x ≈ 38,  y ≈ 240
+  // Coordinates calibrated against raktadan-template.jpg (A4 portrait)
   doc.setFont("times", "bold");
   doc.setTextColor(20, 20, 60);
 
-  // Donor name on the long blank line in the paragraph
-  doc.setFontSize(13);
-  doc.text(d.donorName || "—", 96, 132);
+  // Donor name on the long blank line inside the paragraph (first line, after "गर्व के साथ")
+  doc.setFontSize(12);
+  doc.text(d.donorName || "—", 118, 152);
 
   // Blood Group
   doc.setFontSize(12);
   doc.setTextColor(160, 20, 30);
-  doc.text(d.bloodGroup || "—", 60, 165);
+  doc.text(d.bloodGroup || "—", 65, 192);
 
   // Date of Donation
   doc.setTextColor(20, 20, 60);
-  doc.text(d.donationDate || "—", 142, 165);
+  doc.text(d.donationDate || "—", 150, 192);
 
-  // Address
+  // Address (below Blood Group / Date row)
   doc.setFont("times", "normal");
   doc.setFontSize(11);
   const addr = d.hospitalAddress || d.city || d.hospitalName || "—";
-  const addrLines = doc.splitTextToSize(addr, 100);
-  doc.text(addrLines, 78, 175);
+  const addrLines = doc.splitTextToSize(addr, 110);
+  doc.text(addrLines, 78, 202);
 
   // ---- Sample watermark OR seal+signature ----
   if (d.sample) {
