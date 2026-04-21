@@ -34,78 +34,30 @@ export function generateRaktadanCertificatePDF(d: RaktadanCertificateData): jsPD
     doc.rect(0, 0, pw, ph, "F");
   }
 
-  // ---- Central body text (placed inside the blank cream area) ----
-  const cx = pw / 2;
-  let y = 130;
-
-  doc.setFont("times", "normal");
-  doc.setTextColor(40, 40, 40);
-  doc.setFontSize(12);
-  doc.text("This is to certify that / यह प्रमाणित किया जाता है कि", cx, y, { align: "center" });
-
-  // Donor name
-  y += 12;
+  // ---- Overlay donor data on the printed blank lines of the template ----
+  // Coordinates calibrated against raktadan-template.jpg (A4 portrait)
   doc.setFont("times", "bold");
-  doc.setFontSize(18);
-  doc.setTextColor(160, 20, 30);
-  doc.text(d.donorName || "—", cx, y, { align: "center" });
-
-  // S/o or D/o
-  if (d.fatherName) {
-    y += 7;
-    doc.setFont("times", "italic");
-    doc.setFontSize(11);
-    doc.setTextColor(60, 60, 60);
-    doc.text(`पुत्र/पुत्री श्री ${d.fatherName}`, cx, y, { align: "center" });
-  }
-
-  // "has voluntarily donated blood"
-  y += 10;
-  doc.setFont("times", "normal");
-  doc.setFontSize(11);
-  doc.setTextColor(40, 40, 40);
-  doc.text(
-    "ने स्वेच्छा से रक्तदान कर मानवता की सेवा की है।",
-    cx,
-    y,
-    { align: "center" }
-  );
-  y += 5;
-  doc.text(
-    "has voluntarily donated blood in the noble service of humanity.",
-    cx,
-    y,
-    { align: "center" }
-  );
-
-  // Blood group + Date (two columns)
-  y += 12;
-  doc.setFont("times", "bold");
-  doc.setFontSize(12);
   doc.setTextColor(20, 20, 60);
-  doc.text(`Blood Group / रक्त समूह: ${d.bloodGroup}`, cx, y, { align: "center" });
 
-  y += 7;
-  doc.text(`Date / दिनांक: ${d.donationDate}`, cx, y, { align: "center" });
+  // Donor name — sits on the blank between "गर्व के साथ ____ (Donor Name)"
+  doc.setFontSize(11);
+  doc.text(d.donorName || "—", 124, 150, { align: "center" });
 
-  // Hospital
-  if (d.hospitalName) {
-    y += 7;
-    doc.setFont("times", "normal");
-    doc.setFontSize(11);
-    doc.setTextColor(40, 40, 40);
-    const hosp = d.hospitalAddress
-      ? `${d.hospitalName}, ${d.hospitalAddress}`
-      : d.hospitalName;
-    const lines = doc.splitTextToSize(`Hospital / अस्पताल: ${hosp}`, pw - 60);
-    doc.text(lines, cx, y, { align: "center" });
-    y += lines.length * 5;
-  }
+  // Blood Group (red) — on blank after "Blood Group:"
+  doc.setFontSize(11);
+  doc.setTextColor(160, 20, 30);
+  doc.text(d.bloodGroup || "—", 80, 190, { align: "center" });
 
-  if (d.city && !d.hospitalAddress) {
-    y += 6;
-    doc.text(`City / शहर: ${d.city}`, cx, y, { align: "center" });
-  }
+  // Date of Donation — on blank after "Date of Donation:"
+  doc.setTextColor(20, 20, 60);
+  doc.text(d.donationDate || "—", 175, 190, { align: "center" });
+
+  // Address — on blank after "पता (Address):"
+  doc.setFont("times", "normal");
+  doc.setFontSize(10);
+  const addr = d.hospitalAddress || d.city || d.hospitalName || "—";
+  const addrLines = doc.splitTextToSize(addr, 90);
+  doc.text(addrLines, 105, 200, { align: "center" });
 
   // ---- Sample watermark OR seal+signature ----
   if (d.sample) {
@@ -127,9 +79,14 @@ export function generateRaktadanCertificatePDF(d: RaktadanCertificateData): jsPD
       (doc as any).setGState(reset);
     }
   } else {
-    // Signature on the left, Seal on the right (over the printed boxes near bottom)
-    try { doc.addImage(ngoSignatureUrl, "PNG", 28, 232, 55, 18); } catch { /* ignore */ }
-    try { doc.addImage(ngoSealUrl, "PNG", 148, 224, 38, 38); } catch { /* ignore */ }
+    // Footer placeholders on template:
+    //   Date line       : ~x 22-72   (label "Date" at 38)
+    //   President's Sig : ~x 95-150  (label at 122)
+    //   Seal of NGO     : ~x 155-195 (label at 175)
+    // Footer baseline ≈ y 248 (label row). Place above the label.
+    try { doc.text(d.donationDate || "—", 38, 240, { align: "center" }); } catch { /* ignore */ }
+    try { doc.addImage(ngoSignatureUrl, "PNG", 98, 222, 50, 22); } catch { /* ignore */ }
+    try { doc.addImage(ngoSealUrl, "PNG", 158, 215, 32, 32); } catch { /* ignore */ }
   }
 
   // ---- Footer: cert no + issued date ----
