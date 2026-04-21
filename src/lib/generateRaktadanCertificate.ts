@@ -34,78 +34,35 @@ export function generateRaktadanCertificatePDF(d: RaktadanCertificateData): jsPD
     doc.rect(0, 0, pw, ph, "F");
   }
 
-  // ---- Central body text (placed inside the blank cream area) ----
-  const cx = pw / 2;
-  let y = 130;
-
-  doc.setFont("times", "normal");
-  doc.setTextColor(40, 40, 40);
-  doc.setFontSize(12);
-  doc.text("This is to certify that / यह प्रमाणित किया जाता है कि", cx, y, { align: "center" });
-
-  // Donor name
-  y += 12;
+  // ---- Overlay donor data on the printed blank lines of the template ----
+  // Template lines (approx mm on A4):
+  //   Donor Name line:  starts ~88mm, y ≈ 132
+  //   Blood Group:      x ≈ 56,  y ≈ 165
+  //   Date of Donation: x ≈ 132, y ≈ 165
+  //   Address:          x ≈ 76,  y ≈ 175
+  //   Date (footer):    x ≈ 38,  y ≈ 240
   doc.setFont("times", "bold");
-  doc.setFontSize(18);
+  doc.setTextColor(20, 20, 60);
+
+  // Donor name on the long blank line in the paragraph
+  doc.setFontSize(13);
+  doc.text(d.donorName || "—", 96, 132);
+
+  // Blood Group
+  doc.setFontSize(12);
   doc.setTextColor(160, 20, 30);
-  doc.text(d.donorName || "—", cx, y, { align: "center" });
+  doc.text(d.bloodGroup || "—", 60, 165);
 
-  // S/o or D/o
-  if (d.fatherName) {
-    y += 7;
-    doc.setFont("times", "italic");
-    doc.setFontSize(11);
-    doc.setTextColor(60, 60, 60);
-    doc.text(`पुत्र/पुत्री श्री ${d.fatherName}`, cx, y, { align: "center" });
-  }
+  // Date of Donation
+  doc.setTextColor(20, 20, 60);
+  doc.text(d.donationDate || "—", 142, 165);
 
-  // "has voluntarily donated blood"
-  y += 10;
+  // Address
   doc.setFont("times", "normal");
   doc.setFontSize(11);
-  doc.setTextColor(40, 40, 40);
-  doc.text(
-    "ने स्वेच्छा से रक्तदान कर मानवता की सेवा की है।",
-    cx,
-    y,
-    { align: "center" }
-  );
-  y += 5;
-  doc.text(
-    "has voluntarily donated blood in the noble service of humanity.",
-    cx,
-    y,
-    { align: "center" }
-  );
-
-  // Blood group + Date (two columns)
-  y += 12;
-  doc.setFont("times", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(20, 20, 60);
-  doc.text(`Blood Group / रक्त समूह: ${d.bloodGroup}`, cx, y, { align: "center" });
-
-  y += 7;
-  doc.text(`Date / दिनांक: ${d.donationDate}`, cx, y, { align: "center" });
-
-  // Hospital
-  if (d.hospitalName) {
-    y += 7;
-    doc.setFont("times", "normal");
-    doc.setFontSize(11);
-    doc.setTextColor(40, 40, 40);
-    const hosp = d.hospitalAddress
-      ? `${d.hospitalName}, ${d.hospitalAddress}`
-      : d.hospitalName;
-    const lines = doc.splitTextToSize(`Hospital / अस्पताल: ${hosp}`, pw - 60);
-    doc.text(lines, cx, y, { align: "center" });
-    y += lines.length * 5;
-  }
-
-  if (d.city && !d.hospitalAddress) {
-    y += 6;
-    doc.text(`City / शहर: ${d.city}`, cx, y, { align: "center" });
-  }
+  const addr = d.hospitalAddress || d.city || d.hospitalName || "—";
+  const addrLines = doc.splitTextToSize(addr, 100);
+  doc.text(addrLines, 78, 175);
 
   // ---- Sample watermark OR seal+signature ----
   if (d.sample) {
