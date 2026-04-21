@@ -378,6 +378,97 @@ const BloodDonorTab = () => {
 
   /* ============================================================ RENDER */
 
+  /* ------------- My donations (donor side) ------------- */
+  const loadMyDonations = async () => {
+    if (!user) return;
+    setDonationsLoading(true);
+    const { data } = await supabase
+      .from("blood_donations")
+      .select("*")
+      .eq("donor_user_id", user.id)
+      .order("donated_at", { ascending: false });
+    setMyDonations(data || []);
+    setDonationsLoading(false);
+  };
+
+  /* ------------- Upload proof file to blood-proof bucket ------------- */
+  const uploadProofFile = async (file: File, kind: "live" | "receipt"): Promise<string | null> => {
+    if (!user) { toast({ title: "लॉगिन ज़रूरी है", variant: "destructive" }); return null; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "फ़ाइल बहुत बड़ी (5MB max)", variant: "destructive" }); return null; }
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${user.id}/${kind}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("blood-proof").upload(path, file);
+    if (error) { toast({ title: "Upload failed", description: error.message, variant: "destructive" }); return null; }
+    const { data: pub } = supabase.storage.from("blood-proof").getPublicUrl(path);
+    return pub.publicUrl;
+  };
+
+  /* ------------- Submit certificate registration (donor self-creates pending row) ------------- */
+  const handleSubmitCertificate = async () => {
+    if (!user) { toast({ title: "लॉगिन ज़रूरी है", variant: "destructive" }); return; }
+    if (!cert.name.trim() || !cert.bloodGroup || !cert.donationDate) {
+      toast({ title: "अधूरी जानकारी", description: "नाम, ब्लड ग्रुप और तारीख ज़रूरी है।", variant: "destructive" });
+      return;
+    }
+    if (!cert.livePhotoFile || !cert.receiptFile) {
+      toast({ title: "Proof ज़रूरी है", description: "लाइव फोटो और अस्पताल रसीद दोनों अपलोड करें।", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+    const [livePhotoUrl, receiptUrl] = await Promise.all([
+      uploadProofFile(cert.livePhotoFile, "live"),
+      uploadProofFile(cert.receiptFile, "receipt"),
+    ]);
+    if (!livePhotoUrl || !receiptUrl) { setSubmitting(false); return; }
+
+    const { error } = await supabase.from("blood_donations").insert({
+      donor_user_id: user.id,
+      requester_id: user.id, // self-issued path: donor is the requester until matched
+      blood_group: cert.bloodGroup,
+      city: cert.city || null,
+      donor_name: cert.name.trim(),
+      father_name: cert.fatherName.trim() || null,
+      hospital_name: cert.hospitalName.trim() || null,
+      hospital_address: cert.hospitalAddress.trim() || null,
+      donation_date_text: cert.donationDate,
+      donor_live_photo_url: livePhotoUrl,
+      hospital_receipt_url: receiptUrl,
+      verification_status: "proof_uploaded",
+    });
+    setSubmitting(false);
+    if (error) { toast({ title: "त्रुटि", description: error.message, variant: "destructive" }); return; }
+    toast({
+      title: "✅ Submitted for verification",
+      description: PENDING_MSG,
+    });
+    setMode("myDonations");
+    void loadMyDonations();
+  };
+
+  /* ------------- Download OFFICIAL certificate (only if approved) ------------- */
+  const handleDownloadOfficial = (d: any) => {
+    if (!d.admin_verified) {
+      toast({
+        title: "अभी जारी नहीं हुआ",
+        description: PENDING_MSG,
+        variant: "destructive",
+      });
+      return;
+    }
+    const doc = generateRaktadanCertificatePDF({
+      donorName: d.donor_name || "—",
+      fatherName: d.father_name || undefined,
+      bloodGroup: d.blood_group,
+      donationDate: d.donation_date_text || new Date(d.donated_at).toLocaleDateString("en-IN"),
+      hospitalName: d.hospital_name || undefined,
+      hospitalAddress: d.hospital_address || undefined,
+      city: d.city || undefined,
+      certificateNo: d.certificate_no || generateRaktadanCertNo(),
+    });
+    const safe = (d.donor_name || "donor").replace(/\s+/g, "_");
+    doc.save(`Raktadan-Official-${safe}.pdf`);
+  };
+
   return (
     <div className="flex flex-col gap-3 p-3">
       {/* NGO banner */}
