@@ -61,25 +61,25 @@ export function generateCertificatePDF(data: CertificateData): jsPDF {
 
   // Name (handwritten on first blank)
   doc.setFontSize(13);
-  doc.text(data.userName || "—", 92, 144);
+  doc.text(data.userName || "—", 96, 154);
 
   // Father / Husband name
   doc.setFontSize(12);
-  doc.text(data.fatherName || "—", 75, 156);
+  doc.text(data.fatherName || "—", 80, 167);
 
   // Course name OR "Blood Donation"
   doc.setFontSize(12);
   doc.setTextColor(180, 30, 30);
   if (data.type === "blood") {
-    doc.text("Blood Donation", 145, 178);
+    doc.text("Blood Donation", 122, 186);
   } else {
-    doc.text(data.courseName || "—", 145, 178);
+    doc.text(data.courseName || "—", 122, 186);
   }
 
   // Duration
   doc.setTextColor(20, 20, 60);
   doc.setFontSize(11);
-  doc.text(data.courseDuration || "—", 65, 200);
+  doc.text(data.courseDuration || "—", 68, 200);
 
   // Grade
   doc.text(data.grade || (data.scorePercent != null ? `${data.scorePercent}%` : "A"), 138, 200);
@@ -87,19 +87,19 @@ export function generateCertificatePDF(data: CertificateData): jsPDF {
   // ─── Authentication overlays: Signature (LEFT) + Seal (RIGHT) ──────
   // Signature on the left, above "President's Signature" line
   try {
-    doc.addImage(ngoSignatureUrl, "PNG", 58, 218, 45, 16);
+    doc.addImage(ngoSignatureUrl, "PNG", 60, 248, 40, 13);
   } catch { /* ignore */ }
 
   // Round NGO Seal on the right, above "Seal of NGO" line
   try {
-    doc.addImage(ngoSealUrl, "PNG", 130, 213, 32, 32);
+    doc.addImage(ngoSealUrl, "PNG", 144, 230, 24, 24);
   } catch { /* ignore */ }
 
   // ─── Date + Cert ID ────────────────────────────────────────────────
   doc.setFont("times", "normal");
   doc.setFontSize(10);
   doc.setTextColor(20, 20, 60);
-  doc.text(data.date, 38, 268);
+  doc.text(data.date, 36, 268);
 
   // Unique Certificate ID — bottom right (small, doesn't break design)
   doc.setFontSize(8);
@@ -146,36 +146,36 @@ async function drawCertificateOnCanvas(data: CertificateData): Promise<string> {
 
   // Name
   ctx.font = `bold ${Math.round(mmY(5.5))}px Georgia, serif`;
-  ctx.fillText(data.userName || "—", mmX(92), mmY(144));
+  ctx.fillText(data.userName || "—", mmX(96), mmY(154));
 
   // Father / Husband
   ctx.font = `bold ${Math.round(mmY(5))}px Georgia, serif`;
-  ctx.fillText(data.fatherName || "—", mmX(75), mmY(156));
+  ctx.fillText(data.fatherName || "—", mmX(80), mmY(164));
 
   // Course / Blood Donation
   ctx.fillStyle = "#b41e1e";
   ctx.font = `bold ${Math.round(mmY(5))}px Georgia, serif`;
-  ctx.fillText(data.type === "blood" ? "Blood Donation" : (data.courseName || "—"), mmX(145), mmY(178));
+  ctx.fillText(data.type === "blood" ? "Blood Donation" : (data.courseName || "—"), mmX(122), mmY(191));
 
   // Duration + Grade
   ctx.fillStyle = "#14143c";
   ctx.font = `bold ${Math.round(mmY(4.5))}px Georgia, serif`;
-  ctx.fillText(data.courseDuration || "—", mmX(65), mmY(200));
+  ctx.fillText(data.courseDuration || "—", mmX(68), mmY(200));
   ctx.fillText(data.grade || (data.scorePercent != null ? `${data.scorePercent}%` : "A"), mmX(138), mmY(200));
 
   // Signature + Seal images
   try {
     const sig = await loadImage(ngoSignatureUrl);
-    ctx.drawImage(sig, mmX(58), mmY(218), mmX(45), mmY(16));
+    ctx.drawImage(sig, mmX(60), mmY(248), mmX(40), mmY(13));
   } catch { /* ignore */ }
   try {
     const seal = await loadImage(ngoSealUrl);
-    ctx.drawImage(seal, mmX(130), mmY(213), mmX(32), mmY(32));
+    ctx.drawImage(seal, mmX(144), mmY(230), mmX(24), mmY(24));
   } catch { /* ignore */ }
 
   // Date
   ctx.font = `${Math.round(mmY(4))}px Georgia, serif`;
-  ctx.fillText(data.date, mmX(38), mmY(268));
+  ctx.fillText(data.date, mmX(36), mmY(268));
 
   // Cert ID (bottom-right)
   ctx.fillStyle = "#666";
