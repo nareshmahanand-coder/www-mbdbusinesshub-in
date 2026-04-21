@@ -173,6 +173,17 @@ const NandaFarmSection = () => {
                   >
                     📱 WhatsApp ऑर्डर करें
                   </Button>
+                  {(cat as any).portalId && (
+                    <Link to={`/shop/${(cat as any).portalId}`}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 w-full border-[hsl(45,80%,55%)] text-[hsl(45,80%,70%)] hover:bg-[hsl(45,80%,50%)]/10"
+                      >
+                        ⭐ Premium Portal खोलें
+                      </Button>
+                    </Link>
+                  )}
                 </CardContent>
               </Card>
             ))}
