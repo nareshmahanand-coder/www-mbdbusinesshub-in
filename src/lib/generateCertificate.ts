@@ -65,24 +65,24 @@ export function generateCertificatePDF(data: CertificateData): jsPDF {
 
   // Father / Husband name
   doc.setFontSize(12);
-  doc.text(data.fatherName || "—", 80, 167);
+  doc.text(data.fatherName || "—", 80, 164);
 
   // Course name OR "Blood Donation"
   doc.setFontSize(12);
   doc.setTextColor(180, 30, 30);
   if (data.type === "blood") {
-    doc.text("Blood Donation", 122, 186);
+    doc.text("Blood Donation", 122, 191);
   } else {
-    doc.text(data.courseName || "—", 122, 186);
+    doc.text(data.courseName || "—", 122, 191);
   }
 
   // Duration
   doc.setTextColor(20, 20, 60);
   doc.setFontSize(11);
-  doc.text(data.courseDuration || "—", 68, 204);
+  doc.text(data.courseDuration || "—", 68, 200);
 
   // Grade
-  doc.text(data.grade || (data.scorePercent != null ? `${data.scorePercent}%` : "A"), 138, 204);
+  doc.text(data.grade || (data.scorePercent != null ? `${data.scorePercent}%` : "A"), 138, 200);
 
   // ─── Authentication overlays: Signature (LEFT) + Seal (RIGHT) ──────
   // Signature on the left, above "President's Signature" line
@@ -92,7 +92,7 @@ export function generateCertificatePDF(data: CertificateData): jsPDF {
 
   // Round NGO Seal on the right, above "Seal of NGO" line
   try {
-    doc.addImage(ngoSealUrl, "PNG", 144, 234, 24, 24);
+    doc.addImage(ngoSealUrl, "PNG", 144, 230, 24, 24);
   } catch { /* ignore */ }
 
   // ─── Date + Cert ID ────────────────────────────────────────────────
