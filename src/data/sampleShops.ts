@@ -21,6 +21,14 @@ export interface Shop {
   photos: string[];
   verified: boolean;
   premium?: boolean;
+  /** Nanda Agro Farm flagship units — pinned absolutely on top of all listings */
+  flagship?: boolean;
+  /** Optional hero image (public path or imported asset URL) for branded portals */
+  heroImage?: string;
+  /** Optional tagline shown under shop name on the branded portal */
+  tagline?: string;
+  /** Optional price label (e.g. "₹60/किलो") shown on the branded portal */
+  priceLabel?: string;
   rating: number;
   reviewCount: number;
   reviews: Review[];
