@@ -84,9 +84,14 @@ export function generateRaktadanCertificatePDF(d: RaktadanCertificateData): jsPD
       (doc as any).setGState(reset);
     }
   } else {
-    // Signature on the left, Seal on the right (over the printed boxes near bottom)
-    try { doc.addImage(ngoSignatureUrl, "PNG", 28, 232, 55, 18); } catch { /* ignore */ }
-    try { doc.addImage(ngoSealUrl, "PNG", 148, 224, 38, 38); } catch { /* ignore */ }
+    // Footer placeholders on template:
+    //   Date line       : ~x 22-72   (label "Date" at 38)
+    //   President's Sig : ~x 95-150  (label at 122)
+    //   Seal of NGO     : ~x 155-195 (label at 175)
+    // Footer baseline ≈ y 248 (label row). Place above the label.
+    try { doc.text(d.donationDate || "—", 38, 240, { align: "center" }); } catch { /* ignore */ }
+    try { doc.addImage(ngoSignatureUrl, "PNG", 98, 222, 50, 22); } catch { /* ignore */ }
+    try { doc.addImage(ngoSealUrl, "PNG", 158, 215, 32, 32); } catch { /* ignore */ }
   }
 
   // ---- Footer: cert no + issued date ----
