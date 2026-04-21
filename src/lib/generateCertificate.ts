@@ -150,18 +150,18 @@ async function drawCertificateOnCanvas(data: CertificateData): Promise<string> {
 
   // Father / Husband
   ctx.font = `bold ${Math.round(mmY(5))}px Georgia, serif`;
-  ctx.fillText(data.fatherName || "—", mmX(80), mmY(167));
+  ctx.fillText(data.fatherName || "—", mmX(80), mmY(164));
 
   // Course / Blood Donation
   ctx.fillStyle = "#b41e1e";
   ctx.font = `bold ${Math.round(mmY(5))}px Georgia, serif`;
-  ctx.fillText(data.type === "blood" ? "Blood Donation" : (data.courseName || "—"), mmX(122), mmY(186));
+  ctx.fillText(data.type === "blood" ? "Blood Donation" : (data.courseName || "—"), mmX(122), mmY(191));
 
   // Duration + Grade
   ctx.fillStyle = "#14143c";
   ctx.font = `bold ${Math.round(mmY(4.5))}px Georgia, serif`;
-  ctx.fillText(data.courseDuration || "—", mmX(68), mmY(204));
-  ctx.fillText(data.grade || (data.scorePercent != null ? `${data.scorePercent}%` : "A"), mmX(138), mmY(204));
+  ctx.fillText(data.courseDuration || "—", mmX(68), mmY(200));
+  ctx.fillText(data.grade || (data.scorePercent != null ? `${data.scorePercent}%` : "A"), mmX(138), mmY(200));
 
   // Signature + Seal images
   try {
@@ -170,7 +170,7 @@ async function drawCertificateOnCanvas(data: CertificateData): Promise<string> {
   } catch { /* ignore */ }
   try {
     const seal = await loadImage(ngoSealUrl);
-    ctx.drawImage(seal, mmX(144), mmY(234), mmX(24), mmY(24));
+    ctx.drawImage(seal, mmX(144), mmY(230), mmX(24), mmY(24));
   } catch { /* ignore */ }
 
   // Date
