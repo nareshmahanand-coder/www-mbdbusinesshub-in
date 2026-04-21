@@ -301,7 +301,7 @@ const BloodDonorTab = () => {
       return;
     }
 
-    // 2. Insert donation row (DB generates certificate_no)
+    // 2. Insert donation row (admin must verify before signed PDF is released)
     const { data: donation, error: donErr } = await supabase
       .from("blood_donations")
       .insert({
@@ -311,6 +311,10 @@ const BloodDonorTab = () => {
         requester_id: user.id,
         blood_group: donor.blood_group,
         city: donor.city,
+        donor_name: donor.name,
+        receiver_confirmed: true,
+        receiver_confirmed_at: new Date().toISOString(),
+        verification_status: "receiver_confirmed",
       })
       .select()
       .single();
@@ -331,31 +335,19 @@ const BloodDonorTab = () => {
       return;
     }
 
-    // 4. Generate certificate PDF (downloads automatically) + WhatsApp share
-    const certNo = donation?.certificate_no || generateDonorCertNo();
-    const doc = generateDonorCertificatePDF({
-      donorName: donor.name,
-      bloodGroup: donor.blood_group,
-      city: donor.city || "",
-      date: new Date().toLocaleDateString("en-IN"),
-      certificateNo: certNo,
-      recipientName: request.requester_name || undefined,
-    });
-    doc.save(`Blood-Donor-Certificate-${donor.name.replace(/\s+/g, "_")}.pdf`);
-
-    // 5. Update local state
+    // 4. Update local state
     setMyRequests((p) => p.filter((r) => r.id !== request.id));
 
-    // 6. Thank-you + WhatsApp share to donor
+    // 5. Thank-you + ask donor to upload proof for official certificate
     const thankMsg = encodeURIComponent(
-      `🙏 धन्यवाद ${donor.name} जी!\n\nआपने एक जीवन बचाया है। ${NGO_NAME} की तरफ़ से आपको रक्तदान प्रमाण-पत्र (Cert No: ${certNo}) प्रदान किया जा रहा है।\n\n— मेरा भारत दुकान | भारत मित्र AI`
+      `🙏 धन्यवाद ${donor.name} जी!\n\nआपने एक जीवन बचाया है। ${NGO_NAME} की तरफ़ से आपको रक्तदान प्रमाण-पत्र प्रदान किया जाएगा।\n\nकृपया भारत मित्र ऐप में जाकर "मेरे रक्तदान" टैब में अपनी लाइव फोटो + अस्पताल की रसीद अपलोड करें — Admin verification के बाद आपका Official Certificate जारी होगा।\n\n— मेरा भारत दुकान | भारत मित्र AI`
     );
     const waUrl = `https://wa.me/${donor.phone.replace(/\D/g, "")}?text=${thankMsg}`;
     window.open(waUrl, "_blank", "noopener,noreferrer");
 
     toast({
-      title: "🎉 धन्यवाद नोट भेजा गया",
-      description: `सर्टिफिकेट डाउनलोड हो गया (Cert No: ${certNo}) और डोनर को व्हाट्सएप पर धन्यवाद संदेश भेजा गया।`,
+      title: "🎉 पुष्टि दर्ज कर ली गई",
+      description: `डोनर को धन्यवाद नोट भेज दिया। Admin verification के बाद Certificate (Cert No: ${donation?.certificate_no}) रिलीज़ होगा।`,
     });
   };
 
