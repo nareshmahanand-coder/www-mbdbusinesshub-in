@@ -63,6 +63,31 @@ const BloodDonorTab = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  // Sample preview dialog
+  const [sampleOpen, setSampleOpen] = useState(false);
+  const [samplePreviewUrl, setSamplePreviewUrl] = useState<string | null>(null);
+  const [samplePreviewName, setSamplePreviewName] = useState("आपका नाम");
+
+  // My Donations (gated PDF)
+  const [myDonations, setMyDonations] = useState<any[]>([]);
+  const [donationsLoading, setDonationsLoading] = useState(false);
+
+  // Certificate registration form (donor-self uploads proof)
+  const [cert, setCert] = useState({
+    name: "",
+    fatherName: "",
+    bloodGroup: "O+",
+    address: "",
+    city: "",
+    hospitalName: "",
+    hospitalAddress: "",
+    donationDate: todayISO(),
+    livePhotoUrl: "",
+    receiptUrl: "",
+    livePhotoFile: null as File | null,
+    receiptFile: null as File | null,
+  });
+
   // Register form
   const [reg, setReg] = useState({
     name: "",
@@ -366,37 +391,82 @@ const BloodDonorTab = () => {
         <p className="mt-1 text-[10px] leading-snug text-muted-foreground">{NGO_NOTE}</p>
       </div>
 
+      {/* Sample preview CTA */}
+      <button
+        onClick={async () => {
+          setSamplePreviewName(reg.name || "आपका नाम");
+          setSampleOpen(true);
+          if (!samplePreviewUrl) {
+            try {
+              const url = await renderRaktadanPreviewDataUrl({
+                donorName: reg.name || "आपका नाम",
+                bloodGroup: reg.blood_group,
+                donationDate: new Date().toLocaleDateString("en-IN"),
+                certificateNo: "SAMPLE-PREVIEW",
+                sample: true,
+              });
+              setSamplePreviewUrl(url);
+            } catch {
+              toast({ title: "Preview load failed", variant: "destructive" });
+            }
+          }
+        }}
+        className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-destructive bg-destructive/5 px-3 py-2 text-xs font-bold text-destructive hover:bg-destructive/10"
+      >
+        <Eye className="h-4 w-4" /> View Sample Certificate (नमूना देखें)
+      </button>
+
       {/* Mode tabs */}
-      <div className="grid grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-5 gap-1">
         <button
           onClick={() => setMode("browse")}
-          className={`flex flex-col items-center gap-0.5 rounded-md px-2 py-1.5 text-[10px] font-bold transition-colors ${
+          className={`flex flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[9px] font-bold transition-colors ${
             mode === "browse"
               ? "bg-destructive text-destructive-foreground"
               : "border border-border bg-background text-foreground hover:bg-muted"
           }`}
         >
-          <Search className="h-3.5 w-3.5" /> डोनर खोजें
+          <Search className="h-3 w-3" /> खोजें
         </button>
         <button
           onClick={() => setMode("register")}
-          className={`flex flex-col items-center gap-0.5 rounded-md px-2 py-1.5 text-[10px] font-bold transition-colors ${
+          className={`flex flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[9px] font-bold transition-colors ${
             mode === "register"
               ? "bg-destructive text-destructive-foreground"
               : "border border-border bg-background text-foreground hover:bg-muted"
           }`}
         >
-          <UserPlus className="h-3.5 w-3.5" /> डोनर बनें
+          <UserPlus className="h-3 w-3" /> डोनर बनें
         </button>
         <button
           onClick={() => setMode("request")}
-          className={`flex flex-col items-center gap-0.5 rounded-md px-2 py-1.5 text-[10px] font-bold transition-colors ${
+          className={`flex flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[9px] font-bold transition-colors ${
             mode === "request"
               ? "bg-destructive text-destructive-foreground"
               : "border border-border bg-background text-foreground hover:bg-muted"
           }`}
         >
-          <Droplets className="h-3.5 w-3.5" /> Blood चाहिए
+          <Droplets className="h-3 w-3" /> चाहिए
+        </button>
+        <button
+          onClick={() => setMode("certificate")}
+          className={`flex flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[9px] font-bold transition-colors ${
+            mode === "certificate"
+              ? "bg-destructive text-destructive-foreground"
+              : "border border-border bg-background text-foreground hover:bg-muted"
+          }`}
+        >
+          <FileText className="h-3 w-3" /> सर्टिफिकेट
+        </button>
+        <button
+          onClick={() => { setMode("myDonations"); void loadMyDonations(); }}
+          className={`flex flex-col items-center gap-0.5 rounded-md px-1 py-1.5 text-[9px] font-bold transition-colors ${
+            mode === "myDonations"
+              ? "bg-destructive text-destructive-foreground"
+              : "border border-border bg-background text-foreground hover:bg-muted"
+          }`}
+        >
+          <ShieldCheck className="h-3 w-3" /> मेरे
         </button>
       </div>
 
