@@ -166,11 +166,11 @@ async function drawCertificateOnCanvas(data: CertificateData): Promise<string> {
   // Signature + Seal images
   try {
     const sig = await loadImage(ngoSignatureUrl);
-    ctx.drawImage(sig, mmX(60), mmY(248)-mmY(13), mmX(40), mmY(13));
+    ctx.drawImage(sig, mmX(60), mmY(248), mmX(40), mmY(13));
   } catch { /* ignore */ }
   try {
     const seal = await loadImage(ngoSealUrl);
-    ctx.drawImage(seal, mmX(144), mmY(234)-mmY(24), mmX(24), mmY(24));
+    ctx.drawImage(seal, mmX(144), mmY(234), mmX(24), mmY(24));
   } catch { /* ignore */ }
 
   // Date
