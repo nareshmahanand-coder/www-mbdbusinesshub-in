@@ -8,8 +8,8 @@ import { Loader2, Crown, CheckCircle2 } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
 
 const RAZORPAY_LINKS = {
-  monthly: "https://rzp.io/rzp/SpppA2Rg",
-  yearly: "https://rzp.io/rzp/luIfc4L4",
+  monthly: "https://rzp.io/rzp/HcZ53Lpl",
+  yearly: "https://rzp.io/rzp/0WkIfbVd",
 };
 
 interface MembershipOverlayProps {
