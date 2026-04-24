@@ -160,6 +160,8 @@ const AdminDashboard = () => {
   const [showRejectInput, setShowRejectInput] = useState<string | null>(null);
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [customersLoading, setCustomersLoading] = useState(false);
+  const [sosAlerts, setSosAlerts] = useState<SosAlertRecord[]>([]);
+  const [sosLoading, setSosLoading] = useState(false);
 
   // Membership & Matrimony states
   const [memberships, setMemberships] = useState<MembershipRecord[]>([]);
@@ -189,11 +191,35 @@ const AdminDashboard = () => {
       setCustomersLoading(true);
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, email, phone, provider, created_at")
+        .select("id, email, phone, provider, created_at, display_name, phone_verified, phone_verified_at")
         .order("created_at", { ascending: false });
       if (error) { toast.error("Customer Directory लोड नहीं हो सका"); setCustomers([]); }
       else setCustomers(data ?? []);
       setCustomersLoading(false);
+    };
+
+    const loadSos = async () => {
+      setSosLoading(true);
+      const { data } = await supabase
+        .from("sos_alerts")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (data) {
+        const userIds = [...new Set(data.map((s: any) => s.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, email, phone, display_name")
+          .in("id", userIds);
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) ?? []);
+        setSosAlerts(data.map((s: any) => ({
+          ...s,
+          user_name: profileMap.get(s.user_id)?.display_name,
+          user_phone: profileMap.get(s.user_id)?.phone,
+          user_email: profileMap.get(s.user_id)?.email,
+        })));
+      }
+      setSosLoading(false);
     };
 
     const loadMemberships = async () => {
@@ -283,6 +309,7 @@ const AdminDashboard = () => {
     void loadMatrimony();
     void loadComplaints();
     void loadMerchants();
+    void loadSos();
 
     // Realtime subscription for new payments & merchant submissions
     const channel = supabase
@@ -325,6 +352,37 @@ const AdminDashboard = () => {
         () => {
           toast.info("🔔 नया जीवनसाथी प्रोफ़ाइल आया है!", { duration: 8000 });
           void loadMatrimony();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'sos_alerts' },
+        async (payload) => {
+          const newAlert = payload.new as any;
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("display_name, phone, email")
+            .eq("id", newAlert.user_id)
+            .maybeSingle();
+          const enriched: SosAlertRecord = {
+            ...newAlert,
+            user_name: profile?.display_name,
+            user_phone: profile?.phone,
+            user_email: profile?.email,
+          };
+          setSosAlerts(prev => [enriched, ...prev]);
+          toast.error(
+            `🚨 SOS! ${profile?.display_name || profile?.phone || "User"} ने मदद माँगी है!`,
+            { duration: 15000 }
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'profiles' },
+        (payload) => {
+          const updated = payload.new as any;
+          setCustomers(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c));
         }
       )
       .subscribe();
