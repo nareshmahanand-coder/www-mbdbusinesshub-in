@@ -13,10 +13,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { SUPERUSER_FLAG } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { Loader2, MessageCircle, Lock, Mail } from "lucide-react";
+import { Loader2, MessageCircle, Lock } from "lucide-react";
 
 const HELPLINE_WA = "919203645007";
 const SUPERUSER_PIN = "02032026";
@@ -28,9 +29,7 @@ const LoginPage = () => {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPhoneInput, setShowPhoneInput] = useState(false);
-  const [showEmailInput, setShowEmailInput] = useState(false);
-  const [email, setEmail] = useState("");
-  const [emailLoading, setEmailLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [pin, setPin] = useState("");
   const [pinLoading, setPinLoading] = useState(false);
@@ -205,37 +204,25 @@ const LoginPage = () => {
     }
   };
 
-  const handleEmailMagicLink = async () => {
-    const trimmed = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      toast.error("कृपया एक मान्य ईमेल दर्ज करें / Enter a valid email");
-      return;
-    }
-    setEmailLoading(true);
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
     try {
-      const host = window.location.hostname;
-      const isProdDomain =
-        host.endsWith("mbdbusinesshub.in") || host === "localhost";
-      const emailRedirectTo = isProdDomain
-        ? window.location.origin
-        : "https://shop.mbdbusinesshub.in";
-
-      const { error } = await supabase.auth.signInWithOtp({
-        email: trimmed,
-        options: { emailRedirectTo, shouldCreateUser: true },
+      sessionStorage.setItem("bharat-mitra-pending-greet", "true");
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+        extraParams: { prompt: "select_account" },
       });
-      if (error) {
-        toast.error(error.message || "ईमेल भेजने में विफल / Failed to send email");
-        setEmailLoading(false);
+      if (result.error) {
+        toast.error("Google लॉगिन विफल / Google login failed");
+        setGoogleLoading(false);
         return;
       }
-      sessionStorage.setItem("bharat-mitra-pending-greet", "true");
-      toast.success("✉️ Magic Link भेज दिया गया! अपना इनबॉक्स देखें।");
-      setEmailLoading(false);
+      if (result.redirected) return;
+      navigate("/", { replace: true });
     } catch (e: any) {
-      console.error("Email login error:", e);
+      console.error("Google login error:", e);
       toast.error("लॉगिन विफल। पुनः प्रयास करें।");
-      setEmailLoading(false);
+      setGoogleLoading(false);
     }
   };
 
@@ -250,141 +237,152 @@ const LoginPage = () => {
       <div className="h-1.5 w-full bg-gradient-to-r from-[#FF9933] via-white to-[#138808]" />
 
       <div className="flex flex-1 items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md rounded-3xl p-[3px] shadow-2xl" style={{
-          background: "linear-gradient(to bottom, #FF9933 0%, #FF9933 12%, #FFFFFF 35%, #FFFFFF 65%, #138808 88%, #138808 100%)",
-        }}>
-        <Card className="w-full border-0 shadow-none bg-white/95 backdrop-blur-md rounded-[22px]">
-          <CardHeader className="text-center space-y-4 pb-2 pt-8">
+        <div className="w-full max-w-md space-y-5">
+          {/* Top header: logo + brand + tagline */}
+          <div className="text-center space-y-3">
             <div className="relative mx-auto w-fit">
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#FF9933] via-white to-[#138808] blur-md opacity-70" />
               <img
                 src={logoCircle}
                 alt="Mera Bharat Dukaan"
-                className="relative mx-auto h-28 w-28 rounded-full object-cover shadow-xl border-4 border-white"
+                className="relative mx-auto h-24 w-24 rounded-full object-cover shadow-xl border-4 border-white"
               />
             </div>
-            <div className="space-y-1">
-              <CardTitle
-                className="text-3xl font-extrabold tracking-tight text-[#0B1F4B]"
-                style={{ fontFamily: "'Georgia', 'Times New Roman', serif", letterSpacing: "0.5px" }}
+            <div>
+              <h1
+                className="text-2xl font-extrabold tracking-tight text-[#0B1F4B]"
+                style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
               >
                 मेरा भारत दुकान
-              </CardTitle>
-              <p className="text-sm font-bold text-[#0B1F4B]/80 tracking-wide uppercase">
+              </h1>
+              <p className="text-[11px] font-bold text-[#0B1F4B]/70 tracking-widest uppercase">
                 Mera Bharat Dukaan
               </p>
-              <p className="text-xs text-muted-foreground italic">
-                Digital India Marketplace · डिजिटल भारत
-              </p>
             </div>
-            <div className="flex items-center justify-center gap-1.5 pt-1">
-              <span className="h-1 w-8 rounded-full bg-[#FF9933]" />
-              <span className="h-1 w-8 rounded-full bg-white border border-border" />
-              <span className="h-1 w-8 rounded-full bg-[#138808]" />
+            <div>
+              <p className="text-base font-bold text-[#0B1F4B]">सटीक ग्राहक डेटा</p>
+              <p className="text-sm font-semibold text-[#0B1F4B]/70">के साथ साइन-अप करें</p>
             </div>
-          </CardHeader>
+          </div>
 
-          <CardContent className="space-y-5 flex flex-col items-center justify-center px-6 pb-8 pt-6">
-            {/* WhatsApp Verify (collapses to inline phone + verify) */}
-            {!showPhoneInput ? (
-              <Button
-                onClick={() => setShowPhoneInput(true)}
-                className="w-full h-14 bg-[#0B6623] hover:bg-[#094f1b] active:bg-[#073d15] text-white font-extrabold text-base gap-3 shadow-lg shadow-[#0B6623]/30 rounded-xl border-0 tracking-wide"
-              >
-                <MessageCircle className="h-5 w-5" />
-                WhatsApp से Verify करें
-              </Button>
-            ) : (
-              <div className="w-full flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                <span className="rounded-md border border-input bg-muted px-2.5 h-12 flex items-center text-sm font-bold text-[#0B1F4B]">
-                  +91
-                </span>
-                <Input
-                  type="tel"
-                  inputMode="numeric"
-                  autoFocus
-                  placeholder="10-अंकों का नंबर"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  className="flex-1 h-12 text-base font-semibold tracking-wider"
-                  maxLength={10}
-                />
+          {/* WhatsApp Card */}
+          <Card className="w-full bg-white rounded-2xl border border-[#0B6623]/15 shadow-xl overflow-hidden">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between gap-4 mb-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#0B6623]">Step 1 · WhatsApp</p>
+                  <p className="text-base font-extrabold text-[#0B1F4B] leading-tight mt-0.5">
+                    तुरंत वेरिफिकेशन
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">सबसे तेज़ · सुरक्षित</p>
+                </div>
+                <div className="flex-shrink-0 h-16 w-16 rounded-full bg-[#25D366] flex items-center justify-center shadow-lg shadow-[#25D366]/40 ring-4 ring-[#25D366]/15">
+                  <MessageCircle className="h-8 w-8 text-white" strokeWidth={2.5} fill="white" />
+                </div>
+              </div>
+
+              {!showPhoneInput ? (
                 <Button
-                  onClick={handleWhatsAppVerify}
-                  disabled={loading || phone.length !== 10}
-                  className="h-12 px-4 bg-[#0B6623] hover:bg-[#094f1b] text-white font-bold rounded-md shadow-md shadow-[#0B6623]/30"
+                  onClick={() => setShowPhoneInput(true)}
+                  className="w-full h-14 bg-[#0B6623] hover:bg-[#094f1b] active:bg-[#073d15] text-white font-extrabold text-[15px] shadow-lg shadow-[#0B6623]/30 rounded-xl border-0 tracking-wide whitespace-nowrap"
                 >
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify"}
+                  <MessageCircle className="h-5 w-5 mr-2" />
+                  वाट्सएप के साथ लॉगिन करें
                 </Button>
-              </div>
-            )}
+              ) : (
+                <div className="w-full flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <span className="rounded-md border border-input bg-muted px-2.5 h-12 flex items-center text-sm font-bold text-[#0B1F4B]">
+                    +91
+                  </span>
+                  <Input
+                    type="tel"
+                    inputMode="numeric"
+                    autoFocus
+                    placeholder="10-अंकों का नंबर"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    className="flex-1 h-12 text-base font-semibold tracking-wider"
+                    maxLength={10}
+                  />
+                  <Button
+                    onClick={handleWhatsAppVerify}
+                    disabled={loading || phone.length !== 10}
+                    className="h-12 px-4 bg-[#0B6623] hover:bg-[#094f1b] text-white font-bold rounded-md shadow-md shadow-[#0B6623]/30"
+                  >
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify"}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-            <div className="relative w-full">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-foreground/10" />
+          {/* Google / Gmail Card */}
+          <Card className="w-full bg-white rounded-2xl border border-[#FF9933]/20 shadow-xl overflow-hidden">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between gap-4 mb-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#FF9933]">Step 2 · Google</p>
+                  <p className="text-base font-extrabold text-[#0B1F4B] leading-tight mt-0.5">
+                    Gmail से साइन-इन
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">एक क्लिक · ज़ीरो पासवर्ड</p>
+                </div>
+                <div className="flex-shrink-0 h-16 w-16 rounded-full bg-white flex items-center justify-center shadow-lg ring-4 ring-[#FF9933]/20 border border-[#FF9933]/30">
+                  <svg viewBox="0 0 48 48" className="h-9 w-9">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                  </svg>
+                </div>
               </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-white/80 px-3 font-semibold text-muted-foreground rounded-full">
-                  या / OR
-                </span>
-              </div>
-            </div>
 
-            {/* Email Magic Link (collapses to inline email + send) */}
-            {!showEmailInput ? (
               <Button
-                onClick={() => setShowEmailInput(true)}
-                className="w-full h-14 bg-[#FF9933] hover:bg-[#e6852b] active:bg-[#cc7424] text-white font-extrabold text-base gap-3 shadow-lg shadow-[#FF9933]/30 rounded-xl border-0 tracking-wide"
+                onClick={handleGoogleLogin}
+                disabled={googleLoading}
+                className="w-full h-14 bg-[#FF9933] hover:bg-[#e6852b] active:bg-[#cc7424] text-white font-extrabold text-[15px] shadow-lg shadow-[#FF9933]/30 rounded-xl border-0 tracking-wide whitespace-nowrap"
               >
-                <Mail className="h-5 w-5" />
-                Email से Magic Link पाएं
+                {googleLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <>
+                    <span className="flex items-center justify-center h-6 w-6 rounded-full bg-white mr-2">
+                      <svg viewBox="0 0 48 48" className="h-4 w-4">
+                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                      </svg>
+                    </span>
+                    गूगल जीमेल से लॉगिन करें
+                  </>
+                )}
               </Button>
-            ) : (
-              <div className="w-full flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                <Input
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  autoFocus
-                  placeholder="aap@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1 h-12 text-base"
-                />
-                <Button
-                  onClick={handleEmailMagicLink}
-                  disabled={emailLoading || email.trim().length < 5}
-                  className="h-12 px-4 bg-[#FF9933] hover:bg-[#e6852b] text-white font-bold rounded-md shadow-md shadow-[#FF9933]/30"
-                >
-                  {emailLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send"}
-                </Button>
-              </div>
-            )}
+            </CardContent>
+          </Card>
 
-            <p className="text-center text-xs text-muted-foreground pt-2">
-              By continuing, you agree to our{" "}
-              <a href="/terms" className="underline hover:text-foreground font-medium">
-                Terms of Service & Privacy Policy
-              </a>
-            </p>
+          <p className="text-center text-[11px] text-muted-foreground">
+            By continuing, you agree to our{" "}
+            <a href="/terms" className="underline hover:text-foreground font-medium">
+              Terms of Service & Privacy Policy
+            </a>
+          </p>
 
-            <div className="text-center">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/80 border border-[#138808]/20 px-3 py-1 text-[10px] font-bold text-[#0B1F4B] shadow-sm">
-                🇮🇳 Digital India Initiative
-              </span>
-            </div>
+          <div className="text-center">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 border border-[#138808]/20 px-3 py-1 text-[10px] font-bold text-[#0B1F4B] shadow-sm">
+              🇮🇳 Digital India Initiative
+            </span>
+          </div>
 
-            <div className="text-center pt-1">
-              <button
-                type="button"
-                onClick={() => setPinDialogOpen(true)}
-                className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground underline-offset-2 hover:underline"
-              >
-                Official Authorized System
-              </button>
-            </div>
-          </CardContent>
-        </Card>
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => setPinDialogOpen(true)}
+              className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground underline-offset-2 hover:underline"
+            >
+              Official Authorized System
+            </button>
+          </div>
         </div>
       </div>
 
