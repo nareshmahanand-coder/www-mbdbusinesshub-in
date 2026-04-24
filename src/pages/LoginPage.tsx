@@ -279,13 +279,34 @@ const LoginPage = () => {
           </CardHeader>
 
           <CardContent className="space-y-6 flex flex-col items-center justify-center px-6 pb-8 pt-6">
+            {/* Mobile number input + WhatsApp verify */}
+            <div className="w-full space-y-2">
+              <label className="text-xs font-bold text-[#0B1F4B] uppercase tracking-wide flex items-center gap-1.5">
+                <Phone className="h-3.5 w-3.5" /> मोबाइल नंबर / Mobile Number
+              </label>
+              <div className="flex items-center gap-2">
+                <span className="rounded-md border border-input bg-muted px-3 h-12 flex items-center text-sm font-bold text-[#0B1F4B]">
+                  +91
+                </span>
+                <Input
+                  type="tel"
+                  inputMode="numeric"
+                  placeholder="10-अंकों का मोबाइल नंबर"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  className="flex-1 h-12 text-base font-semibold tracking-wider"
+                  maxLength={10}
+                />
+              </div>
+            </div>
+
             <Button
               onClick={handleWhatsAppVerify}
-              disabled={loading}
+              disabled={loading || phone.length !== 10}
               className="w-full h-14 bg-[#0B6623] hover:bg-[#094f1b] active:bg-[#073d15] text-white font-extrabold text-base gap-3 shadow-lg shadow-[#0B6623]/30 rounded-xl border-0 tracking-wide"
             >
               {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageCircle className="h-5 w-5" />}
-              WhatsApp से Verify करें
+              Verify on WhatsApp
             </Button>
 
             <div className="relative w-full">
@@ -299,24 +320,29 @@ const LoginPage = () => {
               </div>
             </div>
 
+            {/* Branded email magic link */}
+            <div className="w-full space-y-2">
+              <label className="text-xs font-bold text-[#0B1F4B] uppercase tracking-wide flex items-center gap-1.5">
+                <Mail className="h-3.5 w-3.5" /> ईमेल / Email Address
+              </label>
+              <Input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="aap@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-12 text-base"
+              />
+            </div>
+
             <Button
-              onClick={handleGoogleLogin}
-              disabled={loading}
+              onClick={handleEmailMagicLink}
+              disabled={emailLoading || email.trim().length < 5}
               className="w-full h-14 bg-[#FF9933] hover:bg-[#e6852b] active:bg-[#cc7424] text-white font-extrabold text-base gap-3 shadow-lg shadow-[#FF9933]/30 rounded-xl border-0 tracking-wide"
             >
-              {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white shadow">
-                  <svg className="h-4 w-4" viewBox="0 0 48 48" aria-hidden="true">
-                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                  </svg>
-                </span>
-              )}
-              Google Email से लॉगिन करें
+              {emailLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Mail className="h-5 w-5" />}
+              ईमेल पर Magic Link भेजें
             </Button>
 
             <p className="text-center text-xs text-muted-foreground pt-2">
