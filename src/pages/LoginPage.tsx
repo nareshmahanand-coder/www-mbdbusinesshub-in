@@ -272,36 +272,40 @@ const LoginPage = () => {
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-6 flex flex-col items-center justify-center px-6 pb-8 pt-6">
-            {/* Mobile number input + WhatsApp verify */}
-            <div className="w-full space-y-2">
-              <label className="text-xs font-bold text-[#0B1F4B] uppercase tracking-wide flex items-center gap-1.5">
-                <Phone className="h-3.5 w-3.5" /> मोबाइल नंबर / Mobile Number
-              </label>
-              <div className="flex items-center gap-2">
-                <span className="rounded-md border border-input bg-muted px-3 h-12 flex items-center text-sm font-bold text-[#0B1F4B]">
+          <CardContent className="space-y-5 flex flex-col items-center justify-center px-6 pb-8 pt-6">
+            {/* WhatsApp Verify (collapses to inline phone + verify) */}
+            {!showPhoneInput ? (
+              <Button
+                onClick={() => setShowPhoneInput(true)}
+                className="w-full h-14 bg-[#0B6623] hover:bg-[#094f1b] active:bg-[#073d15] text-white font-extrabold text-base gap-3 shadow-lg shadow-[#0B6623]/30 rounded-xl border-0 tracking-wide"
+              >
+                <MessageCircle className="h-5 w-5" />
+                WhatsApp से Verify करें
+              </Button>
+            ) : (
+              <div className="w-full flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                <span className="rounded-md border border-input bg-muted px-2.5 h-12 flex items-center text-sm font-bold text-[#0B1F4B]">
                   +91
                 </span>
                 <Input
                   type="tel"
                   inputMode="numeric"
-                  placeholder="10-अंकों का मोबाइल नंबर"
+                  autoFocus
+                  placeholder="10-अंकों का नंबर"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                   className="flex-1 h-12 text-base font-semibold tracking-wider"
                   maxLength={10}
                 />
+                <Button
+                  onClick={handleWhatsAppVerify}
+                  disabled={loading || phone.length !== 10}
+                  className="h-12 px-4 bg-[#0B6623] hover:bg-[#094f1b] text-white font-bold rounded-md shadow-md shadow-[#0B6623]/30"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify"}
+                </Button>
               </div>
-            </div>
-
-            <Button
-              onClick={handleWhatsAppVerify}
-              disabled={loading || phone.length !== 10}
-              className="w-full h-14 bg-[#0B6623] hover:bg-[#094f1b] active:bg-[#073d15] text-white font-extrabold text-base gap-3 shadow-lg shadow-[#0B6623]/30 rounded-xl border-0 tracking-wide"
-            >
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageCircle className="h-5 w-5" />}
-              Verify on WhatsApp
-            </Button>
+            )}
 
             <div className="relative w-full">
               <div className="absolute inset-0 flex items-center">
