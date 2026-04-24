@@ -11,7 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   ShieldCheck, ShieldX, Bell, CheckCircle2, IndianRupee, Users, Clock,
   BadgeCheck, MessageCircle, Send, XCircle, AlertTriangle, Crown,
-  Download, CalendarPlus, LogOut, Search, Heart, Eye, FileText, ZoomIn, Trash2
+  Download, CalendarPlus, LogOut, Search, Heart, Eye, FileText, ZoomIn, Trash2,
+  Phone, MapPin, Siren
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -57,6 +58,24 @@ interface CustomerRecord {
   phone: string | null;
   provider: string | null;
   created_at: string;
+  display_name?: string | null;
+  phone_verified?: boolean;
+  phone_verified_at?: string | null;
+}
+
+interface SosAlertRecord {
+  id: string;
+  user_id: string;
+  latitude: number;
+  longitude: number;
+  accuracy: number | null;
+  message: string | null;
+  status: string;
+  created_at: string;
+  resolved_at: string | null;
+  user_name?: string | null;
+  user_phone?: string | null;
+  user_email?: string | null;
 }
 
 interface MembershipRecord {
