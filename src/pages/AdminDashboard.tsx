@@ -1199,6 +1199,171 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* WHATSAPP VERIFICATION */}
+          <TabsContent value="whatsapp">
+            <Card>
+              <CardHeader className="bg-green-india/5 border-b">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Phone className="h-5 w-5 text-green-india" /> WhatsApp / Phone Verification
+                  <Badge variant="secondary">
+                    {customers.filter(c => !c.phone_verified && c.phone).length} Pending
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                {customersLoading ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">Loading...</p>
+                ) : customers.filter(c => c.phone).length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">No phone numbers registered yet.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Phone Number</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {[...customers]
+                        .filter(c => c.phone)
+                        .sort((a, b) => Number(a.phone_verified) - Number(b.phone_verified))
+                        .map((c) => (
+                          <TableRow key={c.id} className={!c.phone_verified ? "bg-destructive/5" : ""}>
+                            <TableCell className="font-medium">
+                              {c.display_name || c.email?.split("@")[0] || "—"}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs">{c.phone}</TableCell>
+                            <TableCell>
+                              {c.phone_verified ? (
+                                <Badge className="bg-green-india text-primary-foreground text-[10px]">
+                                  <BadgeCheck className="mr-1 h-3 w-3" /> Verified
+                                </Badge>
+                              ) : (
+                                <Badge variant="destructive" className="text-[10px]">Pending</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {c.phone_verified ? (
+                                <Button size="sm" variant="outline" onClick={() => unverifyUserPhone(c.id)} className="h-8 text-xs">
+                                  <XCircle className="mr-1 h-3 w-3" /> Revoke
+                                </Button>
+                              ) : (
+                                <Button size="sm" onClick={() => verifyUserPhone(c.id)} className="h-8 text-xs bg-green-india hover:bg-green-india/90 text-primary-foreground">
+                                  <CheckCircle2 className="mr-1 h-3 w-3" /> Verify
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* SOS & EMERGENCY */}
+          <TabsContent value="sos">
+            <Card>
+              <CardHeader className="bg-destructive/5 border-b">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Siren className="h-5 w-5 text-destructive" /> SOS & Emergency Help Requests
+                  {sosAlerts.filter(a => a.status === "active").length > 0 && (
+                    <Badge variant="destructive" className="animate-pulse">
+                      {sosAlerts.filter(a => a.status === "active").length} ACTIVE
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 p-4">
+                {sosLoading ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">Loading...</p>
+                ) : sosAlerts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">✅ No SOS alerts yet.</p>
+                ) : (
+                  sosAlerts.map((a) => {
+                    const isActive = a.status === "active";
+                    const mapsUrl = `https://www.google.com/maps?q=${a.latitude},${a.longitude}`;
+                    return (
+                      <div
+                        key={a.id}
+                        className={`rounded-lg border-2 p-4 ${
+                          isActive
+                            ? "border-destructive bg-destructive/10 animate-pulse-slow shadow-lg shadow-destructive/20"
+                            : "border-border bg-muted/20"
+                        }`}
+                      >
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {isActive ? (
+                                <Badge variant="destructive" className="text-[10px]">🚨 RED ALERT</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-[10px]">✅ Resolved</Badge>
+                              )}
+                              <p className="font-bold text-sm text-foreground">
+                                {a.user_name || a.user_email || "Unknown User"}
+                              </p>
+                              {a.user_phone && (
+                                <a
+                                  href={`tel:${a.user_phone}`}
+                                  className="text-xs font-mono text-primary underline"
+                                >
+                                  {a.user_phone}
+                                </a>
+                              )}
+                            </div>
+                            <p className="text-sm text-foreground/90">
+                              💬 <span className="italic">{a.message || "No message provided"}</span>
+                            </p>
+                            <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                              <Clock className="h-3 w-3" /> {formatDateTime(a.created_at)}
+                              {a.accuracy && <span>• Accuracy: ±{Math.round(a.accuracy)}m</span>}
+                            </p>
+                            <a
+                              href={mapsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline"
+                            >
+                              <MapPin className="h-3 w-3" /> Open Live Location in Google Maps
+                            </a>
+                          </div>
+                          <div className="flex flex-col gap-2 shrink-0">
+                            {a.user_phone && (
+                              <Button
+                                size="sm"
+                                asChild
+                                className="h-8 text-xs bg-green-india hover:bg-green-india/90 text-primary-foreground"
+                              >
+                                <a href={`tel:${a.user_phone}`}>
+                                  <Phone className="mr-1 h-3 w-3" /> Call Now
+                                </a>
+                              </Button>
+                            )}
+                            {isActive && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => resolveSosAlert(a.id)}
+                                className="h-8 text-xs"
+                              >
+                                <CheckCircle2 className="mr-1 h-3 w-3" /> Mark Resolved
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* SLIDER MANAGEMENT */}
           <TabsContent value="slider">
             <Card>
