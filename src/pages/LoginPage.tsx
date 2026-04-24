@@ -13,10 +13,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { SUPERUSER_FLAG } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { Loader2, MessageCircle, Lock, Mail } from "lucide-react";
+import { Loader2, MessageCircle, Lock } from "lucide-react";
 
 const HELPLINE_WA = "919203645007";
 const SUPERUSER_PIN = "02032026";
@@ -28,9 +29,7 @@ const LoginPage = () => {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPhoneInput, setShowPhoneInput] = useState(false);
-  const [showEmailInput, setShowEmailInput] = useState(false);
-  const [email, setEmail] = useState("");
-  const [emailLoading, setEmailLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [pin, setPin] = useState("");
   const [pinLoading, setPinLoading] = useState(false);
