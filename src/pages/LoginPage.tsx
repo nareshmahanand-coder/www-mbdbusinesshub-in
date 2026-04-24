@@ -250,37 +250,28 @@ const LoginPage = () => {
             </div>
             <div>
               <h1
-                className="text-2xl font-extrabold tracking-tight text-[#0B1F4B]"
+                className="text-3xl font-extrabold tracking-tight text-[#0B1F4B]"
                 style={{ fontFamily: "'Georgia', 'Times New Roman', serif" }}
               >
                 मेरा भारत दुकान
               </h1>
-              <p className="text-[11px] font-bold text-[#0B1F4B]/70 tracking-widest uppercase">
+              <p className="text-[12px] font-bold text-[#0B1F4B]/70 tracking-widest uppercase mt-1">
                 Mera Bharat Dukaan
               </p>
-            </div>
-            <div>
-              <p className="text-base font-bold text-[#0B1F4B]">सटीक ग्राहक डेटा</p>
-              <p className="text-sm font-semibold text-[#0B1F4B]/70">के साथ साइन-अप करें</p>
+              <p className="text-xs italic text-[#0B1F4B]/60 mt-1">
+                Digital India Marketplace · डिजिटल भारत
+              </p>
+              <div className="mx-auto mt-2 flex items-center justify-center gap-1">
+                <span className="h-1 w-6 rounded-full bg-[#FF9933]" />
+                <span className="h-1 w-6 rounded-full bg-white border border-[#0B1F4B]/10" />
+                <span className="h-1 w-6 rounded-full bg-[#138808]" />
+              </div>
             </div>
           </div>
 
           {/* WhatsApp Card */}
           <Card className="w-full bg-white rounded-2xl border border-[#0B6623]/15 shadow-xl overflow-hidden">
             <CardContent className="p-5">
-              <div className="flex items-center justify-between gap-4 mb-4">
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#0B6623]">Step 1 · WhatsApp</p>
-                  <p className="text-base font-extrabold text-[#0B1F4B] leading-tight mt-0.5">
-                    तुरंत वेरिफिकेशन
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">सबसे तेज़ · सुरक्षित</p>
-                </div>
-                <div className="flex-shrink-0 h-16 w-16 rounded-full bg-[#25D366] flex items-center justify-center shadow-lg shadow-[#25D366]/40 ring-4 ring-[#25D366]/15">
-                  <MessageCircle className="h-8 w-8 text-white" strokeWidth={2.5} fill="white" />
-                </div>
-              </div>
-
               {!showPhoneInput ? (
                 <Button
                   onClick={() => setShowPhoneInput(true)}
@@ -316,27 +307,16 @@ const LoginPage = () => {
             </CardContent>
           </Card>
 
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-[#0B1F4B]/15" />
+            <span className="text-[11px] font-bold text-[#0B1F4B]/60 tracking-widest">या / OR</span>
+            <div className="flex-1 h-px bg-[#0B1F4B]/15" />
+          </div>
+
           {/* Google / Gmail Card */}
           <Card className="w-full bg-white rounded-2xl border border-[#FF9933]/20 shadow-xl overflow-hidden">
             <CardContent className="p-5">
-              <div className="flex items-center justify-between gap-4 mb-4">
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#FF9933]">Step 2 · Google</p>
-                  <p className="text-base font-extrabold text-[#0B1F4B] leading-tight mt-0.5">
-                    Gmail से साइन-इन
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">एक क्लिक · ज़ीरो पासवर्ड</p>
-                </div>
-                <div className="flex-shrink-0 h-16 w-16 rounded-full bg-white flex items-center justify-center shadow-lg ring-4 ring-[#FF9933]/20 border border-[#FF9933]/30">
-                  <svg viewBox="0 0 48 48" className="h-9 w-9">
-                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-                    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-                    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-                    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-                  </svg>
-                </div>
-              </div>
-
               <Button
                 onClick={handleGoogleLogin}
                 disabled={googleLoading}
