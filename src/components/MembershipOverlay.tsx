@@ -8,8 +8,8 @@ import { Loader2, Crown, CheckCircle2 } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
 
 const RAZORPAY_LINKS = {
-  monthly: "https://rzp.io/rzp/SpppA2Rg",
-  yearly: "https://rzp.io/rzp/luIfc4L4",
+  monthly: "https://rzp.io/rzp/HcZ53Lpl",
+  yearly: "https://rzp.io/rzp/0WkIfbVd",
 };
 
 interface MembershipOverlayProps {
@@ -105,7 +105,7 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
               className="w-full h-14 text-base font-extrabold text-white shadow-lg rounded-xl font-hindi"
               style={{ backgroundColor: "#FF9933" }}
             >
-              मंथली प्लान - ₹1 (ऑटो-डेबिट)
+              मंथली प्लान - ₹1 / Month (ऑटो-डेबिट)
             </Button>
             {paymentOpened && (
               <Button
@@ -136,7 +136,7 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
               <span className="absolute -top-2 right-3 rounded-full bg-[#1a237e] px-2 py-0.5 text-[9px] font-bold text-white">
                 BEST VALUE
               </span>
-              सालाना प्लान - ₹12 (ऑटो-डेबिट)
+              सालाना प्लान - ₹12 / Year (ऑटो-डेबिट)
             </Button>
             {paymentOpened && (
               <Button
