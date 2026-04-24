@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
@@ -41,6 +41,65 @@ const FullScreenLoader = () => (
     <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
   </div>
 );
+
+// Public Home: shows Index to everyone. Logged-out users see it locked —
+// any click anywhere redirects to /login. Logged-in users get the normal
+// KYC + membership gating flow.
+const PublicHomeRoute = () => {
+  const { user, loading, isSuperUser } = useAuth();
+  const { status, loading: kycLoading } = useKycStatus();
+  const { isActive, loading: memLoading, refresh: refreshMembership } = useMembership();
+
+  if (loading) return <FullScreenLoader />;
+
+  // Logged-out: show Home as a locked preview. Any click → /login.
+  if (!user) {
+    return (
+      <div className="relative min-h-screen">
+        <div aria-hidden className="pointer-events-none select-none">
+          <Index />
+        </div>
+        <ClickLockOverlay />
+      </div>
+    );
+  }
+
+  // Logged-in flow (same as ProtectedRoute)
+  if (isSuperUser) return <Index />;
+  if (kycLoading) return <FullScreenLoader />;
+  if (status === "none" || status === "rejected") return <Navigate to="/ekyc" replace />;
+  if (memLoading) return <FullScreenLoader />;
+  if (!isActive) {
+    return (
+      <>
+        <div className="pointer-events-none select-none blur-xl overflow-hidden max-h-screen">
+          <Index />
+        </div>
+        <MembershipOverlay onActivated={refreshMembership} />
+      </>
+    );
+  }
+  return <Index />;
+};
+
+const ClickLockOverlay = () => {
+  const navigate = useNavigate();
+  const goLogin = () => navigate("/login");
+  return (
+    <button
+      type="button"
+      onClick={goLogin}
+      onTouchStart={goLogin}
+      aria-label="Login to continue"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-background/10 backdrop-blur-[1px] cursor-pointer"
+    >
+      <div className="m-4 mb-8 max-w-md w-full rounded-2xl bg-primary text-primary-foreground shadow-2xl px-6 py-4 text-center pointer-events-none">
+        <p className="font-bold text-base">लॉगिन करें / Tap anywhere to Login</p>
+        <p className="text-xs opacity-90 mt-1">Mera Bharat Dukaan में आपका स्वागत है</p>
+      </div>
+    </button>
+  );
+};
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, isSuperUser } = useAuth();
@@ -99,7 +158,7 @@ const AppShell = () => {
         <Route path="/login" element={<PublicLoginRoute><LoginPage /></PublicLoginRoute>} />
         <Route path="/ekyc" element={<KycRoute><EkycPage /></KycRoute>} />
         <Route path="/terms" element={<TermsPage />} />
-        <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+        <Route path="/" element={<PublicHomeRoute />} />
         <Route path="/merchant" element={<ProtectedRoute><MerchantPortal /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
         <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
