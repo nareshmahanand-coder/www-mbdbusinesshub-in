@@ -521,6 +521,36 @@ const AdminDashboard = () => {
     toast.success(!currentRead ? "✅ पढ़ा गया" : "🔴 अपठित");
   };
 
+  const verifyUserPhone = async (userId: string) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ phone_verified: true, phone_verified_at: new Date().toISOString() })
+      .eq("id", userId);
+    if (error) { toast.error("Verification failed"); return; }
+    setCustomers(prev => prev.map(c => c.id === userId ? { ...c, phone_verified: true, phone_verified_at: new Date().toISOString() } : c));
+    toast.success("✅ User WhatsApp/Phone verified!");
+  };
+
+  const unverifyUserPhone = async (userId: string) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ phone_verified: false, phone_verified_at: null })
+      .eq("id", userId);
+    if (error) { toast.error("Update failed"); return; }
+    setCustomers(prev => prev.map(c => c.id === userId ? { ...c, phone_verified: false, phone_verified_at: null } : c));
+    toast.info("Verification revoked.");
+  };
+
+  const resolveSosAlert = async (alertId: string) => {
+    const { error } = await supabase
+      .from("sos_alerts")
+      .update({ status: "resolved", resolved_at: new Date().toISOString() })
+      .eq("id", alertId);
+    if (error) { toast.error("Could not resolve"); return; }
+    setSosAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: "resolved", resolved_at: new Date().toISOString() } : a));
+    toast.success("✅ SOS marked as resolved.");
+  };
+
   const getPremiumDaysLeft = (shop: Shop & { premiumStartDate?: string; premiumPlan?: "monthly" | "yearly" }) => {
     if (!shop.premiumStartDate || !shop.premiumPlan) return null;
     const start = new Date(shop.premiumStartDate);
