@@ -290,7 +290,7 @@ const BharatMitraChatbot = () => {
     speakBrowser();
   }, [isPremium]);
 
-  // STT — Web Speech API
+  // STT — Web Speech API. Hands-free: auto-submits on stop and interrupts AI speech if currently speaking.
   const toggleListening = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -298,11 +298,24 @@ const BharatMitraChatbot = () => {
       return;
     }
 
+    // If AI is currently speaking, mic tap should INTERRUPT and start listening immediately.
+    if (isSpeaking) {
+      try { window.speechSynthesis?.cancel(); } catch {}
+      try { elevenAudioRef.current?.pause(); } catch {}
+      elevenAudioRef.current = null;
+      setIsSpeaking(false);
+      setSpeakingMsgId(null);
+    }
+
     if (isListening && recognitionRef.current) {
-      recognitionRef.current.stop();
+      try { recognitionRef.current.stop(); } catch {}
       setIsListening(false);
       return;
     }
+
+    // Enable live conversation mode so mic auto-reactivates after each AI response.
+    setLiveMode(true);
+    liveModeRef.current = true;
 
     const recognition = new SpeechRecognition();
     recognition.lang = "hi-IN";
@@ -312,8 +325,11 @@ const BharatMitraChatbot = () => {
 
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
-      setInput((prev) => prev + (prev ? " " : "") + transcript);
       setIsListening(false);
+      // Hands-free: auto-submit immediately, no Send click needed.
+      if (transcript && sendVoiceRef.current) {
+        sendVoiceRef.current(transcript);
+      }
     };
 
     recognition.onerror = () => {
@@ -325,9 +341,8 @@ const BharatMitraChatbot = () => {
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
-  }, [isListening]);
+    try { recognition.start(); setIsListening(true); } catch {}
+  }, [isListening, isSpeaking]);
 
   // Live conversation: continuous listen → auto-send on final result
   const startLiveListen = useCallback(() => {
