@@ -385,6 +385,51 @@ const AdminDashboard = () => {
           setCustomers(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c));
         }
       )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'profiles' },
+        (payload) => {
+          const newUser = payload.new as CustomerRecord;
+          setCustomers(prev => [newUser, ...prev.filter(c => c.id !== newUser.id)]);
+          toast.info(`👤 नया यूज़र साइनअप: ${newUser.email || newUser.phone || "Unknown"}`, { duration: 6000 });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'memberships' },
+        (payload) => {
+          const updated = payload.new as any;
+          setMemberships(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
+          if (updated.status === "approved") {
+            toast.success(`💰 Razorpay payment confirmed — ${updated.plan} membership active`, { duration: 8000 });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'merchant_profiles' },
+        (payload) => {
+          const updated = payload.new as any;
+          setMerchants(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'complaints' },
+        (payload) => {
+          const newComplaint = payload.new as ComplaintRecord;
+          setComplaints(prev => [newComplaint, ...prev]);
+          toast.warning(`📣 नई शिकायत: ${newComplaint.user_name || "Anonymous"}`, { duration: 8000 });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'complaints' },
+        (payload) => {
+          const updated = payload.new as ComplaintRecord;
+          setComplaints(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c));
+        }
+      )
       .subscribe();
 
     return () => {
