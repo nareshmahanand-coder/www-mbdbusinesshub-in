@@ -12,8 +12,8 @@ import KycDocUpload from "@/components/KycDocUpload";
 import type { MatrimonyProfile } from "@/pages/MatrimonyPage";
 
 const MARRIAGE_BUREAU_LINKS = {
-  monthly: "https://rzp.io/rzp/HgKKUeYD",
-  yearly: "https://rzp.io/rzp/WYucORA",
+  monthly: "https://rzp.io/rzp/d6TAK5F",
+  yearly: "https://rzp.io/rzp/WY2NejZi",
 };
 
 interface Props {
