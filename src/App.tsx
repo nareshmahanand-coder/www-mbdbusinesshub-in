@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 
 import Index from "./pages/Index";
@@ -42,9 +44,9 @@ const FullScreenLoader = () => (
   </div>
 );
 
-// Public Home: shows Index to everyone. Logged-out users see it locked —
-// any click anywhere redirects to /login. Logged-in users get the normal
-// KYC + membership gating flow.
+// Public Home: shows Index to everyone. Logged-out users see it crystal
+// clear but locked — any click anywhere redirects to /login (with a polite
+// Hindi voice prompt). Logged-in users get the normal KYC + membership flow.
 const PublicHomeRoute = () => {
   const { user, loading, isSuperUser } = useAuth();
   const { status, loading: kycLoading } = useKycStatus();
@@ -52,7 +54,7 @@ const PublicHomeRoute = () => {
 
   if (loading) return <FullScreenLoader />;
 
-  // Logged-out: show Home as a locked preview. Any click → /login.
+  // Logged-out: show Home crystal clear but locked. Any click → /login.
   if (!user) {
     return (
       <div className="relative min-h-screen">
@@ -82,22 +84,62 @@ const PublicHomeRoute = () => {
   return <Index />;
 };
 
+const WELCOME_TTS_KEY = "mbd-welcome-tts-played";
+const WELCOME_TEXT =
+  "मेरा भारत दुकान में आपका स्वागत है! कृपया आगे बढ़ने के लिए पहले लॉगिन करें।";
+const LOGIN_PROMPT_TEXT = "कृपया पहले लॉगिन करें";
+
+async function speakViaElevenLabs(text: string): Promise<HTMLAudioElement | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke("elevenlabs-tts", {
+      body: { text, voice: "aria" },
+    });
+    if (error || !data?.audioContent) return null;
+    const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
+    audio.volume = 0.95;
+    await audio.play().catch(() => {
+      /* autoplay may be blocked until user gesture — ignore */
+    });
+    return audio;
+  } catch {
+    return null;
+  }
+}
+
 const ClickLockOverlay = () => {
   const navigate = useNavigate();
-  const goLogin = () => navigate("/login");
+  const welcomeAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Play the welcome TTS once per browser session as soon as the locked
+  // home page mounts. Browsers usually require a user gesture for autoplay,
+  // so this may silently no-op until the first tap — at which point the
+  // click handler will play the "कृपया पहले लॉगिन करें" prompt instead.
+  useEffect(() => {
+    if (sessionStorage.getItem(WELCOME_TTS_KEY)) return;
+    sessionStorage.setItem(WELCOME_TTS_KEY, "1");
+    speakViaElevenLabs(WELCOME_TEXT).then((a) => {
+      welcomeAudioRef.current = a;
+    });
+    return () => {
+      welcomeAudioRef.current?.pause();
+    };
+  }, []);
+
+  const goLogin = async () => {
+    welcomeAudioRef.current?.pause();
+    // Fire-and-forget the polite prompt; navigate immediately for snappy UX.
+    speakViaElevenLabs(LOGIN_PROMPT_TEXT);
+    navigate("/login");
+  };
+
   return (
     <button
       type="button"
       onClick={goLogin}
       onTouchStart={goLogin}
       aria-label="Login to continue"
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-background/10 backdrop-blur-[1px] cursor-pointer"
-    >
-      <div className="m-4 mb-8 max-w-md w-full rounded-2xl bg-primary text-primary-foreground shadow-2xl px-6 py-4 text-center pointer-events-none">
-        <p className="font-bold text-base">लॉगिन करें / Tap anywhere to Login</p>
-        <p className="text-xs opacity-90 mt-1">Mera Bharat Dukaan में आपका स्वागत है</p>
-      </div>
-    </button>
+      className="fixed inset-0 z-[60] cursor-pointer bg-transparent"
+    />
   );
 };
 
