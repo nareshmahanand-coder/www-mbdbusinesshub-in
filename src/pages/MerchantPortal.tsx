@@ -19,7 +19,7 @@ const MERCHANT_PLANS = [
     label: "मर्चेंट मंथली प्रीमियम",
     price: 99,
     days: 30,
-    link: "https://rzp.io/rzp/RNzm6FT",
+    link: "https://rzp.io/rzp/PKPblN5t",
     theme: "saffron",
   },
   {
@@ -27,7 +27,7 @@ const MERCHANT_PLANS = [
     label: "मर्चेंट सालाना प्रीमियम",
     price: 999,
     days: 365,
-    link: "https://rzp.io/rzp/msyPNKn",
+    link: "https://rzp.io/rzp/CmLBI4u",
     theme: "green",
   },
 ];
