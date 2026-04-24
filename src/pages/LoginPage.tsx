@@ -211,10 +211,20 @@ const LoginPage = () => {
     }
     setEmailLoading(true);
     try {
+      // Always send users back to the live custom domain after clicking the
+      // magic link, regardless of which environment they signed up from
+      // (preview, sandbox, etc.). This keeps the experience branded.
+      const host = window.location.hostname;
+      const isProdDomain =
+        host.endsWith("mbdbusinesshub.in") || host === "localhost";
+      const redirectTo = isProdDomain
+        ? window.location.origin
+        : "https://shop.mbdbusinesshub.in";
+
       const { error } = await supabase.auth.signInWithOtp({
         email: trimmed,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: redirectTo,
           shouldCreateUser: true,
         },
       });
