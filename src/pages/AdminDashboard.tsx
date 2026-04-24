@@ -739,6 +739,22 @@ const AdminDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="kyc" className="text-xs">🪪 E-KYC</TabsTrigger>
             <TabsTrigger value="raktadan" className="text-xs">🩸 रक्तदान</TabsTrigger>
+            <TabsTrigger value="whatsapp" className="text-xs relative">
+              📱 WhatsApp
+              {customers.filter(c => !c.phone_verified && c.phone).length > 0 && (
+                <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                  {customers.filter(c => !c.phone_verified && c.phone).length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="sos" className="text-xs relative">
+              🚨 SOS
+              {sosAlerts.filter(a => a.status === "active").length > 0 && (
+                <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground animate-pulse">
+                  {sosAlerts.filter(a => a.status === "active").length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="slider" className="text-xs">🎠 Slider</TabsTrigger>
           </TabsList>
 
