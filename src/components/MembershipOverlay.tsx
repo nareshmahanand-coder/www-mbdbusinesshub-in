@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Loader2, Crown, CheckCircle2 } from "lucide-react";
+import { Loader2, Crown, CheckCircle2, Lock, ShieldCheck } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
 
 const RAZORPAY_LINKS = {
@@ -16,19 +17,57 @@ interface MembershipOverlayProps {
   onActivated: () => void;
 }
 
+// Razorpay Payment IDs always start with `pay_` followed by 14 alphanumerics.
+// Users get this ID only after a SUCCESSFUL transaction (visible on the
+// success screen + the email/SMS receipt sent by Razorpay).
+const RAZORPAY_PAYMENT_ID_REGEX = /^pay_[A-Za-z0-9]{14}$/;
+
 const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
   const { user } = useAuth();
-  const [verifying, setVerifying] = useState<"monthly" | "yearly" | null>(null);
-  const [paymentOpened, setPaymentOpened] = useState(false);
+  const [submitting, setSubmitting] = useState<"monthly" | "yearly" | null>(null);
+  const [openedPlan, setOpenedPlan] = useState<"monthly" | "yearly" | null>(null);
+  const [paymentId, setPaymentId] = useState("");
 
   const handlePay = (plan: "monthly" | "yearly") => {
     window.open(RAZORPAY_LINKS[plan], "_blank", "noopener,noreferrer");
-    setPaymentOpened(true);
+    setOpenedPlan(plan);
+    setPaymentId("");
   };
 
-  const activateMembership = async (plan: "monthly" | "yearly") => {
-    if (!user) return;
-    setVerifying(plan);
+  const submitForVerification = async (plan: "monthly" | "yearly") => {
+    if (!user) {
+      toast.error("कृपया पहले लॉगिन करें / Please login first");
+      return;
+    }
+
+    const trimmed = paymentId.trim();
+    if (!RAZORPAY_PAYMENT_ID_REGEX.test(trimmed)) {
+      toast.error(
+        "Please complete your payment to unlock this feature. Enter a valid Razorpay Payment ID (pay_XXXXXXXXXXXXXX).",
+      );
+      return;
+    }
+
+    setSubmitting(plan);
+
+    // Block duplicate use of the same payment ID across users
+    const { data: existing, error: lookupError } = await supabase
+      .from("memberships")
+      .select("id, user_id, status")
+      .eq("transaction_id", trimmed)
+      .limit(1);
+
+    if (lookupError) {
+      setSubmitting(null);
+      toast.error("Verification failed. Please try again.");
+      return;
+    }
+
+    if (existing && existing.length > 0) {
+      setSubmitting(null);
+      toast.error("This Payment ID has already been used.");
+      return;
+    }
 
     const days = plan === "monthly" ? 30 : 365;
     const amount = plan === "monthly" ? 1 : 12;
@@ -36,23 +75,29 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
     const endsAt = new Date(now);
     endsAt.setDate(endsAt.getDate() + days);
 
+    // IMPORTANT: status is `pending` — admin must verify the Payment ID
+    // against the Razorpay dashboard before access is granted.
     const { error } = await supabase.from("memberships").insert({
       user_id: user.id,
       plan,
       amount,
-      status: "approved",
+      status: "pending",
+      transaction_id: trimmed,
       starts_at: now.toISOString().split("T")[0],
       ends_at: endsAt.toISOString().split("T")[0],
     });
 
-    setVerifying(null);
+    setSubmitting(null);
 
     if (error) {
       toast.error("कुछ गड़बड़ हुई। दोबारा कोशिश करें।");
       return;
     }
 
-    toast.success("🎉 भारत गौरव मेंबरशिप एक्टिव!");
+    toast.success(
+      "Payment ID received. Verification in progress — access will unlock once approved.",
+      { duration: 6000 },
+    );
     onActivated();
   };
 
@@ -98,7 +143,7 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
             </p>
           </div>
 
-          {/* Monthly Plan Button */}
+          {/* Monthly Plan */}
           <div className="space-y-2">
             <Button
               onClick={() => handlePay("monthly")}
@@ -107,26 +152,9 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
             >
               मंथली प्लान - ₹1 / Month (ऑटो-डेबिट)
             </Button>
-            {paymentOpened && (
-              <Button
-                onClick={() => activateMembership("monthly")}
-                disabled={verifying !== null}
-                variant="outline"
-                className="w-full h-10 text-xs font-bold border-2 border-[#FF9933] text-[#FF9933] font-hindi"
-              >
-                {verifying === "monthly" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    मैंने ₹1 का पेमेंट कर दिया - अनलॉक करें
-                  </>
-                )}
-              </Button>
-            )}
           </div>
 
-          {/* Yearly Plan Button */}
+          {/* Yearly Plan */}
           <div className="space-y-2">
             <Button
               onClick={() => handlePay("yearly")}
@@ -138,28 +166,54 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
               </span>
               सालाना प्लान - ₹12 / Year (ऑटो-डेबिट)
             </Button>
-            {paymentOpened && (
+          </div>
+
+          {/* Payment verification form — appears ONLY after user opens a payment link */}
+          {openedPlan && (
+            <div className="rounded-xl border-2 border-[#1a237e]/30 bg-[#1a237e]/5 p-3 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="flex items-center gap-2 text-[#1a237e]">
+                <ShieldCheck className="h-4 w-4" />
+                <p className="text-[12px] font-bold">
+                  Step 2 — Verify Payment / पेमेंट सत्यापित करें
+                </p>
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                After successful payment, Razorpay shows a <b>Payment ID</b> like{" "}
+                <code className="bg-white px-1 rounded text-[10px]">pay_NXXXXXXXXXXXXX</code>.
+                Paste it below. Access unlocks only after verification.
+              </p>
+              <Input
+                value={paymentId}
+                onChange={(e) => setPaymentId(e.target.value)}
+                placeholder="pay_XXXXXXXXXXXXXX"
+                className="h-10 text-sm font-mono tracking-tight"
+                maxLength={32}
+                autoComplete="off"
+              />
               <Button
-                onClick={() => activateMembership("yearly")}
-                disabled={verifying !== null}
-                variant="outline"
-                className="w-full h-10 text-xs font-bold border-2 border-[#138808] text-[#138808] font-hindi"
+                onClick={() => submitForVerification(openedPlan)}
+                disabled={submitting !== null || paymentId.trim().length === 0}
+                className="w-full h-11 text-sm font-bold bg-[#1a237e] hover:bg-[#0f1a5e] text-white rounded-lg"
               >
-                {verifying === "yearly" ? (
+                {submitting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <>
                     <CheckCircle2 className="h-4 w-4 mr-1" />
-                    मैंने ₹12 का पेमेंट कर दिया - अनलॉक करें
+                    Submit Payment ID for Verification
                   </>
                 )}
               </Button>
-            )}
-          </div>
+            </div>
+          )}
 
-          <p className="text-center text-[11px] text-muted-foreground font-hindi pt-1">
-            पेमेंट के बाद नीचे दिए "अनलॉक करें" बटन पर टैप करें ✓
-          </p>
+          <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2">
+            <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <p className="text-[10.5px] text-muted-foreground leading-snug">
+              All premium features stay locked until your payment is verified by our team.
+              <span className="font-hindi"> भुगतान सत्यापित होने तक सभी प्रीमियम सुविधाएँ लॉक रहेंगी।</span>
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

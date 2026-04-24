@@ -28,9 +28,33 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
   const getUpiLink = (amount: number) => `${UPI_BASE}&am=${amount}`;
 
   const handleSubmit = async () => {
-    if (!transactionId.trim()) { toast.error("कृपया Transaction ID दर्ज करें"); return; }
+    const trimmedTxn = transactionId.trim();
+    if (!trimmedTxn) {
+      toast.error("Please complete your payment to unlock this feature.");
+      return;
+    }
+    // Basic format check — UPI UTRs are 12-digit numeric; Razorpay payment IDs
+    // start with `pay_`. Reject anything that clearly isn't a real reference.
+    const isValidUtr = /^\d{12}$/.test(trimmedTxn);
+    const isValidRzpId = /^pay_[A-Za-z0-9]{14}$/.test(trimmedTxn);
+    if (!isValidUtr && !isValidRzpId) {
+      toast.error("Invalid Transaction ID. Enter a 12-digit UPI UTR or Razorpay Payment ID (pay_XXXXXXXXXXXXXX).");
+      return;
+    }
     if (!user) return;
     setSubmitting(true);
+
+    // Block reuse of the same transaction ID
+    const { data: existing } = await supabase
+      .from("memberships")
+      .select("id")
+      .eq("transaction_id", trimmedTxn)
+      .limit(1);
+    if (existing && existing.length > 0) {
+      toast.error("This Transaction ID has already been used.");
+      setSubmitting(false);
+      return;
+    }
 
     const now = new Date();
     const endsAt = new Date(now);
@@ -38,12 +62,15 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
 
     const receiptNumber = `MBD-${Date.now().toString(36).toUpperCase()}`;
 
+    // SECURITY: status is `pending` until an admin verifies the payment
+    // against the bank/Razorpay dashboard. Premium pages stay locked
+    // because useMembership only treats `approved` as active.
     const { error } = await supabase.from("memberships").insert({
       user_id: user.id,
       plan,
       amount: planDetails[plan].price,
-      transaction_id: transactionId.trim(),
-      status: "approved",
+      transaction_id: trimmedTxn,
+      status: "pending",
       starts_at: now.toISOString().split("T")[0],
       ends_at: endsAt.toISOString().split("T")[0],
     });
@@ -55,7 +82,7 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
       userEmail: user.email || "",
       plan,
       amount: planDetails[plan].price,
-      transactionId: transactionId.trim(),
+      transactionId: trimmedTxn,
       startsAt: now.toISOString().split("T")[0],
       endsAt: endsAt.toISOString().split("T")[0],
       receiptNumber,
@@ -82,22 +109,26 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-india/20">
               <CheckCircle2 className="h-12 w-12 text-green-india" />
             </div>
-            <h2 className="font-hindi text-2xl font-extrabold text-foreground">बधाई हो! 🎉</h2>
+            <h2 className="font-hindi text-2xl font-extrabold text-foreground">धन्यवाद! 🙏</h2>
             <p className="font-hindi text-base text-foreground leading-relaxed">
-              आपकी <span className="font-bold text-accent">'भारत गौरव मेंबरशिप'</span> एक्टिव हो गई है।
-              <br />अब आप ऐप की सभी सुविधाओं का लाभ ले सकते हैं।
+              आपका Transaction ID प्राप्त हो गया है।<br />
+              <span className="font-bold text-accent">सत्यापन के बाद</span> आपकी मेंबरशिप एक्टिव कर दी जाएगी।
             </p>
-            <div className="inline-flex items-center gap-2 rounded-full bg-green-india/10 px-4 py-2">
-              <Sparkles className="h-4 w-4 text-green-india" />
-              <span className="text-sm font-semibold text-green-india">Membership Active ✓</span>
+            <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2">
+              <Sparkles className="h-4 w-4 text-amber-700" />
+              <span className="text-sm font-semibold text-amber-700">Verification Pending</span>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Premium features unlock automatically once payment is verified by our team.
+              You'll keep seeing this screen until then.
+            </p>
             {receiptData && (
               <Button variant="outline" onClick={() => downloadReceipt(receiptData)} className="w-full border-accent text-accent font-semibold gap-2">
                 <Download className="h-4 w-4" /> Receipt फिर से डाउनलोड करें
               </Button>
             )}
-            <Button onClick={onActivated} className="mt-2 w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold text-base py-5">
-              <Crown className="mr-2 h-5 w-5" /> ऐप में प्रवेश करें
+            <Button onClick={onActivated} variant="outline" className="mt-2 w-full font-semibold text-base py-5">
+              Refresh Status / स्टेटस रिफ्रेश करें
             </Button>
           </CardContent>
         </Card>
