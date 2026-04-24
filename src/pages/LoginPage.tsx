@@ -318,29 +318,25 @@ const LoginPage = () => {
               </div>
             </div>
 
-            {/* Branded email magic link */}
-            <div className="w-full space-y-2">
-              <label className="text-xs font-bold text-[#0B1F4B] uppercase tracking-wide flex items-center gap-1.5">
-                <Mail className="h-3.5 w-3.5" /> ईमेल / Email Address
-              </label>
-              <Input
-                type="email"
-                inputMode="email"
-                autoComplete="email"
-                placeholder="aap@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-12 text-base"
-              />
-            </div>
-
+            {/* Google Sign-In */}
             <Button
-              onClick={handleEmailMagicLink}
-              disabled={emailLoading || email.trim().length < 5}
+              onClick={handleGoogleLogin}
+              disabled={googleLoading}
               className="w-full h-14 bg-[#FF9933] hover:bg-[#e6852b] active:bg-[#cc7424] text-white font-extrabold text-base gap-3 shadow-lg shadow-[#FF9933]/30 rounded-xl border-0 tracking-wide"
             >
-              {emailLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Mail className="h-5 w-5" />}
-              ईमेल पर Magic Link भेजें
+              {googleLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white">
+                  <svg viewBox="0 0 48 48" className="h-4 w-4" aria-hidden="true">
+                    <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.4 29.3 35.5 24 35.5c-6.4 0-11.5-5.1-11.5-11.5S17.6 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.7 6.3 29.1 4.5 24 4.5 13.2 4.5 4.5 13.2 4.5 24S13.2 43.5 24 43.5 43.5 34.8 43.5 24c0-1.2-.1-2.3-.4-3.5z"/>
+                    <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12.5 24 12.5c2.9 0 5.6 1.1 7.6 2.9l5.7-5.7C33.7 6.3 29.1 4.5 24 4.5 16.3 4.5 9.7 8.8 6.3 14.7z"/>
+                    <path fill="#4CAF50" d="M24 43.5c5 0 9.6-1.7 13.2-4.7l-6.1-5.2c-2 1.4-4.5 2.2-7.1 2.2-5.3 0-9.7-3.1-11.3-7.4l-6.5 5C9.5 39.1 16.2 43.5 24 43.5z"/>
+                    <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.3 4.1-4.2 5.5l6.1 5.2c-.4.4 6.3-4.6 6.3-14.7 0-1.2-.1-2.3-.4-3.5z"/>
+                  </svg>
+                </span>
+              )}
+              Google Email से लॉगिन करें
             </Button>
 
             <p className="text-center text-xs text-muted-foreground pt-2">
