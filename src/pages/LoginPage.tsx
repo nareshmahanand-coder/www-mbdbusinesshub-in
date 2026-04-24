@@ -203,18 +203,33 @@ const LoginPage = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setLoading(true);
-    sessionStorage.setItem("bharat-mitra-pending-greet", "true");
-
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-
-    if (error) {
-      sessionStorage.removeItem("bharat-mitra-pending-greet");
-      toast.error("Google login failed. Please try again.");
-      setLoading(false);
+  const handleEmailMagicLink = async () => {
+    const trimmed = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      toast.error("कृपया एक मान्य ईमेल दर्ज करें / Enter a valid email");
+      return;
+    }
+    setEmailLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: trimmed,
+        options: {
+          emailRedirectTo: window.location.origin,
+          shouldCreateUser: true,
+        },
+      });
+      if (error) {
+        toast.error(error.message || "ईमेल भेजने में विफल / Failed to send email");
+        setEmailLoading(false);
+        return;
+      }
+      sessionStorage.setItem("bharat-mitra-pending-greet", "true");
+      toast.success("✉️ Magic Link भेज दिया गया! अपना इनबॉक्स देखें।");
+      setEmailLoading(false);
+    } catch (e: any) {
+      console.error("Email login error:", e);
+      toast.error("लॉगिन विफल। पुनः प्रयास करें।");
+      setEmailLoading(false);
     }
   };
 
