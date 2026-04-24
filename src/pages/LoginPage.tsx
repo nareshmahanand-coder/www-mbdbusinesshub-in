@@ -204,37 +204,25 @@ const LoginPage = () => {
     }
   };
 
-  const handleEmailMagicLink = async () => {
-    const trimmed = email.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      toast.error("कृपया एक मान्य ईमेल दर्ज करें / Enter a valid email");
-      return;
-    }
-    setEmailLoading(true);
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
     try {
-      const host = window.location.hostname;
-      const isProdDomain =
-        host.endsWith("mbdbusinesshub.in") || host === "localhost";
-      const emailRedirectTo = isProdDomain
-        ? window.location.origin
-        : "https://shop.mbdbusinesshub.in";
-
-      const { error } = await supabase.auth.signInWithOtp({
-        email: trimmed,
-        options: { emailRedirectTo, shouldCreateUser: true },
+      sessionStorage.setItem("bharat-mitra-pending-greet", "true");
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+        extraParams: { prompt: "select_account" },
       });
-      if (error) {
-        toast.error(error.message || "ईमेल भेजने में विफल / Failed to send email");
-        setEmailLoading(false);
+      if (result.error) {
+        toast.error("Google लॉगिन विफल / Google login failed");
+        setGoogleLoading(false);
         return;
       }
-      sessionStorage.setItem("bharat-mitra-pending-greet", "true");
-      toast.success("✉️ Magic Link भेज दिया गया! अपना इनबॉक्स देखें।");
-      setEmailLoading(false);
+      if (result.redirected) return;
+      navigate("/", { replace: true });
     } catch (e: any) {
-      console.error("Email login error:", e);
+      console.error("Google login error:", e);
       toast.error("लॉगिन विफल। पुनः प्रयास करें।");
-      setEmailLoading(false);
+      setGoogleLoading(false);
     }
   };
 
