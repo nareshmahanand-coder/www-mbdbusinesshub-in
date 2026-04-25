@@ -157,6 +157,7 @@ const formatDateTime = (dateStr: string) =>
   new Date(dateStr).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
 
 const AdminDashboard = () => {
+  const { settings, refresh: refreshSettings } = useSiteSettings();
   const [shops, setShops] = useState<(Shop & { premiumStartDate?: string; premiumPlan?: "monthly" | "yearly"; joinDate?: string })[]>(
     sampleShops.map((s, i) => ({
       ...s,
@@ -305,13 +306,14 @@ const AdminDashboard = () => {
         const userIds = [...new Set(data.map(m => m.user_id))];
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, email, phone")
+          .select("id, email, phone, display_name")
           .in("id", userIds);
         const profileMap = new Map(profiles?.map(p => [p.id, p]) ?? []);
         setMerchants(data.map(m => ({
           ...m,
           profile_email: profileMap.get(m.user_id)?.email,
           profile_phone: profileMap.get(m.user_id)?.phone,
+          profile_name: profileMap.get(m.user_id)?.display_name,
         })) as MerchantRecord[]);
       }
       setMerchantsLoading(false);
