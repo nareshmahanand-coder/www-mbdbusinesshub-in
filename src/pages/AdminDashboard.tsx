@@ -665,6 +665,52 @@ const AdminDashboard = () => {
     toast.success("✅ SOS marked as resolved.");
   };
 
+
+  const updateModeration = async (table: "classifieds" | "jobs" | "products", id: string, moderation_status: string) => {
+    const { error } = await supabase.from(table).update({ moderation_status }).eq("id", id);
+    if (error) { toast.error("Control update failed"); return; }
+    const updater = (row: any) => row.id === id ? { ...row, moderation_status } : row;
+    if (table === "classifieds") setClassifieds(prev => prev.map(updater));
+    if (table === "jobs") setJobs(prev => prev.map(updater));
+    if (table === "products") setProducts(prev => prev.map(updater));
+    toast.success(`${moderation_status === "approved" ? "Approved" : "Suspended"} successfully`);
+  };
+
+  const updateApplication = async (table: "job_applications" | "skill_admissions", id: string, status: string) => {
+    const { error } = await supabase.from(table).update({ status }).eq("id", id);
+    if (error) { toast.error("Status update failed"); return; }
+    if (table === "job_applications") setJobApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    if (table === "skill_admissions") setSkillAdmissions(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    toast.success(`Status changed to ${status}`);
+  };
+
+  const testBharatMitra = async () => {
+    if (!aiQuestion.trim()) return;
+    setAiLoading(true);
+    setAiAnswer("");
+    const { data, error } = await supabase.functions.invoke("bharat-mitra-chat", {
+      body: { message: aiQuestion, history: [] },
+    });
+    if (error) toast.error("Bharat Mitra AI test failed");
+    else setAiAnswer(data?.reply || data?.response || "AI response received, but no text body was returned.");
+    setAiLoading(false);
+  };
+
+  const navItems = [
+    { id: "overview", label: "Command Center", icon: Home, count: customers.length },
+    { id: "control", label: "Shops & Users", icon: Users, count: merchants.length },
+    { id: "preview", label: "System Preview", icon: Eye, count: classifieds.length + jobs.length + products.length },
+    { id: "classifieds-preview", label: "पुराने सामान", icon: ShoppingBag, count: classifieds.length },
+    { id: "matrimony", label: "मैरिज ब्यूरो", icon: Heart, count: matrimonyProfiles.length },
+    { id: "jobs-preview", label: "नौकरी / Jobs", icon: BriefcaseBusiness, count: jobs.length },
+    { id: "hyperlocal-preview", label: "नजदीकी दुकान", icon: Store, count: merchants.length },
+    { id: "skill-preview", label: "कौशल विकास", icon: GraduationCap, count: skillAdmissions.length },
+    { id: "family-preview", label: "भारत कवच", icon: ShieldAlert, count: familyMembers.length },
+    { id: "inventory-preview", label: "मशाल Inventory", icon: Package, count: products.length },
+    { id: "ai-preview", label: "भारत मित्र AI", icon: Brain, count: MOCK_CHATBOT_LOGS.length },
+    { id: "settings", label: "Settings", icon: Settings, count: 0 },
+  ];
+
   const getPremiumDaysLeft = (shop: Shop & { premiumStartDate?: string; premiumPlan?: "monthly" | "yearly" }) => {
     if (!shop.premiumStartDate || !shop.premiumPlan) return null;
     const start = new Date(shop.premiumStartDate);
@@ -672,32 +718,6 @@ const AdminDashboard = () => {
     const expiry = new Date(start.getTime() + duration * 24 * 60 * 60 * 1000);
     return Math.ceil((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   };
-
-  if (!loggedIn) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="h-1.5 w-full bg-navy" />
-        <div className="flex min-h-[calc(100vh-6px)] items-center justify-center px-4">
-          <Card className="w-full max-w-sm border-2 border-border shadow-lg">
-            <CardHeader className="text-center pb-2">
-              <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-navy">
-                <ShieldCheck className="h-8 w-8 text-primary-foreground" />
-              </div>
-              <CardTitle className="text-xl">Bharat Dukaan</CardTitle>
-              <p className="text-xs text-muted-foreground">Management Portal - Secure Access</p>
-              <p className="font-hindi text-sm text-muted-foreground">प्रबंधन पोर्टल - सुरक्षित प्रवेश</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Input type="password" placeholder="Enter Admin PIN" value={pin} onChange={(e) => setPin(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLogin()} className="text-center text-lg tracking-[0.5em]" maxLength={8} />
-              <Button onClick={handleLogin} className="w-full bg-navy hover:bg-navy/90 text-primary-foreground">
-                <ShieldCheck className="mr-2 h-4 w-4" /> Secure Login
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
