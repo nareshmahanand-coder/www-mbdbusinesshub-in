@@ -806,6 +806,63 @@ export type Database = {
           },
         ]
       }
+      payment_orders: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          error_message: string | null
+          id: string
+          metadata: Json
+          module: string
+          plan: string
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          razorpay_signature: string | null
+          receipt: string | null
+          status: string
+          unlocked_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          module: string
+          plan: string
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_signature?: string | null
+          receipt?: string | null
+          status?: string
+          unlocked_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          module?: string
+          plan?: string
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_signature?: string | null
+          receipt?: string | null
+          status?: string
+          unlocked_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           created_at: string
