@@ -43,40 +43,6 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
   };
 
   return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-saffron/10 via-background to-green-india/10 px-4">
-        <Card className="w-full max-w-md border-2 border-accent shadow-2xl text-center">
-          <CardContent className="py-10 space-y-5">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-india/20">
-              <CheckCircle2 className="h-12 w-12 text-green-india" />
-            </div>
-            <h2 className="font-hindi text-2xl font-extrabold text-foreground">धन्यवाद! 🙏</h2>
-            <p className="font-hindi text-base text-foreground leading-relaxed">
-              आपका Transaction ID प्राप्त हो गया है।<br />
-              <span className="font-bold text-accent">सत्यापन के बाद</span> आपकी मेंबरशिप एक्टिव कर दी जाएगी।
-            </p>
-            <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2">
-              <Sparkles className="h-4 w-4 text-amber-700" />
-              <span className="text-sm font-semibold text-amber-700">Verification Pending</span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Premium features unlock automatically once payment is verified by our team.
-              You'll keep seeing this screen until then.
-            </p>
-            {receiptData && (
-              <Button variant="outline" onClick={() => downloadReceipt(receiptData)} className="w-full border-accent text-accent font-semibold gap-2">
-                <Download className="h-4 w-4" /> Receipt फिर से डाउनलोड करें
-              </Button>
-            )}
-            <Button onClick={onActivated} variant="outline" className="mt-2 w-full font-semibold text-base py-5">
-              Refresh Status / स्टेटस रिफ्रेश करें
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-saffron/10 via-background to-green-india/10">
       <div className="h-1 w-full bg-gradient-to-r from-saffron via-white to-green-india" />
       <div className="flex flex-1 items-center justify-center px-4 py-6">
