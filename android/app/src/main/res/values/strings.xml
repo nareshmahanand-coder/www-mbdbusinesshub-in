@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Mera Bharat Dukaan</string>
+    <string name="title_activity_main">Mera Bharat Dukaan</string>
+    <string name="package_name">com.merabharatdukaan.app</string>
+    <string name="custom_url_scheme">com.merabharatdukaan.app</string>
+</resources>
