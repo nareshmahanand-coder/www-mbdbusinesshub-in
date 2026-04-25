@@ -538,6 +538,21 @@ const AdminDashboard = () => {
     toast.success("✅ Matrimony profile published!");
   };
 
+  const updateMerchant = async (merchantId: string, patch: Partial<MerchantRecord>) => {
+    const { error } = await supabase.from("merchant_profiles").update(patch).eq("id", merchantId);
+    if (error) { toast.error("Merchant update failed"); return; }
+    setMerchants(prev => prev.map(m => m.id === merchantId ? { ...m, ...patch } : m));
+    toast.success("Merchant control updated");
+  };
+
+  const updateSiteSettings = async (patch: Partial<typeof settings>) => {
+    if (!settings.id) return;
+    const { error } = await supabase.from("site_settings").update(patch).eq("id", settings.id);
+    if (error) { toast.error("Settings update failed"); return; }
+    await refreshSettings();
+    toast.success("Admin Portal settings updated");
+  };
+
   const downloadCSV = () => {
     const headers = ["Shop Name", "Hindi Name", "Category", "City", "Pincode", "Verified", "Premium", "Plan", "Join Date"];
     const rows = shops.map((s) => [s.name, s.nameHindi, s.category, s.city, s.pincode, s.verified ? "Yes" : "No", s.premium ? "Yes" : "No", s.premiumPlan || "Free", s.joinDate || "N/A"]);
