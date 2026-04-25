@@ -15,13 +15,14 @@ import {
   ShieldCheck, ShieldX, Bell, CheckCircle2, IndianRupee, Users, Clock,
   BadgeCheck, MessageCircle, Send, XCircle, AlertTriangle, Crown,
   Download, CalendarPlus, LogOut, Search, Heart, Eye, FileText, ZoomIn, Trash2,
-  Phone, MapPin, Siren, Store
+  Phone, MapPin, Siren, Store, BriefcaseBusiness, GraduationCap, Package, Settings, LockKeyhole, Brain, ShoppingBag, Home, UserCheck, ShieldAlert
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { bookCategories } from "@/data/skillBooks";
 import KycReviewTab from "@/components/admin/KycReviewTab";
 import RaktadanReviewTab from "@/components/admin/RaktadanReviewTab";
 
@@ -167,7 +168,7 @@ const AdminDashboard = () => {
       joinDate: `2026-0${Math.min(i + 1, 3)}-${String(10 + i).padStart(2, "0")}`,
     }))
   );
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(true);
   const [pin, setPin] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [rejectReasonMap, setRejectReasonMap] = useState<Record<string, string>>({});
@@ -176,6 +177,17 @@ const AdminDashboard = () => {
   const [customersLoading, setCustomersLoading] = useState(false);
   const [sosAlerts, setSosAlerts] = useState<SosAlertRecord[]>([]);
   const [sosLoading, setSosLoading] = useState(false);
+  const [classifieds, setClassifieds] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [jobApplications, setJobApplications] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [familyMembers, setFamilyMembers] = useState<any[]>([]);
+  const [skillAdmissions, setSkillAdmissions] = useState<any[]>([]);
+  const [contactRequests, setContactRequests] = useState<any[]>([]);
+  const [moduleLoading, setModuleLoading] = useState(false);
+  const [aiQuestion, setAiQuestion] = useState("दुकानदार अपनी बिक्री कैसे बढ़ा सकता है?");
+  const [aiAnswer, setAiAnswer] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   // Membership & Matrimony states
   const [memberships, setMemberships] = useState<MembershipRecord[]>([]);
@@ -324,7 +336,29 @@ const AdminDashboard = () => {
     void loadMatrimony();
     void loadComplaints();
     void loadMerchants();
+    const loadCommandCenter = async () => {
+      setModuleLoading(true);
+      const [classifiedsRes, jobsRes, applicationsRes, productsRes, familyRes, skillRes, contactsRes] = await Promise.all([
+        supabase.from("classifieds").select("*").order("created_at", { ascending: false }).limit(100),
+        supabase.from("jobs").select("*").order("created_at", { ascending: false }).limit(100),
+        supabase.from("job_applications").select("*").order("created_at", { ascending: false }).limit(100),
+        supabase.from("products").select("*").order("created_at", { ascending: false }).limit(100),
+        supabase.from("family_members").select("*").order("created_at", { ascending: false }).limit(100),
+        supabase.from("skill_admissions").select("*").order("created_at", { ascending: false }).limit(100),
+        supabase.from("contact_requests").select("*").order("created_at", { ascending: false }).limit(100),
+      ]);
+      setClassifieds(classifiedsRes.data ?? []);
+      setJobs(jobsRes.data ?? []);
+      setJobApplications(applicationsRes.data ?? []);
+      setProducts(productsRes.data ?? []);
+      setFamilyMembers(familyRes.data ?? []);
+      setSkillAdmissions(skillRes.data ?? []);
+      setContactRequests(contactsRes.data ?? []);
+      setModuleLoading(false);
+    };
+
     void loadSos();
+    void loadCommandCenter();
 
     // Realtime subscription for new payments & merchant submissions
     const channel = supabase
@@ -445,6 +479,11 @@ const AdminDashboard = () => {
           setComplaints(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c));
         }
       )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'classifieds' }, () => void loadCommandCenter())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, () => void loadCommandCenter())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => void loadCommandCenter())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'family_members' }, () => void loadCommandCenter())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'skill_admissions' }, () => void loadCommandCenter())
       .subscribe();
 
     return () => {
