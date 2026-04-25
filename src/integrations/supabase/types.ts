@@ -620,7 +620,9 @@ export type Database = {
       }
       merchant_profiles: {
         Row: {
+          aadhaar_last4: string | null
           aadhar_url: string | null
+          access_status: string
           address: string | null
           category: string | null
           city: string | null
@@ -633,20 +635,26 @@ export type Database = {
           is_verified: boolean | null
           latitude: number | null
           longitude: number | null
+          owner_name: string | null
           pan_url: string | null
           phone: string | null
           photos: string[] | null
           pincode: string | null
+          plan_ends_at: string | null
+          plan_override: string | null
           premium_plan: string | null
           premium_start_date: string | null
           shop_name: string
           shop_name_hindi: string | null
+          suspension_reason: string | null
           updated_at: string
           user_id: string
           whatsapp: string | null
         }
         Insert: {
+          aadhaar_last4?: string | null
           aadhar_url?: string | null
+          access_status?: string
           address?: string | null
           category?: string | null
           city?: string | null
@@ -659,20 +667,26 @@ export type Database = {
           is_verified?: boolean | null
           latitude?: number | null
           longitude?: number | null
+          owner_name?: string | null
           pan_url?: string | null
           phone?: string | null
           photos?: string[] | null
           pincode?: string | null
+          plan_ends_at?: string | null
+          plan_override?: string | null
           premium_plan?: string | null
           premium_start_date?: string | null
           shop_name?: string
           shop_name_hindi?: string | null
+          suspension_reason?: string | null
           updated_at?: string
           user_id: string
           whatsapp?: string | null
         }
         Update: {
+          aadhaar_last4?: string | null
           aadhar_url?: string | null
+          access_status?: string
           address?: string | null
           category?: string | null
           city?: string | null
@@ -685,14 +699,18 @@ export type Database = {
           is_verified?: boolean | null
           latitude?: number | null
           longitude?: number | null
+          owner_name?: string | null
           pan_url?: string | null
           phone?: string | null
           photos?: string[] | null
           pincode?: string | null
+          plan_ends_at?: string | null
+          plan_override?: string | null
           premium_plan?: string | null
           premium_start_date?: string | null
           shop_name?: string
           shop_name_hindi?: string | null
+          suspension_reason?: string | null
           updated_at?: string
           user_id?: string
           whatsapp?: string | null
@@ -926,6 +944,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      site_settings: {
+        Row: {
+          admin_area_label: string
+          admin_security_updated_at: string | null
+          ai_key_reference: string | null
+          created_at: string
+          id: string
+          maintenance_mode: boolean
+          merchant_area_label: string
+          merchant_registrations_enabled: boolean
+          razorpay_key_reference: string | null
+          updated_at: string
+        }
+        Insert: {
+          admin_area_label?: string
+          admin_security_updated_at?: string | null
+          ai_key_reference?: string | null
+          created_at?: string
+          id?: string
+          maintenance_mode?: boolean
+          merchant_area_label?: string
+          merchant_registrations_enabled?: boolean
+          razorpay_key_reference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          admin_area_label?: string
+          admin_security_updated_at?: string | null
+          ai_key_reference?: string | null
+          created_at?: string
+          id?: string
+          maintenance_mode?: boolean
+          merchant_area_label?: string
+          merchant_registrations_enabled?: boolean
+          razorpay_key_reference?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       sos_alert_recipients: {
         Row: {

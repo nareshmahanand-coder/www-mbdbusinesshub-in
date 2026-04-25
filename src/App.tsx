@@ -32,6 +32,8 @@ import { useKycStatus } from "@/hooks/useKycStatus";
 import { useLastKnownLocation } from "@/hooks/useLastKnownLocation";
 import { useMembership } from "@/hooks/useMembership";
 import MembershipOverlay from "@/components/MembershipOverlay";
+import { useMerchantAccess } from "@/hooks/useMerchantAccess";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
@@ -41,6 +43,15 @@ const queryClient = new QueryClient();
 const FullScreenLoader = () => (
   <div className="flex min-h-screen items-center justify-center">
     <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+  </div>
+);
+
+const MaintenanceScreen = () => (
+  <div className="flex min-h-screen items-center justify-center bg-background px-4 text-center">
+    <div className="max-w-md space-y-3">
+      <h1 className="text-3xl font-extrabold text-foreground">Coming Soon</h1>
+      <p className="font-hindi text-muted-foreground">मेरा भारत दुकान अभी रखरखाव में है। कृपया थोड़ी देर बाद वापस आएं।</p>
+    </div>
   </div>
 );
 
@@ -172,6 +183,20 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const MerchantAccessRoute = ({ children }: { children: React.ReactNode }) => {
+  const { state, reason } = useMerchantAccess();
+
+  if (state === "loading") return <FullScreenLoader />;
+  if (state === "suspended") {
+    return <Navigate to="/merchant" replace state={{ accessMessage: reason }} />;
+  }
+  if (state === "expired") {
+    return <Navigate to="/merchant" replace state={{ accessMessage: reason }} />;
+  }
+
+  return <>{children}</>;
+};
+
 const KycRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, isSuperUser } = useAuth();
   if (loading) return <FullScreenLoader />;
@@ -194,6 +219,12 @@ const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
 
 const AppShell = () => {
   useLastKnownLocation();
+  const { loading: authLoading, isSuperUser } = useAuth();
+  const { settings, loading: settingsLoading } = useSiteSettings();
+
+  if (authLoading || settingsLoading) return <FullScreenLoader />;
+  if (settings.maintenance_mode && !isSuperUser) return <MaintenanceScreen />;
+
   return (
     <>
       <Routes>
@@ -206,7 +237,7 @@ const AppShell = () => {
         <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
         <Route path="/kisan" element={<ProtectedRoute><KisanRegistration /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><CustomerDashboard /></ProtectedRoute>} />
-        <Route path="/merchant-dashboard" element={<ProtectedRoute><MerchantDashboard /></ProtectedRoute>} />
+        <Route path="/merchant-dashboard" element={<ProtectedRoute><MerchantAccessRoute><MerchantDashboard /></MerchantAccessRoute></ProtectedRoute>} />
         <Route path="/matrimony" element={<ProtectedRoute><MatrimonyPage /></ProtectedRoute>} />
         <Route path="/classifieds" element={<ProtectedRoute><ClassifiedsPage /></ProtectedRoute>} />
         <Route path="/jobs" element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />

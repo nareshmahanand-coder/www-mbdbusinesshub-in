@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import KycDocUpload from "@/components/KycDocUpload";
+import { useLocation } from "react-router-dom";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const MERCHANT_PLANS = [
   {
@@ -34,6 +36,9 @@ const MERCHANT_PLANS = [
 
 const MerchantPortal = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const { settings } = useSiteSettings();
+  const accessMessage = (location.state as { accessMessage?: string } | null)?.accessMessage;
   const [submitted, setSubmitted] = useState(false);
   
   const [shopPhotos, setShopPhotos] = useState<string[]>([]);
@@ -48,7 +53,7 @@ const MerchantPortal = () => {
 
   const [form, setForm] = useState({
     shopName: "", shopNameHindi: "", category: "", address: "",
-    pincode: "", whatsapp: "", phone: "", description: "",
+    pincode: "", whatsapp: "", phone: "", description: "", ownerName: "", aadhaarLast4: "",
   });
 
   const handleFileUpload = async (file: File, folder: string): Promise<string | null> => {
@@ -70,13 +75,35 @@ const MerchantPortal = () => {
     if (url) { setShopPhotos(prev => [...prev, url]); toast.success("Photo uploaded!"); }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.shopName || !form.category || !form.address || !form.pincode || !form.whatsapp) {
+    if (!user) { toast.error("Please login first"); return; }
+    if (!form.shopName || !form.category || !form.address || !form.pincode || !form.whatsapp || !form.ownerName) {
       toast.error("Please fill all required fields"); return;
     }
+    if (form.aadhaarLast4 && form.aadhaarLast4.length !== 4) { toast.error("Aadhaar last-4 must be 4 digits"); return; }
     if (!aadharUrl) { toast.error("कृपया आधार कार्ड की फोटो अपलोड करें"); return; }
     if (!panUrl) { toast.error("कृपया पैन कार्ड की फोटो अपलोड करें"); return; }
+    const { error } = await supabase.from("merchant_profiles").insert({
+      user_id: user.id,
+      owner_name: form.ownerName,
+      aadhaar_last4: form.aadhaarLast4,
+      shop_name: form.shopName,
+      shop_name_hindi: form.shopNameHindi,
+      category: form.category,
+      address: form.address,
+      pincode: form.pincode,
+      whatsapp: form.whatsapp,
+      phone: form.phone,
+      description: form.description,
+      photos: shopPhotos,
+      aadhar_url: aadharUrl,
+      pan_url: panUrl,
+      gst_url: gstUrl,
+      fssai_url: fssaiUrl,
+      access_status: "active",
+    });
+    if (error) { toast.error("Shop registration failed"); return; }
     setSubmitted(true);
     toast.success("Shop registration submitted for verification!");
   };
@@ -109,6 +136,11 @@ const MerchantPortal = () => {
     <div className="ashoka-watermark tiranga-bg min-h-screen">
       <AppHeader />
       <div className="relative z-10 container mx-auto max-w-2xl px-4 py-8">
+        {accessMessage && (
+          <Card className="mb-6 border-destructive/40 bg-destructive/5">
+            <CardContent className="py-4 text-sm font-medium text-destructive">{accessMessage}</CardContent>
+          </Card>
+        )}
         <div className="mb-6 text-center">
           <Store className="mx-auto mb-2 h-10 w-10 text-saffron" />
           <h1 className="font-hindi text-2xl font-extrabold leading-snug text-foreground sm:text-3xl">
@@ -118,14 +150,31 @@ const MerchantPortal = () => {
           <p className="mt-1 text-sm text-muted-foreground">Free listing • 0% Commission • Direct payments</p>
         </div>
 
+        {!settings.merchant_registrations_enabled && (
+          <Card className="mb-6 border-accent/40 bg-accent/5">
+            <CardContent className="py-6 text-center">
+              <h2 className="text-lg font-bold text-foreground">New merchant registrations are closed</h2>
+              <p className="mt-2 font-hindi text-sm text-muted-foreground">नए दुकानदार रजिस्ट्रेशन फिलहाल बंद हैं।</p>
+            </CardContent>
+          </Card>
+        )}
 
-        <Card className="mb-6">
+
+        {settings.merchant_registrations_enabled && <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-lg">Shop Details • <span className="font-hindi font-normal">दुकान की जानकारी</span></CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="ownerName">Owner Name *</Label>
+                  <Input id="ownerName" placeholder="Business owner name" value={form.ownerName} onChange={(e) => setForm({ ...form, ownerName: e.target.value })} required />
+                </div>
+                <div>
+                  <Label htmlFor="aadhaarLast4">Aadhaar Last-4</Label>
+                  <Input id="aadhaarLast4" placeholder="1234" value={form.aadhaarLast4} onChange={(e) => setForm({ ...form, aadhaarLast4: e.target.value.replace(/\D/g, '').slice(0, 4) })} maxLength={4} />
+                </div>
                 <div>
                   <Label htmlFor="shopName">Shop Name *</Label>
                   <Input id="shopName" placeholder="e.g., Sai Kirana" value={form.shopName} onChange={(e) => setForm({ ...form, shopName: e.target.value })} required />
@@ -201,7 +250,7 @@ const MerchantPortal = () => {
               </Button>
             </form>
           </CardContent>
-        </Card>
+        </Card>}
 
         {/* Premium - Tiranga themed Razorpay subscriptions */}
         <Card

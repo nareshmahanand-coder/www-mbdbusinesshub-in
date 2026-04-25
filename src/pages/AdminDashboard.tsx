@@ -6,13 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import {
   ShieldCheck, ShieldX, Bell, CheckCircle2, IndianRupee, Users, Clock,
   BadgeCheck, MessageCircle, Send, XCircle, AlertTriangle, Crown,
   Download, CalendarPlus, LogOut, Search, Heart, Eye, FileText, ZoomIn, Trash2,
-  Phone, MapPin, Siren
+  Phone, MapPin, Siren, Store
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -116,6 +119,15 @@ interface MerchantRecord {
   category: string | null;
   city: string | null;
   is_verified: boolean | null;
+  owner_name: string | null;
+  address: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  aadhaar_last4: string | null;
+  access_status: string;
+  suspension_reason: string | null;
+  plan_override: string | null;
+  plan_ends_at: string | null;
   aadhar_url: string | null;
   pan_url: string | null;
   gst_url: string | null;
@@ -123,6 +135,7 @@ interface MerchantRecord {
   created_at: string;
   profile_email?: string | null;
   profile_phone?: string | null;
+  profile_name?: string | null;
 }
 
 const MOCK_CHATBOT_LOGS: ChatbotLog[] = [
@@ -144,6 +157,7 @@ const formatDateTime = (dateStr: string) =>
   new Date(dateStr).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
 
 const AdminDashboard = () => {
+  const { settings, refresh: refreshSettings } = useSiteSettings();
   const [shops, setShops] = useState<(Shop & { premiumStartDate?: string; premiumPlan?: "monthly" | "yearly"; joinDate?: string })[]>(
     sampleShops.map((s, i) => ({
       ...s,
@@ -292,13 +306,14 @@ const AdminDashboard = () => {
         const userIds = [...new Set(data.map(m => m.user_id))];
         const { data: profiles } = await supabase
           .from("profiles")
-          .select("id, email, phone")
+          .select("id, email, phone, display_name")
           .in("id", userIds);
         const profileMap = new Map(profiles?.map(p => [p.id, p]) ?? []);
         setMerchants(data.map(m => ({
           ...m,
           profile_email: profileMap.get(m.user_id)?.email,
           profile_phone: profileMap.get(m.user_id)?.phone,
+          profile_name: profileMap.get(m.user_id)?.display_name,
         })) as MerchantRecord[]);
       }
       setMerchantsLoading(false);
@@ -521,6 +536,21 @@ const AdminDashboard = () => {
     
     setMatrimonyProfiles(prev => prev.map(p => p.id === profileId ? { ...p, is_published: true } : p));
     toast.success("✅ Matrimony profile published!");
+  };
+
+  const updateMerchant = async (merchantId: string, patch: Partial<MerchantRecord>) => {
+    const { error } = await supabase.from("merchant_profiles").update(patch).eq("id", merchantId);
+    if (error) { toast.error("Merchant update failed"); return; }
+    setMerchants(prev => prev.map(m => m.id === merchantId ? { ...m, ...patch } : m));
+    toast.success("Merchant control updated");
+  };
+
+  const updateSiteSettings = async (patch: Partial<typeof settings>) => {
+    if (!settings.id) return;
+    const { error } = await supabase.from("site_settings").update(patch).eq("id", settings.id);
+    if (error) { toast.error("Settings update failed"); return; }
+    await refreshSettings();
+    toast.success("Admin Portal settings updated");
   };
 
   const downloadCSV = () => {
@@ -801,7 +831,70 @@ const AdminDashboard = () => {
               )}
             </TabsTrigger>
             <TabsTrigger value="slider" className="text-xs">🎠 Slider</TabsTrigger>
+            <TabsTrigger value="control" className="text-xs">🛂 Shops & Users</TabsTrigger>
+            <TabsTrigger value="preview" className="text-xs">👁️ System Preview</TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs">⚙️ Settings</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="control">
+            <Card>
+              <CardHeader className="bg-primary/5 border-b">
+                <CardTitle className="text-base flex items-center gap-2"><Users className="h-5 w-5 text-primary" /> Shops & Users Control Center</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 p-4">
+                {merchantsLoading ? <p className="py-6 text-center text-sm text-muted-foreground">Loading...</p> : merchants.map((m) => (
+                  <div key={m.id} className="rounded-lg border border-border p-4">
+                    <div className="grid gap-3 lg:grid-cols-[1.3fr_1fr_1fr] lg:items-center">
+                      <div>
+                        <p className="font-semibold text-foreground">{m.shop_name || "Unnamed shop"}</p>
+                        <p className="text-xs text-muted-foreground">Owner: {m.owner_name || m.profile_name || "N/A"}</p>
+                        <p className="text-xs text-muted-foreground">Contact: {m.phone || m.whatsapp || m.profile_phone || m.profile_email || "N/A"}</p>
+                        <p className="text-xs text-muted-foreground">PAN: {m.pan_url ? "Uploaded" : "Not uploaded"} • Aadhaar last-4: {m.aadhaar_last4 || "N/A"}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Switch checked={m.access_status !== "suspended"} onCheckedChange={(checked) => updateMerchant(m.id, { access_status: checked ? "active" : "suspended", suspension_reason: checked ? "" : "Suspended by Admin Portal" })} />
+                        <Badge variant={m.access_status === "suspended" ? "destructive" : "secondary"}>{m.access_status === "suspended" ? "Suspended" : "Active"}</Badge>
+                      </div>
+                      <Select value={m.plan_override || "none"} onValueChange={(value) => updateMerchant(m.id, { plan_override: value === "none" ? "" : value, plan_ends_at: value === "yearly" ? new Date(Date.now() + 365 * 86400000).toISOString().split("T")[0] : value === "monthly" ? new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0] : null })}>
+                        <SelectTrigger><SelectValue placeholder="Set plan" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No override</SelectItem>
+                          <SelectItem value="trial">Trial</SelectItem>
+                          <SelectItem value="monthly">Monthly ₹99</SelectItem>
+                          <SelectItem value="yearly">Yearly ₹999</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="preview">
+            <Card>
+              <CardHeader className="bg-accent/5 border-b"><CardTitle className="text-base flex items-center gap-2"><Eye className="h-5 w-5 text-accent" /> System Preview</CardTitle></CardHeader>
+              <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+                {[{ label: "Merchant Dashboard", href: "/merchant-dashboard" }, { label: "Merchant Registration", href: "/merchant" }, { label: "Marketplace Home", href: "/" }, { label: "Listings", href: "/classifieds" }, { label: "Jobs", href: "/jobs" }, { label: "Services", href: "/services" }].map((item) => (
+                  <Button key={item.href} variant="outline" asChild className="justify-start"><a href={item.href} target="_blank" rel="noreferrer"><Eye className="mr-2 h-4 w-4" />{item.label}</a></Button>
+                ))}
+                {merchants.slice(0, 6).map((m) => <Button key={m.id} variant="secondary" asChild className="justify-start"><a href={`/shop/${m.id}`} target="_blank" rel="noreferrer"><Store className="mr-2 h-4 w-4" />{m.shop_name}</a></Button>)}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <Card>
+              <CardHeader className="bg-muted/40 border-b"><CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Global Site Settings</CardTitle></CardHeader>
+              <CardContent className="space-y-4 p-4">
+                <div className="flex items-center justify-between rounded-lg border p-3"><span className="font-medium">Maintenance Mode</span><Switch checked={settings.maintenance_mode} onCheckedChange={(v) => updateSiteSettings({ maintenance_mode: v })} /></div>
+                <div className="flex items-center justify-between rounded-lg border p-3"><span className="font-medium">New Merchant Registrations</span><Switch checked={settings.merchant_registrations_enabled} onCheckedChange={(v) => updateSiteSettings({ merchant_registrations_enabled: v })} /></div>
+                <div className="grid gap-3 sm:grid-cols-2"><Input placeholder="Razorpay key reference" value={settings.razorpay_key_reference || ""} onChange={(e) => updateSiteSettings({ razorpay_key_reference: e.target.value })} /><Input placeholder="AI key reference" value={settings.ai_key_reference || ""} onChange={(e) => updateSiteSettings({ ai_key_reference: e.target.value })} /></div>
+                <div className="grid gap-3 sm:grid-cols-2"><Input value={settings.merchant_area_label} onChange={(e) => updateSiteSettings({ merchant_area_label: e.target.value })} /><Input value={settings.admin_area_label} onChange={(e) => updateSiteSettings({ admin_area_label: e.target.value })} /></div>
+                <Button variant="outline" onClick={() => updateSiteSettings({ admin_security_updated_at: new Date().toISOString() })}>Mark Admin Password / PIN Changed</Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="kyc">
             <KycReviewTab />
