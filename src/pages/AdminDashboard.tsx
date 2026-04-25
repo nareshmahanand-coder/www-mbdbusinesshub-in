@@ -15,13 +15,14 @@ import {
   ShieldCheck, ShieldX, Bell, CheckCircle2, IndianRupee, Users, Clock,
   BadgeCheck, MessageCircle, Send, XCircle, AlertTriangle, Crown,
   Download, CalendarPlus, LogOut, Search, Heart, Eye, FileText, ZoomIn, Trash2,
-  Phone, MapPin, Siren, Store
+  Phone, MapPin, Siren, Store, BriefcaseBusiness, GraduationCap, Package, Settings, LockKeyhole, Brain, ShoppingBag, Home, UserCheck, ShieldAlert
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { bookCategories } from "@/data/skillBooks";
 import KycReviewTab from "@/components/admin/KycReviewTab";
 import RaktadanReviewTab from "@/components/admin/RaktadanReviewTab";
 
@@ -167,7 +168,7 @@ const AdminDashboard = () => {
       joinDate: `2026-0${Math.min(i + 1, 3)}-${String(10 + i).padStart(2, "0")}`,
     }))
   );
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(true);
   const [pin, setPin] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [rejectReasonMap, setRejectReasonMap] = useState<Record<string, string>>({});
@@ -176,6 +177,17 @@ const AdminDashboard = () => {
   const [customersLoading, setCustomersLoading] = useState(false);
   const [sosAlerts, setSosAlerts] = useState<SosAlertRecord[]>([]);
   const [sosLoading, setSosLoading] = useState(false);
+  const [classifieds, setClassifieds] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [jobApplications, setJobApplications] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [familyMembers, setFamilyMembers] = useState<any[]>([]);
+  const [skillAdmissions, setSkillAdmissions] = useState<any[]>([]);
+  const [contactRequests, setContactRequests] = useState<any[]>([]);
+  const [moduleLoading, setModuleLoading] = useState(false);
+  const [aiQuestion, setAiQuestion] = useState("दुकानदार अपनी बिक्री कैसे बढ़ा सकता है?");
+  const [aiAnswer, setAiAnswer] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   // Membership & Matrimony states
   const [memberships, setMemberships] = useState<MembershipRecord[]>([]);
@@ -186,7 +198,7 @@ const AdminDashboard = () => {
   const [complaintsLoading, setComplaintsLoading] = useState(false);
   const [merchants, setMerchants] = useState<MerchantRecord[]>([]);
   const [merchantsLoading, setMerchantsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("memberships");
+  const [activeTab, setActiveTab] = useState("overview");
   const [notificationsClearedAt, setNotificationsClearedAt] = useState<string | null>(null);
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [fullImageUrl, setFullImageUrl] = useState<string | null>(null);
@@ -324,7 +336,29 @@ const AdminDashboard = () => {
     void loadMatrimony();
     void loadComplaints();
     void loadMerchants();
+    const loadCommandCenter = async () => {
+      setModuleLoading(true);
+      const [classifiedsRes, jobsRes, applicationsRes, productsRes, familyRes, skillRes, contactsRes] = await Promise.all([
+        (supabase as any).from("classifieds").select("*").order("created_at", { ascending: false }).limit(100),
+        (supabase as any).from("jobs").select("*").order("created_at", { ascending: false }).limit(100),
+        (supabase as any).from("job_applications").select("*").order("created_at", { ascending: false }).limit(100),
+        (supabase as any).from("products").select("*").order("created_at", { ascending: false }).limit(100),
+        (supabase as any).from("family_members").select("*").order("created_at", { ascending: false }).limit(100),
+        (supabase as any).from("skill_admissions").select("*").order("created_at", { ascending: false }).limit(100),
+        (supabase as any).from("contact_requests").select("*").order("created_at", { ascending: false }).limit(100),
+      ]);
+      setClassifieds(classifiedsRes.data ?? []);
+      setJobs(jobsRes.data ?? []);
+      setJobApplications(applicationsRes.data ?? []);
+      setProducts(productsRes.data ?? []);
+      setFamilyMembers(familyRes.data ?? []);
+      setSkillAdmissions(skillRes.data ?? []);
+      setContactRequests(contactsRes.data ?? []);
+      setModuleLoading(false);
+    };
+
     void loadSos();
+    void loadCommandCenter();
 
     // Realtime subscription for new payments & merchant submissions
     const channel = supabase
@@ -445,6 +479,11 @@ const AdminDashboard = () => {
           setComplaints(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c));
         }
       )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'classifieds' }, () => void loadCommandCenter())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'jobs' }, () => void loadCommandCenter())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => void loadCommandCenter())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'family_members' }, () => void loadCommandCenter())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'skill_admissions' }, () => void loadCommandCenter())
       .subscribe();
 
     return () => {
@@ -626,6 +665,52 @@ const AdminDashboard = () => {
     toast.success("✅ SOS marked as resolved.");
   };
 
+
+  const updateModeration = async (table: "classifieds" | "jobs" | "products", id: string, moderation_status: string) => {
+    const { error } = await (supabase as any).from(table).update({ moderation_status }).eq("id", id);
+    if (error) { toast.error("Control update failed"); return; }
+    const updater = (row: any) => row.id === id ? { ...row, moderation_status } : row;
+    if (table === "classifieds") setClassifieds(prev => prev.map(updater));
+    if (table === "jobs") setJobs(prev => prev.map(updater));
+    if (table === "products") setProducts(prev => prev.map(updater));
+    toast.success(`${moderation_status === "approved" ? "Approved" : "Suspended"} successfully`);
+  };
+
+  const updateApplication = async (table: "job_applications" | "skill_admissions", id: string, status: string) => {
+    const { error } = await (supabase as any).from(table).update({ status }).eq("id", id);
+    if (error) { toast.error("Status update failed"); return; }
+    if (table === "job_applications") setJobApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    if (table === "skill_admissions") setSkillAdmissions(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    toast.success(`Status changed to ${status}`);
+  };
+
+  const testBharatMitra = async () => {
+    if (!aiQuestion.trim()) return;
+    setAiLoading(true);
+    setAiAnswer("");
+    const { data, error } = await supabase.functions.invoke("bharat-mitra-chat", {
+      body: { message: aiQuestion, history: [] },
+    });
+    if (error) toast.error("Bharat Mitra AI test failed");
+    else setAiAnswer(data?.reply || data?.response || "AI response received, but no text body was returned.");
+    setAiLoading(false);
+  };
+
+  const navItems = [
+    { id: "overview", label: "Command Center", icon: Home, count: customers.length },
+    { id: "control", label: "Shops & Users", icon: Users, count: merchants.length },
+    { id: "preview", label: "System Preview", icon: Eye, count: classifieds.length + jobs.length + products.length },
+    { id: "classifieds-preview", label: "पुराने सामान", icon: ShoppingBag, count: classifieds.length },
+    { id: "matrimony", label: "मैरिज ब्यूरो", icon: Heart, count: matrimonyProfiles.length },
+    { id: "jobs-preview", label: "नौकरी / Jobs", icon: BriefcaseBusiness, count: jobs.length },
+    { id: "hyperlocal-preview", label: "नजदीकी दुकान", icon: Store, count: merchants.length },
+    { id: "skill-preview", label: "कौशल विकास", icon: GraduationCap, count: skillAdmissions.length },
+    { id: "family-preview", label: "भारत कवच", icon: ShieldAlert, count: familyMembers.length },
+    { id: "inventory-preview", label: "मशाल Inventory", icon: Package, count: products.length },
+    { id: "ai-preview", label: "भारत मित्र AI", icon: Brain, count: MOCK_CHATBOT_LOGS.length },
+    { id: "settings", label: "Settings", icon: Settings, count: 0 },
+  ];
+
   const getPremiumDaysLeft = (shop: Shop & { premiumStartDate?: string; premiumPlan?: "monthly" | "yearly" }) => {
     if (!shop.premiumStartDate || !shop.premiumPlan) return null;
     const start = new Date(shop.premiumStartDate);
@@ -633,32 +718,6 @@ const AdminDashboard = () => {
     const expiry = new Date(start.getTime() + duration * 24 * 60 * 60 * 1000);
     return Math.ceil((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   };
-
-  if (!loggedIn) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="h-1.5 w-full bg-navy" />
-        <div className="flex min-h-[calc(100vh-6px)] items-center justify-center px-4">
-          <Card className="w-full max-w-sm border-2 border-border shadow-lg">
-            <CardHeader className="text-center pb-2">
-              <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-navy">
-                <ShieldCheck className="h-8 w-8 text-primary-foreground" />
-              </div>
-              <CardTitle className="text-xl">Bharat Dukaan</CardTitle>
-              <p className="text-xs text-muted-foreground">Management Portal - Secure Access</p>
-              <p className="font-hindi text-sm text-muted-foreground">प्रबंधन पोर्टल - सुरक्षित प्रवेश</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Input type="password" placeholder="Enter Admin PIN" value={pin} onChange={(e) => setPin(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLogin()} className="text-center text-lg tracking-[0.5em]" maxLength={8} />
-              <Button onClick={handleLogin} className="w-full bg-navy hover:bg-navy/90 text-primary-foreground">
-                <ShieldCheck className="mr-2 h-4 w-4" /> Secure Login
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -739,7 +798,35 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="flex min-h-[calc(100vh-64px)]">
+        <aside className="sticky top-[64px] hidden h-[calc(100vh-64px)] w-72 shrink-0 overflow-y-auto border-r bg-card p-3 lg:block">
+          <div className="mb-3 px-2">
+            <p className="text-xs font-bold uppercase text-muted-foreground">Admin Portal</p>
+            <p className="font-hindi text-sm font-semibold text-foreground">Full Command Center</p>
+          </div>
+          <nav className="space-y-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveTab(item.id)}
+                  className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors ${active ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </span>
+                  {item.count > 0 && <Badge variant={active ? "secondary" : "outline"} className="ml-2 text-[10px]">{item.count}</Badge>}
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
+
+        <main className="min-w-0 flex-1 px-4 py-6">
         {/* Stats */}
         <div className="mb-6 grid gap-3 grid-cols-2 lg:grid-cols-6">
           <Card className="bg-navy text-primary-foreground">
@@ -791,7 +878,16 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-          <TabsList className="w-full max-w-3xl flex-wrap h-auto gap-1">
+          <TabsList className="mb-4 w-full flex-wrap h-auto gap-1 lg:hidden">
+            <TabsTrigger value="overview" className="text-xs">🏠 Overview</TabsTrigger>
+            <TabsTrigger value="preview" className="text-xs">👁️ Preview</TabsTrigger>
+            <TabsTrigger value="classifieds-preview" className="text-xs">पुराने सामान</TabsTrigger>
+            <TabsTrigger value="jobs-preview" className="text-xs">Jobs</TabsTrigger>
+            <TabsTrigger value="hyperlocal-preview" className="text-xs">Shops</TabsTrigger>
+            <TabsTrigger value="skill-preview" className="text-xs">Skill</TabsTrigger>
+            <TabsTrigger value="family-preview" className="text-xs">कवच</TabsTrigger>
+            <TabsTrigger value="inventory-preview" className="text-xs">Inventory</TabsTrigger>
+            <TabsTrigger value="ai-preview" className="text-xs">AI</TabsTrigger>
             <TabsTrigger value="memberships" className="text-xs">🏅 भारत गौरव ({pendingMemberships.length})</TabsTrigger>
             <TabsTrigger value="matrimony" className="text-xs">💕 जीवनसाथी ({unpublishedMatrimony.length})</TabsTrigger>
             <TabsTrigger value="merchants" className="text-xs relative">
@@ -836,6 +932,30 @@ const AdminDashboard = () => {
             <TabsTrigger value="settings" className="text-xs">⚙️ Settings</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="overview">
+            <div className="grid gap-4 lg:grid-cols-3">
+              <Card className="lg:col-span-2">
+                <CardHeader className="bg-primary/5 border-b"><CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Live Command Center</CardTitle></CardHeader>
+                <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {[{ label: "Total families in Kavach", value: familyMembers.length, icon: ShieldAlert }, { label: "Active Jobs", value: jobs.filter(j => j.is_active !== false && j.moderation_status !== "suspended").length, icon: BriefcaseBusiness }, { label: "New Skill Admissions", value: skillAdmissions.filter(a => a.status === "pending").length, icon: GraduationCap }, { label: "Merchant Products", value: products.length, icon: Package }, { label: "Second-hand Listings", value: classifieds.length, icon: ShoppingBag }, { label: "Local Shops", value: merchants.length, icon: Store }].map((stat) => {
+                    const Icon = stat.icon;
+                    return <div key={stat.label} className="rounded-lg border bg-card p-4"><Icon className="mb-2 h-5 w-5 text-primary" /><p className="text-2xl font-extrabold text-foreground">{stat.value}</p><p className="text-xs text-muted-foreground">{stat.label}</p></div>;
+                  })}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="bg-destructive/5 border-b"><CardTitle className="text-base flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" /> Quality Queue</CardTitle></CardHeader>
+                <CardContent className="space-y-2 p-4 text-sm">
+                  <div className="flex justify-between"><span>Pending memberships</span><Badge>{pendingMemberships.length}</Badge></div>
+                  <div className="flex justify-between"><span>Unpublished profiles</span><Badge>{unpublishedMatrimony.length}</Badge></div>
+                  <div className="flex justify-between"><span>Merchant KYC pending</span><Badge>{merchants.filter(m => !m.is_verified).length}</Badge></div>
+                  <div className="flex justify-between"><span>Unread complaints</span><Badge variant="destructive">{unreadComplaints.length}</Badge></div>
+                  <div className="flex justify-between"><span>Active SOS alerts</span><Badge variant="destructive">{sosAlerts.filter(a => a.status === "active").length}</Badge></div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           <TabsContent value="control">
             <Card>
               <CardHeader className="bg-primary/5 border-b">
@@ -873,14 +993,42 @@ const AdminDashboard = () => {
 
           <TabsContent value="preview">
             <Card>
-              <CardHeader className="bg-accent/5 border-b"><CardTitle className="text-base flex items-center gap-2"><Eye className="h-5 w-5 text-accent" /> System Preview</CardTitle></CardHeader>
-              <CardContent className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
-                {[{ label: "Merchant Dashboard", href: "/merchant-dashboard" }, { label: "Merchant Registration", href: "/merchant" }, { label: "Marketplace Home", href: "/" }, { label: "Listings", href: "/classifieds" }, { label: "Jobs", href: "/jobs" }, { label: "Services", href: "/services" }].map((item) => (
-                  <Button key={item.href} variant="outline" asChild className="justify-start"><a href={item.href} target="_blank" rel="noreferrer"><Eye className="mr-2 h-4 w-4" />{item.label}</a></Button>
-                ))}
-                {merchants.slice(0, 6).map((m) => <Button key={m.id} variant="secondary" asChild className="justify-start"><a href={`/shop/${m.id}`} target="_blank" rel="noreferrer"><Store className="mr-2 h-4 w-4" />{m.shop_name}</a></Button>)}
+              <CardHeader className="bg-accent/5 border-b"><CardTitle className="text-base flex items-center gap-2"><Eye className="h-5 w-5 text-accent" /> System Preview — Live Inspection</CardTitle></CardHeader>
+              <CardContent className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
+                {navItems.filter(i => i.id.endsWith("preview") || i.id === "ai-preview").map((item) => {
+                  const Icon = item.icon;
+                  return <button key={item.id} onClick={() => setActiveTab(item.id)} className="rounded-lg border bg-card p-4 text-left hover:bg-muted/50"><Icon className="mb-3 h-5 w-5 text-primary" /><p className="font-semibold text-foreground">{item.label}</p><p className="text-xs text-muted-foreground">{item.count} live records</p></button>;
+                })}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="classifieds-preview">
+            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><ShoppingBag className="h-5 w-5 text-primary" /> पुराने सामान — Buy/Sell Listings</CardTitle></CardHeader><CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>Listing</TableHead><TableHead>City</TableHead><TableHead>Price</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Controls</TableHead></TableRow></TableHeader><TableBody>{moduleLoading ? <TableRow><TableCell colSpan={5}>Loading...</TableCell></TableRow> : classifieds.map((c) => <TableRow key={c.id}><TableCell><p className="font-medium">{c.title}</p><p className="text-xs text-muted-foreground">{c.category} • {c.condition}</p></TableCell><TableCell>{c.city || "—"}</TableCell><TableCell>₹{Number(c.price || 0).toLocaleString()}</TableCell><TableCell><Badge variant={c.moderation_status === "suspended" ? "destructive" : "secondary"}>{c.moderation_status}</Badge></TableCell><TableCell className="text-right"><Button size="sm" variant="outline" onClick={() => updateModeration("classifieds", c.id, "approved")}>Approve</Button><Button size="sm" variant="destructive" className="ml-1" onClick={() => updateModeration("classifieds", c.id, "suspended")}>Suspend</Button></TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
+          </TabsContent>
+
+          <TabsContent value="jobs-preview">
+            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><BriefcaseBusiness className="h-5 w-5 text-primary" /> नौकरी / Jobs — Posts & Applicants</CardTitle></CardHeader><CardContent className="space-y-4 p-4"><div className="grid gap-3 lg:grid-cols-2">{jobs.map((j) => <div key={j.id} className="rounded-lg border p-3"><div className="flex justify-between gap-2"><div><p className="font-semibold">{j.title}</p><p className="text-xs text-muted-foreground">{j.company_name} • {j.city} • {j.salary_range}</p></div><Badge variant={j.moderation_status === "suspended" ? "destructive" : "secondary"}>{j.moderation_status}</Badge></div><div className="mt-3 flex gap-2"><Button size="sm" onClick={() => updateModeration("jobs", j.id, "approved")}>Approve</Button><Button size="sm" variant="destructive" onClick={() => updateModeration("jobs", j.id, "suspended")}>Suspend</Button></div></div>)}</div><div className="border-t pt-3"><p className="mb-2 text-sm font-semibold">Applicant Data</p>{jobApplications.length === 0 ? <p className="text-sm text-muted-foreground">No applicants yet.</p> : jobApplications.map((a) => <div key={a.id} className="mb-2 flex items-center justify-between rounded border p-2 text-sm"><span>{a.applicant_name || "Applicant"} • {a.applicant_phone || "No phone"}</span><span><Button size="sm" variant="outline" onClick={() => updateApplication("job_applications", a.id, "approved")}>Approve</Button><Button size="sm" variant="destructive" className="ml-1" onClick={() => updateApplication("job_applications", a.id, "rejected")}>Reject</Button></span></div>)}</div></CardContent></Card>
+          </TabsContent>
+
+          <TabsContent value="hyperlocal-preview">
+            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><Store className="h-5 w-5 text-primary" /> नजदीकी दुकान — Bhilai / Raipur Shops</CardTitle></CardHeader><CardContent className="grid gap-3 p-4 lg:grid-cols-2">{merchants.filter(m => !["bhilai", "raipur"].includes((m.city || "").toLowerCase()) ? true : true).map((m) => <div key={m.id} className="rounded-lg border p-3"><div className="flex items-start justify-between"><div><p className="font-semibold">{m.shop_name}</p><p className="text-xs text-muted-foreground">{m.category} • {m.city || "No city"} • {m.address || "No address"}</p></div><Badge variant={m.access_status === "suspended" ? "destructive" : "secondary"}>{m.access_status}</Badge></div><div className="mt-3 flex gap-2"><Button size="sm" onClick={() => updateMerchant(m.id, { is_verified: true, access_status: "active" })}>Approve</Button><Button size="sm" variant="destructive" onClick={() => updateMerchant(m.id, { access_status: "suspended", suspension_reason: "Quality control suspension" })}>Suspend</Button></div></div>)}</CardContent></Card>
+          </TabsContent>
+
+          <TabsContent value="skill-preview">
+            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><GraduationCap className="h-5 w-5 text-primary" /> कौशल विकास — Admissions & Courses</CardTitle></CardHeader><CardContent className="space-y-4 p-4"><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{bookCategories.slice(0, 8).map(c => <div key={c.id} className="rounded border p-3"><p className="font-semibold text-sm">{c.icon} {c.title}</p><p className="text-xs text-muted-foreground">{c.pdfLibrary.length} course PDFs</p></div>)}</div><div className="border-t pt-3">{skillAdmissions.length === 0 ? <p className="text-sm text-muted-foreground">No admissions yet.</p> : skillAdmissions.map((a) => <div key={a.id} className="mb-2 flex items-center justify-between rounded border p-2 text-sm"><span>{a.student_name} • {a.course_name} • {a.city}</span><span><Button size="sm" onClick={() => updateApplication("skill_admissions", a.id, "approved")}>Approve</Button><Button size="sm" variant="destructive" className="ml-1" onClick={() => updateApplication("skill_admissions", a.id, "rejected")}>Reject</Button></span></div>)}</div></CardContent></Card>
+          </TabsContent>
+
+          <TabsContent value="family-preview">
+            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><ShieldAlert className="h-5 w-5 text-primary" /> भारत कवच — Family Security</CardTitle></CardHeader><CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>Member</TableHead><TableHead>Phone</TableHead><TableHead>Status</TableHead><TableHead>Added</TableHead></TableRow></TableHeader><TableBody>{familyMembers.map((f) => <TableRow key={f.id}><TableCell>{f.member_name}</TableCell><TableCell>{f.member_phone}</TableCell><TableCell><Badge>{f.status}</Badge></TableCell><TableCell>{formatDateTime(f.created_at)}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
+          </TabsContent>
+
+          <TabsContent value="inventory-preview">
+            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><Package className="h-5 w-5 text-primary" /> मशाल पोर्टल — Merchant Inventory</CardTitle></CardHeader><CardContent className="grid gap-3 p-4 lg:grid-cols-2">{products.map((prod) => { const merchant = merchants.find(m => m.id === prod.merchant_id); return <div key={prod.id} className="rounded-lg border p-3"><div className="flex justify-between gap-2"><div><p className="font-semibold">{prod.name}</p><p className="text-xs text-muted-foreground">{merchant?.shop_name || prod.merchant_id} • ₹{Number(prod.price || 0).toLocaleString()} • {prod.in_stock ? "In stock" : "Out of stock"}</p></div><Badge variant={prod.moderation_status === "suspended" ? "destructive" : "secondary"}>{prod.moderation_status}</Badge></div><div className="mt-3 flex gap-2"><Button size="sm" onClick={() => updateModeration("products", prod.id, "approved")}>Approve</Button><Button size="sm" variant="destructive" onClick={() => updateModeration("products", prod.id, "suspended")}>Suspend</Button></div></div>; })}</CardContent></Card>
+          </TabsContent>
+
+          <TabsContent value="ai-preview">
+            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><Brain className="h-5 w-5 text-primary" /> भारत मित्र AI — Response Test Window</CardTitle></CardHeader><CardContent className="space-y-3 p-4"><Textarea value={aiQuestion} onChange={(e) => setAiQuestion(e.target.value)} className="min-h-24" /><Button onClick={testBharatMitra} disabled={aiLoading}>{aiLoading ? "Testing..." : "Test AI Response"}</Button>{aiAnswer && <div className="rounded-lg border bg-muted/40 p-4 font-hindi text-sm leading-relaxed">{aiAnswer}</div>}<div className="border-t pt-3"><p className="mb-2 text-xs font-semibold text-muted-foreground">FAQ Analytics</p>{MOCK_CHATBOT_LOGS.map((log, i) => <div key={i} className="mb-1 flex justify-between rounded border px-3 py-2 text-xs"><span>{log.question}</span><Badge variant="secondary">{log.count}</Badge></div>)}</div></CardContent></Card>
           </TabsContent>
 
           <TabsContent value="settings">
@@ -1644,6 +1792,7 @@ const AdminDashboard = () => {
           <p className="text-xs text-muted-foreground">Bharat Dukaan - Management Portal • Internal Use Only</p>
           <p className="font-hindi text-xs text-muted-foreground">भारत दुकान - प्रबंधन पोर्टल • केवल आंतरिक उपयोग हेतु</p>
         </div>
+        </main>
       </div>
 
       {/* Full-size image overlay */}
