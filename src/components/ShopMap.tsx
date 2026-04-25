@@ -95,7 +95,7 @@ const ShopMap = () => {
           </div>
           <div className="flex items-center gap-1.5">
             <span className="inline-block h-4 w-4 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 ring-2 ring-yellow-300" />
-            <span className="text-xs font-semibold text-foreground">⭐ Premium (₹99/₹999)</span>
+            <span className="text-xs font-semibold text-foreground">⭐ Premium (₹1/₹12)</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="inline-block h-4 w-4 rounded-full bg-blue-500 ring-2 ring-blue-300" />
