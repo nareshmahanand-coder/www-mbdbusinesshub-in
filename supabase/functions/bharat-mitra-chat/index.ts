@@ -71,7 +71,30 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, userLat, userLng, userId, userState } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const { userLat, userLng, userId, userState } = body;
+    const history = Array.isArray(body.history) ? body.history : [];
+    const messages = Array.isArray(body.messages)
+      ? body.messages
+      : [
+          ...history,
+          ...(typeof body.message === "string" && body.message.trim()
+            ? [{ role: "user", content: body.message.trim() }]
+            : []),
+        ];
+
+    const safeMessages = messages.filter((m: any) =>
+      m && ["user", "assistant", "system"].includes(m.role) && typeof m.content === "string" && m.content.trim()
+    );
+
+    if (!safeMessages.length) {
+      return new Response(JSON.stringify({ error: "Invalid request: messages array or message text is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const shouldStream = body.stream !== false;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -188,8 +211,8 @@ serve(async (req) => {
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: fullSystemPrompt }, ...messages],
-        stream: true,
+        messages: [{ role: "system", content: fullSystemPrompt }, ...safeMessages],
+        stream: shouldStream,
       }),
     });
 
@@ -203,6 +226,12 @@ serve(async (req) => {
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
       return new Response(JSON.stringify({ error: "AI gateway error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (!shouldStream) {
+      const data = await response.json();
+      const reply = data?.choices?.[0]?.message?.content ?? "";
+      return new Response(JSON.stringify({ reply, response: reply }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });

@@ -689,7 +689,7 @@ const AdminDashboard = () => {
     setAiLoading(true);
     setAiAnswer("");
     const { data, error } = await supabase.functions.invoke("bharat-mitra-chat", {
-      body: { message: aiQuestion, history: [] },
+      body: { message: aiQuestion, history: [], stream: false },
     });
     if (error) toast.error("Bharat Mitra AI test failed");
     else setAiAnswer(data?.reply || data?.response || "AI response received, but no text body was returned.");
