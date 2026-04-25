@@ -236,6 +236,7 @@ export type Database = {
           description: string | null
           id: string
           is_sold: boolean | null
+          moderation_status: string
           photos: string[] | null
           price: number | null
           title: string
@@ -251,6 +252,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_sold?: boolean | null
+          moderation_status?: string
           photos?: string[] | null
           price?: number | null
           title?: string
@@ -266,6 +268,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_sold?: boolean | null
+          moderation_status?: string
           photos?: string[] | null
           price?: number | null
           title?: string
@@ -378,6 +381,45 @@ export type Database = {
         }
         Relationships: []
       }
+      job_applications: {
+        Row: {
+          admin_notes: string | null
+          applicant_name: string
+          applicant_phone: string | null
+          applicant_user_id: string
+          created_at: string
+          id: string
+          job_id: string
+          message: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          applicant_name?: string
+          applicant_phone?: string | null
+          applicant_user_id: string
+          created_at?: string
+          id?: string
+          job_id: string
+          message?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          applicant_name?: string
+          applicant_phone?: string | null
+          applicant_user_id?: string
+          created_at?: string
+          id?: string
+          job_id?: string
+          message?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       jobs: {
         Row: {
           city: string | null
@@ -389,6 +431,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean | null
           job_type: string | null
+          moderation_status: string
           salary_range: string | null
           title: string
           updated_at: string
@@ -404,6 +447,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           job_type?: string | null
+          moderation_status?: string
           salary_range?: string | null
           title?: string
           updated_at?: string
@@ -419,6 +463,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           job_type?: string | null
+          moderation_status?: string
           salary_range?: string | null
           title?: string
           updated_at?: string
@@ -769,6 +814,7 @@ export type Database = {
           image_url: string | null
           in_stock: boolean | null
           merchant_id: string
+          moderation_status: string
           name: string
           name_hindi: string | null
           price: number
@@ -781,6 +827,7 @@ export type Database = {
           image_url?: string | null
           in_stock?: boolean | null
           merchant_id: string
+          moderation_status?: string
           name: string
           name_hindi?: string | null
           price?: number
@@ -793,6 +840,7 @@ export type Database = {
           image_url?: string | null
           in_stock?: boolean | null
           merchant_id?: string
+          moderation_status?: string
           name?: string
           name_hindi?: string | null
           price?: number
@@ -981,6 +1029,48 @@ export type Database = {
           merchant_registrations_enabled?: boolean
           razorpay_key_reference?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      skill_admissions: {
+        Row: {
+          admin_notes: string | null
+          city: string | null
+          course_category: string | null
+          course_name: string
+          created_at: string
+          id: string
+          phone: string | null
+          status: string
+          student_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          city?: string | null
+          course_category?: string | null
+          course_name?: string
+          created_at?: string
+          id?: string
+          phone?: string | null
+          status?: string
+          student_name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          city?: string | null
+          course_category?: string | null
+          course_name?: string
+          created_at?: string
+          id?: string
+          phone?: string | null
+          status?: string
+          student_name?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
