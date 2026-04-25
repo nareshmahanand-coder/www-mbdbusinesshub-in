@@ -54,10 +54,10 @@ const KycDocUpload = ({ label, labelHindi, required, value, onChange, userId, fo
         <button type="button" onClick={() => inputRef.current?.click()} disabled={uploading}
           className="flex h-20 w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-primary hover:text-primary transition-colors">
           {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
-          <span className="text-xs">{uploading ? "Uploading…" : `Upload ${label}`}</span>
+          <span className="text-xs">{uploading ? "Uploading…" : `Camera / Upload ${label}`}</span>
         </button>
       )}
-      <input ref={inputRef} type="file" accept="image/*" className="hidden"
+      <input ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden"
         onChange={e => upload(e.target.files?.[0])} />
     </div>
   );
