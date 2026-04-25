@@ -168,6 +168,14 @@ const MerchantPortal = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
+                  <Label htmlFor="ownerName">Owner Name *</Label>
+                  <Input id="ownerName" placeholder="Business owner name" value={form.ownerName} onChange={(e) => setForm({ ...form, ownerName: e.target.value })} required />
+                </div>
+                <div>
+                  <Label htmlFor="aadhaarLast4">Aadhaar Last-4</Label>
+                  <Input id="aadhaarLast4" placeholder="1234" value={form.aadhaarLast4} onChange={(e) => setForm({ ...form, aadhaarLast4: e.target.value.replace(/\D/g, '').slice(0, 4) })} maxLength={4} />
+                </div>
+                <div>
                   <Label htmlFor="shopName">Shop Name *</Label>
                   <Input id="shopName" placeholder="e.g., Sai Kirana" value={form.shopName} onChange={(e) => setForm({ ...form, shopName: e.target.value })} required />
                 </div>
