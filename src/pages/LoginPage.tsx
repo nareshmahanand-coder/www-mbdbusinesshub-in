@@ -207,11 +207,12 @@ const LoginPage = () => {
     try {
       sessionStorage.setItem("bharat-mitra-pending-greet", "true");
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}/~oauth/callback`,
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
-        toast.error("Google लॉगिन विफल / Google login failed");
+        console.error("Google login error:", result.error);
+        toast.error("Google लॉगिन ब्लॉक हुआ। कृपया दोबारा प्रयास करें / Google login was blocked. Please retry.");
         setGoogleLoading(false);
         return;
       }
@@ -352,7 +353,15 @@ const LoginPage = () => {
               <p className="mt-5 text-center text-[11px] text-muted-foreground">
                 By continuing, you agree to our{" "}
                 <a href="/terms" className="underline hover:text-foreground font-medium">
-                  Terms of Service & Privacy Policy
+                  Terms
+                </a>
+                {", "}
+                <a href="/privacy-policy" className="underline hover:text-foreground font-medium">
+                  Privacy Policy
+                </a>
+                {" and "}
+                <a href="/refund-policy" className="underline hover:text-foreground font-medium">
+                  Refund Policy
                 </a>
               </p>
 

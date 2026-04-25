@@ -14,6 +14,7 @@ import MerchantPortal from "./pages/MerchantPortal";
 import AdminDashboard from "./pages/AdminDashboard";
 import HelpPage from "./pages/HelpPage";
 import TermsPage from "./pages/TermsPage";
+import LegalPage from "./pages/LegalPage";
 import KisanRegistration from "./pages/KisanRegistration";
 import LoginPage from "./pages/LoginPage";
 import CustomerDashboard from "./pages/CustomerDashboard";
@@ -229,8 +230,12 @@ const AppShell = () => {
     <>
       <Routes>
         <Route path="/login" element={<PublicLoginRoute><LoginPage /></PublicLoginRoute>} />
+        <Route path="/~oauth/*" element={<FullScreenLoader />} />
         <Route path="/ekyc" element={<KycRoute><EkycPage /></KycRoute>} />
         <Route path="/terms" element={<TermsPage />} />
+        <Route path="/contact" element={<LegalPage section="contact" />} />
+        <Route path="/privacy-policy" element={<LegalPage section="privacy" />} />
+        <Route path="/refund-policy" element={<LegalPage section="refund" />} />
         <Route path="/" element={<PublicHomeRoute />} />
         <Route path="/merchant" element={<ProtectedRoute><MerchantPortal /></ProtectedRoute>} />
         <Route path="/admin" element={<AdminDashboard />} />
