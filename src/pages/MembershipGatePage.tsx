@@ -1,140 +1,46 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, Crown, Sparkles, Download } from "lucide-react";
+import { Loader2, Crown } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { downloadReceipt } from "@/lib/generateReceipt";
-
-const UPI_ID = "Nmahanand1@ybl";
-const UPI_BASE = `upi://pay?pa=${UPI_ID}&pn=MeraBharatDukaan&cu=INR`;
+import { startInstantRazorpayPayment } from "@/lib/razorpayPayments";
 
 const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
   const { user, signOut } = useAuth();
   const [plan, setPlan] = useState<"monthly" | "yearly">("monthly");
-  const [transactionId, setTransactionId] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [receiptData, setReceiptData] = useState<any>(null);
+  const [paymentFailed, setPaymentFailed] = useState(false);
 
   const planDetails = {
-    monthly: { price: 1, label: "₹1", duration: "1 महीना", days: 30 },
-    yearly: { price: 12, label: "₹12", duration: "1 साल", days: 365 },
+    monthly: { price: 99, label: "₹99", duration: "1 महीना", days: 30 },
+    yearly: { price: 999, label: "₹999", duration: "1 साल", days: 365 },
   };
 
-  const getUpiLink = (amount: number) => `${UPI_BASE}&am=${amount}`;
-
-  const handleSubmit = async () => {
-    const trimmedTxn = transactionId.trim();
-    if (!trimmedTxn) {
-      toast.error("Please complete your payment to unlock this feature.");
-      return;
-    }
-    // Basic format check — UPI UTRs are 12-digit numeric; Razorpay payment IDs
-    // start with `pay_`. Reject anything that clearly isn't a real reference.
-    const isValidUtr = /^\d{12}$/.test(trimmedTxn);
-    const isValidRzpId = /^pay_[A-Za-z0-9]{14}$/.test(trimmedTxn);
-    if (!isValidUtr && !isValidRzpId) {
-      toast.error("Invalid Transaction ID. Enter a 12-digit UPI UTR or Razorpay Payment ID (pay_XXXXXXXXXXXXXX).");
-      return;
-    }
+  const handlePayment = async () => {
     if (!user) return;
     setSubmitting(true);
+    setPaymentFailed(false);
 
-    // Block reuse of the same transaction ID
-    const { data: existing } = await supabase
-      .from("memberships")
-      .select("id")
-      .eq("transaction_id", trimmedTxn)
-      .limit(1);
-    if (existing && existing.length > 0) {
-      toast.error("This Transaction ID has already been used.");
-      setSubmitting(false);
-      return;
-    }
-
-    const now = new Date();
-    const endsAt = new Date(now);
-    endsAt.setDate(endsAt.getDate() + planDetails[plan].days);
-
-    const receiptNumber = `MBD-${Date.now().toString(36).toUpperCase()}`;
-
-    // SECURITY: status is `pending` until an admin verifies the payment
-    // against the bank/Razorpay dashboard. Premium pages stay locked
-    // because useMembership only treats `approved` as active.
-    const { error } = await supabase.from("memberships").insert({
-      user_id: user.id,
-      plan,
-      amount: planDetails[plan].price,
-      transaction_id: trimmedTxn,
-      status: "pending",
-      starts_at: now.toISOString().split("T")[0],
-      ends_at: endsAt.toISOString().split("T")[0],
-    });
-
-    if (error) { toast.error("Submission failed. Please try again."); setSubmitting(false); return; }
-
-    const rData = {
-      userName: user.user_metadata?.display_name || user.email || "User",
-      userEmail: user.email || "",
-      plan,
-      amount: planDetails[plan].price,
-      transactionId: trimmedTxn,
-      startsAt: now.toISOString().split("T")[0],
-      endsAt: endsAt.toISOString().split("T")[0],
-      receiptNumber,
-    };
-
-    // Auto-download receipt
     try {
-      downloadReceipt(rData);
-      toast.success("Receipt downloaded successfully! 🧾");
-    } catch {
-      toast.error("Receipt generation failed, but payment is recorded.");
+      await startInstantRazorpayPayment({
+        module: "bharat_gaurav",
+        plan,
+        onSuccess: () => {
+          toast.success("Payment successful — membership unlocked!");
+          onActivated();
+          window.location.reload();
+        },
+        onFailure: () => setPaymentFailed(true),
+      });
+    } catch (error) {
+      setPaymentFailed(true);
+      toast.error(error instanceof Error ? error.message : "Payment failed. Please retry.");
+    } finally {
+      setSubmitting(false);
     }
-
-    setReceiptData(rData);
-    setSubmitted(true);
-    setSubmitting(false);
   };
-
-  if (submitted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-saffron/10 via-background to-green-india/10 px-4">
-        <Card className="w-full max-w-md border-2 border-accent shadow-2xl text-center">
-          <CardContent className="py-10 space-y-5">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-india/20">
-              <CheckCircle2 className="h-12 w-12 text-green-india" />
-            </div>
-            <h2 className="font-hindi text-2xl font-extrabold text-foreground">धन्यवाद! 🙏</h2>
-            <p className="font-hindi text-base text-foreground leading-relaxed">
-              आपका Transaction ID प्राप्त हो गया है।<br />
-              <span className="font-bold text-accent">सत्यापन के बाद</span> आपकी मेंबरशिप एक्टिव कर दी जाएगी।
-            </p>
-            <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-4 py-2">
-              <Sparkles className="h-4 w-4 text-amber-700" />
-              <span className="text-sm font-semibold text-amber-700">Verification Pending</span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Premium features unlock automatically once payment is verified by our team.
-              You'll keep seeing this screen until then.
-            </p>
-            {receiptData && (
-              <Button variant="outline" onClick={() => downloadReceipt(receiptData)} className="w-full border-accent text-accent font-semibold gap-2">
-                <Download className="h-4 w-4" /> Receipt फिर से डाउनलोड करें
-              </Button>
-            )}
-            <Button onClick={onActivated} variant="outline" className="mt-2 w-full font-semibold text-base py-5">
-              Refresh Status / स्टेटस रिफ्रेश करें
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-saffron/10 via-background to-green-india/10">
@@ -160,56 +66,28 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => setPlan("monthly")}
                 className={`rounded-xl border-2 p-4 text-center transition-all ${plan === "monthly" ? "border-accent bg-accent/10 shadow-md" : "border-border bg-card hover:border-accent/50"}`}>
-                <p className="text-2xl font-extrabold text-foreground">₹1</p>
+                <p className="text-2xl font-extrabold text-foreground">₹99</p>
                 <p className="text-xs text-muted-foreground font-hindi">मासिक / Monthly</p>
               </button>
               <button onClick={() => setPlan("yearly")}
                 className={`rounded-xl border-2 p-4 text-center transition-all relative ${plan === "yearly" ? "border-accent bg-accent/10 shadow-md" : "border-border bg-card hover:border-accent/50"}`}>
                 <span className="absolute -top-2 right-2 rounded-full bg-green-india px-2 py-0.5 text-[9px] font-bold text-primary-foreground">BEST VALUE</span>
-                <p className="text-2xl font-extrabold text-foreground">₹12</p>
+                <p className="text-2xl font-extrabold text-foreground">₹999</p>
                 <p className="text-xs text-muted-foreground font-hindi">वार्षिक / Yearly</p>
               </button>
             </div>
 
-            {/* UPI Direct Pay Buttons */}
-            <div className="space-y-2">
-              <a href={getUpiLink(planDetails[plan].price)} className="block">
-                <Button className="w-full bg-[hsl(265,80%,45%)] hover:bg-[hsl(265,80%,40%)] text-primary-foreground font-bold text-lg py-6 gap-2 shadow-lg">
-                  📱 Pay {planDetails[plan].label} via UPI
-                </Button>
-              </a>
-              <div className="flex gap-2">
-                <a href={getUpiLink(planDetails[plan].price)} className="flex-1">
-                  <Button variant="outline" className="w-full border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)] font-semibold gap-1">
-                    PhonePe
-                  </Button>
-                </a>
-                <a href={getUpiLink(planDetails[plan].price)} className="flex-1">
-                  <Button variant="outline" className="w-full border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)] font-semibold gap-1">
-                    GPay
-                  </Button>
-                </a>
-                <a href={getUpiLink(planDetails[plan].price)} className="flex-1">
-                  <Button variant="outline" className="w-full border-[hsl(265,80%,45%)] text-[hsl(265,80%,45%)] font-semibold gap-1">
-                    Paytm
-                  </Button>
-                </a>
-              </div>
-              <p className="text-center text-[10px] text-muted-foreground">UPI ID: <span className="font-mono font-bold text-foreground">{UPI_ID}</span></p>
-            </div>
-
-            {/* Transaction ID Only */}
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground font-hindi">Transaction ID / UTR Number *</label>
-              <Input placeholder="e.g. 412345678901" value={transactionId} onChange={(e) => setTransactionId(e.target.value)} />
-            </div>
-
-            <Button onClick={handleSubmit} disabled={submitting || !transactionId.trim()}
+            <Button onClick={handlePayment} disabled={submitting}
               className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold text-base py-6 gap-2 shadow-lg">
               {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Crown className="h-5 w-5" />}
-              Submit & Activate Membership
+              Pay {planDetails[plan].label} & Unlock Instantly
             </Button>
-            <p className="text-center text-[10px] text-muted-foreground font-hindi">Transaction ID डालते ही मेंबरशिप तुरंत एक्टिव हो जाएगी ✓</p>
+            {paymentFailed && (
+              <Button onClick={handlePayment} disabled={submitting} variant="outline" className="w-full font-bold">
+                Retry Payment
+              </Button>
+            )}
+            <p className="text-center text-[10px] text-muted-foreground font-hindi">सफल Razorpay पेमेंट के बाद एक्सेस अपने-आप खुल जाएगा ✓</p>
 
             <button onClick={signOut} className="w-full text-center text-xs text-muted-foreground hover:text-foreground pt-2">
               ← दूसरे अकाउंट से लॉगिन करें
