@@ -831,6 +831,9 @@ const AdminDashboard = () => {
               )}
             </TabsTrigger>
             <TabsTrigger value="slider" className="text-xs">🎠 Slider</TabsTrigger>
+            <TabsTrigger value="control" className="text-xs">🛂 Shops & Users</TabsTrigger>
+            <TabsTrigger value="preview" className="text-xs">👁️ System Preview</TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs">⚙️ Settings</TabsTrigger>
           </TabsList>
 
           <TabsContent value="kyc">
