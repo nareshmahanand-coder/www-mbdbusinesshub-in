@@ -19,6 +19,7 @@ const AppHeader = () => {
     { to: "/", label: t("home") },
     { to: "/merchant", label: t("merchant_portal") },
     { to: "/help", label: t("help_desk") },
+    { to: "/contact", label: "Contact" },
   ];
 
   return (
