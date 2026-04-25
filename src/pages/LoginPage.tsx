@@ -207,11 +207,12 @@ const LoginPage = () => {
     try {
       sessionStorage.setItem("bharat-mitra-pending-greet", "true");
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}/~oauth/callback`,
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
-        toast.error("Google लॉगिन विफल / Google login failed");
+        console.error("Google login error:", result.error);
+        toast.error("Google लॉगिन ब्लॉक हुआ। कृपया दोबारा प्रयास करें / Google login was blocked. Please retry.");
         setGoogleLoading(false);
         return;
       }
