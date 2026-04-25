@@ -198,7 +198,7 @@ const AdminDashboard = () => {
   const [complaintsLoading, setComplaintsLoading] = useState(false);
   const [merchants, setMerchants] = useState<MerchantRecord[]>([]);
   const [merchantsLoading, setMerchantsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("memberships");
+  const [activeTab, setActiveTab] = useState("overview");
   const [notificationsClearedAt, setNotificationsClearedAt] = useState<string | null>(null);
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [fullImageUrl, setFullImageUrl] = useState<string | null>(null);
@@ -798,7 +798,35 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="flex min-h-[calc(100vh-64px)]">
+        <aside className="sticky top-[64px] hidden h-[calc(100vh-64px)] w-72 shrink-0 overflow-y-auto border-r bg-card p-3 lg:block">
+          <div className="mb-3 px-2">
+            <p className="text-xs font-bold uppercase text-muted-foreground">Admin Portal</p>
+            <p className="font-hindi text-sm font-semibold text-foreground">Full Command Center</p>
+          </div>
+          <nav className="space-y-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveTab(item.id)}
+                  className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors ${active ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </span>
+                  {item.count > 0 && <Badge variant={active ? "secondary" : "outline"} className="ml-2 text-[10px]">{item.count}</Badge>}
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
+
+        <main className="min-w-0 flex-1 px-4 py-6">
         {/* Stats */}
         <div className="mb-6 grid gap-3 grid-cols-2 lg:grid-cols-6">
           <Card className="bg-navy text-primary-foreground">
@@ -850,7 +878,16 @@ const AdminDashboard = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
-          <TabsList className="w-full max-w-3xl flex-wrap h-auto gap-1">
+          <TabsList className="mb-4 w-full flex-wrap h-auto gap-1 lg:hidden">
+            <TabsTrigger value="overview" className="text-xs">🏠 Overview</TabsTrigger>
+            <TabsTrigger value="preview" className="text-xs">👁️ Preview</TabsTrigger>
+            <TabsTrigger value="classifieds-preview" className="text-xs">पुराने सामान</TabsTrigger>
+            <TabsTrigger value="jobs-preview" className="text-xs">Jobs</TabsTrigger>
+            <TabsTrigger value="hyperlocal-preview" className="text-xs">Shops</TabsTrigger>
+            <TabsTrigger value="skill-preview" className="text-xs">Skill</TabsTrigger>
+            <TabsTrigger value="family-preview" className="text-xs">कवच</TabsTrigger>
+            <TabsTrigger value="inventory-preview" className="text-xs">Inventory</TabsTrigger>
+            <TabsTrigger value="ai-preview" className="text-xs">AI</TabsTrigger>
             <TabsTrigger value="memberships" className="text-xs">🏅 भारत गौरव ({pendingMemberships.length})</TabsTrigger>
             <TabsTrigger value="matrimony" className="text-xs">💕 जीवनसाथी ({unpublishedMatrimony.length})</TabsTrigger>
             <TabsTrigger value="merchants" className="text-xs relative">
@@ -1703,6 +1740,7 @@ const AdminDashboard = () => {
           <p className="text-xs text-muted-foreground">Bharat Dukaan - Management Portal • Internal Use Only</p>
           <p className="font-hindi text-xs text-muted-foreground">भारत दुकान - प्रबंधन पोर्टल • केवल आंतरिक उपयोग हेतु</p>
         </div>
+        </main>
       </div>
 
       {/* Full-size image overlay */}
