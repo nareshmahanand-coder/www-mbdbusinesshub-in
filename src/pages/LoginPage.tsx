@@ -353,7 +353,15 @@ const LoginPage = () => {
               <p className="mt-5 text-center text-[11px] text-muted-foreground">
                 By continuing, you agree to our{" "}
                 <a href="/terms" className="underline hover:text-foreground font-medium">
-                  Terms of Service & Privacy Policy
+                  Terms
+                </a>
+                {", "}
+                <a href="/privacy-policy" className="underline hover:text-foreground font-medium">
+                  Privacy Policy
+                </a>
+                {" and "}
+                <a href="/refund-policy" className="underline hover:text-foreground font-medium">
+                  Refund Policy
                 </a>
               </p>
 
