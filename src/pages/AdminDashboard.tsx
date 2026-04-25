@@ -339,13 +339,13 @@ const AdminDashboard = () => {
     const loadCommandCenter = async () => {
       setModuleLoading(true);
       const [classifiedsRes, jobsRes, applicationsRes, productsRes, familyRes, skillRes, contactsRes] = await Promise.all([
-        supabase.from("classifieds").select("*").order("created_at", { ascending: false }).limit(100),
-        supabase.from("jobs").select("*").order("created_at", { ascending: false }).limit(100),
-        supabase.from("job_applications").select("*").order("created_at", { ascending: false }).limit(100),
-        supabase.from("products").select("*").order("created_at", { ascending: false }).limit(100),
-        supabase.from("family_members").select("*").order("created_at", { ascending: false }).limit(100),
-        supabase.from("skill_admissions").select("*").order("created_at", { ascending: false }).limit(100),
-        supabase.from("contact_requests").select("*").order("created_at", { ascending: false }).limit(100),
+        (supabase as any).from("classifieds").select("*").order("created_at", { ascending: false }).limit(100),
+        (supabase as any).from("jobs").select("*").order("created_at", { ascending: false }).limit(100),
+        (supabase as any).from("job_applications").select("*").order("created_at", { ascending: false }).limit(100),
+        (supabase as any).from("products").select("*").order("created_at", { ascending: false }).limit(100),
+        (supabase as any).from("family_members").select("*").order("created_at", { ascending: false }).limit(100),
+        (supabase as any).from("skill_admissions").select("*").order("created_at", { ascending: false }).limit(100),
+        (supabase as any).from("contact_requests").select("*").order("created_at", { ascending: false }).limit(100),
       ]);
       setClassifieds(classifiedsRes.data ?? []);
       setJobs(jobsRes.data ?? []);
@@ -667,7 +667,7 @@ const AdminDashboard = () => {
 
 
   const updateModeration = async (table: "classifieds" | "jobs" | "products", id: string, moderation_status: string) => {
-    const { error } = await supabase.from(table).update({ moderation_status }).eq("id", id);
+    const { error } = await (supabase as any).from(table).update({ moderation_status }).eq("id", id);
     if (error) { toast.error("Control update failed"); return; }
     const updater = (row: any) => row.id === id ? { ...row, moderation_status } : row;
     if (table === "classifieds") setClassifieds(prev => prev.map(updater));
@@ -677,7 +677,7 @@ const AdminDashboard = () => {
   };
 
   const updateApplication = async (table: "job_applications" | "skill_admissions", id: string, status: string) => {
-    const { error } = await supabase.from(table).update({ status }).eq("id", id);
+    const { error } = await (supabase as any).from(table).update({ status }).eq("id", id);
     if (error) { toast.error("Status update failed"); return; }
     if (table === "job_applications") setJobApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
     if (table === "skill_admissions") setSkillAdmissions(prev => prev.map(a => a.id === id ? { ...a, status } : a));

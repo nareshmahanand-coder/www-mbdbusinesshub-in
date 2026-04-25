@@ -233,7 +233,7 @@ const AppShell = () => {
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/" element={<PublicHomeRoute />} />
         <Route path="/merchant" element={<ProtectedRoute><MerchantPortal /></ProtectedRoute>} />
-        <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
         <Route path="/kisan" element={<ProtectedRoute><KisanRegistration /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><CustomerDashboard /></ProtectedRoute>} />
