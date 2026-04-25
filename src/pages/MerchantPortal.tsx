@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import KycDocUpload from "@/components/KycDocUpload";
+import { useLocation } from "react-router-dom";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 const MERCHANT_PLANS = [
   {
@@ -34,6 +36,9 @@ const MERCHANT_PLANS = [
 
 const MerchantPortal = () => {
   const { user } = useAuth();
+  const location = useLocation();
+  const { settings } = useSiteSettings();
+  const accessMessage = (location.state as { accessMessage?: string } | null)?.accessMessage;
   const [submitted, setSubmitted] = useState(false);
   
   const [shopPhotos, setShopPhotos] = useState<string[]>([]);
@@ -109,6 +114,11 @@ const MerchantPortal = () => {
     <div className="ashoka-watermark tiranga-bg min-h-screen">
       <AppHeader />
       <div className="relative z-10 container mx-auto max-w-2xl px-4 py-8">
+        {accessMessage && (
+          <Card className="mb-6 border-destructive/40 bg-destructive/5">
+            <CardContent className="py-4 text-sm font-medium text-destructive">{accessMessage}</CardContent>
+          </Card>
+        )}
         <div className="mb-6 text-center">
           <Store className="mx-auto mb-2 h-10 w-10 text-saffron" />
           <h1 className="font-hindi text-2xl font-extrabold leading-snug text-foreground sm:text-3xl">
@@ -118,8 +128,17 @@ const MerchantPortal = () => {
           <p className="mt-1 text-sm text-muted-foreground">Free listing • 0% Commission • Direct payments</p>
         </div>
 
+        {!settings.merchant_registrations_enabled && (
+          <Card className="mb-6 border-accent/40 bg-accent/5">
+            <CardContent className="py-6 text-center">
+              <h2 className="text-lg font-bold text-foreground">New merchant registrations are closed</h2>
+              <p className="mt-2 font-hindi text-sm text-muted-foreground">नए दुकानदार रजिस्ट्रेशन फिलहाल बंद हैं।</p>
+            </CardContent>
+          </Card>
+        )}
 
-        <Card className="mb-6">
+
+        {settings.merchant_registrations_enabled && <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-lg">Shop Details • <span className="font-hindi font-normal">दुकान की जानकारी</span></CardTitle>
           </CardHeader>
@@ -201,7 +220,7 @@ const MerchantPortal = () => {
               </Button>
             </form>
           </CardContent>
-        </Card>
+        </Card>}
 
         {/* Premium - Tiranga themed Razorpay subscriptions */}
         <Card
