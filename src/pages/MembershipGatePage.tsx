@@ -14,8 +14,8 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
   const [paymentFailed, setPaymentFailed] = useState(false);
 
   const planDetails = {
-    monthly: { price: 99, label: "₹99", duration: "1 महीना", days: 30 },
-    yearly: { price: 999, label: "₹999", duration: "1 साल", days: 365 },
+    monthly: { price: 1, label: "₹1", duration: "1 महीना", days: 30 },
+    yearly: { price: 12, label: "₹12", duration: "1 साल", days: 365 },
   };
 
   const handlePayment = async () => {
@@ -66,13 +66,13 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => setPlan("monthly")}
                 className={`rounded-xl border-2 p-4 text-center transition-all ${plan === "monthly" ? "border-accent bg-accent/10 shadow-md" : "border-border bg-card hover:border-accent/50"}`}>
-                <p className="text-2xl font-extrabold text-foreground">₹99</p>
+                <p className="text-2xl font-extrabold text-foreground">₹1</p>
                 <p className="text-xs text-muted-foreground font-hindi">मासिक / Monthly</p>
               </button>
               <button onClick={() => setPlan("yearly")}
                 className={`rounded-xl border-2 p-4 text-center transition-all relative ${plan === "yearly" ? "border-accent bg-accent/10 shadow-md" : "border-border bg-card hover:border-accent/50"}`}>
                 <span className="absolute -top-2 right-2 rounded-full bg-green-india px-2 py-0.5 text-[9px] font-bold text-primary-foreground">BEST VALUE</span>
-                <p className="text-2xl font-extrabold text-foreground">₹999</p>
+                <p className="text-2xl font-extrabold text-foreground">₹12</p>
                 <p className="text-xs text-muted-foreground font-hindi">वार्षिक / Yearly</p>
               </button>
             </div>
