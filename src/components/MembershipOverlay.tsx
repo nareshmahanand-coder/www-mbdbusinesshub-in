@@ -11,11 +11,6 @@ interface MembershipOverlayProps {
   onActivated: () => void;
 }
 
-// Razorpay Payment IDs always start with `pay_` followed by 14 alphanumerics.
-// Users get this ID only after a SUCCESSFUL transaction (visible on the
-// success screen + the email/SMS receipt sent by Razorpay).
-const RAZORPAY_PAYMENT_ID_REGEX = /^pay_[A-Za-z0-9]{14}$/;
-
 const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
   const { user } = useAuth();
   const [submitting, setSubmitting] = useState<"monthly" | "yearly" | null>(null);
@@ -98,7 +93,7 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
               className="w-full h-14 text-base font-extrabold text-white shadow-lg rounded-xl font-hindi"
               style={{ backgroundColor: "#FF9933" }}
             >
-              {submitting === "monthly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "मंथली प्लान - ₹99 / Month (ऑटो-डेबिट)"}
+              {submitting === "monthly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "मंथली प्लान - ₹1 / Month (ऑटो-डेबिट)"}
             </Button>
           </div>
 
@@ -112,7 +107,7 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
               <span className="absolute -top-2 right-3 rounded-full bg-[#1a237e] px-2 py-0.5 text-[9px] font-bold text-white">
                 BEST VALUE
               </span>
-              {submitting === "yearly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "सालाना प्लान - ₹999 / Year (ऑटो-डेबिट)"}
+              {submitting === "yearly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "सालाना प्लान - ₹12 / Year (ऑटो-डेबिट)"}
             </Button>
           </div>
 
