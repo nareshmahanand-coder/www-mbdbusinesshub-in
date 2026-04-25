@@ -6,15 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Crown, Image } from "lucide-react";
+import { User, Crown, Image, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import KycDocUpload from "@/components/KycDocUpload";
 import type { MatrimonyProfile } from "@/pages/MatrimonyPage";
-
-const MARRIAGE_BUREAU_LINKS = {
-  monthly: "https://rzp.io/rzp/d6TAK5F",
-  yearly: "https://rzp.io/rzp/WY2NejZi",
-};
+import { startInstantRazorpayPayment } from "@/lib/razorpayPayments";
 
 interface Props {
   user: any;
@@ -25,6 +21,8 @@ interface Props {
 const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [payingPlan, setPayingPlan] = useState<"monthly" | "yearly" | null>(null);
+  const [failedPlan, setFailedPlan] = useState<"monthly" | "yearly" | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [aadharUrl, setAadharUrl] = useState("");
   const [panUrl, setPanUrl] = useState("");
@@ -62,6 +60,33 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
     toast.success("Photo uploaded!");
     setUploading(false);
     onReload();
+  };
+
+
+  const handlePremiumPayment = async (plan: "monthly" | "yearly") => {
+    if (!user) { toast.error("Please login first"); return; }
+    if (!myProfile) { toast.error("Please create profile first"); return; }
+
+    setPayingPlan(plan);
+    setFailedPlan(null);
+
+    try {
+      await startInstantRazorpayPayment({
+        module: "marriage_bureau",
+        plan,
+        onSuccess: () => {
+          toast.success("Payment successful — profile published!");
+          onReload();
+          window.location.reload();
+        },
+        onFailure: () => setFailedPlan(plan),
+      });
+    } catch (error) {
+      setFailedPlan(plan);
+      toast.error(error instanceof Error ? error.message : "Payment failed. Please retry.");
+    } finally {
+      setPayingPlan(null);
+    }
   };
 
   const handleSave = async () => {
@@ -177,39 +202,35 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
                 </p>
               </div>
 
-              <a
-                href={MARRIAGE_BUREAU_LINKS.monthly}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block"
+              <Button
+                onClick={() => handlePremiumPayment("monthly")}
+                disabled={payingPlan !== null}
+                className="w-full h-13 py-3 text-sm font-extrabold text-white shadow-lg rounded-xl font-hindi"
+                style={{ backgroundColor: "#FF9933" }}
               >
-                <Button
-                  className="w-full h-13 py-3 text-sm font-extrabold text-white shadow-lg rounded-xl font-hindi"
-                  style={{ backgroundColor: "#FF9933" }}
-                >
-                  मंथली प्रीमियम - ₹99 (ऑटो-डेबिट)
-                </Button>
-              </a>
+                {payingPlan === "monthly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "मंथली प्रीमियम - ₹99 (ऑटो-डेबिट)"}
+              </Button>
 
-              <a
-                href={MARRIAGE_BUREAU_LINKS.yearly}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block"
+              <Button
+                onClick={() => handlePremiumPayment("yearly")}
+                disabled={payingPlan !== null}
+                className="w-full h-13 py-3 text-sm font-extrabold text-white shadow-lg rounded-xl font-hindi relative"
+                style={{ backgroundColor: "#138808" }}
               >
-                <Button
-                  className="w-full h-13 py-3 text-sm font-extrabold text-white shadow-lg rounded-xl font-hindi relative"
-                  style={{ backgroundColor: "#138808" }}
-                >
-                  <span className="absolute -top-2 right-3 rounded-full bg-[#FF9933] px-2 py-0.5 text-[9px] font-bold text-white">
-                    BEST VALUE
-                  </span>
-                  सालाना प्रीमियम - ₹999 (ऑटो-डेबिट)
+                <span className="absolute -top-2 right-3 rounded-full bg-[#FF9933] px-2 py-0.5 text-[9px] font-bold text-white">
+                  BEST VALUE
+                </span>
+                {payingPlan === "yearly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "सालाना प्रीमियम - ₹999 (ऑटो-डेबिट)"}
+              </Button>
+
+              {failedPlan && (
+                <Button variant="outline" onClick={() => handlePremiumPayment(failedPlan)} disabled={payingPlan !== null} className="w-full font-bold">
+                  Retry Payment
                 </Button>
-              </a>
+              )}
 
               <p className="text-center text-[10px] text-muted-foreground font-hindi">
-                सुरक्षित Razorpay ऑटो-डेबिट के माध्यम से ✓
+                सुरक्षित Razorpay पेमेंट के बाद प्रोफाइल तुरंत पब्लिश होगी ✓
               </p>
             </CardContent>
           </Card>
