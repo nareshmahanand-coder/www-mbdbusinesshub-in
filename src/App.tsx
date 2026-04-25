@@ -235,6 +235,7 @@ const AppShell = () => {
         <Route path="/merchant" element={<ProtectedRoute><MerchantPortal /></ProtectedRoute>} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Navigate to="/dashboard?tab=settings" replace /></ProtectedRoute>} />
         <Route path="/kisan" element={<ProtectedRoute><KisanRegistration /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><CustomerDashboard /></ProtectedRoute>} />
         <Route path="/merchant-dashboard" element={<ProtectedRoute><MerchantAccessRoute><MerchantDashboard /></MerchantAccessRoute></ProtectedRoute>} />
