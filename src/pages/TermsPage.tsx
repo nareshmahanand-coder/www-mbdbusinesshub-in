@@ -1,5 +1,6 @@
 import AppHeader from "@/components/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link } from "react-router-dom";
 import {
   Scale,
   IndianRupee,
@@ -151,6 +152,11 @@ const TermsPage = () => (
           <CardContent className="py-4 text-center text-sm text-muted-foreground">
             <p>By using Mera Bharat Dukaan, you agree to these terms.</p>
             <p className="font-hindi mt-1">मेरा भारत दुकान का उपयोग करके, आप इन शर्तों से सहमत हैं।</p>
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs font-semibold text-primary">
+              <Link to="/contact" className="underline">Contact Us</Link>
+              <Link to="/privacy-policy" className="underline">Privacy Policy</Link>
+              <Link to="/refund-policy" className="underline">Refund Policy</Link>
+            </div>
             <p className="mt-2 text-xs">Last updated: April 2026</p>
           </CardContent>
         </Card>
