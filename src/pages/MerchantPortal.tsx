@@ -53,7 +53,7 @@ const MerchantPortal = () => {
 
   const [form, setForm] = useState({
     shopName: "", shopNameHindi: "", category: "", address: "",
-    pincode: "", whatsapp: "", phone: "", description: "",
+    pincode: "", whatsapp: "", phone: "", description: "", ownerName: "", aadhaarLast4: "",
   });
 
   const handleFileUpload = async (file: File, folder: string): Promise<string | null> => {
@@ -75,13 +75,35 @@ const MerchantPortal = () => {
     if (url) { setShopPhotos(prev => [...prev, url]); toast.success("Photo uploaded!"); }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.shopName || !form.category || !form.address || !form.pincode || !form.whatsapp) {
+    if (!user) { toast.error("Please login first"); return; }
+    if (!form.shopName || !form.category || !form.address || !form.pincode || !form.whatsapp || !form.ownerName) {
       toast.error("Please fill all required fields"); return;
     }
+    if (form.aadhaarLast4 && form.aadhaarLast4.length !== 4) { toast.error("Aadhaar last-4 must be 4 digits"); return; }
     if (!aadharUrl) { toast.error("कृपया आधार कार्ड की फोटो अपलोड करें"); return; }
     if (!panUrl) { toast.error("कृपया पैन कार्ड की फोटो अपलोड करें"); return; }
+    const { error } = await supabase.from("merchant_profiles").insert({
+      user_id: user.id,
+      owner_name: form.ownerName,
+      aadhaar_last4: form.aadhaarLast4,
+      shop_name: form.shopName,
+      shop_name_hindi: form.shopNameHindi,
+      category: form.category,
+      address: form.address,
+      pincode: form.pincode,
+      whatsapp: form.whatsapp,
+      phone: form.phone,
+      description: form.description,
+      photos: shopPhotos,
+      aadhar_url: aadharUrl,
+      pan_url: panUrl,
+      gst_url: gstUrl,
+      fssai_url: fssaiUrl,
+      access_status: "active",
+    });
+    if (error) { toast.error("Shop registration failed"); return; }
     setSubmitted(true);
     toast.success("Shop registration submitted for verification!");
   };
