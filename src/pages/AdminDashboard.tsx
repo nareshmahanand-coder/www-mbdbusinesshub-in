@@ -6,8 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
+import { useSiteSettings } from "@/hooks/useSiteSettings";
 import {
   ShieldCheck, ShieldX, Bell, CheckCircle2, IndianRupee, Users, Clock,
   BadgeCheck, MessageCircle, Send, XCircle, AlertTriangle, Crown,
@@ -116,6 +119,15 @@ interface MerchantRecord {
   category: string | null;
   city: string | null;
   is_verified: boolean | null;
+  owner_name: string | null;
+  address: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  aadhaar_last4: string | null;
+  access_status: string;
+  suspension_reason: string | null;
+  plan_override: string | null;
+  plan_ends_at: string | null;
   aadhar_url: string | null;
   pan_url: string | null;
   gst_url: string | null;
@@ -123,6 +135,7 @@ interface MerchantRecord {
   created_at: string;
   profile_email?: string | null;
   profile_phone?: string | null;
+  profile_name?: string | null;
 }
 
 const MOCK_CHATBOT_LOGS: ChatbotLog[] = [
