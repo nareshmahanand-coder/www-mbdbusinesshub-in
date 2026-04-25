@@ -219,7 +219,7 @@ const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
 
 const AppShell = () => {
   useLastKnownLocation();
-  const { user, loading: authLoading, isSuperUser } = useAuth();
+  const { loading: authLoading, isSuperUser } = useAuth();
   const { settings, loading: settingsLoading } = useSiteSettings();
 
   if (authLoading || settingsLoading) return <FullScreenLoader />;
