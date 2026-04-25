@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { shopCategories } from "@/data/sampleShops";
-import { Store, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, Image, ExternalLink } from "lucide-react";
+import { Store, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, Image, Loader2 } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import KycDocUpload from "@/components/KycDocUpload";
 import { useLocation } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { startInstantRazorpayPayment } from "@/lib/razorpayPayments";
 
 const MERCHANT_PLANS = [
   {
@@ -21,7 +22,6 @@ const MERCHANT_PLANS = [
     label: "मर्चेंट मंथली प्रीमियम",
     price: 99,
     days: 30,
-    link: "https://rzp.io/rzp/PKPblN5t",
     theme: "saffron",
   },
   {
@@ -29,7 +29,6 @@ const MERCHANT_PLANS = [
     label: "मर्चेंट सालाना प्रीमियम",
     price: 999,
     days: 365,
-    link: "https://rzp.io/rzp/CmLBI4u",
     theme: "green",
   },
 ];
@@ -40,6 +39,8 @@ const MerchantPortal = () => {
   const { settings } = useSiteSettings();
   const accessMessage = (location.state as { accessMessage?: string } | null)?.accessMessage;
   const [submitted, setSubmitted] = useState(false);
+  const [payingPlan, setPayingPlan] = useState<"monthly" | "yearly" | null>(null);
+  const [failedPlan, setFailedPlan] = useState<"monthly" | "yearly" | null>(null);
   
   const [shopPhotos, setShopPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -108,9 +109,27 @@ const MerchantPortal = () => {
     toast.success("Shop registration submitted for verification!");
   };
 
-  const handleSubscribe = (plan: typeof MERCHANT_PLANS[number]) => {
-    window.open(plan.link, "_blank", "noopener,noreferrer");
-    toast.success("Razorpay सब्सक्रिप्शन पेज खुल रहा है...");
+  const handleSubscribe = async (plan: typeof MERCHANT_PLANS[number]) => {
+    if (!user) { toast.error("Please login first"); return; }
+    setPayingPlan(plan.id as "monthly" | "yearly");
+    setFailedPlan(null);
+
+    try {
+      await startInstantRazorpayPayment({
+        module: "merchant_premium",
+        plan: plan.id as "monthly" | "yearly",
+        onSuccess: () => {
+          toast.success("Payment successful — Merchant Premium activated!");
+          window.location.reload();
+        },
+        onFailure: () => setFailedPlan(plan.id as "monthly" | "yearly"),
+      });
+    } catch (error) {
+      setFailedPlan(plan.id as "monthly" | "yearly");
+      toast.error(error instanceof Error ? error.message : "Payment failed. Please retry.");
+    } finally {
+      setPayingPlan(null);
+    }
   };
 
   if (submitted) {
@@ -287,21 +306,28 @@ const MerchantPortal = () => {
                   <button
                     key={plan.id}
                     onClick={() => handleSubscribe(plan)}
+                    disabled={payingPlan !== null}
                     className="group flex flex-col items-center justify-center gap-1 rounded-xl px-4 py-5 text-white font-bold shadow-md transition-all hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
                     style={{ backgroundColor: bg }}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hover)}
                     onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = bg)}
                   >
                     <span className="font-hindi text-base leading-tight">{plan.label}</span>
-                    <span className="text-2xl font-extrabold">₹{plan.price}</span>
+                    {payingPlan === plan.id ? <Loader2 className="h-6 w-6 animate-spin" /> : <span className="text-2xl font-extrabold">₹{plan.price}</span>}
                     <span className="font-hindi text-xs opacity-95">ऑटो-डेबिट • {plan.days} दिन</span>
                     <span className="mt-1 inline-flex items-center gap-1 text-xs opacity-95">
-                      Pay via Razorpay <ExternalLink className="h-3 w-3" />
+                      Pay via Razorpay
                     </span>
                   </button>
                 );
               })}
             </div>
+
+            {failedPlan && (
+              <Button variant="outline" onClick={() => handleSubscribe(MERCHANT_PLANS.find(p => p.id === failedPlan)!)} disabled={payingPlan !== null} className="w-full font-bold">
+                Retry Payment
+              </Button>
+            )}
 
             <p className="text-center text-[11px] text-muted-foreground font-hindi">
               पेमेंट सफल होते ही आपका मर्चेंट प्रीमियम तुरंत एक्टिव हो जाएगा।
