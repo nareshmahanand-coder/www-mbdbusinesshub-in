@@ -8,16 +8,16 @@ const corsHeaders = {
 
 const PRODUCTS = {
   bharat_gaurav: {
-    monthly: { amount: 99, days: 30, label: "Bharat Gaurav Monthly" },
-    yearly: { amount: 999, days: 365, label: "Bharat Gaurav Yearly" },
+    monthly: { amount: 1, days: 30, label: "Bharat Gaurav Monthly" },
+    yearly: { amount: 12, days: 365, label: "Bharat Gaurav Yearly" },
   },
   merchant_premium: {
-    monthly: { amount: 99, days: 30, label: "Merchant Premium Monthly" },
-    yearly: { amount: 999, days: 365, label: "Merchant Premium Yearly" },
+    monthly: { amount: 1, days: 30, label: "Merchant Premium Monthly" },
+    yearly: { amount: 12, days: 365, label: "Merchant Premium Yearly" },
   },
   marriage_bureau: {
-    monthly: { amount: 99, days: 30, label: "Marriage Bureau Monthly" },
-    yearly: { amount: 999, days: 365, label: "Marriage Bureau Yearly" },
+    monthly: { amount: 1, days: 30, label: "Marriage Bureau Monthly" },
+    yearly: { amount: 12, days: 365, label: "Marriage Bureau Yearly" },
   },
 } as const;
 

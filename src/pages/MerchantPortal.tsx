@@ -20,14 +20,14 @@ const MERCHANT_PLANS = [
   {
     id: "monthly",
     label: "मर्चेंट मंथली प्रीमियम",
-    price: 99,
+    price: 1,
     days: 30,
     theme: "saffron",
   },
   {
     id: "yearly",
     label: "मर्चेंट सालाना प्रीमियम",
-    price: 999,
+    price: 12,
     days: 365,
     theme: "green",
   },

@@ -208,7 +208,7 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
                 className="w-full h-13 py-3 text-sm font-extrabold text-white shadow-lg rounded-xl font-hindi"
                 style={{ backgroundColor: "#FF9933" }}
               >
-                {payingPlan === "monthly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "मंथली प्रीमियम - ₹99 (ऑटो-डेबिट)"}
+                {payingPlan === "monthly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "मंथली प्रीमियम - ₹1 (ऑटो-डेबिट)"}
               </Button>
 
               <Button
@@ -220,7 +220,7 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
                 <span className="absolute -top-2 right-3 rounded-full bg-[#FF9933] px-2 py-0.5 text-[9px] font-bold text-white">
                   BEST VALUE
                 </span>
-                {payingPlan === "yearly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "सालाना प्रीमियम - ₹999 (ऑटो-डेबिट)"}
+                {payingPlan === "yearly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "सालाना प्रीमियम - ₹12 (ऑटो-डेबिट)"}
               </Button>
 
               {failedPlan && (

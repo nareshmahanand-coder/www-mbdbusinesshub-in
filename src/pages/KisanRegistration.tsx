@@ -100,7 +100,7 @@ const KisanRegistration = () => {
             </p>
             {premium && (
               <Badge className="mt-3 bg-gradient-to-r from-[hsl(45,80%,45%)] to-[hsl(35,90%,50%)] text-[hsl(140,35%,12%)] font-bold px-4 py-1">
-                ⭐ Premium {premiumPlan === "monthly" ? "₹99/महीना" : "₹999/साल"}
+                ⭐ Premium {premiumPlan === "monthly" ? "₹1/महीना" : "₹12/साल"}
               </Badge>
             )}
             <div className="mt-6">
@@ -278,7 +278,7 @@ const KisanRegistration = () => {
                           : "border-border text-muted-foreground"
                       }`}
                     >
-                      ₹99/महीना
+                      ₹1/महीना
                     </button>
                     <button
                       type="button"
@@ -289,7 +289,7 @@ const KisanRegistration = () => {
                           : "border-border text-muted-foreground"
                       }`}
                     >
-                      ₹999/साल <span className="text-[hsl(140,60%,30%)]">(बचत!)</span>
+                      ₹12/साल <span className="text-[hsl(140,60%,30%)]">(बचत!)</span>
                     </button>
                   </div>
                 )}

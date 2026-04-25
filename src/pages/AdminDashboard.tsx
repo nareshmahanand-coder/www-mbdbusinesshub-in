@@ -204,10 +204,10 @@ const AdminDashboard = () => {
   const [fullImageUrl, setFullImageUrl] = useState<string | null>(null);
 
   const [payments, setPayments] = useState<MerchantPayment[]>([
-    { shopId: "1", shopName: "Sharma General Store", plan: "monthly", amount: 99, transactionId: "TXN001234", date: "2026-03-08", approved: false, screenshotUrl: "screenshot1.png" },
-    { shopId: "3", shopName: "Patel Electronics", plan: "yearly", amount: 999, transactionId: "TXN009876", date: "2026-03-09", approved: false, screenshotUrl: "screenshot2.png" },
-    { shopId: "6", shopName: "Bhojanshala Restaurant", plan: "yearly", amount: 999, transactionId: "TXN005678", date: "2026-03-07", approved: true },
-    { shopId: "2", shopName: "Gupta Cloth House", plan: "monthly", amount: 99, transactionId: "TXN004321", date: "2026-03-06", approved: true },
+    { shopId: "1", shopName: "Sharma General Store", plan: "monthly", amount: 1, transactionId: "TXN001234", date: "2026-03-08", approved: false, screenshotUrl: "screenshot1.png" },
+    { shopId: "3", shopName: "Patel Electronics", plan: "yearly", amount: 12, transactionId: "TXN009876", date: "2026-03-09", approved: false, screenshotUrl: "screenshot2.png" },
+    { shopId: "6", shopName: "Bhojanshala Restaurant", plan: "yearly", amount: 12, transactionId: "TXN005678", date: "2026-03-07", approved: true },
+    { shopId: "2", shopName: "Gupta Cloth House", plan: "monthly", amount: 1, transactionId: "TXN004321", date: "2026-03-06", approved: true },
   ]);
 
   useEffect(() => {
@@ -980,8 +980,8 @@ const AdminDashboard = () => {
                         <SelectContent>
                           <SelectItem value="none">No override</SelectItem>
                           <SelectItem value="trial">Trial</SelectItem>
-                          <SelectItem value="monthly">Monthly ₹99</SelectItem>
-                          <SelectItem value="yearly">Yearly ₹999</SelectItem>
+                          <SelectItem value="monthly">Monthly ₹1</SelectItem>
+                          <SelectItem value="yearly">Yearly ₹12</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1339,7 +1339,7 @@ const AdminDashboard = () => {
                         <div>
                           <p className="font-semibold text-foreground">{p.shopName}</p>
                           <p className="text-xs text-muted-foreground">
-                            {p.plan === "monthly" ? "₹99/mo" : "₹999/yr"} • TXN: <span className="font-mono">{p.transactionId}</span> • {p.date}
+                            {p.plan === "monthly" ? "₹1/mo" : "₹12/yr"} • TXN: <span className="font-mono">{p.transactionId}</span> • {p.date}
                           </p>
                           {p.screenshotUrl && <p className="mt-1 text-xs text-navy">📎 Screenshot: {p.screenshotUrl}</p>}
                         </div>
@@ -1397,7 +1397,7 @@ const AdminDashboard = () => {
                               </div>
                             </div>
                           </td>
-                          <td className="px-3 py-3"><Badge className="bg-saffron text-primary-foreground text-[10px]">{shop.premiumPlan === "monthly" ? "₹99/mo" : "₹999/yr"}</Badge></td>
+                          <td className="px-3 py-3"><Badge className="bg-saffron text-primary-foreground text-[10px]">{shop.premiumPlan === "monthly" ? "₹1/mo" : "₹12/yr"}</Badge></td>
                           <td className="px-3 py-3">
                             {daysLeft !== null ? (
                               <span className={`text-sm font-bold ${isExpiring ? "text-destructive" : "text-foreground"}`}>
