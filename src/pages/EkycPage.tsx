@@ -75,7 +75,7 @@ const EkycPage = () => {
     try {
       setPhoto(null);
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 720 } },
+        video: { facingMode: { ideal: "user" }, width: { ideal: 720 }, height: { ideal: 720 } },
         audio: false,
       });
       streamRef.current = stream;
