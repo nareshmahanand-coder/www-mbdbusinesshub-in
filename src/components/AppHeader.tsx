@@ -1,9 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { Menu, X, Globe } from "lucide-react";
+import { LogIn, Menu, X, Globe } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import LoginModal from "@/components/LoginModal";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import UserProfileMenu from "@/components/UserProfileMenu";
@@ -11,7 +10,6 @@ import UserProfileMenu from "@/components/UserProfileMenu";
 const AppHeader = () => {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [loginOpen, setLoginOpen] = useState(false);
   const { lang, toggleLang, t } = useLanguage();
   const { user } = useAuth();
 
@@ -91,9 +89,12 @@ const AppHeader = () => {
                 <UserProfileMenu />
               </div>
             ) : (
-              <span className="ml-2 rounded-full bg-primary-foreground/10 px-4 py-2 text-xs font-semibold text-primary-foreground/80">
-                Public Review
-              </span>
+              <Button asChild size="sm" variant="secondary" className="ml-2 rounded-full">
+                <Link to="/login">
+                  <LogIn className="mr-1.5 h-4 w-4" />
+                  Login
+                </Link>
+              </Button>
             )}
           </div>
 
@@ -111,9 +112,12 @@ const AppHeader = () => {
             {user ? (
               <UserProfileMenu />
             ) : (
-              <span className="rounded-full bg-primary-foreground/10 px-3 py-1.5 text-[11px] font-semibold text-primary-foreground/80">
-                Public
-              </span>
+              <Button asChild size="sm" variant="secondary" className="h-8 rounded-full px-3 text-xs">
+                <Link to="/login">
+                  <LogIn className="mr-1 h-3.5 w-3.5" />
+                  Login
+                </Link>
+              </Button>
             )}
             <button
               className="text-primary-foreground"
@@ -145,7 +149,6 @@ const AppHeader = () => {
         )}
       </header>
 
-      <LoginModal open={loginOpen} onOpenChange={setLoginOpen} />
     </>
   );
 };
