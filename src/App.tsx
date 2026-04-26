@@ -52,16 +52,10 @@ const MaintenanceScreen = () => (
 
 // Razorpay review mode: Home is public and never locked behind auth/KYC/membership.
 const PublicHomeRoute = () => {
-  const { loading } = useAuth();
-
-  if (loading) return <FullScreenLoader />;
   return <Index />;
 };
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { loading } = useAuth();
-
-  if (loading) return <FullScreenLoader />;
   return <>{children}</>;
 };
 
@@ -70,17 +64,10 @@ const MerchantAccessRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const KycRoute = ({ children }: { children: React.ReactNode }) => {
-  const { loading } = useAuth();
-  if (loading) return <FullScreenLoader />;
   return <>{children}</>;
 };
 
 const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-
-  if (loading) return <FullScreenLoader />;
-  if (user) return <Navigate to="/" replace />;
-
   return <>{children}</>;
 };
 
@@ -88,10 +75,10 @@ const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
 
 const AppShell = () => {
   useLastKnownLocation();
-  const { loading: authLoading, isSuperUser } = useAuth();
+  const { isSuperUser } = useAuth();
   const { settings, loading: settingsLoading } = useSiteSettings();
 
-  if (authLoading || settingsLoading) return <FullScreenLoader />;
+  if (settingsLoading) return <FullScreenLoader />;
   if (settings.maintenance_mode && !isSuperUser) return <MaintenanceScreen />;
 
   return (
