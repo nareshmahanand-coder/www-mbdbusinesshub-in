@@ -301,7 +301,6 @@ const MerchantPortal = () => {
               {MERCHANT_PLANS.map((plan) => {
                 const isSaffron = plan.theme === "saffron";
                 const bg = isSaffron ? "#FF9933" : "#138808";
-                const hover = isSaffron ? "#E6841F" : "#0F6B06";
                 return (
                   <button
                     key={plan.id}
