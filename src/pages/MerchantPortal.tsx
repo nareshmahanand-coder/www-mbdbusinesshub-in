@@ -305,32 +305,24 @@ const MerchantPortal = () => {
                 return (
                   <button
                     key={plan.id}
-                    onClick={() => handleSubscribe(plan)}
-                    disabled={payingPlan !== null}
-                    className="group flex flex-col items-center justify-center gap-1 rounded-xl px-4 py-5 text-white font-bold shadow-md transition-all hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
+                    type="button"
+                    disabled
+                    className="group flex cursor-not-allowed flex-col items-center justify-center gap-1 rounded-xl px-4 py-5 text-white font-bold opacity-90 shadow-md"
                     style={{ backgroundColor: bg }}
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = hover)}
-                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = bg)}
                   >
                     <span className="font-hindi text-base leading-tight">{plan.label}</span>
                     {payingPlan === plan.id ? <Loader2 className="h-6 w-6 animate-spin" /> : <span className="text-2xl font-extrabold">₹{plan.price}</span>}
                     <span className="font-hindi text-xs opacity-95">ऑटो-डेबिट • {plan.days} दिन</span>
                     <span className="mt-1 inline-flex items-center gap-1 text-xs opacity-95">
-                      Pay via Razorpay
+                      Payment paused for review
                     </span>
                   </button>
                 );
               })}
             </div>
 
-            {failedPlan && (
-              <Button variant="outline" onClick={() => handleSubscribe(MERCHANT_PLANS.find(p => p.id === failedPlan)!)} disabled={payingPlan !== null} className="w-full font-bold">
-                Retry Payment
-              </Button>
-            )}
-
             <p className="text-center text-[11px] text-muted-foreground font-hindi">
-              पेमेंट सफल होते ही आपका मर्चेंट प्रीमियम तुरंत एक्टिव हो जाएगा।
+              Razorpay review के लिए पेमेंट बटन अस्थायी रूप से बंद हैं; पूरा मर्चेंट फ्लो देखने के लिए खुला है।
             </p>
           </CardContent>
         </Card>
