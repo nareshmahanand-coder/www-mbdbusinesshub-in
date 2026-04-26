@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { Menu, X, LogIn, Globe } from "lucide-react";
+import { Menu, X, Globe } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import LoginModal from "@/components/LoginModal";
@@ -91,13 +91,9 @@ const AppHeader = () => {
                 <UserProfileMenu />
               </div>
             ) : (
-              <Button
-                onClick={() => setLoginOpen(true)}
-                className="ml-2 rounded-full bg-accent px-5 text-accent-foreground hover:bg-accent/90 font-semibold"
-              >
-                <LogIn className="mr-1.5 h-4 w-4" />
-                {t("login")}
-              </Button>
+              <span className="ml-2 rounded-full bg-primary-foreground/10 px-4 py-2 text-xs font-semibold text-primary-foreground/80">
+                Public Review
+              </span>
             )}
           </div>
 
@@ -115,14 +111,9 @@ const AppHeader = () => {
             {user ? (
               <UserProfileMenu />
             ) : (
-              <Button
-                size="sm"
-                onClick={() => setLoginOpen(true)}
-                className="rounded-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
-              >
-                <LogIn className="mr-1 h-4 w-4" />
-                {t("login")}
-              </Button>
+              <span className="rounded-full bg-primary-foreground/10 px-3 py-1.5 text-[11px] font-semibold text-primary-foreground/80">
+                Public
+              </span>
             )}
             <button
               className="text-primary-foreground"

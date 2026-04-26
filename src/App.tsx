@@ -2,11 +2,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { useEffect, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 
 import Index from "./pages/Index";
@@ -29,11 +27,7 @@ import SkillDevelopmentPage from "./pages/SkillDevelopmentPage";
 import EkycPage from "./pages/EkycPage";
 import FamilySafetyPage from "./pages/FamilySafetyPage";
 import FamilyInvitePage from "./pages/FamilyInvitePage";
-import { useKycStatus } from "@/hooks/useKycStatus";
 import { useLastKnownLocation } from "@/hooks/useLastKnownLocation";
-import { useMembership } from "@/hooks/useMembership";
-import MembershipOverlay from "@/components/MembershipOverlay";
-import { useMerchantAccess } from "@/hooks/useMerchantAccess";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 import NotFound from "./pages/NotFound";
@@ -56,154 +50,28 @@ const MaintenanceScreen = () => (
   </div>
 );
 
-// Public Home: shows Index to everyone. Logged-out users see it crystal
-// clear but locked — any click anywhere redirects to /login (with a polite
-// Hindi voice prompt). Logged-in users get the normal KYC + membership flow.
+// Razorpay review mode: Home is public and never locked behind auth/KYC/membership.
 const PublicHomeRoute = () => {
-  const { user, loading, isSuperUser } = useAuth();
-  const { status, loading: kycLoading } = useKycStatus();
-  const { isActive, loading: memLoading, refresh: refreshMembership } = useMembership();
+  const { loading } = useAuth();
 
   if (loading) return <FullScreenLoader />;
-
-  // Logged-out: show Home crystal clear but locked. Any click → /login.
-  if (!user) {
-    return (
-      <div className="relative min-h-screen">
-        <div aria-hidden className="pointer-events-none select-none">
-          <Index />
-        </div>
-        <ClickLockOverlay />
-      </div>
-    );
-  }
-
-  // Logged-in flow (same as ProtectedRoute)
-  if (isSuperUser) return <Index />;
-  if (kycLoading) return <FullScreenLoader />;
-  if (status === "none" || status === "rejected") return <Navigate to="/ekyc" replace />;
-  if (memLoading) return <FullScreenLoader />;
-  if (!isActive) {
-    return (
-      <>
-        <div className="pointer-events-none select-none blur-xl overflow-hidden max-h-screen">
-          <Index />
-        </div>
-        <MembershipOverlay onActivated={refreshMembership} />
-      </>
-    );
-  }
   return <Index />;
 };
 
-const WELCOME_TTS_KEY = "mbd-welcome-tts-played";
-const WELCOME_TEXT =
-  "मेरा भारत दुकान में आपका स्वागत है! कृपया आगे बढ़ने के लिए पहले लॉगिन करें।";
-const LOGIN_PROMPT_TEXT = "कृपया पहले लॉगिन करें";
-
-async function speakViaElevenLabs(text: string): Promise<HTMLAudioElement | null> {
-  try {
-    const { data, error } = await supabase.functions.invoke("elevenlabs-tts", {
-      body: { text, voice: "aria" },
-    });
-    if (error || !data?.audioContent) return null;
-    const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
-    audio.volume = 0.95;
-    await audio.play().catch(() => {
-      /* autoplay may be blocked until user gesture — ignore */
-    });
-    return audio;
-  } catch {
-    return null;
-  }
-}
-
-const ClickLockOverlay = () => {
-  const navigate = useNavigate();
-  const welcomeAudioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Play the welcome TTS once per browser session as soon as the locked
-  // home page mounts. Browsers usually require a user gesture for autoplay,
-  // so this may silently no-op until the first tap — at which point the
-  // click handler will play the "कृपया पहले लॉगिन करें" prompt instead.
-  useEffect(() => {
-    if (sessionStorage.getItem(WELCOME_TTS_KEY)) return;
-    sessionStorage.setItem(WELCOME_TTS_KEY, "1");
-    speakViaElevenLabs(WELCOME_TEXT).then((a) => {
-      welcomeAudioRef.current = a;
-    });
-    return () => {
-      welcomeAudioRef.current?.pause();
-    };
-  }, []);
-
-  const goLogin = async () => {
-    welcomeAudioRef.current?.pause();
-    // Fire-and-forget the polite prompt; navigate immediately for snappy UX.
-    speakViaElevenLabs(LOGIN_PROMPT_TEXT);
-    navigate("/login");
-  };
-
-  return (
-    <button
-      type="button"
-      onClick={goLogin}
-      onTouchStart={goLogin}
-      aria-label="Login to continue"
-      className="fixed inset-0 z-[60] cursor-pointer bg-transparent"
-    />
-  );
-};
-
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading, isSuperUser } = useAuth();
-  const { status, loading: kycLoading } = useKycStatus();
-  const { isActive, loading: memLoading, refresh: refreshMembership } = useMembership();
+  const { loading } = useAuth();
 
   if (loading) return <FullScreenLoader />;
-  if (!user) return <Navigate to="/login" replace />;
-
-  // Super User bypass: skip KYC + membership entirely
-  if (isSuperUser) return <>{children}</>;
-
-  if (kycLoading) return <FullScreenLoader />;
-  if (status === "none" || status === "rejected") return <Navigate to="/ekyc" replace />;
-
-  if (memLoading) return <FullScreenLoader />;
-  if (!isActive) {
-    return (
-      <>
-        <div className="pointer-events-none select-none blur-xl overflow-hidden max-h-screen">
-          {children}
-        </div>
-        <MembershipOverlay onActivated={refreshMembership} />
-      </>
-    );
-  }
-
   return <>{children}</>;
 };
 
 const MerchantAccessRoute = ({ children }: { children: React.ReactNode }) => {
-  const { state, reason } = useMerchantAccess();
-
-  if (state === "loading") return <FullScreenLoader />;
-  if (state === "suspended") {
-    return <Navigate to="/merchant" replace state={{ accessMessage: reason }} />;
-  }
-  if (state === "expired") {
-    return <Navigate to="/merchant" replace state={{ accessMessage: reason }} />;
-  }
-
   return <>{children}</>;
 };
 
 const KycRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading, isSuperUser } = useAuth();
+  const { loading } = useAuth();
   if (loading) return <FullScreenLoader />;
-  if (!user) return <Navigate to="/login" replace />;
-  // Super User skips KYC entirely — straight to home
-  if (isSuperUser) return <Navigate to="/" replace />;
   return <>{children}</>;
 };
 
