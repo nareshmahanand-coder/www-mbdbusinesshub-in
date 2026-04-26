@@ -489,7 +489,7 @@ const MerchantDashboard = () => {
                   <h3 className="font-semibold text-foreground mb-2">FAQs</h3>
                   <div className="space-y-2 text-sm text-muted-foreground">
                     <p><strong>Q:</strong> How do I get Premium status?</p>
-                    <p className="font-hindi">Pay ₹1/month or ₹12/year via the Merchant Portal.</p>
+                    <p className="font-hindi">Pay ₹199/month or ₹999/year via the Merchant Portal.</p>
                     <p><strong>Q:</strong> How do I get verified?</p>
                     <p className="font-hindi">Admin verifies your shop after reviewing your registration.</p>
                   </div>
