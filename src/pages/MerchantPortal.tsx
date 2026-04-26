@@ -20,14 +20,14 @@ const MERCHANT_PLANS = [
   {
     id: "monthly",
     label: "मर्चेंट मंथली प्रीमियम",
-    price: 1,
+    price: 199,
     days: 30,
     theme: "saffron",
   },
   {
     id: "yearly",
     label: "मर्चेंट सालाना प्रीमियम",
-    price: 12,
+    price: 999,
     days: 365,
     theme: "green",
   },
@@ -41,6 +41,7 @@ const MerchantPortal = () => {
   const [submitted, setSubmitted] = useState(false);
   const [payingPlan, setPayingPlan] = useState<"monthly" | "yearly" | null>(null);
   const [failedPlan, setFailedPlan] = useState<"monthly" | "yearly" | null>(null);
+  const [payingMembershipPlan, setPayingMembershipPlan] = useState<"monthly" | "yearly" | null>(null);
   
   const [shopPhotos, setShopPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -129,6 +130,26 @@ const MerchantPortal = () => {
       toast.error(error instanceof Error ? error.message : "Payment failed. Please retry.");
     } finally {
       setPayingPlan(null);
+    }
+  };
+
+  const handleBharatGauravPay = async (plan: "monthly" | "yearly") => {
+    if (!user) { toast.error("Please login first"); return; }
+    setPayingMembershipPlan(plan);
+
+    try {
+      await startInstantRazorpayPayment({
+        module: "bharat_gaurav",
+        plan,
+        onSuccess: () => {
+          toast.success("Payment successful — Bharat Gaurav Membership activated!");
+          window.location.reload();
+        },
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Payment failed. Please retry.");
+    } finally {
+      setPayingMembershipPlan(null);
     }
   };
 
@@ -271,7 +292,7 @@ const MerchantPortal = () => {
           </CardContent>
         </Card>}
 
-        {/* Premium - Tiranga themed Razorpay subscriptions */}
+        {/* Merchant Premium - primary Razorpay subscriptions */}
         <Card
           className="mb-6 overflow-hidden border-0 shadow-lg"
           style={{
@@ -305,24 +326,54 @@ const MerchantPortal = () => {
                   <button
                     key={plan.id}
                     type="button"
-                    disabled
-                    className="group flex cursor-not-allowed flex-col items-center justify-center gap-1 rounded-xl px-4 py-5 text-white font-bold opacity-90 shadow-md"
+                    onClick={() => handleSubscribe(plan)}
+                    disabled={payingPlan !== null}
+                    className="group flex flex-col items-center justify-center gap-1 rounded-xl px-4 py-5 text-white font-bold shadow-md transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-80"
                     style={{ backgroundColor: bg }}
                   >
                     <span className="font-hindi text-base leading-tight">{plan.label}</span>
                     {payingPlan === plan.id ? <Loader2 className="h-6 w-6 animate-spin" /> : <span className="text-2xl font-extrabold">₹{plan.price}</span>}
                     <span className="font-hindi text-xs opacity-95">ऑटो-डेबिट • {plan.days} दिन</span>
                     <span className="mt-1 inline-flex items-center gap-1 text-xs opacity-95">
-                      Payment paused for review
+                      Primary merchant plan
                     </span>
                   </button>
                 );
               })}
             </div>
 
+            {failedPlan && (
+              <Button onClick={() => handleSubscribe(MERCHANT_PLANS.find((plan) => plan.id === failedPlan)!)} variant="outline" className="w-full">
+                Retry {failedPlan === "monthly" ? "Monthly ₹199" : "Yearly ₹999"} Payment
+              </Button>
+            )}
+
             <p className="text-center text-[11px] text-muted-foreground font-hindi">
-              Razorpay review के लिए पेमेंट बटन अस्थायी रूप से बंद हैं; पूरा मर्चेंट फ्लो देखने के लिए खुला है।
+              Merchant Premium plans are now shown as the primary options: ₹199 monthly and ₹999 yearly.
             </p>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6 border-primary/30 bg-card/95 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base font-hindi">
+              <Crown className="h-5 w-5 text-primary" /> भारत गौरव मेंबरशिप • Standalone
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="font-hindi text-sm text-muted-foreground">
+              यह मुख्य मर्चेंट प्लान से अलग सदस्यता है। Existing Razorpay payment link वही रहेगा।
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Button onClick={() => handleBharatGauravPay("monthly")} disabled={payingMembershipPlan !== null} variant="outline" className="font-hindi">
+                {payingMembershipPlan === "monthly" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                ₹1 / Month
+              </Button>
+              <Button onClick={() => handleBharatGauravPay("yearly")} disabled={payingMembershipPlan !== null} variant="outline" className="font-hindi">
+                {payingMembershipPlan === "yearly" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                ₹12 / Year
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
