@@ -20,14 +20,14 @@ const MERCHANT_PLANS = [
   {
     id: "monthly",
     label: "मर्चेंट मंथली प्रीमियम",
-    price: 1,
+    price: 199,
     days: 30,
     theme: "saffron",
   },
   {
     id: "yearly",
     label: "मर्चेंट सालाना प्रीमियम",
-    price: 12,
+    price: 999,
     days: 365,
     theme: "green",
   },
@@ -41,6 +41,7 @@ const MerchantPortal = () => {
   const [submitted, setSubmitted] = useState(false);
   const [payingPlan, setPayingPlan] = useState<"monthly" | "yearly" | null>(null);
   const [failedPlan, setFailedPlan] = useState<"monthly" | "yearly" | null>(null);
+  const [payingMembershipPlan, setPayingMembershipPlan] = useState<"monthly" | "yearly" | null>(null);
   
   const [shopPhotos, setShopPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -129,6 +130,26 @@ const MerchantPortal = () => {
       toast.error(error instanceof Error ? error.message : "Payment failed. Please retry.");
     } finally {
       setPayingPlan(null);
+    }
+  };
+
+  const handleBharatGauravPay = async (plan: "monthly" | "yearly") => {
+    if (!user) { toast.error("Please login first"); return; }
+    setPayingMembershipPlan(plan);
+
+    try {
+      await startInstantRazorpayPayment({
+        module: "bharat_gaurav",
+        plan,
+        onSuccess: () => {
+          toast.success("Payment successful — Bharat Gaurav Membership activated!");
+          window.location.reload();
+        },
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Payment failed. Please retry.");
+    } finally {
+      setPayingMembershipPlan(null);
     }
   };
 
