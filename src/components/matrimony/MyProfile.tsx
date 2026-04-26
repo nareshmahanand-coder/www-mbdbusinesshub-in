@@ -203,34 +203,28 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
               </div>
 
               <Button
-                onClick={() => handlePremiumPayment("monthly")}
-                disabled={payingPlan !== null}
-                className="w-full h-13 py-3 text-sm font-extrabold text-white shadow-lg rounded-xl font-hindi"
+                type="button"
+                disabled
+                className="w-full h-13 py-3 text-sm font-extrabold text-white shadow-lg rounded-xl font-hindi cursor-not-allowed opacity-90"
                 style={{ backgroundColor: "#FF9933" }}
               >
-                {payingPlan === "monthly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "मंथली प्रीमियम - ₹1 (ऑटो-डेबिट)"}
+                मंथली प्रीमियम - ₹1 (Review Mode)
               </Button>
 
               <Button
-                onClick={() => handlePremiumPayment("yearly")}
-                disabled={payingPlan !== null}
-                className="w-full h-13 py-3 text-sm font-extrabold text-white shadow-lg rounded-xl font-hindi relative"
+                type="button"
+                disabled
+                className="w-full h-13 py-3 text-sm font-extrabold text-white shadow-lg rounded-xl font-hindi relative cursor-not-allowed opacity-90"
                 style={{ backgroundColor: "#138808" }}
               >
                 <span className="absolute -top-2 right-3 rounded-full bg-[#FF9933] px-2 py-0.5 text-[9px] font-bold text-white">
                   BEST VALUE
                 </span>
-                {payingPlan === "yearly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "सालाना प्रीमियम - ₹12 (ऑटो-डेबिट)"}
+                सालाना प्रीमियम - ₹12 (Review Mode)
               </Button>
 
-              {failedPlan && (
-                <Button variant="outline" onClick={() => handlePremiumPayment(failedPlan)} disabled={payingPlan !== null} className="w-full font-bold">
-                  Retry Payment
-                </Button>
-              )}
-
               <p className="text-center text-[10px] text-muted-foreground font-hindi">
-                सुरक्षित Razorpay पेमेंट के बाद प्रोफाइल तुरंत पब्लिश होगी ✓
+                Razorpay review के लिए भुगतान अस्थायी रूप से बंद है; प्रोफाइल UI देखा जा सकता है।
               </p>
             </CardContent>
           </Card>
