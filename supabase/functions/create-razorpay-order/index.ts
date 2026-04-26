@@ -12,8 +12,8 @@ const PRODUCTS = {
     yearly: { amount: 12, days: 365, label: "Bharat Gaurav Yearly" },
   },
   merchant_premium: {
-    monthly: { amount: 1, days: 30, label: "Merchant Premium Monthly" },
-    yearly: { amount: 12, days: 365, label: "Merchant Premium Yearly" },
+    monthly: { amount: 199, days: 30, label: "Merchant Premium Monthly" },
+    yearly: { amount: 999, days: 365, label: "Merchant Premium Yearly" },
   },
   marriage_bureau: {
     monthly: { amount: 1, days: 30, label: "Marriage Bureau Monthly" },
