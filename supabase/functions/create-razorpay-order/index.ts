@@ -8,16 +8,16 @@ const corsHeaders = {
 
 const PRODUCTS = {
   bharat_gaurav: {
-    monthly: { amount: 1, days: 30, label: "Bharat Gaurav Monthly" },
-    yearly: { amount: 12, days: 365, label: "Bharat Gaurav Yearly" },
+    monthly: { amount: 1.18, amountPaise: 118, days: 30, label: "Bharat Gaurav Monthly - GST Included" },
+    yearly: { amount: 14.16, amountPaise: 1416, days: 365, label: "Bharat Gaurav Yearly - GST Included" },
   },
   merchant_premium: {
-    monthly: { amount: 199, days: 30, label: "Merchant Premium Monthly" },
-    yearly: { amount: 999, days: 365, label: "Merchant Premium Yearly" },
+    monthly: { amount: 116.82, amountPaise: 11682, days: 30, label: "Merchant Premium Monthly - GST Included" },
+    yearly: { amount: 1178.82, amountPaise: 117882, days: 365, label: "Merchant Premium Yearly - GST Included" },
   },
   marriage_bureau: {
-    monthly: { amount: 1, days: 30, label: "Marriage Bureau Monthly" },
-    yearly: { amount: 12, days: 365, label: "Marriage Bureau Yearly" },
+    monthly: { amount: 1, amountPaise: 100, days: 30, label: "Marriage Bureau Monthly" },
+    yearly: { amount: 12, amountPaise: 1200, days: 365, label: "Marriage Bureau Yearly" },
   },
 } as const;
 
@@ -60,7 +60,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        amount: product.amount * 100,
+        amount: product.amountPaise,
         currency: "INR",
         receipt,
         notes: {
@@ -88,7 +88,7 @@ serve(async (req) => {
       status: "created",
       razorpay_order_id: order.id,
       receipt,
-      metadata: { days: product.days, label: product.label },
+      metadata: { days: product.days, label: product.label, gst_included: true },
     });
 
     if (insertError) throw insertError;
