@@ -207,7 +207,7 @@ const LoginPage = () => {
     try {
       sessionStorage.setItem("bharat-mitra-pending-greet", "true");
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/~oauth/callback`,
+        redirect_uri: window.location.origin,
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
