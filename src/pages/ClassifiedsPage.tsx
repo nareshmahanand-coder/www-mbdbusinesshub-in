@@ -55,6 +55,8 @@ const ClassifiedsPage = () => {
   const [selectedAd, setSelectedAd] = useState<ClassifiedAd | null>(null);
   const [activePhoto, setActivePhoto] = useState(0);
   const [showNumber, setShowNumber] = useState(false);
+  const [visibleCardNumbers, setVisibleCardNumbers] = useState<Record<string, boolean>>({});
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
 
   useEffect(() => { loadAds(); }, []);
@@ -92,27 +94,33 @@ const ClassifiedsPage = () => {
     setSelectedAd(ad);
     setActivePhoto(0);
     setShowNumber(false);
+    setLightboxOpen(false);
     setChatMessage(`Hi, I am interested in your ${ad.title}. Is it still available?`);
   };
 
   const nextPhoto = () => setActivePhoto(i => selectedPhotos.length ? (i + 1) % selectedPhotos.length : 0);
   const prevPhoto = () => setActivePhoto(i => selectedPhotos.length ? (i - 1 + selectedPhotos.length) % selectedPhotos.length : 0);
 
-  const startChat = async () => {
-    if (!user || !selectedAd) return;
-    if (selectedAd.user_id === user.id) { toast.info("This is your own listing."); return; }
-    const message = chatMessage.trim() || `Hi, I am interested in your ${selectedAd.title}.`;
+  const startChatForAd = async (ad: ClassifiedAd, messageText?: string) => {
+    if (!user) { toast.info("Please login to chat with the seller."); return; }
+    if (ad.user_id === user.id) { toast.info("This is your own listing."); return; }
+    const message = messageText?.trim() || `Hi, I am interested in your ${ad.title}.`;
     const { data: existing } = await supabase.from("classified_conversations" as any)
-      .select("id").eq("classified_id", selectedAd.id).eq("buyer_id", user.id).eq("seller_id", selectedAd.user_id).maybeSingle();
+      .select("id").eq("classified_id", ad.id).eq("buyer_id", user.id).eq("seller_id", ad.user_id).maybeSingle();
     const existingConversation = existing as { id?: string } | null;
     const createdConversation = existingConversation?.id ? null : (await supabase.from("classified_conversations" as any).insert({
-      classified_id: selectedAd.id, buyer_id: user.id, seller_id: selectedAd.user_id,
+      classified_id: ad.id, buyer_id: user.id, seller_id: ad.user_id,
     }).select("id").single()).data as { id?: string } | null;
     const conversationId = existingConversation?.id || createdConversation?.id;
     if (!conversationId) { toast.error("Chat could not be started right now"); return; }
     const { error } = await supabase.from("classified_messages" as any).insert({ conversation_id: conversationId, sender_id: user.id, message });
     if (error) toast.error("Message not sent");
     else toast.success("Chat started with seller");
+  };
+
+  const startChat = async () => {
+    if (!selectedAd) return;
+    await startChatForAd(selectedAd, chatMessage);
   };
 
   return (
