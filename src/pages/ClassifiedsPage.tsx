@@ -7,14 +7,15 @@ import ClassifiedsAdCard from "@/components/classifieds/AdCard";
 import ClassifiedsPostDialog from "@/components/classifieds/PostDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "sonner";
 import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle, Archive, Trash2 } from "lucide-react";
+import { City, State } from "country-state-city";
 
 export interface ClassifiedAd {
   id: string;
@@ -40,8 +41,13 @@ interface ClassifiedConversation {
   archived_by?: string[];
 }
 
-const cities = ["All", "Bhilai", "Durg", "Raipur", "Bilaspur", "Korba", "Rajnandgaon"];
+const topCities = ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", "Pune", "Jaipur", "Lucknow", "Patna", "Bhopal"];
 const petCategories = ["Pets", "Dogs", "Fishes & Aquarium", "Pet Food/Accessories"];
+const indiaLocations = [
+  ...topCities.map(city => ({ name: city, label: city, type: "Top City" })),
+  ...State.getStatesOfCountry("IN").map(state => ({ name: state.name, label: state.name, type: "State" })),
+  ...(City.getCitiesOfCountry("IN") ?? []).map(city => ({ name: city.name, label: `${city.name}, ${city.stateCode}`, type: "City" })),
+];
 
 const conditionLabel = (condition?: string) => {
   const labels: Record<string, string> = {
@@ -71,6 +77,9 @@ const ClassifiedsPage = () => {
   const [chatMessage, setChatMessage] = useState("");
   const [activeSection, setActiveSection] = useState<"home" | "chats" | "myAds" | "account">("home");
   const [conversations, setConversations] = useState<ClassifiedConversation[]>([]);
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [locationSearch, setLocationSearch] = useState("");
+  const [locationBusy, setLocationBusy] = useState(false);
 
   useEffect(() => { loadAds(); }, []);
   useEffect(() => { if (user) loadConversations(); }, [user]);
@@ -95,7 +104,9 @@ const ClassifiedsPage = () => {
       const q = search.toLowerCase();
       const matchesSearch = !search || a.title?.toLowerCase().includes(q) || a.category?.toLowerCase().includes(q) || a.city?.toLowerCase().includes(q);
       const matchesCategory = !selectedCategory || a.category === selectedCategory || (selectedCategory === "Pets" && petCategories.includes(a.category));
-      const matchesCity = cityFilter === "All" || a.city?.toLowerCase() === cityFilter.toLowerCase();
+      const adCity = a.city?.toLowerCase() || "";
+      const selectedLocation = cityFilter.toLowerCase();
+      const matchesCity = cityFilter === "All" || adCity.includes(selectedLocation) || selectedLocation.includes(adCity);
       const matchesPrice = (a.price ?? 0) >= priceRange[0] && (a.price ?? 0) <= priceRange[1];
       return !a.is_sold && matchesSearch && matchesCategory && matchesCity && matchesPrice;
     });
@@ -103,12 +114,44 @@ const ClassifiedsPage = () => {
 
   const myAds = useMemo(() => ads.filter(ad => ad.user_id === user?.id), [ads, user?.id]);
   const visibleConversations = useMemo(() => conversations.filter(c => user && !(c.archived_by || []).includes(user.id)), [conversations, user]);
+  const locationResults = useMemo(() => {
+    const q = locationSearch.trim().toLowerCase();
+    if (!q) return indiaLocations.slice(0, 80);
+    return indiaLocations.filter(location => location.label.toLowerCase().includes(q) || location.name.toLowerCase().includes(q)).slice(0, 80);
+  }, [locationSearch]);
 
   const clearFilters = () => {
     setSelectedCategory(null);
     setCityFilter("All");
     setPriceRange([0, 500000]);
     setSearch("");
+  };
+
+  const chooseLocation = (location: string) => {
+    setCityFilter(location);
+    setLocationOpen(false);
+    setShowFilters(false);
+    toast.success(location === "All" ? "Showing all India" : `Location set to ${location}`);
+  };
+
+  const useCurrentLocation = () => {
+    if (!("geolocation" in navigator)) { toast.error("GPS is not available on this device"); return; }
+    setLocationBusy(true);
+    navigator.geolocation.getCurrentPosition(async position => {
+      try {
+        const { latitude, longitude } = position.coords;
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&countrycodes=in`);
+        const data = await res.json();
+        const address = data.address || {};
+        const area = address.suburb || address.neighbourhood || address.village || address.town || address.city || address.county || "Current Location";
+        const pincode = address.postcode ? ` ${address.postcode}` : "";
+        chooseLocation(`${area}${pincode}`);
+      } catch {
+        toast.error("Could not detect area name. Please search your location.");
+      } finally {
+        setLocationBusy(false);
+      }
+    }, () => { setLocationBusy(false); toast.error("Location permission denied"); }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
   };
 
   const hasActiveFilters = selectedCategory || cityFilter !== "All" || priceRange[0] > 0 || priceRange[1] < 500000;
@@ -182,19 +225,16 @@ const ClassifiedsPage = () => {
       {/* OLX-style Location + Search Header */}
       <div className="sticky top-0 z-30 bg-card border-b border-border shadow-sm">
         <div className="container mx-auto flex items-center justify-between gap-2 px-3 pt-2">
-          <button className="flex min-w-0 items-center gap-1.5 rounded-lg px-1 py-1 text-left" onClick={() => setShowFilters(true)}>
+          <button className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg px-1 py-1 text-left" onClick={() => setLocationOpen(true)}>
             <MapPin className="h-4 w-4 shrink-0 text-accent" />
             <div className="min-w-0">
-              <p className="truncate text-sm font-extrabold text-foreground">21, {cityFilter === "All" ? "Bhilai" : cityFilter}</p>
-              <p className="text-[10px] font-medium text-muted-foreground">Showing nearby items</p>
+              <p className="truncate text-sm font-extrabold text-foreground">{cityFilter === "All" ? "All India" : cityFilter}</p>
+              <p className="text-[10px] font-medium text-muted-foreground">Tap to search any city, village or state</p>
             </div>
           </button>
-          <Select value={cityFilter} onValueChange={setCityFilter}>
-            <SelectTrigger className="h-8 w-[118px] rounded-lg text-xs font-bold"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {cities.map(c => <SelectItem key={c} value={c}>{c === "All" ? "All Cities" : c}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <Button variant="outline" size="sm" className="h-8 shrink-0 rounded-lg text-xs font-bold" onClick={useCurrentLocation} disabled={locationBusy}>
+            <MapPin className="h-3.5 w-3.5" /> {locationBusy ? "Detecting" : "GPS"}
+          </Button>
         </div>
         <div className="container mx-auto px-3 pb-2 pt-1.5 flex items-center gap-2">
           <div className="relative flex-1">
@@ -230,12 +270,9 @@ const ClassifiedsPage = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Location</label>
-                <Select value={cityFilter} onValueChange={setCityFilter}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {cities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Button variant="outline" className="h-9 w-full justify-start truncate text-xs" onClick={() => setLocationOpen(true)}>
+                  <MapPin className="mr-1.5 h-3.5 w-3.5 shrink-0" /> {cityFilter === "All" ? "All India" : cityFilter}
+                </Button>
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">
@@ -375,6 +412,51 @@ const ClassifiedsPage = () => {
         onOpenChange={setDialogOpen}
         onPosted={loadAds}
       />
+
+      <Dialog open={locationOpen} onOpenChange={setLocationOpen}>
+        <DialogContent className="max-w-lg p-0">
+          <DialogHeader className="border-b border-border px-4 py-3">
+            <DialogTitle className="flex items-center gap-2 text-left text-base"><MapPin className="h-5 w-5 text-accent" /> Select location across India</DialogTitle>
+          </DialogHeader>
+          <div className="p-3">
+            <Button variant="outline" className="mb-3 h-11 w-full justify-start gap-2 font-bold" onClick={useCurrentLocation} disabled={locationBusy}>
+              <MapPin className="h-4 w-4 text-accent" /> {locationBusy ? "Finding exact area and pin code..." : "Use Current Location"}
+            </Button>
+            <Command shouldFilter={false} className="rounded-lg border border-border">
+              <CommandInput placeholder="Search any city, village, area or state in India" value={locationSearch} onValueChange={setLocationSearch} />
+              <CommandList className="max-h-[52vh]">
+                <CommandEmpty>
+                  <button className="font-semibold text-accent" onClick={() => locationSearch.trim() && chooseLocation(locationSearch.trim())}>
+                    Use “{locationSearch}”
+                  </button>
+                </CommandEmpty>
+                {!locationSearch.trim() && (
+                  <CommandGroup heading="Top Cities">
+                    <CommandItem onSelect={() => chooseLocation("All")} className="font-bold">All India</CommandItem>
+                    {topCities.map(city => <CommandItem key={city} onSelect={() => chooseLocation(city)}>{city}</CommandItem>)}
+                  </CommandGroup>
+                )}
+                {locationSearch.trim() && (
+                  <CommandGroup heading="Typed location">
+                    <CommandItem onSelect={() => chooseLocation(locationSearch.trim())} className="font-bold text-accent">
+                      Use “{locationSearch.trim()}” anywhere in India
+                    </CommandItem>
+                  </CommandGroup>
+                )}
+                <CommandGroup heading={locationSearch.trim() ? "India-wide results" : "Cities and States"}>
+                  {locationResults.map((location, index) => (
+                    <CommandItem key={`${location.label}-${index}`} onSelect={() => chooseLocation(location.name)}>
+                      <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <span className="truncate">{location.label}</span>
+                      <span className="ml-auto text-[10px] text-muted-foreground">{location.type}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!selectedAd} onOpenChange={open => !open && setSelectedAd(null)}>
         <DialogContent className="max-w-5xl max-h-[94vh] overflow-y-auto p-0">
