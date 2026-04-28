@@ -259,11 +259,13 @@ const ClassifiedsPage = () => {
           <p className="mt-1 text-xs text-muted-foreground">OLX-style local marketplace for used items, pets, vehicles, mobiles, and household deals near you.</p>
         </div>
 
-        {/* Category Grid */}
-        <ClassifiedsCategoryGrid
-          selected={selectedCategory}
-          onSelect={cat => setSelectedCategory(cat === selectedCategory ? null : cat)}
-        />
+        {activeSection === "home" && (
+          <>
+            {/* Category Grid */}
+            <ClassifiedsCategoryGrid
+              selected={selectedCategory}
+              onSelect={cat => setSelectedCategory(cat === selectedCategory ? null : cat)}
+            />
 
         {/* Results Header */}
         <div className="flex items-center justify-between mt-5 mb-3">
@@ -305,6 +307,50 @@ const ClassifiedsPage = () => {
                 onChat={() => startChatForAd(ad)}
               />
             ))}
+          </div>
+        )}
+          </>
+        )}
+
+        {activeSection === "myAds" && (
+          <Tabs defaultValue="active" className="mt-2">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-extrabold text-foreground">My Ads</h2>
+              <TabsList className="grid w-48 grid-cols-2"><TabsTrigger value="active">Active</TabsTrigger><TabsTrigger value="sold">Sold</TabsTrigger></TabsList>
+            </div>
+            {(["active", "sold"] as const).map(tab => {
+              const tabAds = myAds.filter(ad => tab === "sold" ? ad.is_sold : !ad.is_sold);
+              return (
+                <TabsContent key={tab} value={tab} className="mt-0">
+                  {tabAds.length === 0 ? <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">No {tab} ads yet.</div> : (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {tabAds.map(ad => <ClassifiedsAdCard key={ad.id} ad={ad} isSeller onOpen={() => openAd(ad)} onMarkSold={() => updateAdSoldStatus(ad)} onDelete={() => deleteAd(ad)} />)}
+                    </div>
+                  )}
+                </TabsContent>
+              );
+            })}
+          </Tabs>
+        )}
+
+        {activeSection === "chats" && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-extrabold text-foreground">Chats</h2>
+            {visibleConversations.length === 0 ? <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">No active chats yet.</div> : visibleConversations.map(conversation => {
+              const ad = ads.find(item => item.id === conversation.classified_id);
+              return (
+                <div key={conversation.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 shadow-sm">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-extrabold text-foreground">{ad?.title || "Marketplace chat"}</p>
+                    <p className="text-xs text-muted-foreground">{conversation.seller_id === user?.id ? "Buyer conversation" : "Seller conversation"} · {new Date(conversation.last_message_at).toLocaleDateString("en-IN")}</p>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <Button size="sm" variant="outline" onClick={() => archiveConversation(conversation)}><Archive className="h-4 w-4" /></Button>
+                    <Button size="sm" variant="destructive" onClick={() => deleteConversation(conversation)}><Trash2 className="h-4 w-4" /></Button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
