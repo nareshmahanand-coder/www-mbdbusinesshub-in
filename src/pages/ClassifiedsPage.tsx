@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "sonner";
-import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle, Archive, Trash2 } from "lucide-react";
+import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle, Archive, Trash2, Loader2, Navigation } from "lucide-react";
 import { City, State } from "country-state-city";
 
 export interface ClassifiedAd {
@@ -43,11 +43,12 @@ interface ClassifiedConversation {
 
 const topCities = ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", "Pune", "Jaipur", "Lucknow", "Patna", "Bhopal"];
 const petCategories = ["Pets", "Dogs", "Fishes & Aquarium", "Pet Food/Accessories"];
+type LocationSuggestion = { name: string; label: string; type: string };
 const indiaLocations = [
   ...topCities.map(city => ({ name: city, label: city, type: "Top City" })),
   ...State.getStatesOfCountry("IN").map(state => ({ name: state.name, label: state.name, type: "State" })),
   ...(City.getCitiesOfCountry("IN") ?? []).map(city => ({ name: city.name, label: `${city.name}, ${city.stateCode}`, type: "City" })),
-];
+] satisfies LocationSuggestion[];
 
 const conditionLabel = (condition?: string) => {
   const labels: Record<string, string> = {
@@ -79,6 +80,8 @@ const ClassifiedsPage = () => {
   const [conversations, setConversations] = useState<ClassifiedConversation[]>([]);
   const [locationOpen, setLocationOpen] = useState(false);
   const [locationSearch, setLocationSearch] = useState("");
+  const [remoteLocationResults, setRemoteLocationResults] = useState<LocationSuggestion[]>([]);
+  const [locationSearching, setLocationSearching] = useState(false);
   const [locationBusy, setLocationBusy] = useState(false);
 
   useEffect(() => { loadAds(); }, []);
@@ -116,8 +119,46 @@ const ClassifiedsPage = () => {
   const visibleConversations = useMemo(() => conversations.filter(c => user && !(c.archived_by || []).includes(user.id)), [conversations, user]);
   const locationResults = useMemo(() => {
     const q = locationSearch.trim().toLowerCase();
-    if (!q) return indiaLocations.slice(0, 80);
-    return indiaLocations.filter(location => location.label.toLowerCase().includes(q) || location.name.toLowerCase().includes(q)).slice(0, 80);
+    if (!q) return topCities.map(city => ({ name: city, label: city, type: "Top City" }));
+    const localMatches = indiaLocations.filter(location => location.label.toLowerCase().includes(q) || location.name.toLowerCase().includes(q)).slice(0, 40);
+    const seen = new Set<string>();
+    return [...remoteLocationResults, ...localMatches].filter(location => {
+      const key = location.label.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 60);
+  }, [locationSearch, remoteLocationResults]);
+
+  useEffect(() => {
+    const query = locationSearch.trim();
+    if (query.length < 2) {
+      setRemoteLocationResults([]);
+      setLocationSearching(false);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLocationSearching(true);
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=12&countrycodes=in&accept-language=en&q=${encodeURIComponent(query)}`, { signal: controller.signal });
+        const data = await res.json();
+        setRemoteLocationResults((Array.isArray(data) ? data : []).map((place: any) => {
+          const address = place.address || {};
+          const name = address.suburb || address.neighbourhood || address.village || address.town || address.city || address.state_district || place.name || query;
+          const city = address.city || address.town || address.village || address.county || address.state_district;
+          const state = address.state;
+          const pincode = address.postcode;
+          const labelParts = [name, city && city !== name ? city : null, state, pincode].filter(Boolean);
+          return { name: [name, city, state].filter(Boolean).join(", "), label: labelParts.join(", "), type: address.village ? "Village" : address.suburb || address.neighbourhood ? "Area" : address.city || address.town ? "City" : "Location" };
+        }));
+      } catch (error) {
+        if (!controller.signal.aborted) setRemoteLocationResults([]);
+      } finally {
+        if (!controller.signal.aborted) setLocationSearching(false);
+      }
+    }, 250);
+    return () => { window.clearTimeout(timer); controller.abort(); };
   }, [locationSearch]);
 
   const clearFilters = () => {
@@ -143,9 +184,11 @@ const ClassifiedsPage = () => {
         const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&countrycodes=in`);
         const data = await res.json();
         const address = data.address || {};
-        const area = address.suburb || address.neighbourhood || address.village || address.town || address.city || address.county || "Current Location";
-        const pincode = address.postcode ? ` ${address.postcode}` : "";
-        chooseLocation(`${area}${pincode}`);
+        const area = address.suburb || address.neighbourhood || address.hamlet || address.village || address.town || address.city || address.county || data.name || "Current Location";
+        const city = address.city || address.town || address.village || address.county || address.state_district;
+        const state = address.state;
+        const pincode = address.postcode;
+        chooseLocation([area, city && city !== area ? city : null, state, pincode].filter(Boolean).join(", "));
       } catch {
         toast.error("Could not detect area name. Please search your location.");
       } finally {
@@ -414,17 +457,21 @@ const ClassifiedsPage = () => {
       />
 
       <Dialog open={locationOpen} onOpenChange={setLocationOpen}>
-        <DialogContent className="max-w-lg p-0">
+        <DialogContent className="max-w-2xl p-0">
           <DialogHeader className="border-b border-border px-4 py-3">
             <DialogTitle className="flex items-center gap-2 text-left text-base"><MapPin className="h-5 w-5 text-accent" /> Select location across India</DialogTitle>
           </DialogHeader>
-          <div className="p-3">
-            <Button variant="outline" className="mb-3 h-11 w-full justify-start gap-2 font-bold" onClick={useCurrentLocation} disabled={locationBusy}>
-              <MapPin className="h-4 w-4 text-accent" /> {locationBusy ? "Finding exact area and pin code..." : "Use Current Location"}
+          <div className="space-y-3 p-3">
+            <Button variant="outline" className="h-11 w-full justify-start gap-2 font-bold" onClick={useCurrentLocation} disabled={locationBusy}>
+              {locationBusy ? <Loader2 className="h-4 w-4 animate-spin text-accent" /> : <Navigation className="h-4 w-4 text-accent" />}
+              {locationBusy ? "Finding exact area, city and pin code..." : "Use Current Location"}
             </Button>
             <Command shouldFilter={false} className="rounded-lg border border-border">
-              <CommandInput placeholder="Search any city, village, area or state in India" value={locationSearch} onValueChange={setLocationSearch} />
-              <CommandList className="max-h-[52vh]">
+              <div className="relative">
+                <CommandInput autoFocus placeholder="Type Delhi, Chandigarh, village, area or state..." value={locationSearch} onValueChange={setLocationSearch} className="h-12 pr-10 text-base" />
+                {locationSearching && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />}
+              </div>
+              <CommandList className="max-h-[56vh]">
                 <CommandEmpty>
                   <button className="font-semibold text-accent" onClick={() => locationSearch.trim() && chooseLocation(locationSearch.trim())}>
                     Use “{locationSearch}”
@@ -439,11 +486,11 @@ const ClassifiedsPage = () => {
                 {locationSearch.trim() && (
                   <CommandGroup heading="Typed location">
                     <CommandItem onSelect={() => chooseLocation(locationSearch.trim())} className="font-bold text-accent">
-                      Use “{locationSearch.trim()}” anywhere in India
+                      <Search className="mr-2 h-4 w-4" /> Use “{locationSearch.trim()}” anywhere in India
                     </CommandItem>
                   </CommandGroup>
                 )}
-                <CommandGroup heading={locationSearch.trim() ? "India-wide results" : "Cities and States"}>
+                <CommandGroup heading={locationSearch.trim() ? "Live India-wide suggestions" : "Popular Cities"}>
                   {locationResults.map((location, index) => (
                     <CommandItem key={`${location.label}-${index}`} onSelect={() => chooseLocation(location.name)}>
                       <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
