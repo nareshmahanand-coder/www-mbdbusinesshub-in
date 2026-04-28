@@ -105,10 +105,9 @@ const ClassifiedsPage = () => {
     const { data: existing } = await supabase.from("classified_conversations" as any)
       .select("id").eq("classified_id", selectedAd.id).eq("buyer_id", user.id).eq("seller_id", selectedAd.user_id).maybeSingle();
     const existingConversation = existing as { id?: string } | null;
-    const created = await supabase.from("classified_conversations" as any).insert({
+    const createdConversation = existingConversation?.id ? null : (await supabase.from("classified_conversations" as any).insert({
       classified_id: selectedAd.id, buyer_id: user.id, seller_id: selectedAd.user_id,
-    }).select("id").single();
-    const createdConversation = created.data as { id?: string } | null;
+    }).select("id").single()).data as { id?: string } | null;
     const conversationId = existingConversation?.id || createdConversation?.id;
     if (!conversationId) { toast.error("Chat could not be started right now"); return; }
     const { error } = await supabase.from("classified_messages" as any).insert({ conversation_id: conversationId, sender_id: user.id, message });
@@ -180,6 +179,11 @@ const ClassifiedsPage = () => {
       </div>
 
       <div className="container mx-auto px-3 py-4">
+        <div className="mb-4 rounded-lg border border-border bg-card p-4 shadow-sm">
+          <h1 className="text-xl font-extrabold text-foreground">Buy & Sell Old Items</h1>
+          <p className="mt-1 text-xs text-muted-foreground">Browse verified second-hand listings with photos, condition details, location, and seller chat.</p>
+        </div>
+
         {/* Category Grid */}
         <ClassifiedsCategoryGrid
           selected={selectedCategory}
@@ -189,8 +193,8 @@ const ClassifiedsPage = () => {
         {/* Results Header */}
         <div className="flex items-center justify-between mt-5 mb-3">
           <div>
-            <h2 className="text-base font-bold text-foreground">
-              {selectedCategory ? selectedCategory : "Fresh Recommendations"}
+              <h2 className="text-base font-bold text-foreground">
+                {selectedCategory ? selectedCategory : "Latest second-hand deals"}
             </h2>
             <p className="text-xs text-muted-foreground">{filtered.length} ads found</p>
           </div>
@@ -203,7 +207,7 @@ const ClassifiedsPage = () => {
 
         {/* Product Grid */}
         {loading ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="rounded-xl bg-muted animate-pulse h-56" />
             ))}
@@ -244,7 +248,15 @@ const ClassifiedsPage = () => {
           {selectedAd && (
             <div className="grid gap-0 md:grid-cols-[1.15fr_0.85fr]">
               <div className="bg-muted/50 p-3 md:p-5">
-                <div className="relative aspect-square overflow-hidden rounded-lg bg-card md:aspect-[4/3]">
+                <div
+                  className="relative aspect-square overflow-hidden rounded-lg bg-card md:aspect-[4/3]"
+                  onTouchStart={event => ((event.currentTarget.dataset.touchX = String(event.touches[0].clientX)))}
+                  onTouchEnd={event => {
+                    const start = Number(event.currentTarget.dataset.touchX || 0);
+                    const delta = event.changedTouches[0].clientX - start;
+                    if (Math.abs(delta) > 40) delta < 0 ? nextPhoto() : prevPhoto();
+                  }}
+                >
                   {selectedPhotos.length ? (
                     <img src={selectedPhotos[activePhoto]} alt={selectedAd.title} className="h-full w-full object-contain" />
                   ) : (
