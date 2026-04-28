@@ -78,6 +78,9 @@ const ClassifiedsPage = () => {
   const [chatMessage, setChatMessage] = useState("");
   const [activeSection, setActiveSection] = useState<"home" | "chats" | "myAds" | "account">("home");
   const [conversations, setConversations] = useState<ClassifiedConversation[]>([]);
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [locationSearch, setLocationSearch] = useState("");
+  const [locationBusy, setLocationBusy] = useState(false);
 
   useEffect(() => { loadAds(); }, []);
   useEffect(() => { if (user) loadConversations(); }, [user]);
@@ -102,7 +105,9 @@ const ClassifiedsPage = () => {
       const q = search.toLowerCase();
       const matchesSearch = !search || a.title?.toLowerCase().includes(q) || a.category?.toLowerCase().includes(q) || a.city?.toLowerCase().includes(q);
       const matchesCategory = !selectedCategory || a.category === selectedCategory || (selectedCategory === "Pets" && petCategories.includes(a.category));
-      const matchesCity = cityFilter === "All" || a.city?.toLowerCase() === cityFilter.toLowerCase();
+      const adCity = a.city?.toLowerCase() || "";
+      const selectedLocation = cityFilter.toLowerCase();
+      const matchesCity = cityFilter === "All" || adCity.includes(selectedLocation) || selectedLocation.includes(adCity);
       const matchesPrice = (a.price ?? 0) >= priceRange[0] && (a.price ?? 0) <= priceRange[1];
       return !a.is_sold && matchesSearch && matchesCategory && matchesCity && matchesPrice;
     });
@@ -110,12 +115,44 @@ const ClassifiedsPage = () => {
 
   const myAds = useMemo(() => ads.filter(ad => ad.user_id === user?.id), [ads, user?.id]);
   const visibleConversations = useMemo(() => conversations.filter(c => user && !(c.archived_by || []).includes(user.id)), [conversations, user]);
+  const locationResults = useMemo(() => {
+    const q = locationSearch.trim().toLowerCase();
+    if (!q) return indiaLocations.slice(0, 80);
+    return indiaLocations.filter(location => location.label.toLowerCase().includes(q) || location.name.toLowerCase().includes(q)).slice(0, 80);
+  }, [locationSearch]);
 
   const clearFilters = () => {
     setSelectedCategory(null);
     setCityFilter("All");
     setPriceRange([0, 500000]);
     setSearch("");
+  };
+
+  const chooseLocation = (location: string) => {
+    setCityFilter(location);
+    setLocationOpen(false);
+    setShowFilters(false);
+    toast.success(location === "All" ? "Showing all India" : `Location set to ${location}`);
+  };
+
+  const useCurrentLocation = () => {
+    if (!("geolocation" in navigator)) { toast.error("GPS is not available on this device"); return; }
+    setLocationBusy(true);
+    navigator.geolocation.getCurrentPosition(async position => {
+      try {
+        const { latitude, longitude } = position.coords;
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&countrycodes=in`);
+        const data = await res.json();
+        const address = data.address || {};
+        const area = address.suburb || address.neighbourhood || address.village || address.town || address.city || address.county || "Current Location";
+        const pincode = address.postcode ? ` ${address.postcode}` : "";
+        chooseLocation(`${area}${pincode}`);
+      } catch {
+        toast.error("Could not detect area name. Please search your location.");
+      } finally {
+        setLocationBusy(false);
+      }
+    }, () => { setLocationBusy(false); toast.error("Location permission denied"); }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
   };
 
   const hasActiveFilters = selectedCategory || cityFilter !== "All" || priceRange[0] > 0 || priceRange[1] < 500000;
