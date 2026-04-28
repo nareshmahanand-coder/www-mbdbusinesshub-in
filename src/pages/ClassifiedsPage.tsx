@@ -55,6 +55,8 @@ const ClassifiedsPage = () => {
   const [selectedAd, setSelectedAd] = useState<ClassifiedAd | null>(null);
   const [activePhoto, setActivePhoto] = useState(0);
   const [showNumber, setShowNumber] = useState(false);
+  const [visibleCardNumbers, setVisibleCardNumbers] = useState<Record<string, boolean>>({});
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
 
   useEffect(() => { loadAds(); }, []);
@@ -92,27 +94,33 @@ const ClassifiedsPage = () => {
     setSelectedAd(ad);
     setActivePhoto(0);
     setShowNumber(false);
+    setLightboxOpen(false);
     setChatMessage(`Hi, I am interested in your ${ad.title}. Is it still available?`);
   };
 
   const nextPhoto = () => setActivePhoto(i => selectedPhotos.length ? (i + 1) % selectedPhotos.length : 0);
   const prevPhoto = () => setActivePhoto(i => selectedPhotos.length ? (i - 1 + selectedPhotos.length) % selectedPhotos.length : 0);
 
-  const startChat = async () => {
-    if (!user || !selectedAd) return;
-    if (selectedAd.user_id === user.id) { toast.info("This is your own listing."); return; }
-    const message = chatMessage.trim() || `Hi, I am interested in your ${selectedAd.title}.`;
+  const startChatForAd = async (ad: ClassifiedAd, messageText?: string) => {
+    if (!user) { toast.info("Please login to chat with the seller."); return; }
+    if (ad.user_id === user.id) { toast.info("This is your own listing."); return; }
+    const message = messageText?.trim() || `Hi, I am interested in your ${ad.title}.`;
     const { data: existing } = await supabase.from("classified_conversations" as any)
-      .select("id").eq("classified_id", selectedAd.id).eq("buyer_id", user.id).eq("seller_id", selectedAd.user_id).maybeSingle();
+      .select("id").eq("classified_id", ad.id).eq("buyer_id", user.id).eq("seller_id", ad.user_id).maybeSingle();
     const existingConversation = existing as { id?: string } | null;
     const createdConversation = existingConversation?.id ? null : (await supabase.from("classified_conversations" as any).insert({
-      classified_id: selectedAd.id, buyer_id: user.id, seller_id: selectedAd.user_id,
+      classified_id: ad.id, buyer_id: user.id, seller_id: ad.user_id,
     }).select("id").single()).data as { id?: string } | null;
     const conversationId = existingConversation?.id || createdConversation?.id;
     if (!conversationId) { toast.error("Chat could not be started right now"); return; }
     const { error } = await supabase.from("classified_messages" as any).insert({ conversation_id: conversationId, sender_id: user.id, message });
     if (error) toast.error("Message not sent");
     else toast.success("Chat started with seller");
+  };
+
+  const startChat = async () => {
+    if (!selectedAd) return;
+    await startChatForAd(selectedAd, chatMessage);
   };
 
   return (
@@ -218,9 +226,17 @@ const ClassifiedsPage = () => {
             <p className="text-xs text-muted-foreground mt-1">Try changing your filters or search</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((ad, idx) => (
-          <ClassifiedsAdCard key={ad.id} ad={ad} isFeatured={idx < 2} onOpen={() => openAd(ad)} />
+              <ClassifiedsAdCard
+                key={ad.id}
+                ad={ad}
+                isFeatured={idx < 2}
+                onOpen={() => openAd(ad)}
+                isNumberVisible={!!visibleCardNumbers[ad.id]}
+                onShowNumber={() => setVisibleCardNumbers(current => ({ ...current, [ad.id]: true }))}
+                onChat={() => startChatForAd(ad)}
+              />
             ))}
           </div>
         )}
@@ -258,7 +274,9 @@ const ClassifiedsPage = () => {
                   }}
                 >
                   {selectedPhotos.length ? (
-                    <img src={selectedPhotos[activePhoto]} alt={selectedAd.title} className="h-full w-full object-contain" />
+                    <button type="button" onClick={() => setLightboxOpen(true)} className="block h-full w-full cursor-zoom-in">
+                      <img src={selectedPhotos[activePhoto]} alt={selectedAd.title} className="h-full w-full object-contain" />
+                    </button>
                   ) : (
                     <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No photo available</div>
                   )}
@@ -317,6 +335,37 @@ const ClassifiedsPage = () => {
                   <Textarea value={chatMessage} onChange={e => setChatMessage(e.target.value)} rows={3} className="resize-none" placeholder="Write a message to the seller" />
                 </section>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+        <DialogContent className="h-[100dvh] max-h-[100dvh] w-screen max-w-none border-0 bg-background/95 p-0 sm:rounded-none">
+          {selectedAd && selectedPhotos.length > 0 && (
+            <div
+              className="flex h-full w-full items-center justify-center p-4"
+              onTouchStart={event => ((event.currentTarget.dataset.touchX = String(event.touches[0].clientX)))}
+              onTouchEnd={event => {
+                const start = Number(event.currentTarget.dataset.touchX || 0);
+                const delta = event.changedTouches[0].clientX - start;
+                if (Math.abs(delta) > 40) delta < 0 ? nextPhoto() : prevPhoto();
+              }}
+            >
+              <img src={selectedPhotos[activePhoto]} alt={selectedAd.title} className="max-h-[88dvh] max-w-full object-contain" />
+              {selectedPhotos.length > 1 && (
+                <>
+                  <Button size="icon" variant="secondary" className="absolute left-4 top-1/2 h-11 w-11 -translate-y-1/2 rounded-full" onClick={prevPhoto}>
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                  <Button size="icon" variant="secondary" className="absolute right-4 top-1/2 h-11 w-11 -translate-y-1/2 rounded-full" onClick={nextPhoto}>
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                  <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 gap-1.5">
+                    {selectedPhotos.map((_, index) => <span key={index} className={`h-2 w-2 rounded-full ${index === activePhoto ? "bg-accent" : "bg-muted"}`} />)}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </DialogContent>
