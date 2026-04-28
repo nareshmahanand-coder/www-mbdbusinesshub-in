@@ -147,6 +147,34 @@ const ClassifiedsPage = () => {
     await startChatForAd(selectedAd, chatMessage);
   };
 
+  const updateAdSoldStatus = async (ad: ClassifiedAd) => {
+    if (!user || ad.user_id !== user.id) { toast.error("Only the seller can update this ad"); return; }
+    const { error } = await supabase.from("classifieds").update({ is_sold: true }).eq("id", ad.id).eq("user_id", user.id);
+    if (error) toast.error("Could not mark as sold");
+    else { toast.success("Marked as sold"); loadAds(); }
+  };
+
+  const deleteAd = async (ad: ClassifiedAd) => {
+    if (!user || ad.user_id !== user.id) { toast.error("Only the seller can delete this ad"); return; }
+    const { error } = await supabase.from("classifieds").delete().eq("id", ad.id).eq("user_id", user.id);
+    if (error) toast.error("Could not delete ad");
+    else { toast.success("Ad deleted"); setSelectedAd(null); loadAds(); }
+  };
+
+  const archiveConversation = async (conversation: ClassifiedConversation) => {
+    if (!user) return;
+    const archivedBy = Array.from(new Set([...(conversation.archived_by || []), user.id]));
+    const { error } = await supabase.from("classified_conversations" as any).update({ archived_by: archivedBy }).eq("id", conversation.id);
+    if (error) toast.error("Could not archive chat");
+    else { toast.success("Chat archived"); loadConversations(); }
+  };
+
+  const deleteConversation = async (conversation: ClassifiedConversation) => {
+    const { error } = await supabase.from("classified_conversations" as any).delete().eq("id", conversation.id);
+    if (error) toast.error("Could not delete chat");
+    else { toast.success("Chat deleted"); loadConversations(); }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24">
       <AppHeader />
