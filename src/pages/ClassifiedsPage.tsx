@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
@@ -12,7 +12,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "sonner";
 import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle, Archive, Trash2, Loader2, Navigation } from "lucide-react";
 import { City, State } from "country-state-city";
@@ -44,6 +43,13 @@ interface ClassifiedConversation {
 const topCities = ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", "Pune", "Jaipur", "Lucknow", "Patna", "Bhopal"];
 const petCategories = ["Pets", "Dogs", "Fishes & Aquarium", "Pet Food/Accessories"];
 type LocationSuggestion = { name: string; label: string; type: string };
+const locationKey = (value = "") => value.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
+const matchesLocation = (adCity = "", selectedLocation = "All") => {
+  if (selectedLocation === "All") return true;
+  const adTokens = locationKey(adCity);
+  const selectedTokens = locationKey(selectedLocation);
+  return adTokens.some(token => selectedTokens.includes(token)) || selectedTokens.some(token => adTokens.includes(token));
+};
 const indiaLocations = [
   ...topCities.map(city => ({ name: city, label: city, type: "Top City" })),
   ...State.getStatesOfCountry("IN").map(state => ({ name: state.name, label: state.name, type: "State" })),
@@ -78,11 +84,12 @@ const ClassifiedsPage = () => {
   const [chatMessage, setChatMessage] = useState("");
   const [activeSection, setActiveSection] = useState<"home" | "chats" | "myAds" | "account">("home");
   const [conversations, setConversations] = useState<ClassifiedConversation[]>([]);
-  const [locationOpen, setLocationOpen] = useState(false);
   const [locationSearch, setLocationSearch] = useState("");
+  const [locationSearchOpen, setLocationSearchOpen] = useState(false);
   const [remoteLocationResults, setRemoteLocationResults] = useState<LocationSuggestion[]>([]);
   const [locationSearching, setLocationSearching] = useState(false);
   const [locationBusy, setLocationBusy] = useState(false);
+  const locationInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadAds(); }, []);
   useEffect(() => { if (user) loadConversations(); }, [user]);
@@ -107,9 +114,7 @@ const ClassifiedsPage = () => {
       const q = search.toLowerCase();
       const matchesSearch = !search || a.title?.toLowerCase().includes(q) || a.category?.toLowerCase().includes(q) || a.city?.toLowerCase().includes(q);
       const matchesCategory = !selectedCategory || a.category === selectedCategory || (selectedCategory === "Pets" && petCategories.includes(a.category));
-      const adCity = a.city?.toLowerCase() || "";
-      const selectedLocation = cityFilter.toLowerCase();
-      const matchesCity = cityFilter === "All" || adCity.includes(selectedLocation) || selectedLocation.includes(adCity);
+      const matchesCity = matchesLocation(a.city, cityFilter);
       const matchesPrice = (a.price ?? 0) >= priceRange[0] && (a.price ?? 0) <= priceRange[1];
       return !a.is_sold && matchesSearch && matchesCategory && matchesCity && matchesPrice;
     });
@@ -170,9 +175,16 @@ const ClassifiedsPage = () => {
 
   const chooseLocation = (location: string) => {
     setCityFilter(location);
-    setLocationOpen(false);
+    setLocationSearch(location === "All" ? "" : location);
+    setLocationSearchOpen(false);
     setShowFilters(false);
     toast.success(location === "All" ? "Showing all India" : `Location set to ${location}`);
+  };
+
+  const updateLocationSearch = (value: string) => {
+    setLocationSearch(value);
+    setLocationSearchOpen(true);
+    setCityFilter(value.trim() || "All");
   };
 
   const useCurrentLocation = () => {
@@ -267,16 +279,50 @@ const ClassifiedsPage = () => {
 
       {/* OLX-style Location + Search Header */}
       <div className="sticky top-0 z-30 bg-card border-b border-border shadow-sm">
-        <div className="container mx-auto flex items-center justify-between gap-2 px-3 pt-2">
-          <button className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg px-1 py-1 text-left" onClick={() => setLocationOpen(true)}>
-            <MapPin className="h-4 w-4 shrink-0 text-accent" />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-extrabold text-foreground">{cityFilter === "All" ? "All India" : cityFilter}</p>
-              <p className="text-[10px] font-medium text-muted-foreground">Tap to search any city, village or state</p>
+        <div className="container mx-auto flex items-start gap-2 px-3 pt-2">
+          <div className="relative flex-1">
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-accent" />
+              <Input
+                ref={locationInputRef}
+                value={locationSearch}
+                onChange={e => updateLocationSearch(e.target.value)}
+                onFocus={() => setLocationSearchOpen(true)}
+                onBlur={() => window.setTimeout(() => setLocationSearchOpen(false), 140)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && locationSearch.trim()) chooseLocation(locationSearch.trim());
+                  if (e.key === "Escape") setLocationSearchOpen(false);
+                }}
+                placeholder={cityFilter === "All" ? "Search city, village or state" : cityFilter}
+                className="h-11 rounded-lg border-2 border-accent/40 bg-background pl-9 pr-9 text-sm font-bold shadow-sm focus-visible:ring-1"
+              />
+              {locationSearching ? <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" /> : <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />}
             </div>
-          </button>
-          <Button variant="outline" size="sm" className="h-8 shrink-0 rounded-lg text-xs font-bold" onClick={useCurrentLocation} disabled={locationBusy}>
-            <MapPin className="h-3.5 w-3.5" /> {locationBusy ? "Detecting" : "GPS"}
+            {locationSearchOpen && (
+              <div className="absolute left-0 right-0 top-12 z-50 overflow-hidden rounded-lg border border-border bg-popover shadow-xl">
+                <button className="flex w-full items-center gap-2 border-b border-border px-3 py-3 text-left text-sm font-bold text-accent" onMouseDown={e => { e.preventDefault(); useCurrentLocation(); }} disabled={locationBusy}>
+                  {locationBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
+                  {locationBusy ? "Finding exact area, city and pin code..." : "Use Current Location"}
+                </button>
+                {locationSearch.trim() && (
+                  <button className="flex w-full items-center gap-2 px-3 py-3 text-left text-sm font-extrabold text-foreground hover:bg-accent/10" onMouseDown={e => { e.preventDefault(); chooseLocation(locationSearch.trim()); }}>
+                    <Search className="h-4 w-4 text-accent" /> Use “{locationSearch.trim()}”
+                  </button>
+                )}
+                <div className="max-h-72 overflow-y-auto py-1">
+                  {locationResults.map((location, index) => (
+                    <button key={`${location.label}-${index}`} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent/10" onMouseDown={e => { e.preventDefault(); chooseLocation(location.name); }}>
+                      <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 flex-1 truncate text-foreground">{location.label}</span>
+                      <span className="shrink-0 text-[10px] font-medium text-muted-foreground">{location.type}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <Button variant="outline" size="sm" className="h-11 shrink-0 rounded-lg text-xs font-bold" onClick={useCurrentLocation} disabled={locationBusy}>
+            {locationBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Navigation className="h-3.5 w-3.5" />} GPS
           </Button>
         </div>
         <div className="container mx-auto px-3 pb-2 pt-1.5 flex items-center gap-2">
@@ -313,7 +359,7 @@ const ClassifiedsPage = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Location</label>
-                <Button variant="outline" className="h-9 w-full justify-start truncate text-xs" onClick={() => setLocationOpen(true)}>
+                <Button variant="outline" className="h-9 w-full justify-start truncate text-xs" onClick={() => { setLocationSearchOpen(true); locationInputRef.current?.focus(); }}>
                   <MapPin className="mr-1.5 h-3.5 w-3.5 shrink-0" /> {cityFilter === "All" ? "All India" : cityFilter}
                 </Button>
               </div>
@@ -455,55 +501,6 @@ const ClassifiedsPage = () => {
         onOpenChange={setDialogOpen}
         onPosted={loadAds}
       />
-
-      <Dialog open={locationOpen} onOpenChange={setLocationOpen}>
-        <DialogContent className="max-w-2xl p-0">
-          <DialogHeader className="border-b border-border px-4 py-3">
-            <DialogTitle className="flex items-center gap-2 text-left text-base"><MapPin className="h-5 w-5 text-accent" /> Select location across India</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 p-3">
-            <Button variant="outline" className="h-11 w-full justify-start gap-2 font-bold" onClick={useCurrentLocation} disabled={locationBusy}>
-              {locationBusy ? <Loader2 className="h-4 w-4 animate-spin text-accent" /> : <Navigation className="h-4 w-4 text-accent" />}
-              {locationBusy ? "Finding exact area, city and pin code..." : "Use Current Location"}
-            </Button>
-            <Command shouldFilter={false} className="rounded-lg border border-border">
-              <div className="relative">
-                <CommandInput autoFocus placeholder="Type Delhi, Chandigarh, village, area or state..." value={locationSearch} onValueChange={setLocationSearch} className="h-12 pr-10 text-base" />
-                {locationSearching && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />}
-              </div>
-              <CommandList className="max-h-[56vh]">
-                <CommandEmpty>
-                  <button className="font-semibold text-accent" onClick={() => locationSearch.trim() && chooseLocation(locationSearch.trim())}>
-                    Use “{locationSearch}”
-                  </button>
-                </CommandEmpty>
-                {!locationSearch.trim() && (
-                  <CommandGroup heading="Top Cities">
-                    <CommandItem onSelect={() => chooseLocation("All")} className="font-bold">All India</CommandItem>
-                    {topCities.map(city => <CommandItem key={city} onSelect={() => chooseLocation(city)}>{city}</CommandItem>)}
-                  </CommandGroup>
-                )}
-                {locationSearch.trim() && (
-                  <CommandGroup heading="Typed location">
-                    <CommandItem onSelect={() => chooseLocation(locationSearch.trim())} className="font-bold text-accent">
-                      <Search className="mr-2 h-4 w-4" /> Use “{locationSearch.trim()}” anywhere in India
-                    </CommandItem>
-                  </CommandGroup>
-                )}
-                <CommandGroup heading={locationSearch.trim() ? "Live India-wide suggestions" : "Popular Cities"}>
-                  {locationResults.map((location, index) => (
-                    <CommandItem key={`${location.label}-${index}`} onSelect={() => chooseLocation(location.name)}>
-                      <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <span className="truncate">{location.label}</span>
-                      <span className="ml-auto text-[10px] text-muted-foreground">{location.type}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={!!selectedAd} onOpenChange={open => !open && setSelectedAd(null)}>
         <DialogContent className="max-w-5xl max-h-[94vh] overflow-y-auto p-0">
