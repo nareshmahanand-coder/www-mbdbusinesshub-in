@@ -69,15 +69,25 @@ const ClassifiedsPage = () => {
   const [visibleCardNumbers, setVisibleCardNumbers] = useState<Record<string, boolean>>({});
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
+  const [activeSection, setActiveSection] = useState<"home" | "chats" | "myAds" | "account">("home");
+  const [conversations, setConversations] = useState<ClassifiedConversation[]>([]);
 
   useEffect(() => { loadAds(); }, []);
+  useEffect(() => { if (user) loadConversations(); }, [user]);
 
   const loadAds = async () => {
     setLoading(true);
     const { data } = await supabase.from("classifieds")
-      .select("*").eq("is_sold", false).order("created_at", { ascending: false });
+      .select("*").order("created_at", { ascending: false });
     if (data) setAds(data as ClassifiedAd[]);
     setLoading(false);
+  };
+
+  const loadConversations = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("classified_conversations" as any)
+      .select("*").order("last_message_at", { ascending: false });
+    if (data) setConversations(data as ClassifiedConversation[]);
   };
 
   const filtered = useMemo(() => {
@@ -87,9 +97,12 @@ const ClassifiedsPage = () => {
       const matchesCategory = !selectedCategory || a.category === selectedCategory || (selectedCategory === "Pets" && petCategories.includes(a.category));
       const matchesCity = cityFilter === "All" || a.city?.toLowerCase() === cityFilter.toLowerCase();
       const matchesPrice = (a.price ?? 0) >= priceRange[0] && (a.price ?? 0) <= priceRange[1];
-      return matchesSearch && matchesCategory && matchesCity && matchesPrice;
+      return !a.is_sold && matchesSearch && matchesCategory && matchesCity && matchesPrice;
     });
   }, [ads, search, selectedCategory, cityFilter, priceRange]);
+
+  const myAds = useMemo(() => ads.filter(ad => ad.user_id === user?.id), [ads, user?.id]);
+  const visibleConversations = useMemo(() => conversations.filter(c => user && !(c.archived_by || []).includes(user.id)), [conversations, user]);
 
   const clearFilters = () => {
     setSelectedCategory(null);
