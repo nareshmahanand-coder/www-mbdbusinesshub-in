@@ -367,11 +367,11 @@ const MerchantPortal = () => {
             <div className="grid gap-2 sm:grid-cols-2">
               <Button onClick={() => handleBharatGauravPay("monthly")} disabled={payingMembershipPlan !== null} variant="outline" className="font-hindi">
                 {payingMembershipPlan === "monthly" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                ₹1.18 / Month GST included
+                ₹1.18 / Month
               </Button>
               <Button onClick={() => handleBharatGauravPay("yearly")} disabled={payingMembershipPlan !== null} variant="outline" className="font-hindi">
                 {payingMembershipPlan === "yearly" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                ₹14.16 / Year GST included
+                ₹14.16 / Year
               </Button>
             </div>
           </CardContent>
