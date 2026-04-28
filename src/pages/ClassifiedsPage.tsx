@@ -80,6 +80,8 @@ const ClassifiedsPage = () => {
   const [conversations, setConversations] = useState<ClassifiedConversation[]>([]);
   const [locationOpen, setLocationOpen] = useState(false);
   const [locationSearch, setLocationSearch] = useState("");
+  const [remoteLocationResults, setRemoteLocationResults] = useState<LocationSuggestion[]>([]);
+  const [locationSearching, setLocationSearching] = useState(false);
   const [locationBusy, setLocationBusy] = useState(false);
 
   useEffect(() => { loadAds(); }, []);
@@ -117,8 +119,46 @@ const ClassifiedsPage = () => {
   const visibleConversations = useMemo(() => conversations.filter(c => user && !(c.archived_by || []).includes(user.id)), [conversations, user]);
   const locationResults = useMemo(() => {
     const q = locationSearch.trim().toLowerCase();
-    if (!q) return indiaLocations.slice(0, 80);
-    return indiaLocations.filter(location => location.label.toLowerCase().includes(q) || location.name.toLowerCase().includes(q)).slice(0, 80);
+    if (!q) return topCities.map(city => ({ name: city, label: city, type: "Top City" }));
+    const localMatches = indiaLocations.filter(location => location.label.toLowerCase().includes(q) || location.name.toLowerCase().includes(q)).slice(0, 40);
+    const seen = new Set<string>();
+    return [...remoteLocationResults, ...localMatches].filter(location => {
+      const key = location.label.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 60);
+  }, [locationSearch, remoteLocationResults]);
+
+  useEffect(() => {
+    const query = locationSearch.trim();
+    if (query.length < 2) {
+      setRemoteLocationResults([]);
+      setLocationSearching(false);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setLocationSearching(true);
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=12&countrycodes=in&accept-language=en&q=${encodeURIComponent(query)}`, { signal: controller.signal });
+        const data = await res.json();
+        setRemoteLocationResults((Array.isArray(data) ? data : []).map((place: any) => {
+          const address = place.address || {};
+          const name = address.suburb || address.neighbourhood || address.village || address.town || address.city || address.state_district || place.name || query;
+          const city = address.city || address.town || address.village || address.county || address.state_district;
+          const state = address.state;
+          const pincode = address.postcode;
+          const labelParts = [name, city && city !== name ? city : null, state, pincode].filter(Boolean);
+          return { name: [name, city, state].filter(Boolean).join(", "), label: labelParts.join(", "), type: address.village ? "Village" : address.suburb || address.neighbourhood ? "Area" : address.city || address.town ? "City" : "Location" };
+        }));
+      } catch (error) {
+        if (!controller.signal.aborted) setRemoteLocationResults([]);
+      } finally {
+        if (!controller.signal.aborted) setLocationSearching(false);
+      }
+    }, 250);
+    return () => { window.clearTimeout(timer); controller.abort(); };
   }, [locationSearch]);
 
   const clearFilters = () => {
