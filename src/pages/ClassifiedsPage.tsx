@@ -436,6 +436,13 @@ const ClassifiedsPage = () => {
                     {topCities.map(city => <CommandItem key={city} onSelect={() => chooseLocation(city)}>{city}</CommandItem>)}
                   </CommandGroup>
                 )}
+                {locationSearch.trim() && (
+                  <CommandGroup heading="Typed location">
+                    <CommandItem onSelect={() => chooseLocation(locationSearch.trim())} className="font-bold text-accent">
+                      Use “{locationSearch.trim()}” anywhere in India
+                    </CommandItem>
+                  </CommandGroup>
+                )}
                 <CommandGroup heading={locationSearch.trim() ? "India-wide results" : "Cities and States"}>
                   {locationResults.map((location, index) => (
                     <CommandItem key={`${location.label}-${index}`} onSelect={() => chooseLocation(location.name)}>
