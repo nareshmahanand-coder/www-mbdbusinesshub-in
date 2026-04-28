@@ -21,6 +21,14 @@ const HELPLINE_WA = "919203645007";
 const SUPERUSER_PIN = "02032026";
 const SUPERUSER_EMAIL = "superuser@mbd.local";
 const SUPERUSER_PASSWORD = "MBD_SuperUser_02032026!";
+const CANONICAL_OAUTH_ORIGIN = "https://www.mbdbusinesshub.in";
+
+const getOAuthRedirectOrigin = () => {
+  if (window.location.hostname.endsWith("mbdbusinesshub.in")) {
+    return CANONICAL_OAUTH_ORIGIN;
+  }
+  return window.location.origin;
+};
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -207,7 +215,7 @@ const LoginPage = () => {
     try {
       sessionStorage.setItem("bharat-mitra-pending-greet", "true");
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: getOAuthRedirectOrigin(),
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
