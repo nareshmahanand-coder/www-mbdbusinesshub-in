@@ -7,7 +7,6 @@ import ClassifiedsAdCard from "@/components/classifieds/AdCard";
 import ClassifiedsPostDialog from "@/components/classifieds/PostDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +46,7 @@ const petCategories = ["Pets", "Dogs", "Fishes & Aquarium", "Pet Food/Accessorie
 const indiaLocations = [
   ...topCities.map(city => ({ name: city, label: city, type: "Top City" })),
   ...State.getStatesOfCountry("IN").map(state => ({ name: state.name, label: state.name, type: "State" })),
-  ...City.getCitiesOfCountry("IN").map(city => ({ name: city.name, label: `${city.name}, ${city.stateCode}`, type: "City" })),
+  ...(City.getCitiesOfCountry("IN") ?? []).map(city => ({ name: city.name, label: `${city.name}, ${city.stateCode}`, type: "City" })),
 ];
 
 const conditionLabel = (condition?: string) => {
