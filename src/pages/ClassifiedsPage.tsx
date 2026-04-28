@@ -426,6 +426,7 @@ const ClassifiedsPage = () => {
                 <div className="space-y-2">
                   <p className="text-3xl font-extrabold text-foreground">₹{(selectedAd.price ?? 0).toLocaleString("en-IN")}</p>
                   <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                    {selectedAd.is_sold && <Badge className="bg-destructive text-destructive-foreground">SOLD</Badge>}
                     <Badge variant="secondary" className="gap-1"><ShieldCheck className="h-3.5 w-3.5" /> {conditionLabel(selectedAd.condition)}</Badge>
                     {selectedAd.city && <span className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {selectedAd.city}</span>}
                     <span>{new Date(selectedAd.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</span>
@@ -440,16 +441,25 @@ const ClassifiedsPage = () => {
                 </section>
 
                 <section className="space-y-3 border-t border-border pt-4">
-                  <h3 className="flex items-center gap-2 text-base font-bold text-foreground"><HeartHandshake className="h-4 w-4 text-accent" /> Contact Seller</h3>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <Button variant="outline" onClick={() => setShowNumber(true)} className="h-11">
-                      <Phone className="h-4 w-4" /> {showNumber ? (selectedAd.contact_phone || "Number unavailable") : "Show Number"}
-                    </Button>
-                    <Button onClick={startChat} className="h-11 bg-accent text-accent-foreground hover:bg-accent/90">
-                      <MessageCircle className="h-4 w-4" /> Chat with Seller
-                    </Button>
-                  </div>
-                  <Textarea value={chatMessage} onChange={e => setChatMessage(e.target.value)} rows={3} className="resize-none" placeholder="Write a message to the seller" />
+                  <h3 className="flex items-center gap-2 text-base font-bold text-foreground"><HeartHandshake className="h-4 w-4 text-accent" /> {selectedAd.user_id === user?.id ? "Manage Listing" : "Contact Seller"}</h3>
+                  {selectedAd.user_id === user?.id ? (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <Button variant="outline" disabled={selectedAd.is_sold} onClick={() => updateAdSoldStatus(selectedAd)} className="h-11">Mark as Sold</Button>
+                      <Button variant="destructive" onClick={() => deleteAd(selectedAd)} className="h-11">Delete Ad</Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <Button variant="outline" disabled={selectedAd.is_sold} onClick={() => setShowNumber(true)} className="h-11">
+                          <Phone className="h-4 w-4" /> {selectedAd.is_sold ? "Sold Out" : showNumber ? (selectedAd.contact_phone || "Number unavailable") : "Show Number"}
+                        </Button>
+                        <Button disabled={selectedAd.is_sold} onClick={startChat} className="h-11 bg-accent text-accent-foreground hover:bg-accent/90">
+                          <MessageCircle className="h-4 w-4" /> {selectedAd.is_sold ? "Sold Out" : "Chat with Seller"}
+                        </Button>
+                      </div>
+                      <Textarea disabled={selectedAd.is_sold} value={chatMessage} onChange={e => setChatMessage(e.target.value)} rows={3} className="resize-none" placeholder="Write a message to the seller" />
+                    </>
+                  )}
                 </section>
               </div>
             </div>
