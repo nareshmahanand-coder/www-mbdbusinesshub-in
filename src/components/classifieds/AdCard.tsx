@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Eye, ChevronLeft, ChevronRight, Star, Camera, BadgeCheck, MessageCircle, Phone } from "lucide-react";
+import { MapPin, Eye, ChevronLeft, ChevronRight, Star, Camera, BadgeCheck, MessageCircle, Phone, CheckCircle2, Trash2 } from "lucide-react";
 import { NoImage } from "@/components/ImageUpload";
 import type { ClassifiedAd } from "@/pages/ClassifiedsPage";
 
@@ -44,7 +44,10 @@ interface Props {
   onOpen?: () => void;
   onShowNumber?: () => void;
   onChat?: () => void;
+  onMarkSold?: () => void;
+  onDelete?: () => void;
   isNumberVisible?: boolean;
+  isSeller?: boolean;
 }
 
 const conditionLabel = (condition?: string) => {
@@ -57,7 +60,7 @@ const conditionLabel = (condition?: string) => {
   return labels[condition || ""] || condition || "Used";
 };
 
-const ClassifiedsAdCard = ({ ad, isFeatured, onOpen, onShowNumber, onChat, isNumberVisible }: Props) => (
+const ClassifiedsAdCard = ({ ad, isFeatured, onOpen, onShowNumber, onChat, onMarkSold, onDelete, isNumberVisible, isSeller }: Props) => (
   <Card
     role="button"
     tabIndex={0}
@@ -75,6 +78,11 @@ const ClassifiedsAdCard = ({ ad, isFeatured, onOpen, onShowNumber, onChat, isNum
       {isFeatured && (
         <Badge className="absolute top-2 left-2 bg-accent text-accent-foreground text-[9px] px-1.5 py-0.5 rounded-md shadow font-bold gap-1">
           <Star className="h-2.5 w-2.5 fill-current" /> FEATURED
+        </Badge>
+      )}
+      {ad.is_sold && (
+        <Badge className="absolute left-2 top-2 bg-destructive text-destructive-foreground text-[10px] px-2 py-1 rounded-md shadow font-extrabold">
+          SOLD
         </Badge>
       )}
     </div>
@@ -96,11 +104,35 @@ const ClassifiedsAdCard = ({ ad, isFeatured, onOpen, onShowNumber, onChat, isNum
           {new Date(ad.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
         </span>
       </div>
+      {isSeller ? (
+        <div className="grid grid-cols-1 gap-1.5 pt-1.5 sm:grid-cols-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-9 min-w-0 text-[11px] font-bold"
+            disabled={ad.is_sold}
+            onClick={event => { event.stopPropagation(); onMarkSold?.(); }}
+          >
+            <CheckCircle2 className="mr-1 h-3 w-3 shrink-0" />
+            <span className="truncate">{ad.is_sold ? "Sold" : "Mark as Sold"}</span>
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            className="h-9 min-w-0 text-[11px] font-bold"
+            onClick={event => { event.stopPropagation(); onDelete?.(); }}
+          >
+            <Trash2 className="mr-1 h-3 w-3 shrink-0" />
+            <span className="truncate">Delete Ad</span>
+          </Button>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 gap-1.5 pt-1.5 sm:grid-cols-2">
         <Button
           size="sm"
           variant="outline"
           className="h-9 min-w-0 text-[11px] font-bold group-hover:border-accent"
+          disabled={ad.is_sold}
           onClick={event => { event.stopPropagation(); onShowNumber?.(); }}
         >
           <Phone className="mr-1 h-3 w-3 shrink-0" />
@@ -109,12 +141,14 @@ const ClassifiedsAdCard = ({ ad, isFeatured, onOpen, onShowNumber, onChat, isNum
         <Button
           size="sm"
           className="h-9 min-w-0 bg-accent text-[11px] font-bold text-accent-foreground hover:bg-accent/90"
+          disabled={ad.is_sold}
           onClick={event => { event.stopPropagation(); onChat?.(); }}
         >
           <MessageCircle className="mr-1 h-3 w-3 shrink-0" />
           <span className="truncate">Chat with Seller</span>
         </Button>
       </div>
+      )}
       <Button size="sm" variant="ghost" className="mt-1 h-8 w-full text-[11px]" onClick={event => { event.stopPropagation(); onOpen?.(); }}>
         <Eye className="mr-1 h-3 w-3" /> View Details
       </Button>

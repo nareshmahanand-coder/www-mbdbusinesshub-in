@@ -12,8 +12,9 @@ import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle } from "lucide-react";
+import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle, Archive, Trash2 } from "lucide-react";
 
 export interface ClassifiedAd {
   id: string;
@@ -28,6 +29,15 @@ export interface ClassifiedAd {
   is_sold: boolean;
   created_at: string;
   user_id: string;
+}
+
+interface ClassifiedConversation {
+  id: string;
+  classified_id: string;
+  buyer_id: string;
+  seller_id: string;
+  last_message_at: string;
+  archived_by?: string[];
 }
 
 const cities = ["All", "Bhilai", "Durg", "Raipur", "Bilaspur", "Korba", "Rajnandgaon"];
@@ -59,15 +69,25 @@ const ClassifiedsPage = () => {
   const [visibleCardNumbers, setVisibleCardNumbers] = useState<Record<string, boolean>>({});
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
+  const [activeSection, setActiveSection] = useState<"home" | "chats" | "myAds" | "account">("home");
+  const [conversations, setConversations] = useState<ClassifiedConversation[]>([]);
 
   useEffect(() => { loadAds(); }, []);
+  useEffect(() => { if (user) loadConversations(); }, [user]);
 
   const loadAds = async () => {
     setLoading(true);
     const { data } = await supabase.from("classifieds")
-      .select("*").eq("is_sold", false).order("created_at", { ascending: false });
+      .select("*").order("created_at", { ascending: false });
     if (data) setAds(data as ClassifiedAd[]);
     setLoading(false);
+  };
+
+  const loadConversations = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("classified_conversations" as any)
+      .select("*").order("last_message_at", { ascending: false });
+    if (data) setConversations(data as unknown as ClassifiedConversation[]);
   };
 
   const filtered = useMemo(() => {
@@ -77,9 +97,12 @@ const ClassifiedsPage = () => {
       const matchesCategory = !selectedCategory || a.category === selectedCategory || (selectedCategory === "Pets" && petCategories.includes(a.category));
       const matchesCity = cityFilter === "All" || a.city?.toLowerCase() === cityFilter.toLowerCase();
       const matchesPrice = (a.price ?? 0) >= priceRange[0] && (a.price ?? 0) <= priceRange[1];
-      return matchesSearch && matchesCategory && matchesCity && matchesPrice;
+      return !a.is_sold && matchesSearch && matchesCategory && matchesCity && matchesPrice;
     });
   }, [ads, search, selectedCategory, cityFilter, priceRange]);
+
+  const myAds = useMemo(() => ads.filter(ad => ad.user_id === user?.id), [ads, user?.id]);
+  const visibleConversations = useMemo(() => conversations.filter(c => user && !(c.archived_by || []).includes(user.id)), [conversations, user]);
 
   const clearFilters = () => {
     setSelectedCategory(null);
@@ -122,6 +145,34 @@ const ClassifiedsPage = () => {
   const startChat = async () => {
     if (!selectedAd) return;
     await startChatForAd(selectedAd, chatMessage);
+  };
+
+  const updateAdSoldStatus = async (ad: ClassifiedAd) => {
+    if (!user || ad.user_id !== user.id) { toast.error("Only the seller can update this ad"); return; }
+    const { error } = await supabase.from("classifieds").update({ is_sold: true }).eq("id", ad.id).eq("user_id", user.id);
+    if (error) toast.error("Could not mark as sold");
+    else { toast.success("Marked as sold"); loadAds(); }
+  };
+
+  const deleteAd = async (ad: ClassifiedAd) => {
+    if (!user || ad.user_id !== user.id) { toast.error("Only the seller can delete this ad"); return; }
+    const { error } = await supabase.from("classifieds").delete().eq("id", ad.id).eq("user_id", user.id);
+    if (error) toast.error("Could not delete ad");
+    else { toast.success("Ad deleted"); setSelectedAd(null); loadAds(); }
+  };
+
+  const archiveConversation = async (conversation: ClassifiedConversation) => {
+    if (!user) return;
+    const archivedBy = Array.from(new Set([...(conversation.archived_by || []), user.id]));
+    const { error } = await supabase.from("classified_conversations" as any).update({ archived_by: archivedBy }).eq("id", conversation.id);
+    if (error) toast.error("Could not archive chat");
+    else { toast.success("Chat archived"); loadConversations(); }
+  };
+
+  const deleteConversation = async (conversation: ClassifiedConversation) => {
+    const { error } = await supabase.from("classified_conversations" as any).delete().eq("id", conversation.id);
+    if (error) toast.error("Could not delete chat");
+    else { toast.success("Chat deleted"); loadConversations(); }
   };
 
   return (
@@ -208,11 +259,13 @@ const ClassifiedsPage = () => {
           <p className="mt-1 text-xs text-muted-foreground">OLX-style local marketplace for used items, pets, vehicles, mobiles, and household deals near you.</p>
         </div>
 
-        {/* Category Grid */}
-        <ClassifiedsCategoryGrid
-          selected={selectedCategory}
-          onSelect={cat => setSelectedCategory(cat === selectedCategory ? null : cat)}
-        />
+        {activeSection === "home" && (
+          <>
+            {/* Category Grid */}
+            <ClassifiedsCategoryGrid
+              selected={selectedCategory}
+              onSelect={cat => setSelectedCategory(cat === selectedCategory ? null : cat)}
+            />
 
         {/* Results Header */}
         <div className="flex items-center justify-between mt-5 mb-3">
@@ -256,19 +309,63 @@ const ClassifiedsPage = () => {
             ))}
           </div>
         )}
+          </>
+        )}
+
+        {activeSection === "myAds" && (
+          <Tabs defaultValue="active" className="mt-2">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="text-lg font-extrabold text-foreground">My Ads</h2>
+              <TabsList className="grid w-48 grid-cols-2"><TabsTrigger value="active">Active</TabsTrigger><TabsTrigger value="sold">Sold</TabsTrigger></TabsList>
+            </div>
+            {(["active", "sold"] as const).map(tab => {
+              const tabAds = myAds.filter(ad => tab === "sold" ? ad.is_sold : !ad.is_sold);
+              return (
+                <TabsContent key={tab} value={tab} className="mt-0">
+                  {tabAds.length === 0 ? <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">No {tab} ads yet.</div> : (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {tabAds.map(ad => <ClassifiedsAdCard key={ad.id} ad={ad} isSeller onOpen={() => openAd(ad)} onMarkSold={() => updateAdSoldStatus(ad)} onDelete={() => deleteAd(ad)} />)}
+                    </div>
+                  )}
+                </TabsContent>
+              );
+            })}
+          </Tabs>
+        )}
+
+        {activeSection === "chats" && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-extrabold text-foreground">Chats</h2>
+            {visibleConversations.length === 0 ? <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">No active chats yet.</div> : visibleConversations.map(conversation => {
+              const ad = ads.find(item => item.id === conversation.classified_id);
+              return (
+                <div key={conversation.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 shadow-sm">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-extrabold text-foreground">{ad?.title || "Marketplace chat"}</p>
+                    <p className="text-xs text-muted-foreground">{conversation.seller_id === user?.id ? "Buyer conversation" : "Seller conversation"} · {new Date(conversation.last_message_at).toLocaleDateString("en-IN")}</p>
+                  </div>
+                  <div className="flex shrink-0 gap-2">
+                    <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => archiveConversation(conversation)}><Archive className="h-4 w-4" /> Archive</Button>
+                    <Button size="sm" variant="destructive" className="gap-1 text-xs" onClick={() => deleteConversation(conversation)}><Trash2 className="h-4 w-4" /> Delete</Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* OLX-style Bottom Navigation */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card shadow-lg">
         <div className="container mx-auto grid h-16 grid-cols-5 items-center px-2">
-          <button className="flex flex-col items-center gap-0.5 text-accent"><Home className="h-5 w-5" /><span className="text-[10px] font-bold">Home</span></button>
-          <button className="flex flex-col items-center gap-0.5 text-muted-foreground" onClick={() => toast.info("Chats are opened from each listing.")}><MessageCircle className="h-5 w-5" /><span className="text-[10px] font-bold">Chats</span></button>
+          <button className={`flex flex-col items-center gap-0.5 ${activeSection === "home" ? "text-accent" : "text-muted-foreground"}`} onClick={() => setActiveSection("home")}><Home className="h-5 w-5" /><span className="text-[10px] font-bold">Home</span></button>
+          <button className={`flex flex-col items-center gap-0.5 ${activeSection === "chats" ? "text-accent" : "text-muted-foreground"}`} onClick={() => { if (!user) toast.info("Please login to view chats."); else { loadConversations(); setActiveSection("chats"); } }}><MessageCircle className="h-5 w-5" /><span className="text-[10px] font-bold">Chats</span></button>
           <button onClick={() => setDialogOpen(true)} className="relative -mt-7 flex flex-col items-center gap-1 text-foreground">
             <span className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-card bg-accent text-accent-foreground shadow-lg"><Plus className="h-7 w-7" /></span>
             <span className="text-[10px] font-extrabold">Sell</span>
           </button>
-          <button className="flex flex-col items-center gap-0.5 text-muted-foreground" onClick={() => toast.info("Your posted ads appear after login.")}><ClipboardList className="h-5 w-5" /><span className="text-[10px] font-bold">My Ads</span></button>
-          <button className="flex flex-col items-center gap-0.5 text-muted-foreground" onClick={() => toast.info(user ? "Account is active." : "Please login to manage your account.")}><UserCircle className="h-5 w-5" /><span className="text-[10px] font-bold">Account</span></button>
+          <button className={`flex flex-col items-center gap-0.5 ${activeSection === "myAds" ? "text-accent" : "text-muted-foreground"}`} onClick={() => { if (!user) toast.info("Please login to manage your ads."); else setActiveSection("myAds"); }}><ClipboardList className="h-5 w-5" /><span className="text-[10px] font-bold">My Ads</span></button>
+          <button className={`flex flex-col items-center gap-0.5 ${activeSection === "account" ? "text-accent" : "text-muted-foreground"}`} onClick={() => setActiveSection("account")}><UserCircle className="h-5 w-5" /><span className="text-[10px] font-bold">Account</span></button>
         </div>
       </div>
 
@@ -329,6 +426,7 @@ const ClassifiedsPage = () => {
                 <div className="space-y-2">
                   <p className="text-3xl font-extrabold text-foreground">₹{(selectedAd.price ?? 0).toLocaleString("en-IN")}</p>
                   <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                    {selectedAd.is_sold && <Badge className="bg-destructive text-destructive-foreground">SOLD</Badge>}
                     <Badge variant="secondary" className="gap-1"><ShieldCheck className="h-3.5 w-3.5" /> {conditionLabel(selectedAd.condition)}</Badge>
                     {selectedAd.city && <span className="flex items-center gap-1"><MapPin className="h-4 w-4" /> {selectedAd.city}</span>}
                     <span>{new Date(selectedAd.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</span>
@@ -343,16 +441,25 @@ const ClassifiedsPage = () => {
                 </section>
 
                 <section className="space-y-3 border-t border-border pt-4">
-                  <h3 className="flex items-center gap-2 text-base font-bold text-foreground"><HeartHandshake className="h-4 w-4 text-accent" /> Contact Seller</h3>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <Button variant="outline" onClick={() => setShowNumber(true)} className="h-11">
-                      <Phone className="h-4 w-4" /> {showNumber ? (selectedAd.contact_phone || "Number unavailable") : "Show Number"}
-                    </Button>
-                    <Button onClick={startChat} className="h-11 bg-accent text-accent-foreground hover:bg-accent/90">
-                      <MessageCircle className="h-4 w-4" /> Chat with Seller
-                    </Button>
-                  </div>
-                  <Textarea value={chatMessage} onChange={e => setChatMessage(e.target.value)} rows={3} className="resize-none" placeholder="Write a message to the seller" />
+                  <h3 className="flex items-center gap-2 text-base font-bold text-foreground"><HeartHandshake className="h-4 w-4 text-accent" /> {selectedAd.user_id === user?.id ? "Manage Listing" : "Contact Seller"}</h3>
+                  {selectedAd.user_id === user?.id ? (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <Button variant="outline" disabled={selectedAd.is_sold} onClick={() => updateAdSoldStatus(selectedAd)} className="h-11">Mark as Sold</Button>
+                      <Button variant="destructive" onClick={() => deleteAd(selectedAd)} className="h-11">Delete Ad</Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <Button variant="outline" disabled={selectedAd.is_sold} onClick={() => setShowNumber(true)} className="h-11">
+                          <Phone className="h-4 w-4" /> {selectedAd.is_sold ? "Sold Out" : showNumber ? (selectedAd.contact_phone || "Number unavailable") : "Show Number"}
+                        </Button>
+                        <Button disabled={selectedAd.is_sold} onClick={startChat} className="h-11 bg-accent text-accent-foreground hover:bg-accent/90">
+                          <MessageCircle className="h-4 w-4" /> {selectedAd.is_sold ? "Sold Out" : "Chat with Seller"}
+                        </Button>
+                      </div>
+                      <Textarea disabled={selectedAd.is_sold} value={chatMessage} onChange={e => setChatMessage(e.target.value)} rows={3} className="resize-none" placeholder="Write a message to the seller" />
+                    </>
+                  )}
                 </section>
               </div>
             </div>
