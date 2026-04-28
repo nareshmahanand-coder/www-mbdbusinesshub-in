@@ -181,6 +181,12 @@ const ClassifiedsPage = () => {
     toast.success(location === "All" ? "Showing all India" : `Location set to ${location}`);
   };
 
+  const updateLocationSearch = (value: string) => {
+    setLocationSearch(value);
+    setLocationSearchOpen(true);
+    setCityFilter(value.trim() || "All");
+  };
+
   const useCurrentLocation = () => {
     if (!("geolocation" in navigator)) { toast.error("GPS is not available on this device"); return; }
     setLocationBusy(true);
