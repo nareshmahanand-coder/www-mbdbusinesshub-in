@@ -228,6 +228,7 @@ export type Database = {
       }
       classified_conversations: {
         Row: {
+          archived_by: string[]
           buyer_id: string
           classified_id: string
           created_at: string
@@ -237,6 +238,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          archived_by?: string[]
           buyer_id: string
           classified_id: string
           created_at?: string
@@ -246,6 +248,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          archived_by?: string[]
           buyer_id?: string
           classified_id?: string
           created_at?: string
