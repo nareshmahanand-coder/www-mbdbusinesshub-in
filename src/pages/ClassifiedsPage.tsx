@@ -279,16 +279,50 @@ const ClassifiedsPage = () => {
 
       {/* OLX-style Location + Search Header */}
       <div className="sticky top-0 z-30 bg-card border-b border-border shadow-sm">
-        <div className="container mx-auto flex items-center justify-between gap-2 px-3 pt-2">
-          <button className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg px-1 py-1 text-left" onClick={() => setLocationOpen(true)}>
-            <MapPin className="h-4 w-4 shrink-0 text-accent" />
-            <div className="min-w-0">
-              <p className="truncate text-sm font-extrabold text-foreground">{cityFilter === "All" ? "All India" : cityFilter}</p>
-              <p className="text-[10px] font-medium text-muted-foreground">Tap to search any city, village or state</p>
+        <div className="container mx-auto flex items-start gap-2 px-3 pt-2">
+          <div className="relative flex-1">
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-accent" />
+              <Input
+                ref={locationInputRef}
+                value={locationSearch}
+                onChange={e => updateLocationSearch(e.target.value)}
+                onFocus={() => setLocationSearchOpen(true)}
+                onBlur={() => window.setTimeout(() => setLocationSearchOpen(false), 140)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && locationSearch.trim()) chooseLocation(locationSearch.trim());
+                  if (e.key === "Escape") setLocationSearchOpen(false);
+                }}
+                placeholder={cityFilter === "All" ? "Search city, village or state" : cityFilter}
+                className="h-11 rounded-lg border-2 border-accent/40 bg-background pl-9 pr-9 text-sm font-bold shadow-sm focus-visible:ring-1"
+              />
+              {locationSearching ? <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" /> : <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />}
             </div>
-          </button>
-          <Button variant="outline" size="sm" className="h-8 shrink-0 rounded-lg text-xs font-bold" onClick={useCurrentLocation} disabled={locationBusy}>
-            <MapPin className="h-3.5 w-3.5" /> {locationBusy ? "Detecting" : "GPS"}
+            {locationSearchOpen && (
+              <div className="absolute left-0 right-0 top-12 z-50 overflow-hidden rounded-lg border border-border bg-popover shadow-xl">
+                <button className="flex w-full items-center gap-2 border-b border-border px-3 py-3 text-left text-sm font-bold text-accent" onMouseDown={e => { e.preventDefault(); useCurrentLocation(); }} disabled={locationBusy}>
+                  {locationBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
+                  {locationBusy ? "Finding exact area, city and pin code..." : "Use Current Location"}
+                </button>
+                {locationSearch.trim() && (
+                  <button className="flex w-full items-center gap-2 px-3 py-3 text-left text-sm font-extrabold text-foreground hover:bg-accent/10" onMouseDown={e => { e.preventDefault(); chooseLocation(locationSearch.trim()); }}>
+                    <Search className="h-4 w-4 text-accent" /> Use “{locationSearch.trim()}”
+                  </button>
+                )}
+                <div className="max-h-72 overflow-y-auto py-1">
+                  {locationResults.map((location, index) => (
+                    <button key={`${location.label}-${index}`} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent/10" onMouseDown={e => { e.preventDefault(); chooseLocation(location.name); }}>
+                      <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 flex-1 truncate text-foreground">{location.label}</span>
+                      <span className="shrink-0 text-[10px] font-medium text-muted-foreground">{location.type}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <Button variant="outline" size="sm" className="h-11 shrink-0 rounded-lg text-xs font-bold" onClick={useCurrentLocation} disabled={locationBusy}>
+            {locationBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Navigation className="h-3.5 w-3.5" />} GPS
           </Button>
         </div>
         <div className="container mx-auto px-3 pb-2 pt-1.5 flex items-center gap-2">
@@ -325,7 +359,7 @@ const ClassifiedsPage = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Location</label>
-                <Button variant="outline" className="h-9 w-full justify-start truncate text-xs" onClick={() => setLocationOpen(true)}>
+                <Button variant="outline" className="h-9 w-full justify-start truncate text-xs" onClick={() => { setLocationSearchOpen(true); locationInputRef.current?.focus(); }}>
                   <MapPin className="mr-1.5 h-3.5 w-3.5 shrink-0" /> {cityFilter === "All" ? "All India" : cityFilter}
                 </Button>
               </div>
