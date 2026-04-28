@@ -43,6 +43,13 @@ interface ClassifiedConversation {
 const topCities = ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", "Pune", "Jaipur", "Lucknow", "Patna", "Bhopal"];
 const petCategories = ["Pets", "Dogs", "Fishes & Aquarium", "Pet Food/Accessories"];
 type LocationSuggestion = { name: string; label: string; type: string };
+const locationKey = (value = "") => value.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
+const matchesLocation = (adCity = "", selectedLocation = "All") => {
+  if (selectedLocation === "All") return true;
+  const adTokens = locationKey(adCity);
+  const selectedTokens = locationKey(selectedLocation);
+  return adTokens.some(token => selectedTokens.includes(token)) || selectedTokens.some(token => adTokens.includes(token));
+};
 const indiaLocations = [
   ...topCities.map(city => ({ name: city, label: city, type: "Top City" })),
   ...State.getStatesOfCountry("IN").map(state => ({ name: state.name, label: state.name, type: "State" })),
@@ -77,11 +84,12 @@ const ClassifiedsPage = () => {
   const [chatMessage, setChatMessage] = useState("");
   const [activeSection, setActiveSection] = useState<"home" | "chats" | "myAds" | "account">("home");
   const [conversations, setConversations] = useState<ClassifiedConversation[]>([]);
-  const [locationOpen, setLocationOpen] = useState(false);
   const [locationSearch, setLocationSearch] = useState("");
+  const [locationSearchOpen, setLocationSearchOpen] = useState(false);
   const [remoteLocationResults, setRemoteLocationResults] = useState<LocationSuggestion[]>([]);
   const [locationSearching, setLocationSearching] = useState(false);
   const [locationBusy, setLocationBusy] = useState(false);
+  const locationInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadAds(); }, []);
   useEffect(() => { if (user) loadConversations(); }, [user]);
@@ -106,9 +114,7 @@ const ClassifiedsPage = () => {
       const q = search.toLowerCase();
       const matchesSearch = !search || a.title?.toLowerCase().includes(q) || a.category?.toLowerCase().includes(q) || a.city?.toLowerCase().includes(q);
       const matchesCategory = !selectedCategory || a.category === selectedCategory || (selectedCategory === "Pets" && petCategories.includes(a.category));
-      const adCity = a.city?.toLowerCase() || "";
-      const selectedLocation = cityFilter.toLowerCase();
-      const matchesCity = cityFilter === "All" || adCity.includes(selectedLocation) || selectedLocation.includes(adCity);
+      const matchesCity = matchesLocation(a.city, cityFilter);
       const matchesPrice = (a.price ?? 0) >= priceRange[0] && (a.price ?? 0) <= priceRange[1];
       return !a.is_sold && matchesSearch && matchesCategory && matchesCity && matchesPrice;
     });
@@ -169,7 +175,8 @@ const ClassifiedsPage = () => {
 
   const chooseLocation = (location: string) => {
     setCityFilter(location);
-    setLocationOpen(false);
+    setLocationSearch(location === "All" ? "" : location);
+    setLocationSearchOpen(false);
     setShowFilters(false);
     toast.success(location === "All" ? "Showing all India" : `Location set to ${location}`);
   };
