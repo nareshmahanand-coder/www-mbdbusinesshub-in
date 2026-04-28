@@ -98,6 +98,26 @@ const ClassifiedsPostDialog = ({ open, onOpenChange, onPosted }: Props) => {
               {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
+          {(needsVehicleFields || (!needsPetFields && form.category)) && (
+            <Input placeholder="Brand (e.g. Samsung, Honda, Maruti)" value={form.brand} onChange={e => setForm(f => ({...f, brand: e.target.value}))} />
+          )}
+          {needsVehicleFields && (
+            <div className="grid grid-cols-2 gap-2">
+              <Input required placeholder="Model Name *" value={form.model_name} onChange={e => setForm(f => ({...f, model_name: e.target.value}))} />
+              <Input required placeholder="Registration Year *" inputMode="numeric" value={form.registration_year} onChange={e => setForm(f => ({...f, registration_year: e.target.value}))} />
+            </div>
+          )}
+          {needsPetFields && (
+            <div className="grid grid-cols-2 gap-2">
+              <Input required placeholder="Breed *" value={form.breed} onChange={e => setForm(f => ({...f, breed: e.target.value}))} />
+              <Input required placeholder="Age *" value={form.age} onChange={e => setForm(f => ({...f, age: e.target.value}))} />
+            </div>
+          )}
+          {(needsVehicleFields || needsPetFields) && (
+            <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs font-semibold text-foreground">
+              Preview title: {buildProfessionalTitle() || "Brand/Model Item Title"}
+            </div>
+          )}
           <Select value={form.condition} onValueChange={v => setForm(f => ({...f, condition: v}))}>
             <SelectTrigger><SelectValue placeholder="Condition" /></SelectTrigger>
             <SelectContent>
