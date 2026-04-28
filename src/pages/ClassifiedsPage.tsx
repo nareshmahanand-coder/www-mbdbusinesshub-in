@@ -413,6 +413,44 @@ const ClassifiedsPage = () => {
         onPosted={loadAds}
       />
 
+      <Dialog open={locationOpen} onOpenChange={setLocationOpen}>
+        <DialogContent className="max-w-lg p-0">
+          <DialogHeader className="border-b border-border px-4 py-3">
+            <DialogTitle className="flex items-center gap-2 text-left text-base"><MapPin className="h-5 w-5 text-accent" /> Select location across India</DialogTitle>
+          </DialogHeader>
+          <div className="p-3">
+            <Button variant="outline" className="mb-3 h-11 w-full justify-start gap-2 font-bold" onClick={useCurrentLocation} disabled={locationBusy}>
+              <MapPin className="h-4 w-4 text-accent" /> {locationBusy ? "Finding exact area and pin code..." : "Use Current Location"}
+            </Button>
+            <Command shouldFilter={false} className="rounded-lg border border-border">
+              <CommandInput placeholder="Search any city, village, area or state in India" value={locationSearch} onValueChange={setLocationSearch} />
+              <CommandList className="max-h-[52vh]">
+                <CommandEmpty>
+                  <button className="font-semibold text-accent" onClick={() => locationSearch.trim() && chooseLocation(locationSearch.trim())}>
+                    Use “{locationSearch}”
+                  </button>
+                </CommandEmpty>
+                {!locationSearch.trim() && (
+                  <CommandGroup heading="Top Cities">
+                    <CommandItem onSelect={() => chooseLocation("All")} className="font-bold">All India</CommandItem>
+                    {topCities.map(city => <CommandItem key={city} onSelect={() => chooseLocation(city)}>{city}</CommandItem>)}
+                  </CommandGroup>
+                )}
+                <CommandGroup heading={locationSearch.trim() ? "India-wide results" : "Cities and States"}>
+                  {locationResults.map((location, index) => (
+                    <CommandItem key={`${location.label}-${index}`} onSelect={() => chooseLocation(location.name)}>
+                      <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
+                      <span className="truncate">{location.label}</span>
+                      <span className="ml-auto text-[10px] text-muted-foreground">{location.type}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!selectedAd} onOpenChange={open => !open && setSelectedAd(null)}>
         <DialogContent className="max-w-5xl max-h-[94vh] overflow-y-auto p-0">
           {selectedAd && (
