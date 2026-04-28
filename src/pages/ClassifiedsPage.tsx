@@ -502,55 +502,6 @@ const ClassifiedsPage = () => {
         onPosted={loadAds}
       />
 
-      <Dialog open={locationOpen} onOpenChange={setLocationOpen}>
-        <DialogContent className="max-w-2xl p-0">
-          <DialogHeader className="border-b border-border px-4 py-3">
-            <DialogTitle className="flex items-center gap-2 text-left text-base"><MapPin className="h-5 w-5 text-accent" /> Select location across India</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 p-3">
-            <Button variant="outline" className="h-11 w-full justify-start gap-2 font-bold" onClick={useCurrentLocation} disabled={locationBusy}>
-              {locationBusy ? <Loader2 className="h-4 w-4 animate-spin text-accent" /> : <Navigation className="h-4 w-4 text-accent" />}
-              {locationBusy ? "Finding exact area, city and pin code..." : "Use Current Location"}
-            </Button>
-            <Command shouldFilter={false} className="rounded-lg border border-border">
-              <div className="relative">
-                <CommandInput autoFocus placeholder="Type Delhi, Chandigarh, village, area or state..." value={locationSearch} onValueChange={setLocationSearch} className="h-12 pr-10 text-base" />
-                {locationSearching && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />}
-              </div>
-              <CommandList className="max-h-[56vh]">
-                <CommandEmpty>
-                  <button className="font-semibold text-accent" onClick={() => locationSearch.trim() && chooseLocation(locationSearch.trim())}>
-                    Use “{locationSearch}”
-                  </button>
-                </CommandEmpty>
-                {!locationSearch.trim() && (
-                  <CommandGroup heading="Top Cities">
-                    <CommandItem onSelect={() => chooseLocation("All")} className="font-bold">All India</CommandItem>
-                    {topCities.map(city => <CommandItem key={city} onSelect={() => chooseLocation(city)}>{city}</CommandItem>)}
-                  </CommandGroup>
-                )}
-                {locationSearch.trim() && (
-                  <CommandGroup heading="Typed location">
-                    <CommandItem onSelect={() => chooseLocation(locationSearch.trim())} className="font-bold text-accent">
-                      <Search className="mr-2 h-4 w-4" /> Use “{locationSearch.trim()}” anywhere in India
-                    </CommandItem>
-                  </CommandGroup>
-                )}
-                <CommandGroup heading={locationSearch.trim() ? "Live India-wide suggestions" : "Popular Cities"}>
-                  {locationResults.map((location, index) => (
-                    <CommandItem key={`${location.label}-${index}`} onSelect={() => chooseLocation(location.name)}>
-                      <MapPin className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <span className="truncate">{location.label}</span>
-                      <span className="ml-auto text-[10px] text-muted-foreground">{location.type}</span>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={!!selectedAd} onOpenChange={open => !open && setSelectedAd(null)}>
         <DialogContent className="max-w-5xl max-h-[94vh] overflow-y-auto p-0">
           {selectedAd && (
