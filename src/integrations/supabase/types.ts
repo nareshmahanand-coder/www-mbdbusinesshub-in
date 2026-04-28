@@ -226,6 +226,76 @@ export type Database = {
           },
         ]
       }
+      classified_conversations: {
+        Row: {
+          buyer_id: string
+          classified_id: string
+          created_at: string
+          id: string
+          last_message_at: string
+          seller_id: string
+          updated_at: string
+        }
+        Insert: {
+          buyer_id: string
+          classified_id: string
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          seller_id: string
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string
+          classified_id?: string
+          created_at?: string
+          id?: string
+          last_message_at?: string
+          seller_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classified_conversations_classified_id_fkey"
+            columns: ["classified_id"]
+            isOneToOne: false
+            referencedRelation: "classifieds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classified_messages: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          message: string
+          sender_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message?: string
+          sender_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classified_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "classified_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classifieds: {
         Row: {
           category: string | null
