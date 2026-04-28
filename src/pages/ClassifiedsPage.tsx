@@ -12,8 +12,9 @@ import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle } from "lucide-react";
+import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle, Archive, Trash2 } from "lucide-react";
 
 export interface ClassifiedAd {
   id: string;
@@ -28,6 +29,15 @@ export interface ClassifiedAd {
   is_sold: boolean;
   created_at: string;
   user_id: string;
+}
+
+interface ClassifiedConversation {
+  id: string;
+  classified_id: string;
+  buyer_id: string;
+  seller_id: string;
+  last_message_at: string;
+  archived_by?: string[];
 }
 
 const cities = ["All", "Bhilai", "Durg", "Raipur", "Bilaspur", "Korba", "Rajnandgaon"];
