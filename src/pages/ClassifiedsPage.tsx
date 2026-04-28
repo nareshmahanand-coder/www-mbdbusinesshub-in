@@ -358,14 +358,14 @@ const ClassifiedsPage = () => {
       {/* OLX-style Bottom Navigation */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card shadow-lg">
         <div className="container mx-auto grid h-16 grid-cols-5 items-center px-2">
-          <button className="flex flex-col items-center gap-0.5 text-accent"><Home className="h-5 w-5" /><span className="text-[10px] font-bold">Home</span></button>
-          <button className="flex flex-col items-center gap-0.5 text-muted-foreground" onClick={() => toast.info("Chats are opened from each listing.")}><MessageCircle className="h-5 w-5" /><span className="text-[10px] font-bold">Chats</span></button>
+          <button className={`flex flex-col items-center gap-0.5 ${activeSection === "home" ? "text-accent" : "text-muted-foreground"}`} onClick={() => setActiveSection("home")}><Home className="h-5 w-5" /><span className="text-[10px] font-bold">Home</span></button>
+          <button className={`flex flex-col items-center gap-0.5 ${activeSection === "chats" ? "text-accent" : "text-muted-foreground"}`} onClick={() => { if (!user) toast.info("Please login to view chats."); else { loadConversations(); setActiveSection("chats"); } }}><MessageCircle className="h-5 w-5" /><span className="text-[10px] font-bold">Chats</span></button>
           <button onClick={() => setDialogOpen(true)} className="relative -mt-7 flex flex-col items-center gap-1 text-foreground">
             <span className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-card bg-accent text-accent-foreground shadow-lg"><Plus className="h-7 w-7" /></span>
             <span className="text-[10px] font-extrabold">Sell</span>
           </button>
-          <button className="flex flex-col items-center gap-0.5 text-muted-foreground" onClick={() => toast.info("Your posted ads appear after login.")}><ClipboardList className="h-5 w-5" /><span className="text-[10px] font-bold">My Ads</span></button>
-          <button className="flex flex-col items-center gap-0.5 text-muted-foreground" onClick={() => toast.info(user ? "Account is active." : "Please login to manage your account.")}><UserCircle className="h-5 w-5" /><span className="text-[10px] font-bold">Account</span></button>
+          <button className={`flex flex-col items-center gap-0.5 ${activeSection === "myAds" ? "text-accent" : "text-muted-foreground"}`} onClick={() => { if (!user) toast.info("Please login to manage your ads."); else setActiveSection("myAds"); }}><ClipboardList className="h-5 w-5" /><span className="text-[10px] font-bold">My Ads</span></button>
+          <button className={`flex flex-col items-center gap-0.5 ${activeSection === "account" ? "text-accent" : "text-muted-foreground"}`} onClick={() => setActiveSection("account")}><UserCircle className="h-5 w-5" /><span className="text-[10px] font-bold">Account</span></button>
         </div>
       </div>
 
