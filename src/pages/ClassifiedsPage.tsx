@@ -226,19 +226,16 @@ const ClassifiedsPage = () => {
       {/* OLX-style Location + Search Header */}
       <div className="sticky top-0 z-30 bg-card border-b border-border shadow-sm">
         <div className="container mx-auto flex items-center justify-between gap-2 px-3 pt-2">
-          <button className="flex min-w-0 items-center gap-1.5 rounded-lg px-1 py-1 text-left" onClick={() => setShowFilters(true)}>
+          <button className="flex min-w-0 flex-1 items-center gap-1.5 rounded-lg px-1 py-1 text-left" onClick={() => setLocationOpen(true)}>
             <MapPin className="h-4 w-4 shrink-0 text-accent" />
             <div className="min-w-0">
-              <p className="truncate text-sm font-extrabold text-foreground">21, {cityFilter === "All" ? "Bhilai" : cityFilter}</p>
-              <p className="text-[10px] font-medium text-muted-foreground">Showing nearby items</p>
+              <p className="truncate text-sm font-extrabold text-foreground">{cityFilter === "All" ? "All India" : cityFilter}</p>
+              <p className="text-[10px] font-medium text-muted-foreground">Tap to search any city, village or state</p>
             </div>
           </button>
-          <Select value={cityFilter} onValueChange={setCityFilter}>
-            <SelectTrigger className="h-8 w-[118px] rounded-lg text-xs font-bold"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {cities.map(c => <SelectItem key={c} value={c}>{c === "All" ? "All Cities" : c}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <Button variant="outline" size="sm" className="h-8 shrink-0 rounded-lg text-xs font-bold" onClick={useCurrentLocation} disabled={locationBusy}>
+            <MapPin className="h-3.5 w-3.5" /> {locationBusy ? "Detecting" : "GPS"}
+          </Button>
         </div>
         <div className="container mx-auto px-3 pb-2 pt-1.5 flex items-center gap-2">
           <div className="relative flex-1">
@@ -274,12 +271,9 @@ const ClassifiedsPage = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">Location</label>
-                <Select value={cityFilter} onValueChange={setCityFilter}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {cities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Button variant="outline" className="h-9 w-full justify-start truncate text-xs" onClick={() => setLocationOpen(true)}>
+                  <MapPin className="mr-1.5 h-3.5 w-3.5 shrink-0" /> {cityFilter === "All" ? "All India" : cityFilter}
+                </Button>
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">
