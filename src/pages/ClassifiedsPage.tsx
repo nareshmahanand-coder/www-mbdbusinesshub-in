@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle, Archive, Trash2, Loader2, Navigation } from "lucide-react";
 import { City, State } from "country-state-city";
+import { reverseGeocodeIndiaLocation, searchIndiaLocations } from "@/lib/googleLocation";
 
 export interface ClassifiedAd {
   id: string;
@@ -146,17 +147,8 @@ const ClassifiedsPage = () => {
     const timer = window.setTimeout(async () => {
       setLocationSearching(true);
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=12&countrycodes=in&accept-language=en&q=${encodeURIComponent(query)}`, { signal: controller.signal });
-        const data = await res.json();
-        setRemoteLocationResults((Array.isArray(data) ? data : []).map((place: any) => {
-          const address = place.address || {};
-          const name = address.suburb || address.neighbourhood || address.village || address.town || address.city || address.state_district || place.name || query;
-          const city = address.city || address.town || address.village || address.county || address.state_district;
-          const state = address.state;
-          const pincode = address.postcode;
-          const labelParts = [name, city && city !== name ? city : null, state, pincode].filter(Boolean);
-          return { name: [name, city, state].filter(Boolean).join(", "), label: labelParts.join(", "), type: address.village ? "Village" : address.suburb || address.neighbourhood ? "Area" : address.city || address.town ? "City" : "Location" };
-        }));
+        const results = await searchIndiaLocations(query);
+        setRemoteLocationResults(results);
       } catch (error) {
         if (!controller.signal.aborted) setRemoteLocationResults([]);
       } finally {
@@ -193,14 +185,8 @@ const ClassifiedsPage = () => {
     navigator.geolocation.getCurrentPosition(async position => {
       try {
         const { latitude, longitude } = position.coords;
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&countrycodes=in`);
-        const data = await res.json();
-        const address = data.address || {};
-        const area = address.suburb || address.neighbourhood || address.hamlet || address.village || address.town || address.city || address.county || data.name || "Current Location";
-        const city = address.city || address.town || address.village || address.county || address.state_district;
-        const state = address.state;
-        const pincode = address.postcode;
-        chooseLocation([area, city && city !== area ? city : null, state, pincode].filter(Boolean).join(", "));
+        const exactLocation = await reverseGeocodeIndiaLocation(latitude, longitude);
+        chooseLocation(exactLocation);
       } catch {
         toast.error("Could not detect area name. Please search your location.");
       } finally {
