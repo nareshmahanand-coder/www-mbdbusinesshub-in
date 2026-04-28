@@ -11,8 +11,11 @@ import { toast } from "sonner";
 
 const categories = [
   "Cars", "Properties", "Mobiles", "Bikes", "Electronics",
-  "Furniture", "Pets", "Fashion", "Books", "Other",
+  "Furniture", "Pets", "Dogs", "Fishes & Aquarium", "Pet Food/Accessories", "Fashion", "Books", "Other",
 ];
+
+const vehicleCategories = ["Cars", "Bikes", "Mobiles"];
+const petCategories = ["Pets", "Dogs", "Fishes & Aquarium", "Pet Food/Accessories"];
 
 interface Props {
   open: boolean;
@@ -26,21 +29,48 @@ const ClassifiedsPostDialog = ({ open, onOpenChange, onPosted }: Props) => {
   const [adPhotos, setAdPhotos] = useState<string[]>([]);
   const [form, setForm] = useState({
     title: "", description: "", price: "", category: "", city: "",
-    condition: "used", contact_phone: "",
+    condition: "used", contact_phone: "", brand: "", model_name: "", registration_year: "", breed: "", age: "",
   });
+
+  const needsVehicleFields = vehicleCategories.includes(form.category);
+  const needsPetFields = petCategories.includes(form.category);
+
+  const buildProfessionalTitle = () => {
+    const baseTitle = form.title.trim();
+    const brandModel = [form.brand.trim(), form.model_name.trim()].filter(Boolean).join(" - ");
+    const petTitle = [form.breed.trim(), form.age.trim() && `${form.age.trim()} old`].filter(Boolean).join(" - ");
+    const prefix = needsVehicleFields ? brandModel : needsPetFields ? petTitle : form.brand.trim();
+    if (!prefix) return baseTitle;
+    return baseTitle && !baseTitle.toLowerCase().startsWith(prefix.toLowerCase()) ? `${prefix} ${baseTitle}` : baseTitle || prefix;
+  };
 
   const postAd = async () => {
     if (!user) return;
     if (!form.title.trim()) { toast.error("Title is required"); return; }
+    if (needsVehicleFields && (!form.model_name.trim() || !form.registration_year.trim())) { toast.error("Model name and registration year are required"); return; }
+    if (needsPetFields && (!form.breed.trim() || !form.age.trim())) { toast.error("Breed and age are required"); return; }
     setSaving(true);
+    const professionalTitle = buildProfessionalTitle();
+    const details = [
+      needsVehicleFields && `Model: ${form.model_name.trim()}\nRegistration Year: ${form.registration_year.trim()}`,
+      needsPetFields && `Breed: ${form.breed.trim()}\nAge: ${form.age.trim()}`,
+    ].filter(Boolean).join("\n");
     const { error } = await supabase.from("classifieds").insert({
-      ...form, price: Number(form.price) || 0, user_id: user.id, photos: adPhotos,
+      title: professionalTitle,
+      description: [details, form.description.trim()].filter(Boolean).join("\n\n"),
+      price: Number(form.price) || 0,
+      category: form.category,
+      city: form.city,
+      condition: form.condition,
+      contact_phone: form.contact_phone,
+      user_id: user.id,
+      photos: adPhotos,
     });
     setSaving(false);
     if (error) toast.error("Failed to post ad");
     else {
       toast.success("Ad posted successfully!");
-      setForm({ title: "", description: "", price: "", category: "", city: "", condition: "used", contact_phone: "" });
+      setForm({ title: "", description: "", price: "", category: "", city: "", condition: "used", contact_phone: "", brand: "", model_name: "", registration_year: "", breed: "", age: "" });
       setAdPhotos([]);
       onOpenChange(false);
       onPosted();
@@ -68,6 +98,26 @@ const ClassifiedsPostDialog = ({ open, onOpenChange, onPosted }: Props) => {
               {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
+          {(needsVehicleFields || (!needsPetFields && form.category)) && (
+            <Input placeholder="Brand (e.g. Samsung, Honda, Maruti)" value={form.brand} onChange={e => setForm(f => ({...f, brand: e.target.value}))} />
+          )}
+          {needsVehicleFields && (
+            <div className="grid grid-cols-2 gap-2">
+              <Input required placeholder="Model Name *" value={form.model_name} onChange={e => setForm(f => ({...f, model_name: e.target.value}))} />
+              <Input required placeholder="Registration Year *" inputMode="numeric" value={form.registration_year} onChange={e => setForm(f => ({...f, registration_year: e.target.value}))} />
+            </div>
+          )}
+          {needsPetFields && (
+            <div className="grid grid-cols-2 gap-2">
+              <Input required placeholder="Breed *" value={form.breed} onChange={e => setForm(f => ({...f, breed: e.target.value}))} />
+              <Input required placeholder="Age *" value={form.age} onChange={e => setForm(f => ({...f, age: e.target.value}))} />
+            </div>
+          )}
+          {(needsVehicleFields || needsPetFields) && (
+            <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs font-semibold text-foreground">
+              Preview title: {buildProfessionalTitle() || "Brand/Model Item Title"}
+            </div>
+          )}
           <Select value={form.condition} onValueChange={v => setForm(f => ({...f, condition: v}))}>
             <SelectTrigger><SelectValue placeholder="Condition" /></SelectTrigger>
             <SelectContent>

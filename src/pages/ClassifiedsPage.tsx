@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye } from "lucide-react";
+import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle } from "lucide-react";
 
 export interface ClassifiedAd {
   id: string;
@@ -31,6 +31,7 @@ export interface ClassifiedAd {
 }
 
 const cities = ["All", "Bhilai", "Durg", "Raipur", "Bilaspur", "Korba", "Rajnandgaon"];
+const petCategories = ["Pets", "Dogs", "Fishes & Aquarium", "Pet Food/Accessories"];
 
 const conditionLabel = (condition?: string) => {
   const labels: Record<string, string> = {
@@ -50,7 +51,7 @@ const ClassifiedsPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [cityFilter, setCityFilter] = useState("All");
+  const [cityFilter, setCityFilter] = useState("Bhilai");
   const [priceRange, setPriceRange] = useState([0, 500000]);
   const [selectedAd, setSelectedAd] = useState<ClassifiedAd | null>(null);
   const [activePhoto, setActivePhoto] = useState(0);
@@ -73,7 +74,7 @@ const ClassifiedsPage = () => {
     return ads.filter(a => {
       const q = search.toLowerCase();
       const matchesSearch = !search || a.title?.toLowerCase().includes(q) || a.category?.toLowerCase().includes(q) || a.city?.toLowerCase().includes(q);
-      const matchesCategory = !selectedCategory || a.category === selectedCategory;
+      const matchesCategory = !selectedCategory || a.category === selectedCategory || (selectedCategory === "Pets" && petCategories.includes(a.category));
       const matchesCity = cityFilter === "All" || a.city?.toLowerCase() === cityFilter.toLowerCase();
       const matchesPrice = (a.price ?? 0) >= priceRange[0] && (a.price ?? 0) <= priceRange[1];
       return matchesSearch && matchesCategory && matchesCity && matchesPrice;
@@ -127,9 +128,24 @@ const ClassifiedsPage = () => {
     <div className="min-h-screen bg-background pb-24">
       <AppHeader />
 
-      {/* Search Bar */}
+      {/* OLX-style Location + Search Header */}
       <div className="sticky top-0 z-30 bg-card border-b border-border shadow-sm">
-        <div className="container mx-auto px-3 py-2.5 flex items-center gap-2">
+        <div className="container mx-auto flex items-center justify-between gap-2 px-3 pt-2">
+          <button className="flex min-w-0 items-center gap-1.5 rounded-lg px-1 py-1 text-left" onClick={() => setShowFilters(true)}>
+            <MapPin className="h-4 w-4 shrink-0 text-accent" />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-extrabold text-foreground">21, {cityFilter === "All" ? "Bhilai" : cityFilter}</p>
+              <p className="text-[10px] font-medium text-muted-foreground">Showing nearby items</p>
+            </div>
+          </button>
+          <Select value={cityFilter} onValueChange={setCityFilter}>
+            <SelectTrigger className="h-8 w-[118px] rounded-lg text-xs font-bold"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {cities.map(c => <SelectItem key={c} value={c}>{c === "All" ? "All Cities" : c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="container mx-auto px-3 pb-2 pt-1.5 flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -189,7 +205,7 @@ const ClassifiedsPage = () => {
       <div className="container mx-auto px-3 py-4">
         <div className="mb-4 rounded-lg border border-border bg-card p-4 shadow-sm">
           <h1 className="text-xl font-extrabold text-foreground">Buy & Sell Old Items</h1>
-          <p className="mt-1 text-xs text-muted-foreground">Browse verified second-hand listings with photos, condition details, location, and seller chat.</p>
+          <p className="mt-1 text-xs text-muted-foreground">OLX-style local marketplace for used items, pets, vehicles, mobiles, and household deals near you.</p>
         </div>
 
         {/* Category Grid */}
@@ -242,14 +258,18 @@ const ClassifiedsPage = () => {
         )}
       </div>
 
-      {/* Floating Sell Button */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
-        <Button
-          onClick={() => setDialogOpen(true)}
-          className="rounded-full h-12 px-7 bg-accent text-accent-foreground shadow-lg shadow-accent/30 text-sm font-bold hover:bg-accent/90 active:scale-95 transition-transform"
-        >
-          <Plus className="h-5 w-5 mr-1.5" /> Sell
-        </Button>
+      {/* OLX-style Bottom Navigation */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card shadow-lg">
+        <div className="container mx-auto grid h-16 grid-cols-5 items-center px-2">
+          <button className="flex flex-col items-center gap-0.5 text-accent"><Home className="h-5 w-5" /><span className="text-[10px] font-bold">Home</span></button>
+          <button className="flex flex-col items-center gap-0.5 text-muted-foreground" onClick={() => toast.info("Chats are opened from each listing.")}><MessageCircle className="h-5 w-5" /><span className="text-[10px] font-bold">Chats</span></button>
+          <button onClick={() => setDialogOpen(true)} className="relative -mt-7 flex flex-col items-center gap-1 text-foreground">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-card bg-accent text-accent-foreground shadow-lg"><Plus className="h-7 w-7" /></span>
+            <span className="text-[10px] font-extrabold">Sell</span>
+          </button>
+          <button className="flex flex-col items-center gap-0.5 text-muted-foreground" onClick={() => toast.info("Your posted ads appear after login.")}><ClipboardList className="h-5 w-5" /><span className="text-[10px] font-bold">My Ads</span></button>
+          <button className="flex flex-col items-center gap-0.5 text-muted-foreground" onClick={() => toast.info(user ? "Account is active." : "Please login to manage your account.")}><UserCircle className="h-5 w-5" /><span className="text-[10px] font-bold">Account</span></button>
+        </div>
       </div>
 
       {/* Post Ad Dialog */}
