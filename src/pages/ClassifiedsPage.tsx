@@ -13,8 +13,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { toast } from "sonner";
 import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle, Archive, Trash2 } from "lucide-react";
+import { City, State } from "country-state-city";
 
 export interface ClassifiedAd {
   id: string;
@@ -40,8 +42,13 @@ interface ClassifiedConversation {
   archived_by?: string[];
 }
 
-const cities = ["All", "Bhilai", "Durg", "Raipur", "Bilaspur", "Korba", "Rajnandgaon"];
+const topCities = ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", "Pune", "Jaipur", "Lucknow", "Patna", "Bhopal"];
 const petCategories = ["Pets", "Dogs", "Fishes & Aquarium", "Pet Food/Accessories"];
+const indiaLocations = [
+  ...topCities.map(city => ({ name: city, label: city, type: "Top City" })),
+  ...State.getStatesOfCountry("IN").map(state => ({ name: state.name, label: state.name, type: "State" })),
+  ...City.getCitiesOfCountry("IN").map(city => ({ name: city.name, label: `${city.name}, ${city.stateCode}`, type: "City" })),
+];
 
 const conditionLabel = (condition?: string) => {
   const labels: Record<string, string> = {
