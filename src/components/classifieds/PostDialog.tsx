@@ -50,17 +50,17 @@ const ClassifiedsPostDialog = ({ open, onOpenChange, onPosted }: Props) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Post a New Ad</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Sell an Old Item</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <ImageUpload
             images={adPhotos}
             onImagesChange={setAdPhotos}
             maxImages={5}
             folder="classifieds"
-            label="Upload Photos (up to 5)"
+            label="Upload Item Photos (up to 5)"
           />
-          <Input placeholder="Ad Title *" value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} />
-          <Textarea placeholder="Description" value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} rows={3} />
+          <Input placeholder="Item Title *" value={form.title} onChange={e => setForm(f => ({...f, title: e.target.value}))} />
+          <Textarea placeholder="Describe condition, age, defects, bill/warranty, pickup details" value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} rows={3} />
           <Input placeholder="Price ₹" type="number" value={form.price} onChange={e => setForm(f => ({...f, price: e.target.value}))} />
           <Select value={form.category} onValueChange={v => setForm(f => ({...f, category: v}))}>
             <SelectTrigger><SelectValue placeholder="Category" /></SelectTrigger>
@@ -80,7 +80,7 @@ const ClassifiedsPostDialog = ({ open, onOpenChange, onPosted }: Props) => {
           <Input placeholder="City" value={form.city} onChange={e => setForm(f => ({...f, city: e.target.value}))} />
           <Input placeholder="Contact Phone" value={form.contact_phone} onChange={e => setForm(f => ({...f, contact_phone: e.target.value}))} />
           <Button onClick={postAd} disabled={saving} className="w-full bg-accent text-accent-foreground">
-            {saving ? "Posting..." : "Post Ad"}
+            {saving ? "Posting..." : "Post Item"}
           </Button>
         </div>
       </DialogContent>
