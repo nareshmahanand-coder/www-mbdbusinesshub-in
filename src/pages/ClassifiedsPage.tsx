@@ -184,9 +184,11 @@ const ClassifiedsPage = () => {
         const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&countrycodes=in`);
         const data = await res.json();
         const address = data.address || {};
-        const area = address.suburb || address.neighbourhood || address.village || address.town || address.city || address.county || "Current Location";
-        const pincode = address.postcode ? ` ${address.postcode}` : "";
-        chooseLocation(`${area}${pincode}`);
+        const area = address.suburb || address.neighbourhood || address.hamlet || address.village || address.town || address.city || address.county || data.name || "Current Location";
+        const city = address.city || address.town || address.village || address.county || address.state_district;
+        const state = address.state;
+        const pincode = address.postcode;
+        chooseLocation([area, city && city !== area ? city : null, state, pincode].filter(Boolean).join(", "));
       } catch {
         toast.error("Could not detect area name. Please search your location.");
       } finally {
