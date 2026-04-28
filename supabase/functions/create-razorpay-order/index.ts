@@ -16,8 +16,8 @@ const PRODUCTS = {
     yearly: { amount: 1178.82, amountPaise: 117882, days: 365, label: "Merchant Premium Yearly - GST Included" },
   },
   marriage_bureau: {
-    monthly: { amount: 1, amountPaise: 100, days: 30, label: "Marriage Bureau Monthly" },
-    yearly: { amount: 12, amountPaise: 1200, days: 365, label: "Marriage Bureau Yearly" },
+    monthly: { amount: 99, amountPaise: 9900, days: 30, label: "Mera Jeevansathi Monthly Premium" },
+    yearly: { amount: 999, amountPaise: 99900, days: 365, label: "Mera Jeevansathi Yearly Premium - Best Value" },
   },
 } as const;
 
