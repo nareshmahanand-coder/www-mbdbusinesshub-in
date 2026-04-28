@@ -345,8 +345,8 @@ const ClassifiedsPage = () => {
                     <p className="text-xs text-muted-foreground">{conversation.seller_id === user?.id ? "Buyer conversation" : "Seller conversation"} · {new Date(conversation.last_message_at).toLocaleDateString("en-IN")}</p>
                   </div>
                   <div className="flex shrink-0 gap-2">
-                    <Button size="sm" variant="outline" onClick={() => archiveConversation(conversation)}><Archive className="h-4 w-4" /></Button>
-                    <Button size="sm" variant="destructive" onClick={() => deleteConversation(conversation)}><Trash2 className="h-4 w-4" /></Button>
+                    <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => archiveConversation(conversation)}><Archive className="h-4 w-4" /> Archive</Button>
+                    <Button size="sm" variant="destructive" className="gap-1 text-xs" onClick={() => deleteConversation(conversation)}><Trash2 className="h-4 w-4" /> Delete</Button>
                   </div>
                 </div>
               );
