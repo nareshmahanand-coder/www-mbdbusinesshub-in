@@ -11,7 +11,7 @@ const PhotoCarousel = ({ photos, title, onOpen }: { photos: string[]; title: str
   if (!photos || photos.length === 0) return <NoImage />;
 
   return (
-    <button type="button" onClick={onOpen} className="relative block aspect-[4/3] w-full overflow-hidden bg-muted text-left">
+    <div role="button" tabIndex={0} onClick={onOpen} onKeyDown={event => { if (event.key === "Enter" || event.key === " ") onOpen?.(); }} className="relative aspect-[4/3] w-full overflow-hidden bg-muted text-left">
       <img src={photos[idx]} alt={title} className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]" />
       {photos.length > 1 && (
         <>
@@ -34,7 +34,7 @@ const PhotoCarousel = ({ photos, title, onOpen }: { photos: string[]; title: str
           </div>
         </>
       )}
-    </button>
+    </div>
   );
 };
 
