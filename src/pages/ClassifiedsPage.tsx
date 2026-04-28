@@ -87,7 +87,7 @@ const ClassifiedsPage = () => {
     if (!user) return;
     const { data } = await supabase.from("classified_conversations" as any)
       .select("*").order("last_message_at", { ascending: false });
-    if (data) setConversations(data as ClassifiedConversation[]);
+    if (data) setConversations(data as unknown as ClassifiedConversation[]);
   };
 
   const filtered = useMemo(() => {
