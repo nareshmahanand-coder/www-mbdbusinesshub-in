@@ -75,7 +75,7 @@ const ClassifiedsPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [cityFilter, setCityFilter] = useState("Bhilai");
+  const [cityFilter, setCityFilter] = useState("All");
   const [priceRange, setPriceRange] = useState([0, 500000]);
   const [selectedAd, setSelectedAd] = useState<ClassifiedAd | null>(null);
   const [activePhoto, setActivePhoto] = useState(0);
