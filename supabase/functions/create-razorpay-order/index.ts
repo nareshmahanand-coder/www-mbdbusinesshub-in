@@ -12,8 +12,8 @@ const PRODUCTS = {
     yearly: { amount: 14.16, amountPaise: 1416, days: 365, label: "Bharat Gaurav Yearly - GST Included" },
   },
   merchant_premium: {
-    monthly: { amount: 116.82, amountPaise: 11682, days: 30, label: "Merchant Premium Monthly - GST Included" },
-    yearly: { amount: 1178.82, amountPaise: 117882, days: 365, label: "Merchant Premium Yearly - GST Included" },
+    monthly: { amount: 99, amountPaise: 9900, days: 30, label: "Merchant Premium Monthly" },
+    yearly: { amount: 999, amountPaise: 99900, days: 365, label: "Merchant Premium Yearly - Best Value" },
   },
   marriage_bureau: {
     monthly: { amount: 99, amountPaise: 9900, days: 30, label: "Mera Jeevansathi Monthly Premium" },
@@ -88,7 +88,7 @@ serve(async (req) => {
       status: "created",
       razorpay_order_id: order.id,
       receipt,
-      metadata: { days: product.days, label: product.label, gst_included: true },
+      metadata: { days: product.days, label: product.label },
     });
 
     if (insertError) throw insertError;
