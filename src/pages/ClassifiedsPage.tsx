@@ -9,7 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Search, SlidersHorizontal, Plus, X, MapPin } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye } from "lucide-react";
 
 export interface ClassifiedAd {
   id: string;
@@ -28,6 +32,16 @@ export interface ClassifiedAd {
 
 const cities = ["All", "Bhilai", "Durg", "Raipur", "Bilaspur", "Korba", "Rajnandgaon"];
 
+const conditionLabel = (condition?: string) => {
+  const labels: Record<string, string> = {
+    new: "Brand new",
+    "like-new": "Like new",
+    used: "Good used condition",
+    old: "Old but usable",
+  };
+  return labels[condition || ""] || condition || "Used item";
+};
+
 const ClassifiedsPage = () => {
   const { user } = useAuth();
   const [ads, setAds] = useState<ClassifiedAd[]>([]);
@@ -38,6 +52,10 @@ const ClassifiedsPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [cityFilter, setCityFilter] = useState("All");
   const [priceRange, setPriceRange] = useState([0, 500000]);
+  const [selectedAd, setSelectedAd] = useState<ClassifiedAd | null>(null);
+  const [activePhoto, setActivePhoto] = useState(0);
+  const [showNumber, setShowNumber] = useState(false);
+  const [chatMessage, setChatMessage] = useState("");
 
   useEffect(() => { loadAds(); }, []);
 
@@ -68,6 +86,32 @@ const ClassifiedsPage = () => {
   };
 
   const hasActiveFilters = selectedCategory || cityFilter !== "All" || priceRange[0] > 0 || priceRange[1] < 500000;
+  const selectedPhotos = selectedAd?.photos?.filter(Boolean) || [];
+
+  const openAd = (ad: ClassifiedAd) => {
+    setSelectedAd(ad);
+    setActivePhoto(0);
+    setShowNumber(false);
+    setChatMessage(`Hi, I am interested in your ${ad.title}. Is it still available?`);
+  };
+
+  const nextPhoto = () => setActivePhoto(i => selectedPhotos.length ? (i + 1) % selectedPhotos.length : 0);
+  const prevPhoto = () => setActivePhoto(i => selectedPhotos.length ? (i - 1 + selectedPhotos.length) % selectedPhotos.length : 0);
+
+  const startChat = async () => {
+    if (!user || !selectedAd) return;
+    if (selectedAd.user_id === user.id) { toast.info("This is your own listing."); return; }
+    const message = chatMessage.trim() || `Hi, I am interested in your ${selectedAd.title}.`;
+    const { data: existing } = await supabase.from("classified_conversations" as any)
+      .select("id").eq("classified_id", selectedAd.id).eq("buyer_id", user.id).eq("seller_id", selectedAd.user_id).maybeSingle();
+    const conversationId = existing?.id || (await supabase.from("classified_conversations" as any).insert({
+      classified_id: selectedAd.id, buyer_id: user.id, seller_id: selectedAd.user_id,
+    }).select("id").single()).data?.id;
+    if (!conversationId) { toast.error("Chat could not be started right now"); return; }
+    const { error } = await supabase.from("classified_messages" as any).insert({ conversation_id: conversationId, sender_id: user.id, message });
+    if (error) toast.error("Message not sent");
+    else toast.success("Chat started with seller");
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -79,7 +123,7 @@ const ClassifiedsPage = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="खोजें — Cars, Mobiles, Furniture..."
+              placeholder="Search used items — mobiles, bikes, furniture..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="pl-9 h-10 bg-muted/50 border-0 focus-visible:ring-1"
@@ -169,7 +213,7 @@ const ClassifiedsPage = () => {
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {filtered.map((ad, idx) => (
-              <ClassifiedsAdCard key={ad.id} ad={ad} isFeatured={idx < 2} />
+          <ClassifiedsAdCard key={ad.id} ad={ad} isFeatured={idx < 2} onOpen={() => openAd(ad)} />
             ))}
           </div>
         )}
