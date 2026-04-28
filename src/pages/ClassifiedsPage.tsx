@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle, Archive, Trash2, Loader2, Navigation } from "lucide-react";
 import { City, State } from "country-state-city";
+import { reverseGeocodeIndiaLocation, searchIndiaLocations } from "@/lib/googleLocation";
 
 export interface ClassifiedAd {
   id: string;
@@ -74,7 +75,7 @@ const ClassifiedsPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [cityFilter, setCityFilter] = useState("Bhilai");
+  const [cityFilter, setCityFilter] = useState("All");
   const [priceRange, setPriceRange] = useState([0, 500000]);
   const [selectedAd, setSelectedAd] = useState<ClassifiedAd | null>(null);
   const [activePhoto, setActivePhoto] = useState(0);
@@ -146,17 +147,8 @@ const ClassifiedsPage = () => {
     const timer = window.setTimeout(async () => {
       setLocationSearching(true);
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=12&countrycodes=in&accept-language=en&q=${encodeURIComponent(query)}`, { signal: controller.signal });
-        const data = await res.json();
-        setRemoteLocationResults((Array.isArray(data) ? data : []).map((place: any) => {
-          const address = place.address || {};
-          const name = address.suburb || address.neighbourhood || address.village || address.town || address.city || address.state_district || place.name || query;
-          const city = address.city || address.town || address.village || address.county || address.state_district;
-          const state = address.state;
-          const pincode = address.postcode;
-          const labelParts = [name, city && city !== name ? city : null, state, pincode].filter(Boolean);
-          return { name: [name, city, state].filter(Boolean).join(", "), label: labelParts.join(", "), type: address.village ? "Village" : address.suburb || address.neighbourhood ? "Area" : address.city || address.town ? "City" : "Location" };
-        }));
+        const results = await searchIndiaLocations(query);
+        setRemoteLocationResults(results);
       } catch (error) {
         if (!controller.signal.aborted) setRemoteLocationResults([]);
       } finally {
@@ -193,14 +185,8 @@ const ClassifiedsPage = () => {
     navigator.geolocation.getCurrentPosition(async position => {
       try {
         const { latitude, longitude } = position.coords;
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1&countrycodes=in`);
-        const data = await res.json();
-        const address = data.address || {};
-        const area = address.suburb || address.neighbourhood || address.hamlet || address.village || address.town || address.city || address.county || data.name || "Current Location";
-        const city = address.city || address.town || address.village || address.county || address.state_district;
-        const state = address.state;
-        const pincode = address.postcode;
-        chooseLocation([area, city && city !== area ? city : null, state, pincode].filter(Boolean).join(", "));
+        const exactLocation = await reverseGeocodeIndiaLocation(latitude, longitude);
+        chooseLocation(exactLocation);
       } catch {
         toast.error("Could not detect area name. Please search your location.");
       } finally {
@@ -293,7 +279,7 @@ const ClassifiedsPage = () => {
                   if (e.key === "Enter" && locationSearch.trim()) chooseLocation(locationSearch.trim());
                   if (e.key === "Escape") setLocationSearchOpen(false);
                 }}
-                placeholder={cityFilter === "All" ? "Search city, village or state" : cityFilter}
+                placeholder={cityFilter === "All" ? "Search area, city or PIN across India" : cityFilter}
                 className="h-11 rounded-lg border-2 border-accent/40 bg-background pl-9 pr-9 text-sm font-bold shadow-sm focus-visible:ring-1"
               />
               {locationSearching ? <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" /> : <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />}
@@ -302,7 +288,7 @@ const ClassifiedsPage = () => {
               <div className="absolute left-0 right-0 top-12 z-50 overflow-hidden rounded-lg border border-border bg-popover shadow-xl">
                 <button className="flex w-full items-center gap-2 border-b border-border px-3 py-3 text-left text-sm font-bold text-accent" onMouseDown={e => { e.preventDefault(); useCurrentLocation(); }} disabled={locationBusy}>
                   {locationBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
-                  {locationBusy ? "Finding exact area, city and pin code..." : "Use Current Location"}
+                  {locationBusy ? "Finding exact GPS area, city and pin code..." : "Use Current Location"}
                 </button>
                 {locationSearch.trim() && (
                   <button className="flex w-full items-center gap-2 px-3 py-3 text-left text-sm font-extrabold text-foreground hover:bg-accent/10" onMouseDown={e => { e.preventDefault(); chooseLocation(locationSearch.trim()); }}>
@@ -311,7 +297,7 @@ const ClassifiedsPage = () => {
                 )}
                 <div className="max-h-72 overflow-y-auto py-1">
                   {locationResults.map((location, index) => (
-                    <button key={`${location.label}-${index}`} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent/10" onMouseDown={e => { e.preventDefault(); chooseLocation(location.name); }}>
+                    <button key={`${location.label}-${index}`} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent/10" onMouseDown={e => { e.preventDefault(); chooseLocation(location.label); }}>
                       <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <span className="min-w-0 flex-1 truncate text-foreground">{location.label}</span>
                       <span className="shrink-0 text-[10px] font-medium text-muted-foreground">{location.type}</span>
@@ -382,7 +368,7 @@ const ClassifiedsPage = () => {
       <div className="container mx-auto px-3 py-4">
         <div className="mb-4 rounded-lg border border-border bg-card p-4 shadow-sm">
           <h1 className="text-xl font-extrabold text-foreground">Buy & Sell Old Items</h1>
-          <p className="mt-1 text-xs text-muted-foreground">OLX-style local marketplace for used items, pets, vehicles, mobiles, and household deals near you.</p>
+            <p className="mt-1 text-xs text-muted-foreground">OLX-style marketplace for used items, pets, vehicles, mobiles, and household deals in {cityFilter === "All" ? "India" : cityFilter}.</p>
         </div>
 
         {activeSection === "home" && (
@@ -399,7 +385,7 @@ const ClassifiedsPage = () => {
               <h2 className="text-base font-bold text-foreground">
                 {selectedCategory ? selectedCategory : "Latest second-hand deals"}
             </h2>
-            <p className="text-xs text-muted-foreground">{filtered.length} ads found</p>
+            <p className="text-xs text-muted-foreground">{filtered.length} ads found near {cityFilter === "All" ? "India" : cityFilter}</p>
           </div>
           {selectedCategory && (
             <button onClick={() => setSelectedCategory(null)} className="text-xs text-accent font-medium">
