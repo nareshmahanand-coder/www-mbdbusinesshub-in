@@ -198,7 +198,7 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
                   मैरिज ब्यूरो प्रीमियम क्यों चुनें?
                 </p>
                 <p className="font-hindi text-[12px] leading-relaxed text-foreground">
-                  प्रोफेशनल मेंबरशिप में आपको <span className="font-bold text-[#FF9933]">सत्यापित प्रोफाइल्स (Verified Profiles)</span> तक सीधी पहुँच, <span className="font-bold text-[#138808]">असीमित संपर्क विवरण</span> और प्राथमिकता के आधार पर मैचमेकिंग सहायता मिलती है। Monthly ₹99 या Yearly ₹999 प्लान चुनें।
+                  प्रोफेशनल मेंबरशिप में आपको <span className="font-bold text-[#FF9933]">सत्यापित प्रोफाइल्स (Verified Profiles)</span> तक सीधी पहुँच, <span className="font-bold text-[#138808]">असीमित संपर्क विवरण</span> और प्राथमिकता के आधार पर मैचमेकिंग सहायता मिलती है। Monthly: ₹99 या Yearly: ₹999 प्लान चुनें।
                 </p>
               </div>
 
@@ -209,7 +209,7 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
                 className="w-full h-13 py-3 text-sm font-extrabold text-white shadow-lg rounded-xl font-hindi"
                 style={{ backgroundColor: "#FF9933" }}
               >
-                {payingPlan === "monthly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "मंथली प्रीमियम - ₹99 / Month"}
+                {payingPlan === "monthly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Monthly: ₹99"}
               </Button>
 
               <Button
@@ -222,7 +222,7 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
                 <span className="absolute -top-2 right-3 rounded-full bg-[#FF9933] px-2 py-0.5 text-[9px] font-bold text-white">
                   BEST VALUE
                 </span>
-                {payingPlan === "yearly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "सालाना प्रीमियम - ₹999 / Year"}
+                {payingPlan === "yearly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Yearly: ₹999"}
               </Button>
 
               {failedPlan && (

@@ -20,14 +20,14 @@ const MERCHANT_PLANS = [
   {
     id: "monthly",
     label: "मर्चेंट मंथली प्रीमियम",
-    price: "₹116.82",
+    price: "₹99",
     days: 30,
     theme: "saffron",
   },
   {
     id: "yearly",
     label: "मर्चेंट सालाना प्रीमियम",
-    price: "₹1,178.82",
+    price: "₹999",
     days: 365,
     theme: "green",
   },
@@ -333,7 +333,7 @@ const MerchantPortal = () => {
                   >
                     <span className="font-hindi text-base leading-tight">{plan.label}</span>
                     {payingPlan === plan.id ? <Loader2 className="h-6 w-6 animate-spin" /> : <span className="text-2xl font-extrabold">{plan.price}</span>}
-                    <span className="font-hindi text-xs opacity-95">GST included • {plan.days} दिन</span>
+                    <span className="font-hindi text-xs opacity-95">{plan.days} दिन</span>
                     <span className="mt-1 inline-flex items-center gap-1 text-xs opacity-95">
                       Primary merchant plan
                     </span>
@@ -344,12 +344,12 @@ const MerchantPortal = () => {
 
             {failedPlan && (
               <Button onClick={() => handleSubscribe(MERCHANT_PLANS.find((plan) => plan.id === failedPlan)!)} variant="outline" className="w-full">
-                Retry {failedPlan === "monthly" ? "Monthly ₹116.82" : "Yearly ₹1,178.82"} Payment
+                Retry {failedPlan === "monthly" ? "Monthly ₹99" : "Yearly ₹999"} Payment
               </Button>
             )}
 
             <p className="text-center text-[11px] text-muted-foreground font-hindi">
-              Merchant Premium payment checkout opens with GST-inclusive totals.
+              Monthly: ₹99 • Yearly: ₹999
             </p>
           </CardContent>
         </Card>
@@ -367,11 +367,11 @@ const MerchantPortal = () => {
             <div className="grid gap-2 sm:grid-cols-2">
               <Button onClick={() => handleBharatGauravPay("monthly")} disabled={payingMembershipPlan !== null} variant="outline" className="font-hindi">
                 {payingMembershipPlan === "monthly" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                ₹1.18 / Month GST included
+                ₹1.18 / Month
               </Button>
               <Button onClick={() => handleBharatGauravPay("yearly")} disabled={payingMembershipPlan !== null} variant="outline" className="font-hindi">
                 {payingMembershipPlan === "yearly" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                ₹14.16 / Year GST included
+                ₹14.16 / Year
               </Button>
             </div>
           </CardContent>
