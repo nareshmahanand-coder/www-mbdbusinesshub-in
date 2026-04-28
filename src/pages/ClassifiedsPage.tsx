@@ -31,6 +31,7 @@ export interface ClassifiedAd {
 }
 
 const cities = ["All", "Bhilai", "Durg", "Raipur", "Bilaspur", "Korba", "Rajnandgaon"];
+const petCategories = ["Pets", "Dogs", "Fishes & Aquarium", "Pet Food/Accessories"];
 
 const conditionLabel = (condition?: string) => {
   const labels: Record<string, string> = {
@@ -73,7 +74,7 @@ const ClassifiedsPage = () => {
     return ads.filter(a => {
       const q = search.toLowerCase();
       const matchesSearch = !search || a.title?.toLowerCase().includes(q) || a.category?.toLowerCase().includes(q) || a.city?.toLowerCase().includes(q);
-      const matchesCategory = !selectedCategory || a.category === selectedCategory;
+      const matchesCategory = !selectedCategory || a.category === selectedCategory || (selectedCategory === "Pets" && petCategories.includes(a.category));
       const matchesCity = cityFilter === "All" || a.city?.toLowerCase() === cityFilter.toLowerCase();
       const matchesPrice = (a.price ?? 0) >= priceRange[0] && (a.price ?? 0) <= priceRange[1];
       return matchesSearch && matchesCategory && matchesCity && matchesPrice;
