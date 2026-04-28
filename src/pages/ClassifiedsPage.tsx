@@ -279,7 +279,7 @@ const ClassifiedsPage = () => {
                   if (e.key === "Enter" && locationSearch.trim()) chooseLocation(locationSearch.trim());
                   if (e.key === "Escape") setLocationSearchOpen(false);
                 }}
-                placeholder={cityFilter === "All" ? "Search city, village or state" : cityFilter}
+                placeholder={cityFilter === "All" ? "Search area, city or PIN across India" : cityFilter}
                 className="h-11 rounded-lg border-2 border-accent/40 bg-background pl-9 pr-9 text-sm font-bold shadow-sm focus-visible:ring-1"
               />
               {locationSearching ? <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" /> : <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />}
@@ -288,7 +288,7 @@ const ClassifiedsPage = () => {
               <div className="absolute left-0 right-0 top-12 z-50 overflow-hidden rounded-lg border border-border bg-popover shadow-xl">
                 <button className="flex w-full items-center gap-2 border-b border-border px-3 py-3 text-left text-sm font-bold text-accent" onMouseDown={e => { e.preventDefault(); useCurrentLocation(); }} disabled={locationBusy}>
                   {locationBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
-                  {locationBusy ? "Finding exact area, city and pin code..." : "Use Current Location"}
+                  {locationBusy ? "Finding exact GPS area, city and pin code..." : "Use Current Location"}
                 </button>
                 {locationSearch.trim() && (
                   <button className="flex w-full items-center gap-2 px-3 py-3 text-left text-sm font-extrabold text-foreground hover:bg-accent/10" onMouseDown={e => { e.preventDefault(); chooseLocation(locationSearch.trim()); }}>
@@ -297,7 +297,7 @@ const ClassifiedsPage = () => {
                 )}
                 <div className="max-h-72 overflow-y-auto py-1">
                   {locationResults.map((location, index) => (
-                    <button key={`${location.label}-${index}`} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent/10" onMouseDown={e => { e.preventDefault(); chooseLocation(location.name); }}>
+                    <button key={`${location.label}-${index}`} className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm hover:bg-accent/10" onMouseDown={e => { e.preventDefault(); chooseLocation(location.label); }}>
                       <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
                       <span className="min-w-0 flex-1 truncate text-foreground">{location.label}</span>
                       <span className="shrink-0 text-[10px] font-medium text-muted-foreground">{location.type}</span>
@@ -368,7 +368,7 @@ const ClassifiedsPage = () => {
       <div className="container mx-auto px-3 py-4">
         <div className="mb-4 rounded-lg border border-border bg-card p-4 shadow-sm">
           <h1 className="text-xl font-extrabold text-foreground">Buy & Sell Old Items</h1>
-          <p className="mt-1 text-xs text-muted-foreground">OLX-style local marketplace for used items, pets, vehicles, mobiles, and household deals near you.</p>
+            <p className="mt-1 text-xs text-muted-foreground">OLX-style marketplace for used items, pets, vehicles, mobiles, and household deals in {cityFilter === "All" ? "India" : cityFilter}.</p>
         </div>
 
         {activeSection === "home" && (
@@ -385,7 +385,7 @@ const ClassifiedsPage = () => {
               <h2 className="text-base font-bold text-foreground">
                 {selectedCategory ? selectedCategory : "Latest second-hand deals"}
             </h2>
-            <p className="text-xs text-muted-foreground">{filtered.length} ads found</p>
+            <p className="text-xs text-muted-foreground">{filtered.length} ads found near {cityFilter === "All" ? "India" : cityFilter}</p>
           </div>
           {selectedCategory && (
             <button onClick={() => setSelectedCategory(null)} className="text-xs text-accent font-medium">
