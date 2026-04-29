@@ -136,7 +136,7 @@ const ClassifiedsAdCard = ({ ad, isFeatured, onOpen, onShowNumber, onChat, onMar
           onClick={event => { event.stopPropagation(); onShowNumber?.(); }}
         >
           <Phone className="mr-1 h-3 w-3 shrink-0" />
-          <span className="truncate">{isNumberVisible ? (ad.contact_phone || "Unavailable") : "Show Number"}</span>
+          <span className="truncate">{isNumberVisible ? (ad.contact_phone || "Unavailable") : "Request Number"}</span>
         </Button>
         <Button
           size="sm"

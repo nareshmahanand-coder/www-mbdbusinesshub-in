@@ -262,6 +262,39 @@ export type Database = {
           },
         ]
       }
+      classified_contact_requests: {
+        Row: {
+          buyer_id: string
+          classified_id: string
+          created_at: string
+          id: string
+          message: string
+          seller_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          buyer_id: string
+          classified_id: string
+          created_at?: string
+          id?: string
+          message?: string
+          seller_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string
+          classified_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          seller_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       classified_conversations: {
         Row: {
           archived_by: string[]

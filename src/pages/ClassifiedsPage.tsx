@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle, Archive, Trash2, Loader2, Navigation } from "lucide-react";
+import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle, Archive, Trash2, Loader2, Navigation, Bell, CheckCircle2, Send } from "lucide-react";
 import { City, State } from "country-state-city";
 import { reverseGeocodeIndiaLocation, searchIndiaLocations } from "@/lib/googleLocation";
 
@@ -39,6 +39,24 @@ interface ClassifiedConversation {
   seller_id: string;
   last_message_at: string;
   archived_by?: string[];
+}
+
+interface ContactRequest {
+  id: string;
+  classified_id: string;
+  buyer_id: string;
+  seller_id: string;
+  status: "pending" | "approved" | "rejected";
+  message: string;
+  created_at: string;
+}
+
+interface ClassifiedMessage {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  message: string;
+  created_at: string;
 }
 
 const topCities = ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", "Pune", "Jaipur", "Lucknow", "Patna", "Bhopal"];
@@ -79,12 +97,14 @@ const ClassifiedsPage = () => {
   const [priceRange, setPriceRange] = useState([0, 500000]);
   const [selectedAd, setSelectedAd] = useState<ClassifiedAd | null>(null);
   const [activePhoto, setActivePhoto] = useState(0);
-  const [showNumber, setShowNumber] = useState(false);
-  const [visibleCardNumbers, setVisibleCardNumbers] = useState<Record<string, boolean>>({});
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
   const [activeSection, setActiveSection] = useState<"home" | "chats" | "myAds" | "account">("home");
   const [conversations, setConversations] = useState<ClassifiedConversation[]>([]);
+  const [contactRequests, setContactRequests] = useState<ContactRequest[]>([]);
+  const [activeConversation, setActiveConversation] = useState<ClassifiedConversation | null>(null);
+  const [conversationMessages, setConversationMessages] = useState<ClassifiedMessage[]>([]);
+  const [replyMessage, setReplyMessage] = useState("");
   const [locationSearch, setLocationSearch] = useState("");
   const [locationSearchOpen, setLocationSearchOpen] = useState(false);
   const [remoteLocationResults, setRemoteLocationResults] = useState<LocationSuggestion[]>([]);
@@ -93,7 +113,7 @@ const ClassifiedsPage = () => {
   const locationInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadAds(); }, []);
-  useEffect(() => { if (user) loadConversations(); }, [user]);
+  useEffect(() => { if (user) { loadConversations(); loadContactRequests(); } }, [user]);
 
   const loadAds = async () => {
     setLoading(true);
@@ -110,6 +130,13 @@ const ClassifiedsPage = () => {
     if (data) setConversations(data as unknown as ClassifiedConversation[]);
   };
 
+  const loadContactRequests = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("classified_contact_requests" as any)
+      .select("*").order("created_at", { ascending: false });
+    if (data) setContactRequests(data as unknown as ContactRequest[]);
+  };
+
   const filtered = useMemo(() => {
     return ads.filter(a => {
       const q = search.toLowerCase();
@@ -123,6 +150,10 @@ const ClassifiedsPage = () => {
 
   const myAds = useMemo(() => ads.filter(ad => ad.user_id === user?.id), [ads, user?.id]);
   const visibleConversations = useMemo(() => conversations.filter(c => user && !(c.archived_by || []).includes(user.id)), [conversations, user]);
+  const sellerRequests = useMemo(() => contactRequests.filter(request => request.seller_id === user?.id), [contactRequests, user?.id]);
+  const pendingSellerRequests = useMemo(() => sellerRequests.filter(request => request.status === "pending"), [sellerRequests]);
+  const requestForSelectedAd = useMemo(() => selectedAd ? contactRequests.find(request => request.classified_id === selectedAd.id && request.buyer_id === user?.id) : undefined, [contactRequests, selectedAd, user?.id]);
+  const isSelectedNumberApproved = requestForSelectedAd?.status === "approved";
   const locationResults = useMemo(() => {
     const q = locationSearch.trim().toLowerCase();
     if (!q) return topCities.map(city => ({ name: city, label: city, type: "Top City" }));
@@ -201,7 +232,6 @@ const ClassifiedsPage = () => {
   const openAd = (ad: ClassifiedAd) => {
     setSelectedAd(ad);
     setActivePhoto(0);
-    setShowNumber(false);
     setLightboxOpen(false);
     setChatMessage(`Hi, I am interested in your ${ad.title}. Is it still available?`);
   };
@@ -223,7 +253,25 @@ const ClassifiedsPage = () => {
     if (!conversationId) { toast.error("Chat could not be started right now"); return; }
     const { error } = await supabase.from("classified_messages" as any).insert({ conversation_id: conversationId, sender_id: user.id, message });
     if (error) toast.error("Message not sent");
-    else toast.success("Chat started with seller");
+    else { toast.success("Chat started with seller"); await loadConversations(); setActiveSection("chats"); }
+  };
+
+  const requestSellerNumber = async (ad: ClassifiedAd) => {
+    if (!user) { toast.info("Please login to request seller number."); return; }
+    if (ad.user_id === user.id) { toast.info("This is your own listing."); return; }
+    const existing = contactRequests.find(request => request.classified_id === ad.id && request.buyer_id === user.id);
+    if (existing?.status === "approved") { toast.success("Seller approved your request. Number is visible now."); return; }
+    if (existing?.status === "pending") { toast.info("Your request is already pending with the seller."); return; }
+    const message = `Buyer is interested in ${ad.title} and requested your mobile number.`;
+    const { error } = await supabase.from("classified_contact_requests" as any).insert({ classified_id: ad.id, buyer_id: user.id, seller_id: ad.user_id, message });
+    if (error) toast.error("Could not send request");
+    else { toast.success("Request sent to seller for approval"); await loadContactRequests(); await startChatForAd(ad, `Hi, I am interested in ${ad.title}. Please approve my number request if convenient.`); }
+  };
+
+  const updateContactRequest = async (request: ContactRequest, status: "approved" | "rejected") => {
+    const { error } = await supabase.from("classified_contact_requests" as any).update({ status }).eq("id", request.id);
+    if (error) toast.error("Could not update request");
+    else { toast.success(status === "approved" ? "Mobile number request approved" : "Request rejected"); loadContactRequests(); }
   };
 
   const startChat = async () => {
@@ -257,6 +305,20 @@ const ClassifiedsPage = () => {
     const { error } = await supabase.from("classified_conversations" as any).delete().eq("id", conversation.id);
     if (error) toast.error("Could not delete chat");
     else { toast.success("Chat deleted"); loadConversations(); }
+  };
+
+  const openConversation = async (conversation: ClassifiedConversation) => {
+    setActiveConversation(conversation);
+    const { data } = await supabase.from("classified_messages" as any)
+      .select("*").eq("conversation_id", conversation.id).order("created_at", { ascending: true });
+    setConversationMessages((data as unknown as ClassifiedMessage[]) || []);
+  };
+
+  const sendReply = async () => {
+    if (!user || !activeConversation || !replyMessage.trim()) return;
+    const { error } = await supabase.from("classified_messages" as any).insert({ conversation_id: activeConversation.id, sender_id: user.id, message: replyMessage.trim() });
+    if (error) toast.error("Message not sent");
+    else { setReplyMessage(""); await openConversation(activeConversation); await loadConversations(); }
   };
 
   return (
@@ -414,8 +476,8 @@ const ClassifiedsPage = () => {
                 ad={ad}
                 isFeatured={idx < 2}
                 onOpen={() => openAd(ad)}
-                isNumberVisible={!!visibleCardNumbers[ad.id]}
-                onShowNumber={() => setVisibleCardNumbers(current => ({ ...current, [ad.id]: true }))}
+                isNumberVisible={false}
+                onShowNumber={() => requestSellerNumber(ad)}
                 onChat={() => startChatForAd(ad)}
               />
             ))}
@@ -427,9 +489,33 @@ const ClassifiedsPage = () => {
         {activeSection === "myAds" && (
           <Tabs defaultValue="active" className="mt-2">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="text-lg font-extrabold text-foreground">My Ads</h2>
+              <div>
+                <h2 className="text-lg font-extrabold text-foreground">My Ads</h2>
+                {pendingSellerRequests.length > 0 && <p className="text-xs font-bold text-accent">{pendingSellerRequests.length} buyer request pending</p>}
+              </div>
               <TabsList className="grid w-48 grid-cols-2"><TabsTrigger value="active">Active</TabsTrigger><TabsTrigger value="sold">Sold</TabsTrigger></TabsList>
             </div>
+            {sellerRequests.length > 0 && (
+              <div className="mb-4 space-y-2 rounded-lg border border-border bg-card p-3">
+                <p className="flex items-center gap-2 text-sm font-extrabold text-foreground"><Bell className="h-4 w-4 text-accent" /> Buyer Number Requests</p>
+                {sellerRequests.map(request => {
+                  const ad = ads.find(item => item.id === request.classified_id);
+                  return (
+                    <div key={request.id} className="flex flex-col gap-2 rounded-md border border-border p-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-foreground">{ad?.title || "Your listing"}</p>
+                        <p className="text-xs text-muted-foreground">{request.message || "Buyer requested your mobile number"}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={request.status === "approved" ? "default" : request.status === "rejected" ? "destructive" : "secondary"}>{request.status}</Badge>
+                        {request.status === "pending" && <Button size="sm" className="gap-1" onClick={() => updateContactRequest(request, "approved")}><CheckCircle2 className="h-4 w-4" /> Approve</Button>}
+                        {request.status === "pending" && <Button size="sm" variant="outline" onClick={() => updateContactRequest(request, "rejected")}>Reject</Button>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             {(["active", "sold"] as const).map(tab => {
               const tabAds = myAds.filter(ad => tab === "sold" ? ad.is_sold : !ad.is_sold);
               return (
@@ -452,10 +538,10 @@ const ClassifiedsPage = () => {
               const ad = ads.find(item => item.id === conversation.classified_id);
               return (
                 <div key={conversation.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 shadow-sm">
-                  <div className="min-w-0">
+                  <button className="min-w-0 flex-1 text-left" onClick={() => openConversation(conversation)}>
                     <p className="truncate text-sm font-extrabold text-foreground">{ad?.title || "Marketplace chat"}</p>
                     <p className="text-xs text-muted-foreground">{conversation.seller_id === user?.id ? "Buyer conversation" : "Seller conversation"} · {new Date(conversation.last_message_at).toLocaleDateString("en-IN")}</p>
-                  </div>
+                  </button>
                   <div className="flex shrink-0 gap-2">
                     <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => archiveConversation(conversation)}><Archive className="h-4 w-4" /> Archive</Button>
                     <Button size="sm" variant="destructive" className="gap-1 text-xs" onClick={() => deleteConversation(conversation)}><Trash2 className="h-4 w-4" /> Delete</Button>
@@ -562,8 +648,8 @@ const ClassifiedsPage = () => {
                   ) : (
                     <>
                       <div className="grid gap-2 sm:grid-cols-2">
-                        <Button variant="outline" disabled={selectedAd.is_sold} onClick={() => setShowNumber(true)} className="h-11">
-                          <Phone className="h-4 w-4" /> {selectedAd.is_sold ? "Sold Out" : showNumber ? (selectedAd.contact_phone || "Number unavailable") : "Show Number"}
+                        <Button variant="outline" disabled={selectedAd.is_sold} onClick={() => isSelectedNumberApproved ? toast.success("Seller approved this number") : requestSellerNumber(selectedAd)} className="h-11">
+                          <Phone className="h-4 w-4" /> {selectedAd.is_sold ? "Sold Out" : isSelectedNumberApproved ? (selectedAd.contact_phone || "Number unavailable") : requestForSelectedAd?.status === "pending" ? "Request Pending" : "Request Number"}
                         </Button>
                         <Button disabled={selectedAd.is_sold} onClick={startChat} className="h-11 bg-accent text-accent-foreground hover:bg-accent/90">
                           <MessageCircle className="h-4 w-4" /> {selectedAd.is_sold ? "Sold Out" : "Chat with Seller"}
@@ -576,6 +662,28 @@ const ClassifiedsPage = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!activeConversation} onOpenChange={open => { if (!open) { setActiveConversation(null); setConversationMessages([]); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-left">Internal Chat</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-80 space-y-2 overflow-y-auto rounded-lg border border-border bg-muted/40 p-3">
+            {conversationMessages.length === 0 ? <p className="text-center text-sm text-muted-foreground">No messages yet.</p> : conversationMessages.map(message => (
+              <div key={message.id} className={`flex ${message.sender_id === user?.id ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[82%] rounded-lg px-3 py-2 text-sm ${message.sender_id === user?.id ? "bg-accent text-accent-foreground" : "bg-card text-card-foreground"}`}>
+                  <p className="whitespace-pre-line">{message.message}</p>
+                  <p className="mt-1 text-[10px] opacity-70">{new Date(message.created_at).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Input value={replyMessage} onChange={event => setReplyMessage(event.target.value)} onKeyDown={event => { if (event.key === "Enter") void sendReply(); }} placeholder="Type your message" />
+            <Button size="icon" onClick={sendReply} disabled={!replyMessage.trim()}><Send className="h-4 w-4" /></Button>
+          </div>
         </DialogContent>
       </Dialog>
 
