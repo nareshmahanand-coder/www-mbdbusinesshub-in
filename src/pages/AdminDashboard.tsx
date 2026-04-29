@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useState } from "react";
 import { sampleShops, Shop, categoryIcons } from "@/data/sampleShops";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   ShieldCheck, ShieldX, Bell, CheckCircle2, IndianRupee, Users, Clock,
   BadgeCheck, MessageCircle, Send, XCircle, AlertTriangle, Crown,
@@ -25,6 +27,9 @@ import { toast } from "sonner";
 import { bookCategories } from "@/data/skillBooks";
 import KycReviewTab from "@/components/admin/KycReviewTab";
 import RaktadanReviewTab from "@/components/admin/RaktadanReviewTab";
+
+const ADMIN_PIN = "02032026";
+const ADMIN_PIN_SESSION_KEY = "mbd-admin-pin-ok";
 
 interface MerchantPayment {
   shopId: string;
@@ -159,6 +164,7 @@ const formatDateTime = (dateStr: string) =>
 
 const AdminDashboard = () => {
   const { settings, refresh: refreshSettings } = useSiteSettings();
+  const { user } = useAuth();
   const [shops, setShops] = useState<(Shop & { premiumStartDate?: string; premiumPlan?: "monthly" | "yearly"; joinDate?: string })[]>(
     sampleShops.map((s, i) => ({
       ...s,
@@ -168,9 +174,14 @@ const AdminDashboard = () => {
       joinDate: `2026-0${Math.min(i + 1, 3)}-${String(10 + i).padStart(2, "0")}`,
     }))
   );
-  const [loggedIn, setLoggedIn] = useState(true);
+  const [loggedIn, setLoggedIn] = useState(() => sessionStorage.getItem(ADMIN_PIN_SESSION_KEY) === "true");
   const [pin, setPin] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [messageTarget, setMessageTarget] = useState("all");
+  const [messageRecipientId, setMessageRecipientId] = useState("");
+  const [messageTitle, setMessageTitle] = useState("Important update from MBD Business Hub");
+  const [messageBody, setMessageBody] = useState("");
+  const [messageSending, setMessageSending] = useState(false);
   const [rejectReasonMap, setRejectReasonMap] = useState<Record<string, string>>({});
   const [showRejectInput, setShowRejectInput] = useState<string | null>(null);
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
@@ -492,11 +503,15 @@ const AdminDashboard = () => {
   }, [loggedIn]);
 
   const handleLogin = () => {
-    if (pin === "02032026") { setLoggedIn(true); toast.success("Admin access granted"); }
+    if (pin === ADMIN_PIN) {
+      sessionStorage.setItem(ADMIN_PIN_SESSION_KEY, "true");
+      setLoggedIn(true);
+      toast.success("Admin access granted");
+    }
     else toast.error("Invalid PIN");
   };
 
-  const handleLogout = () => { setLoggedIn(false); setPin(""); toast.info("Logged out successfully"); };
+  const handleLogout = () => { sessionStorage.removeItem(ADMIN_PIN_SESSION_KEY); setLoggedIn(false); setPin(""); toast.info("Logged out successfully"); };
 
   const toggleVerification = (id: string) => {
     setShops((prev) => prev.map((s) => (s.id === id ? { ...s, verified: !s.verified } : s)));
@@ -584,6 +599,49 @@ const AdminDashboard = () => {
     toast.success("Merchant control updated");
   };
 
+  const setMerchantSubscription = async (merchantId: string, plan: "monthly" | "yearly" | "none") => {
+    await updateMerchant(merchantId, {
+      is_premium: plan !== "none",
+      premium_plan: plan === "none" ? null : plan,
+      premium_start_date: plan === "none" ? null : new Date().toISOString(),
+      plan_override: plan === "none" ? "" : plan,
+      plan_ends_at: plan === "yearly" ? new Date(Date.now() + 365 * 86400000).toISOString().split("T")[0] : plan === "monthly" ? new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0] : null,
+    } as any);
+  };
+
+  const updateMatrimonyStatus = async (profileId: string, moderation_status: string, is_published: boolean) => {
+    const { error } = await (supabase as any).from("matrimony_profiles").update({ moderation_status, is_published }).eq("id", profileId);
+    if (error) { toast.error("Matrimony update failed"); return; }
+    setMatrimonyProfiles(prev => prev.map(p => p.id === profileId ? { ...p, moderation_status, is_published } as any : p));
+    toast.success(`Matrimony profile ${moderation_status}`);
+  };
+
+  const updateFamilyStatus = async (memberId: string, admin_status: string) => {
+    const { error } = await (supabase as any).from("family_members").update({ admin_status }).eq("id", memberId);
+    if (error) { toast.error("Bharat Kavach update failed"); return; }
+    setFamilyMembers(prev => prev.map(f => f.id === memberId ? { ...f, admin_status } : f));
+    toast.success(`Family member ${admin_status}`);
+  };
+
+  const sendAdminMessage = async () => {
+    if (!user?.id) { toast.error("Please sign in before sending admin messages"); return; }
+    if (!messageTitle.trim() || !messageBody.trim()) { toast.error("Message title and body are required"); return; }
+    if (messageTarget === "specific" && !messageRecipientId) { toast.error("Select a specific user first"); return; }
+    setMessageSending(true);
+    const { error } = await (supabase as any).from("admin_messages").insert({
+      sender_id: user?.id,
+      recipient_user_id: messageTarget === "specific" ? messageRecipientId : null,
+      recipient_group: messageTarget,
+      title: messageTitle.trim(),
+      message: messageBody.trim(),
+      severity: "info",
+    });
+    setMessageSending(false);
+    if (error) { toast.error("Message could not be sent"); return; }
+    setMessageBody("");
+    toast.success("Admin message sent live");
+  };
+
   const updateSiteSettings = async (patch: Partial<typeof settings>) => {
     if (!settings.id) return;
     const { error } = await supabase.from("site_settings").update(patch).eq("id", settings.id);
@@ -593,8 +651,8 @@ const AdminDashboard = () => {
   };
 
   const downloadCSV = () => {
-    const headers = ["Shop Name", "Hindi Name", "Category", "City", "Pincode", "Verified", "Premium", "Plan", "Join Date"];
-    const rows = shops.map((s) => [s.name, s.nameHindi, s.category, s.city, s.pincode, s.verified ? "Yes" : "No", s.premium ? "Yes" : "No", s.premiumPlan || "Free", s.joinDate || "N/A"]);
+    const headers = ["Shop Name", "Owner", "Category", "City", "Phone", "Verified", "Access", "Plan", "Plan Ends"];
+    const rows = filteredMerchants.map((s) => [s.shop_name, s.owner_name || s.profile_name || "", s.category || "", s.city || "", s.phone || s.whatsapp || s.profile_phone || "", s.is_verified ? "Yes" : "No", s.access_status, s.plan_override || "Free", s.plan_ends_at || "N/A"]);
     const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -616,7 +674,14 @@ const AdminDashboard = () => {
     return list.filter((s) => s.name.toLowerCase().includes(q) || s.nameHindi.includes(q));
   }, [shops, searchQuery]);
 
-  const verifiedCount = shops.filter((s) => s.verified).length;
+  const filteredMerchants = useMemo(() => {
+    if (!searchQuery.trim()) return merchants;
+    const q = searchQuery.toLowerCase();
+    return merchants.filter((m) => [m.shop_name, m.owner_name, m.profile_name, m.category, m.city, m.phone, m.whatsapp, m.profile_email].some((v) => (v || "").toLowerCase().includes(q)));
+  }, [merchants, searchQuery]);
+
+  const verifiedCount = merchants.filter((s) => s.is_verified).length;
+  const premiumMerchantCount = merchants.filter((s) => s.plan_override || (s as any).is_premium).length;
   const pendingPayments = payments.filter((p) => !p.approved && !p.rejected);
   const monthlyEarnings = payments.filter((p) => p.approved && p.plan === "monthly").reduce((sum, p) => sum + p.amount, 0);
   const yearlyEarnings = payments.filter((p) => p.approved && p.plan === "yearly").reduce((sum, p) => sum + p.amount, 0);
@@ -708,6 +773,7 @@ const AdminDashboard = () => {
     { id: "family-preview", label: "भारत कवच", icon: ShieldAlert, count: familyMembers.length },
     { id: "inventory-preview", label: "मशाल Inventory", icon: Package, count: products.length },
     { id: "ai-preview", label: "भारत मित्र AI", icon: Brain, count: MOCK_CHATBOT_LOGS.length },
+    { id: "messages", label: "Messages", icon: MessageCircle, count: 0 },
     { id: "settings", label: "Settings", icon: Settings, count: 0 },
   ];
 
@@ -718,6 +784,23 @@ const AdminDashboard = () => {
     const expiry = new Date(start.getTime() + duration * 24 * 60 * 60 * 1000);
     return Math.ceil((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   };
+
+  if (!loggedIn) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-sm border-primary/30 shadow-lg">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground"><LockKeyhole className="h-6 w-6" /></div>
+            <CardTitle>Staff System PIN</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Input type="password" inputMode="numeric" value={pin} onChange={(e) => setPin(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLogin()} placeholder="Enter secure PIN" autoFocus />
+            <Button className="w-full" onClick={handleLogin}>Unlock Admin Portal</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -832,7 +915,7 @@ const AdminDashboard = () => {
           <Card className="bg-navy text-primary-foreground">
             <CardContent className="flex items-center gap-3 p-4">
               <Users className="h-7 w-7 opacity-80" />
-              <div><p className="text-2xl font-extrabold">{shops.length}</p><p className="text-[10px] opacity-70">Total / कुल दुकानें</p></div>
+              <div><p className="text-2xl font-extrabold">{merchants.length}</p><p className="text-[10px] opacity-70">Total / कुल दुकानें</p></div>
             </CardContent>
           </Card>
           <Card className="bg-green-india text-primary-foreground">
@@ -844,7 +927,7 @@ const AdminDashboard = () => {
           <Card className="bg-saffron text-primary-foreground">
             <CardContent className="flex items-center gap-3 p-4">
               <Crown className="h-7 w-7 opacity-80" />
-              <div><p className="text-2xl font-extrabold">{premiumShops.length}</p><p className="text-[10px] opacity-70">Premium / प्रीमियम</p></div>
+              <div><p className="text-2xl font-extrabold">{premiumMerchantCount}</p><p className="text-[10px] opacity-70">Premium / प्रीमियम</p></div>
             </CardContent>
           </Card>
           <Card className="border-2 border-accent">
@@ -926,6 +1009,7 @@ const AdminDashboard = () => {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="messages" className="text-xs">💬 Messages</TabsTrigger>
             <TabsTrigger value="slider" className="text-xs">🎠 Slider</TabsTrigger>
             <TabsTrigger value="control" className="text-xs">🛂 Shops & Users</TabsTrigger>
             <TabsTrigger value="preview" className="text-xs">👁️ System Preview</TabsTrigger>
@@ -962,7 +1046,7 @@ const AdminDashboard = () => {
                 <CardTitle className="text-base flex items-center gap-2"><Users className="h-5 w-5 text-primary" /> Shops & Users Control Center</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 p-4">
-                {merchantsLoading ? <p className="py-6 text-center text-sm text-muted-foreground">Loading...</p> : merchants.map((m) => (
+                {merchantsLoading ? <p className="py-6 text-center text-sm text-muted-foreground">Loading...</p> : filteredMerchants.map((m) => (
                   <div key={m.id} className="rounded-lg border border-border p-4">
                     <div className="grid gap-3 lg:grid-cols-[1.3fr_1fr_1fr] lg:items-center">
                       <div>
@@ -971,17 +1055,20 @@ const AdminDashboard = () => {
                         <p className="text-xs text-muted-foreground">Contact: {m.phone || m.whatsapp || m.profile_phone || m.profile_email || "N/A"}</p>
                         <p className="text-xs text-muted-foreground">PAN: {m.pan_url ? "Uploaded" : "Not uploaded"} • Aadhaar last-4: {m.aadhaar_last4 || "N/A"}</p>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button size="sm" onClick={() => updateMerchant(m.id, { is_verified: true, access_status: "active", admin_notes: "Approved by Admin Portal" } as any)}>Approve</Button>
+                        <Button size="sm" variant="outline" onClick={() => updateMerchant(m.id, { is_verified: false, access_status: "rejected", admin_notes: "Rejected by Admin Portal" } as any)}>Reject</Button>
+                        <Button size="sm" variant="destructive" onClick={() => updateMerchant(m.id, { access_status: "suspended", suspension_reason: "Suspended by Admin Portal" })}>Suspend</Button>
+                        <Button size="sm" variant="secondary" onClick={() => updateMerchant(m.id, { access_status: "cancelled", is_verified: false, is_premium: false, premium_plan: null, plan_override: "", plan_ends_at: null } as any)}>Cancel</Button>
                         <Switch checked={m.access_status !== "suspended"} onCheckedChange={(checked) => updateMerchant(m.id, { access_status: checked ? "active" : "suspended", suspension_reason: checked ? "" : "Suspended by Admin Portal" })} />
-                        <Badge variant={m.access_status === "suspended" ? "destructive" : "secondary"}>{m.access_status === "suspended" ? "Suspended" : "Active"}</Badge>
+                        <Badge variant={["suspended", "rejected", "cancelled"].includes(m.access_status) ? "destructive" : "secondary"}>{m.access_status || "active"}</Badge>
                       </div>
-                      <Select value={m.plan_override || "none"} onValueChange={(value) => updateMerchant(m.id, { plan_override: value === "none" ? "" : value, plan_ends_at: value === "yearly" ? new Date(Date.now() + 365 * 86400000).toISOString().split("T")[0] : value === "monthly" ? new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0] : null })}>
+                      <Select value={m.plan_override || "none"} onValueChange={(value) => setMerchantSubscription(m.id, value as "monthly" | "yearly" | "none")}>
                         <SelectTrigger><SelectValue placeholder="Set plan" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">No override</SelectItem>
-                          <SelectItem value="trial">Trial</SelectItem>
-                          <SelectItem value="monthly">Monthly ₹1</SelectItem>
-                          <SelectItem value="yearly">Yearly ₹12</SelectItem>
+                          <SelectItem value="monthly">Premium Monthly ₹99</SelectItem>
+                          <SelectItem value="yearly">Premium Yearly ₹999</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1004,15 +1091,15 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="classifieds-preview">
-            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><ShoppingBag className="h-5 w-5 text-primary" /> पुराने सामान — Buy/Sell Listings</CardTitle></CardHeader><CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>Listing</TableHead><TableHead>City</TableHead><TableHead>Price</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Controls</TableHead></TableRow></TableHeader><TableBody>{moduleLoading ? <TableRow><TableCell colSpan={5}>Loading...</TableCell></TableRow> : classifieds.map((c) => <TableRow key={c.id}><TableCell><p className="font-medium">{c.title}</p><p className="text-xs text-muted-foreground">{c.category} • {c.condition}</p></TableCell><TableCell>{c.city || "—"}</TableCell><TableCell>₹{Number(c.price || 0).toLocaleString()}</TableCell><TableCell><Badge variant={c.moderation_status === "suspended" ? "destructive" : "secondary"}>{c.moderation_status}</Badge></TableCell><TableCell className="text-right"><Button size="sm" variant="outline" onClick={() => updateModeration("classifieds", c.id, "approved")}>Approve</Button><Button size="sm" variant="destructive" className="ml-1" onClick={() => updateModeration("classifieds", c.id, "suspended")}>Suspend</Button></TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
+            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><ShoppingBag className="h-5 w-5 text-primary" /> पुराने सामान — Buy/Sell Listings</CardTitle></CardHeader><CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>Listing</TableHead><TableHead>City</TableHead><TableHead>Price</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Controls</TableHead></TableRow></TableHeader><TableBody>{moduleLoading ? <TableRow><TableCell colSpan={5}>Loading...</TableCell></TableRow> : classifieds.map((c) => <TableRow key={c.id}><TableCell><p className="font-medium">{c.title}</p><p className="text-xs text-muted-foreground">{c.category} • {c.condition}</p></TableCell><TableCell>{c.city || "—"}</TableCell><TableCell>₹{Number(c.price || 0).toLocaleString()}</TableCell><TableCell><Badge variant={["suspended", "rejected", "cancelled"].includes(c.moderation_status) ? "destructive" : "secondary"}>{c.moderation_status}</Badge></TableCell><TableCell className="text-right"><div className="flex flex-wrap justify-end gap-1"><Button size="sm" variant="outline" onClick={() => updateModeration("classifieds", c.id, "approved")}>Approve</Button><Button size="sm" variant="outline" onClick={() => updateModeration("classifieds", c.id, "rejected")}>Reject</Button><Button size="sm" variant="destructive" onClick={() => updateModeration("classifieds", c.id, "suspended")}>Suspend</Button><Button size="sm" variant="secondary" onClick={() => updateModeration("classifieds", c.id, "cancelled")}>Cancel</Button></div></TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
           </TabsContent>
 
           <TabsContent value="jobs-preview">
-            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><BriefcaseBusiness className="h-5 w-5 text-primary" /> नौकरी / Jobs — Posts & Applicants</CardTitle></CardHeader><CardContent className="space-y-4 p-4"><div className="grid gap-3 lg:grid-cols-2">{jobs.map((j) => <div key={j.id} className="rounded-lg border p-3"><div className="flex justify-between gap-2"><div><p className="font-semibold">{j.title}</p><p className="text-xs text-muted-foreground">{j.company_name} • {j.city} • {j.salary_range}</p></div><Badge variant={j.moderation_status === "suspended" ? "destructive" : "secondary"}>{j.moderation_status}</Badge></div><div className="mt-3 flex gap-2"><Button size="sm" onClick={() => updateModeration("jobs", j.id, "approved")}>Approve</Button><Button size="sm" variant="destructive" onClick={() => updateModeration("jobs", j.id, "suspended")}>Suspend</Button></div></div>)}</div><div className="border-t pt-3"><p className="mb-2 text-sm font-semibold">Applicant Data</p>{jobApplications.length === 0 ? <p className="text-sm text-muted-foreground">No applicants yet.</p> : jobApplications.map((a) => <div key={a.id} className="mb-2 flex items-center justify-between rounded border p-2 text-sm"><span>{a.applicant_name || "Applicant"} • {a.applicant_phone || "No phone"}</span><span><Button size="sm" variant="outline" onClick={() => updateApplication("job_applications", a.id, "approved")}>Approve</Button><Button size="sm" variant="destructive" className="ml-1" onClick={() => updateApplication("job_applications", a.id, "rejected")}>Reject</Button></span></div>)}</div></CardContent></Card>
+            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><BriefcaseBusiness className="h-5 w-5 text-primary" /> नौकरी / Jobs — Posts & Applicants</CardTitle></CardHeader><CardContent className="space-y-4 p-4"><div className="grid gap-3 lg:grid-cols-2">{jobs.map((j) => <div key={j.id} className="rounded-lg border p-3"><div className="flex justify-between gap-2"><div><p className="font-semibold">{j.title}</p><p className="text-xs text-muted-foreground">{j.company_name} • {j.city} • {j.salary_range}</p></div><Badge variant={["suspended", "rejected", "cancelled"].includes(j.moderation_status) ? "destructive" : "secondary"}>{j.moderation_status}</Badge></div><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" onClick={() => updateModeration("jobs", j.id, "approved")}>Approve</Button><Button size="sm" variant="outline" onClick={() => updateModeration("jobs", j.id, "rejected")}>Reject</Button><Button size="sm" variant="destructive" onClick={() => updateModeration("jobs", j.id, "suspended")}>Suspend</Button><Button size="sm" variant="secondary" onClick={() => updateModeration("jobs", j.id, "cancelled")}>Cancel</Button></div></div>)}</div><div className="border-t pt-3"><p className="mb-2 text-sm font-semibold">Applicant Data</p>{jobApplications.length === 0 ? <p className="text-sm text-muted-foreground">No applicants yet.</p> : jobApplications.map((a) => <div key={a.id} className="mb-2 flex items-center justify-between rounded border p-2 text-sm"><span>{a.applicant_name || "Applicant"} • {a.applicant_phone || "No phone"}</span><span><Button size="sm" variant="outline" onClick={() => updateApplication("job_applications", a.id, "approved")}>Approve</Button><Button size="sm" variant="destructive" className="ml-1" onClick={() => updateApplication("job_applications", a.id, "rejected")}>Reject</Button></span></div>)}</div></CardContent></Card>
           </TabsContent>
 
           <TabsContent value="hyperlocal-preview">
-            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><Store className="h-5 w-5 text-primary" /> नजदीकी दुकान — Bhilai / Raipur Shops</CardTitle></CardHeader><CardContent className="grid gap-3 p-4 lg:grid-cols-2">{merchants.filter(m => !["bhilai", "raipur"].includes((m.city || "").toLowerCase()) ? true : true).map((m) => <div key={m.id} className="rounded-lg border p-3"><div className="flex items-start justify-between"><div><p className="font-semibold">{m.shop_name}</p><p className="text-xs text-muted-foreground">{m.category} • {m.city || "No city"} • {m.address || "No address"}</p></div><Badge variant={m.access_status === "suspended" ? "destructive" : "secondary"}>{m.access_status}</Badge></div><div className="mt-3 flex gap-2"><Button size="sm" onClick={() => updateMerchant(m.id, { is_verified: true, access_status: "active" })}>Approve</Button><Button size="sm" variant="destructive" onClick={() => updateMerchant(m.id, { access_status: "suspended", suspension_reason: "Quality control suspension" })}>Suspend</Button></div></div>)}</CardContent></Card>
+            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><Store className="h-5 w-5 text-primary" /> नजदीकी दुकान — Live Shops</CardTitle></CardHeader><CardContent className="grid gap-3 p-4 lg:grid-cols-2">{filteredMerchants.map((m) => <div key={m.id} className="rounded-lg border p-3"><div className="flex items-start justify-between"><div><p className="font-semibold">{m.shop_name}</p><p className="text-xs text-muted-foreground">{m.category} • {m.city || "No city"} • {m.address || "No address"}</p></div><Badge variant={["suspended", "rejected", "cancelled"].includes(m.access_status) ? "destructive" : "secondary"}>{m.access_status}</Badge></div><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" onClick={() => updateMerchant(m.id, { is_verified: true, access_status: "active" })}>Approve</Button><Button size="sm" variant="outline" onClick={() => updateMerchant(m.id, { is_verified: false, access_status: "rejected" } as any)}>Reject</Button><Button size="sm" variant="destructive" onClick={() => updateMerchant(m.id, { access_status: "suspended", suspension_reason: "Quality control suspension" })}>Suspend</Button><Button size="sm" variant="secondary" onClick={() => updateMerchant(m.id, { access_status: "cancelled", is_verified: false } as any)}>Cancel</Button></div></div>)}</CardContent></Card>
           </TabsContent>
 
           <TabsContent value="skill-preview">
@@ -1020,15 +1107,49 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="family-preview">
-            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><ShieldAlert className="h-5 w-5 text-primary" /> भारत कवच — Family Security</CardTitle></CardHeader><CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>Member</TableHead><TableHead>Phone</TableHead><TableHead>Status</TableHead><TableHead>Added</TableHead></TableRow></TableHeader><TableBody>{familyMembers.map((f) => <TableRow key={f.id}><TableCell>{f.member_name}</TableCell><TableCell>{f.member_phone}</TableCell><TableCell><Badge>{f.status}</Badge></TableCell><TableCell>{formatDateTime(f.created_at)}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
+            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><ShieldAlert className="h-5 w-5 text-primary" /> भारत कवच — Family Security</CardTitle></CardHeader><CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>Member</TableHead><TableHead>Phone</TableHead><TableHead>Status</TableHead><TableHead>Added</TableHead><TableHead className="text-right">Controls</TableHead></TableRow></TableHeader><TableBody>{familyMembers.map((f) => <TableRow key={f.id}><TableCell>{f.member_name}</TableCell><TableCell>{f.member_phone}</TableCell><TableCell><Badge variant={["suspended", "rejected", "cancelled"].includes(f.admin_status) ? "destructive" : "secondary"}>{f.admin_status || f.status}</Badge></TableCell><TableCell>{formatDateTime(f.created_at)}</TableCell><TableCell className="text-right"><div className="flex flex-wrap justify-end gap-1"><Button size="sm" onClick={() => updateFamilyStatus(f.id, "approved")}>Approve</Button><Button size="sm" variant="outline" onClick={() => updateFamilyStatus(f.id, "rejected")}>Reject</Button><Button size="sm" variant="destructive" onClick={() => updateFamilyStatus(f.id, "suspended")}>Suspend</Button><Button size="sm" variant="secondary" onClick={() => updateFamilyStatus(f.id, "cancelled")}>Cancel</Button></div></TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
           </TabsContent>
 
           <TabsContent value="inventory-preview">
-            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><Package className="h-5 w-5 text-primary" /> मशाल पोर्टल — Merchant Inventory</CardTitle></CardHeader><CardContent className="grid gap-3 p-4 lg:grid-cols-2">{products.map((prod) => { const merchant = merchants.find(m => m.id === prod.merchant_id); return <div key={prod.id} className="rounded-lg border p-3"><div className="flex justify-between gap-2"><div><p className="font-semibold">{prod.name}</p><p className="text-xs text-muted-foreground">{merchant?.shop_name || prod.merchant_id} • ₹{Number(prod.price || 0).toLocaleString()} • {prod.in_stock ? "In stock" : "Out of stock"}</p></div><Badge variant={prod.moderation_status === "suspended" ? "destructive" : "secondary"}>{prod.moderation_status}</Badge></div><div className="mt-3 flex gap-2"><Button size="sm" onClick={() => updateModeration("products", prod.id, "approved")}>Approve</Button><Button size="sm" variant="destructive" onClick={() => updateModeration("products", prod.id, "suspended")}>Suspend</Button></div></div>; })}</CardContent></Card>
+            <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><Package className="h-5 w-5 text-primary" /> मशाल पोर्टल — Merchant Inventory</CardTitle></CardHeader><CardContent className="grid gap-3 p-4 lg:grid-cols-2">{products.map((prod) => { const merchant = merchants.find(m => m.id === prod.merchant_id); return <div key={prod.id} className="rounded-lg border p-3"><div className="flex justify-between gap-2"><div><p className="font-semibold">{prod.name}</p><p className="text-xs text-muted-foreground">{merchant?.shop_name || prod.merchant_id} • ₹{Number(prod.price || 0).toLocaleString()} • {prod.in_stock ? "In stock" : "Out of stock"}</p></div><Badge variant={["suspended", "rejected", "cancelled"].includes(prod.moderation_status) ? "destructive" : "secondary"}>{prod.moderation_status}</Badge></div><div className="mt-3 flex flex-wrap gap-2"><Button size="sm" onClick={() => updateModeration("products", prod.id, "approved")}>Approve</Button><Button size="sm" variant="outline" onClick={() => updateModeration("products", prod.id, "rejected")}>Reject</Button><Button size="sm" variant="destructive" onClick={() => updateModeration("products", prod.id, "suspended")}>Suspend</Button><Button size="sm" variant="secondary" onClick={() => updateModeration("products", prod.id, "cancelled")}>Cancel</Button></div></div>; })}</CardContent></Card>
           </TabsContent>
 
           <TabsContent value="ai-preview">
             <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><Brain className="h-5 w-5 text-primary" /> भारत मित्र AI — Response Test Window</CardTitle></CardHeader><CardContent className="space-y-3 p-4"><Textarea value={aiQuestion} onChange={(e) => setAiQuestion(e.target.value)} className="min-h-24" /><Button onClick={testBharatMitra} disabled={aiLoading}>{aiLoading ? "Testing..." : "Test AI Response"}</Button>{aiAnswer && <div className="rounded-lg border bg-muted/40 p-4 font-hindi text-sm leading-relaxed">{aiAnswer}</div>}<div className="border-t pt-3"><p className="mb-2 text-xs font-semibold text-muted-foreground">FAQ Analytics</p>{MOCK_CHATBOT_LOGS.map((log, i) => <div key={i} className="mb-1 flex justify-between rounded border px-3 py-2 text-xs"><span>{log.question}</span><Badge variant="secondary">{log.count}</Badge></div>)}</div></CardContent></Card>
+          </TabsContent>
+
+          <TabsContent value="messages">
+            <Card>
+              <CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><MessageCircle className="h-5 w-5 text-primary" /> Admin Communication System</CardTitle></CardHeader>
+              <CardContent className="space-y-3 p-4">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Select value={messageTarget} onValueChange={setMessageTarget}>
+                    <SelectTrigger><SelectValue placeholder="Choose recipients" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All users</SelectItem>
+                      <SelectItem value="merchants">Merchant vendors</SelectItem>
+                      <SelectItem value="customers">General public users</SelectItem>
+                      <SelectItem value="specific">Specific user</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {messageTarget === "specific" && (
+                    <Select value={messageRecipientId} onValueChange={setMessageRecipientId}>
+                      <SelectTrigger><SelectValue placeholder="Select user" /></SelectTrigger>
+                      <SelectContent>
+                        {[...customers, ...merchants.map(m => ({ id: m.user_id, display_name: m.owner_name || m.shop_name, email: m.profile_email, phone: m.profile_phone || m.phone, provider: "merchant", created_at: m.created_at }))].map((u) => (
+                          <SelectItem key={`${u.id}-${u.provider}`} value={u.id}>{u.display_name || u.email || u.phone || u.id.slice(0, 8)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+                <Input value={messageTitle} onChange={(e) => setMessageTitle(e.target.value)} placeholder="Message title" />
+                <Textarea value={messageBody} onChange={(e) => setMessageBody(e.target.value)} placeholder="Write notification or alert..." className="min-h-28" />
+                <Button onClick={sendAdminMessage} disabled={messageSending}>
+                  <Send className="mr-2 h-4 w-4" /> {messageSending ? "Sending..." : "Send Live Message"}
+                </Button>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="settings">
@@ -1143,9 +1264,14 @@ const AdminDashboard = () => {
                               <p className="text-xs text-muted-foreground">Plan: {p.subscription_plan || "Not paid"}</p>
                             </div>
                           </div>
-                          <Button size="sm" onClick={() => publishMatrimony(p.id)} className="bg-[hsl(340,80%,50%)] hover:bg-[hsl(340,80%,45%)] text-primary-foreground h-8">
-                            <CheckCircle2 className="mr-1 h-4 w-4" /> Verify & Publish
-                          </Button>
+                          <div className="flex flex-wrap gap-2">
+                            <Button size="sm" onClick={() => updateMatrimonyStatus(p.id, "approved", true)} className="h-8">
+                              <CheckCircle2 className="mr-1 h-4 w-4" /> Approve
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => updateMatrimonyStatus(p.id, "rejected", false)} className="h-8">Reject</Button>
+                            <Button size="sm" variant="destructive" onClick={() => updateMatrimonyStatus(p.id, "suspended", false)} className="h-8">Suspend</Button>
+                            <Button size="sm" variant="secondary" onClick={() => updateMatrimonyStatus(p.id, "cancelled", false)} className="h-8">Cancel</Button>
+                          </div>
                         </div>
                         {/* KYC Documents */}
                         {(p.aadhar_url || p.pan_url) && (
@@ -1339,7 +1465,7 @@ const AdminDashboard = () => {
                         <div>
                           <p className="font-semibold text-foreground">{p.shopName}</p>
                           <p className="text-xs text-muted-foreground">
-                            {p.plan === "monthly" ? "₹1/mo" : "₹12/yr"} • TXN: <span className="font-mono">{p.transactionId}</span> • {p.date}
+                            {p.plan === "monthly" ? "₹99/mo" : "₹999/yr"} • TXN: <span className="font-mono">{p.transactionId}</span> • {p.date}
                           </p>
                           {p.screenshotUrl && <p className="mt-1 text-xs text-navy">📎 Screenshot: {p.screenshotUrl}</p>}
                         </div>
@@ -1397,7 +1523,7 @@ const AdminDashboard = () => {
                               </div>
                             </div>
                           </td>
-                          <td className="px-3 py-3"><Badge className="bg-saffron text-primary-foreground text-[10px]">{shop.premiumPlan === "monthly" ? "₹1/mo" : "₹12/yr"}</Badge></td>
+                          <td className="px-3 py-3"><Badge className="bg-saffron text-primary-foreground text-[10px]">{shop.premiumPlan === "monthly" ? "₹99/mo" : "₹999/yr"}</Badge></td>
                           <td className="px-3 py-3">
                             {daysLeft !== null ? (
                               <span className={`text-sm font-bold ${isExpiring ? "text-destructive" : "text-foreground"}`}>

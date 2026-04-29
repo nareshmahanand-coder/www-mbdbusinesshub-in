@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read_at: string | null
+          recipient_group: string
+          recipient_user_id: string | null
+          sender_id: string
+          severity: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string
+          read_at?: string | null
+          recipient_group?: string
+          recipient_user_id?: string | null
+          sender_id: string
+          severity?: string
+          title?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read_at?: string | null
+          recipient_group?: string
+          recipient_user_id?: string | null
+          sender_id?: string
+          severity?: string
+          title?: string
+        }
+        Relationships: []
+      }
       blood_donations: {
         Row: {
           admin_notes: string | null
@@ -418,6 +454,8 @@ export type Database = {
       family_members: {
         Row: {
           accepted_at: string | null
+          admin_notes: string
+          admin_status: string
           created_at: string
           id: string
           invite_token: string
@@ -430,6 +468,8 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          admin_notes?: string
+          admin_status?: string
           created_at?: string
           id?: string
           invite_token?: string
@@ -442,6 +482,8 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          admin_notes?: string
+          admin_status?: string
           created_at?: string
           id?: string
           invite_token?: string
@@ -623,6 +665,7 @@ export type Database = {
         Row: {
           aadhar_url: string | null
           about_me: string | null
+          admin_notes: string
           city: string | null
           created_at: string
           dob: string | null
@@ -634,6 +677,7 @@ export type Database = {
           id: string
           is_published: boolean | null
           job_details: string | null
+          moderation_status: string
           name: string
           pan_url: string | null
           photos: string[] | null
@@ -647,6 +691,7 @@ export type Database = {
         Insert: {
           aadhar_url?: string | null
           about_me?: string | null
+          admin_notes?: string
           city?: string | null
           created_at?: string
           dob?: string | null
@@ -658,6 +703,7 @@ export type Database = {
           id?: string
           is_published?: boolean | null
           job_details?: string | null
+          moderation_status?: string
           name?: string
           pan_url?: string | null
           photos?: string[] | null
@@ -671,6 +717,7 @@ export type Database = {
         Update: {
           aadhar_url?: string | null
           about_me?: string | null
+          admin_notes?: string
           city?: string | null
           created_at?: string
           dob?: string | null
@@ -682,6 +729,7 @@ export type Database = {
           id?: string
           is_published?: boolean | null
           job_details?: string | null
+          moderation_status?: string
           name?: string
           pan_url?: string | null
           photos?: string[] | null
@@ -742,6 +790,7 @@ export type Database = {
           aadhar_url: string | null
           access_status: string
           address: string | null
+          admin_notes: string
           category: string | null
           city: string | null
           created_at: string
@@ -774,6 +823,7 @@ export type Database = {
           aadhar_url?: string | null
           access_status?: string
           address?: string | null
+          admin_notes?: string
           category?: string | null
           city?: string | null
           created_at?: string
@@ -806,6 +856,7 @@ export type Database = {
           aadhar_url?: string | null
           access_status?: string
           address?: string | null
+          admin_notes?: string
           category?: string | null
           city?: string | null
           created_at?: string
@@ -938,6 +989,7 @@ export type Database = {
       }
       products: {
         Row: {
+          admin_notes: string
           created_at: string
           description: string | null
           id: string
@@ -951,6 +1003,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_notes?: string
           created_at?: string
           description?: string | null
           id?: string
@@ -964,6 +1017,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_notes?: string
           created_at?: string
           description?: string | null
           id?: string

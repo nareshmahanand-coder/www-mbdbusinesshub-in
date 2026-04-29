@@ -32,6 +32,7 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
+import AdminMessageListener from "./components/AdminMessageListener";
 
 const queryClient = new QueryClient();
 
@@ -110,6 +111,7 @@ const AppShell = () => {
         <Route path="/family-invite/:token" element={<FamilyInvitePage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <AdminMessageListener />
       <BharatMitraChatbot />
     </>
   );
