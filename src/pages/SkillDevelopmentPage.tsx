@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, GraduationCap, ArrowLeft, BookOpen, ChevronRight, ExternalLink, Lightbulb, Send, FolderOpen } from "lucide-react";
+import { Search, GraduationCap, ArrowLeft, BookOpen, ChevronRight, ExternalLink, Lightbulb, Send, FolderOpen, Landmark, ClipboardCheck, Medal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -246,18 +246,41 @@ const SkillDevelopmentPage = () => {
             <Link to="/"><ArrowLeft className="h-5 w-5" /></Link>
             <GraduationCap className="h-7 w-7" />
             <div>
-              <h1 className="text-lg font-bold font-hindi">कौशल विकास — डिजिटल लाइब्रेरी</h1>
-              <p className="text-[10px] opacity-80">100% Original PDF पुस्तकें</p>
+              <h1 className="text-lg font-bold font-hindi">कौशल विकास — डिजिटल यूनिवर्सिटी</h1>
+              <p className="text-[10px] opacity-85 font-hindi">फ्री स्टडी • ऑनलाइन एग्जाम • मान्यता प्राप्त सर्टिफिकेट</p>
             </div>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="खोजें... मशरूम, पशुपालन, Tally..."
+              placeholder="अपना मनपसंद कोर्स या विषय यहाँ खोजें..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="pl-9 bg-background/90 text-foreground border-0 h-10"
             />
+          </div>
+        </div>
+      </div>
+
+      {/* Professional Announcement Board */}
+      <div className="container mx-auto px-4 pt-4">
+        <div className="relative overflow-hidden rounded-xl border border-primary/20 bg-gradient-to-br from-card via-secondary/40 to-primary/10 p-4 shadow-md">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-orange-500 via-primary to-green-700" />
+          <div className="flex items-start gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
+              <Landmark className="h-6 w-6" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <Badge className="bg-primary text-primary-foreground font-hindi">आधिकारिक सूचना</Badge>
+                <Badge variant="outline" className="border-orange-500/60 text-orange-700 dark:text-orange-300 font-hindi">
+                  <Medal className="mr-1 h-3 w-3" /> Certification Highlight
+                </Badge>
+              </div>
+              <p className="text-sm font-bold leading-relaxed text-foreground font-hindi">
+                यहाँ आप विभिन्न क्षेत्रों में फ्री स्टडी और ट्रेनिंग ले सकते हैं। ऑनलाइन एग्जाम देने के बाद, आपको <span className="text-primary">'शिक्षा एवं सामाजिक कल्याण समिति'</span> (State Level Registered NGO, Chhattisgarh) के द्वारा मान्यता प्राप्त सर्टिफिकेट/प्रमाण पत्र प्रदान किया जाएगा।
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -301,12 +324,15 @@ const SkillDevelopmentPage = () => {
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold text-sm font-hindi text-foreground leading-tight">{cat.title}</h3>
                 <p className="text-[10px] text-muted-foreground mt-0.5">{cat.titleHi}</p>
-                <div className="flex gap-2 mt-1.5">
+                <div className="flex flex-wrap gap-2 mt-1.5">
                   {cat.pdfLibrary.length > 0 ? (
                     <Badge className="text-[9px] bg-green-700 text-white">📕 {cat.pdfLibrary.length} PDF Books</Badge>
                   ) : (
                     <Badge variant="outline" className="text-[9px]">📂 जल्द आ रही हैं</Badge>
                   )}
+                  <Badge variant="secondary" className="text-[9px] font-hindi gap-1">
+                    <ClipboardCheck className="h-3 w-3" /> Study → Exam → Get Certified
+                  </Badge>
                 </div>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
