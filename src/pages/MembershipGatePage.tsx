@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Loader2, Crown, Lock } from "lucide-react";
+import { Loader2, Crown, Landmark } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { startBharatGauravPaymentLink } from "@/lib/razorpayPayments";
 
@@ -14,8 +14,8 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
   const [paymentFailed, setPaymentFailed] = useState(false);
 
   const planDetails = {
-    monthly: { label: "Bharat Gaurav Membership ₹1 Plan" },
-    yearly: { label: "Bharat Gaurav Membership ₹12 Plan" },
+    monthly: { label: "भारत गौरव मेंबरशिप ₹1 प्लान" },
+    yearly: { label: "भारत गौरव मेंबरशिप ₹12 प्लान" },
   };
 
   const handlePayment = async () => {
@@ -45,39 +45,52 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-saffron/10 via-background to-green-india/10">
       <div className="h-1 w-full bg-gradient-to-r from-saffron via-white to-green-india" />
       <div className="flex flex-1 items-center justify-center px-4 py-6">
-        <Card className="w-full max-w-md border-2 border-saffron/30 shadow-2xl">
-          <CardHeader className="text-center space-y-3 pb-3 border-b border-primary/15 bg-primary/5">
+        <Card className="w-full max-w-md overflow-hidden border-2 border-primary/20 shadow-2xl">
+          <CardHeader className="text-center space-y-3 pb-4 border-b-4 border-saffron/70 bg-primary/5">
             <img src={logoCircle} alt="Mera Bharat Dukaan" className="mx-auto h-20 w-20 rounded-full object-cover shadow-lg border-4 border-saffron/40" />
-            <CardTitle className="text-lg sm:text-xl font-extrabold text-primary flex items-center justify-center gap-2 font-hindi leading-snug">
-              <Crown className="h-5 w-5 text-accent shrink-0" /> भारत गौरव मेंबरशिप: भारत के हर नागरिक के लिए आवश्यक
-            </CardTitle>
-            <div className="space-y-2">
-              <p className="text-[11px] font-bold tracking-wide text-primary">🇮🇳 DIGITAL INDIA INITIATIVE 🇮🇳</p>
-              <div className="mx-auto inline-flex items-center justify-center rounded-md border border-primary/25 bg-background px-3 py-1.5 text-xs font-extrabold text-primary shadow-sm font-hindi">
-                बैंक वेरिफिकेशन / खाता का वेरिफिकेशन
+            <div className="space-y-1 font-hindi">
+              <CardTitle className="text-2xl sm:text-3xl font-extrabold text-primary leading-tight">
+                भारत गौरव मेंबरशिप
+              </CardTitle>
+              <p className="text-base font-bold text-foreground">भारत के हर नागरिक के लिए आवश्यक है</p>
+            </div>
+            <div className="mx-auto w-full rounded-lg border border-primary/20 bg-background p-3 shadow-sm">
+              <div className="flex items-center justify-center gap-3">
+                <div className="flex h-11 w-24 items-center justify-center rounded-md border border-saffron/50 bg-saffron/10 text-center text-[11px] font-extrabold uppercase leading-tight text-primary">
+                  Digital<br />India
+                </div>
+                <div className="flex items-center gap-2 font-hindi text-lg font-extrabold text-primary">
+                  <Landmark className="h-5 w-5 text-accent" />
+                  बैंक वेरिफिकेशन
+                </div>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="rounded-lg bg-primary/10 border-2 border-primary/25 p-4 shadow-sm">
-              <h2 className="font-hindi text-sm font-extrabold text-primary mb-2">मानक नागरिक सदस्यता आवश्यकता</h2>
+              <h2 className="font-hindi text-base font-extrabold text-primary mb-2">मानक नागरिक सदस्यता आवश्यक है</h2>
               <p className="font-hindi text-[13px] leading-relaxed text-foreground">
-                यह <span className="font-bold text-accent">Digital India Initiative</span> का एक सुरक्षित सदस्यता चरण है। पोर्टल की सेवाएं सुरक्षित रहती हैं। आप मेरा भारत दुकान के डिजिटल व्यापार से नौकरी, शिक्षा सेवा, स्थानीय दुकान नेटवर्क और भरोसेमंद उपयोग कर सकते हैं।
+                पोर्टल की सेवाएं सुरक्षित रहती हैं। आप मेरा भारत दुकान के डिजिटल व्यापार से नौकरी, शिक्षा सेवा, स्थानीय दुकान नेटवर्क और भरोसेमंद उपयोग कर सकते हैं।
               </p>
             </div>
 
             {/* Plan Selection */}
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => setPlan("monthly")}
-                className={`rounded-lg border-2 p-4 text-center transition-all ${plan === "monthly" ? "border-accent bg-accent/10 shadow-md" : "border-border bg-card hover:border-accent/50"}`}>
-                <p className="text-2xl font-extrabold text-foreground">₹1</p>
-                <p className="text-xs font-bold text-accent font-hindi">भारत गौरव मेंबरशिप ₹1 प्लान</p>
+                className={`rounded-lg border-2 p-3 text-center transition-all ${plan === "monthly" ? "border-accent bg-accent/10 shadow-md" : "border-border bg-card hover:border-accent/50"}`}>
+                <p className="text-xs font-extrabold text-accent font-hindi leading-snug">भारत गौरव मेंबरशिप ₹1 प्लान</p>
+                <p className="mt-2 text-2xl font-extrabold text-foreground">₹1</p>
+                <p className="mt-1 text-sm font-extrabold text-primary font-hindi">मासिक प्लान</p>
+                <p className="text-[10px] font-semibold text-muted-foreground">Monthly Plan</p>
+                <p className="mt-2 rounded-md bg-muted px-2 py-1 text-[11px] font-bold text-foreground font-hindi">मासिक किराया</p>
               </button>
               <button onClick={() => setPlan("yearly")}
-                className={`rounded-lg border-2 p-4 text-center transition-all relative ${plan === "yearly" ? "border-accent bg-accent/10 shadow-md" : "border-border bg-card hover:border-accent/50"}`}>
-                <span className="absolute -top-2 right-2 rounded-full bg-green-india px-2 py-0.5 text-[9px] font-bold text-primary-foreground">BEST VALUE</span>
-                <p className="text-2xl font-extrabold text-foreground">₹12</p>
-                <p className="text-xs font-bold text-green-india font-hindi">भारत गौरव मेंबरशिप ₹12 प्लान</p>
+                className={`rounded-lg border-2 p-3 text-center transition-all ${plan === "yearly" ? "border-accent bg-accent/10 shadow-md" : "border-border bg-card hover:border-accent/50"}`}>
+                <p className="text-xs font-extrabold text-green-india font-hindi leading-snug">भारत गौरव मेंबरशिप ₹12 प्लान</p>
+                <p className="mt-2 text-2xl font-extrabold text-foreground">₹12</p>
+                <p className="mt-1 text-sm font-extrabold text-primary font-hindi">सालाना प्लान</p>
+                <p className="text-[10px] font-semibold text-muted-foreground">Yearly Plan</p>
+                <p className="mt-2 rounded-md bg-muted px-2 py-1 text-[11px] font-bold text-foreground font-hindi">सालाना किराया</p>
               </button>
             </div>
 
@@ -91,14 +104,6 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
                 Retry Payment
               </Button>
             )}
-            <div className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2">
-              <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <p className="text-[10.5px] leading-snug text-muted-foreground">
-                Payment unlock is automatic after Razorpay confirms success.
-                <span className="font-hindi"> सफल पेमेंट के बाद एक्सेस तुरंत खुल जाएगा।</span>
-              </p>
-            </div>
-
             <button onClick={signOut} className="w-full text-center text-xs text-muted-foreground hover:text-foreground pt-2">
               ← दूसरे अकाउंट से लॉगिन करें
             </button>
