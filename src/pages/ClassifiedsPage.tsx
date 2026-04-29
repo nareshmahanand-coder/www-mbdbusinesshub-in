@@ -307,6 +307,20 @@ const ClassifiedsPage = () => {
     else { toast.success("Chat deleted"); loadConversations(); }
   };
 
+  const openConversation = async (conversation: ClassifiedConversation) => {
+    setActiveConversation(conversation);
+    const { data } = await supabase.from("classified_messages" as any)
+      .select("*").eq("conversation_id", conversation.id).order("created_at", { ascending: true });
+    setConversationMessages((data as unknown as ClassifiedMessage[]) || []);
+  };
+
+  const sendReply = async () => {
+    if (!user || !activeConversation || !replyMessage.trim()) return;
+    const { error } = await supabase.from("classified_messages" as any).insert({ conversation_id: activeConversation.id, sender_id: user.id, message: replyMessage.trim() });
+    if (error) toast.error("Message not sent");
+    else { setReplyMessage(""); await openConversation(activeConversation); await loadConversations(); }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24">
       <AppHeader />
@@ -475,9 +489,33 @@ const ClassifiedsPage = () => {
         {activeSection === "myAds" && (
           <Tabs defaultValue="active" className="mt-2">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="text-lg font-extrabold text-foreground">My Ads</h2>
+              <div>
+                <h2 className="text-lg font-extrabold text-foreground">My Ads</h2>
+                {pendingSellerRequests.length > 0 && <p className="text-xs font-bold text-accent">{pendingSellerRequests.length} buyer request pending</p>}
+              </div>
               <TabsList className="grid w-48 grid-cols-2"><TabsTrigger value="active">Active</TabsTrigger><TabsTrigger value="sold">Sold</TabsTrigger></TabsList>
             </div>
+            {sellerRequests.length > 0 && (
+              <div className="mb-4 space-y-2 rounded-lg border border-border bg-card p-3">
+                <p className="flex items-center gap-2 text-sm font-extrabold text-foreground"><Bell className="h-4 w-4 text-accent" /> Buyer Number Requests</p>
+                {sellerRequests.map(request => {
+                  const ad = ads.find(item => item.id === request.classified_id);
+                  return (
+                    <div key={request.id} className="flex flex-col gap-2 rounded-md border border-border p-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-foreground">{ad?.title || "Your listing"}</p>
+                        <p className="text-xs text-muted-foreground">{request.message || "Buyer requested your mobile number"}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={request.status === "approved" ? "default" : request.status === "rejected" ? "destructive" : "secondary"}>{request.status}</Badge>
+                        {request.status === "pending" && <Button size="sm" className="gap-1" onClick={() => updateContactRequest(request, "approved")}><CheckCircle2 className="h-4 w-4" /> Approve</Button>}
+                        {request.status === "pending" && <Button size="sm" variant="outline" onClick={() => updateContactRequest(request, "rejected")}>Reject</Button>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             {(["active", "sold"] as const).map(tab => {
               const tabAds = myAds.filter(ad => tab === "sold" ? ad.is_sold : !ad.is_sold);
               return (
@@ -500,10 +538,10 @@ const ClassifiedsPage = () => {
               const ad = ads.find(item => item.id === conversation.classified_id);
               return (
                 <div key={conversation.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 shadow-sm">
-                  <div className="min-w-0">
+                  <button className="min-w-0 flex-1 text-left" onClick={() => openConversation(conversation)}>
                     <p className="truncate text-sm font-extrabold text-foreground">{ad?.title || "Marketplace chat"}</p>
                     <p className="text-xs text-muted-foreground">{conversation.seller_id === user?.id ? "Buyer conversation" : "Seller conversation"} · {new Date(conversation.last_message_at).toLocaleDateString("en-IN")}</p>
-                  </div>
+                  </button>
                   <div className="flex shrink-0 gap-2">
                     <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={() => archiveConversation(conversation)}><Archive className="h-4 w-4" /> Archive</Button>
                     <Button size="sm" variant="destructive" className="gap-1 text-xs" onClick={() => deleteConversation(conversation)}><Trash2 className="h-4 w-4" /> Delete</Button>
