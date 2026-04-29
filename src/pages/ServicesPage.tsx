@@ -1,178 +1,207 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
 import PremiumShopSlider from "@/components/PremiumShopSlider";
-import { Card, CardContent } from "@/components/ui/card";
+import { sampleShops } from "@/data/sampleShops";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Store, Plus, Phone, MapPin, Star, Search, MessageCircle } from "lucide-react";
+import { LocateFixed, MapPin, Navigation, Search, ShieldCheck, Store } from "lucide-react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-interface ServiceProvider {
+interface NearbyShop {
   id: string;
-  name: string;
-  service_type: string;
-  city: string;
-  phone: string;
-  description: string;
-  rating: number;
-  is_verified: boolean;
-  user_id: string;
-  created_at: string;
+  shop_name: string;
+  shop_name_hindi?: string | null;
+  category?: string | null;
+  city?: string | null;
+  address?: string | null;
+  pincode?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  is_premium?: boolean | null;
+  is_verified?: boolean | null;
+  distanceKm?: number | null;
 }
 
-const serviceTypes = [
-  "Electrician", "Plumber", "Carpenter", "Doctor", "Tutor",
-  "Driver", "Cook / Chef", "Tailor", "Painter", "AC Repair",
-  "Mobile Repair", "CA / Tax Consultant", "Lawyer",
-  "Kirana Store", "Chicken / Mutton Shop", "Medical Store", "Salon", "Other",
-];
+const toRad = (value: number) => (value * Math.PI) / 180;
+
+const distanceKm = (fromLat: number, fromLng: number, toLat?: number | null, toLng?: number | null) => {
+  if (toLat == null || toLng == null) return null;
+  const earthKm = 6371;
+  const dLat = toRad(toLat - fromLat);
+  const dLng = toRad(toLng - fromLng);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(fromLat)) * Math.cos(toRad(toLat)) * Math.sin(dLng / 2) ** 2;
+  return earthKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
 
 const ServicesPage = () => {
-  const { user } = useAuth();
-  const [providers, setProviders] = useState<ServiceProvider[]>([]);
+  const [shops, setShops] = useState<NearbyShop[]>([]);
   const [search, setSearch] = useState("");
+  const [activeCity, setActiveCity] = useState("");
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [locating, setLocating] = useState(false);
 
-  const [form, setForm] = useState({
-    name: "", service_type: "", city: "", phone: "", description: "",
-  });
+  useEffect(() => {
+    loadShops();
+    detectLocation(true);
+  }, []);
 
-  useEffect(() => { loadProviders(); }, []);
-
-  const loadProviders = async () => {
+  const loadShops = async () => {
     setLoading(true);
-    const { data } = await supabase.from("service_providers")
-      .select("*").order("created_at", { ascending: false });
-    if (data) setProviders(data as ServiceProvider[]);
+    const { data, error } = await supabase
+      .from("merchant_profiles")
+      .select("id, shop_name, shop_name_hindi, category, city, address, pincode, latitude, longitude, is_premium, is_verified")
+      .order("is_premium", { ascending: false })
+      .order("created_at", { ascending: false });
+
+    if (error) toast.error("Shops could not be loaded");
+
+    const registeredShops: NearbyShop[] = (data || []).map((shop) => ({ ...shop, is_premium: !!shop.is_premium }));
+    const flagshipShops: NearbyShop[] = sampleShops.map((shop) => ({
+      id: shop.id,
+      shop_name: shop.name,
+      shop_name_hindi: shop.nameHindi,
+      category: shop.category,
+      city: shop.city,
+      address: shop.address,
+      pincode: shop.pincode,
+      latitude: shop.lat,
+      longitude: shop.lng,
+      is_premium: !!shop.premium,
+      is_verified: shop.verified,
+    }));
+
+    setShops([...flagshipShops, ...registeredShops]);
     setLoading(false);
   };
 
-  const addProvider = async () => {
-    if (!user) return;
-    if (!form.name.trim() || !form.service_type) { toast.error("Name and service type required"); return; }
-    setSaving(true);
-    const { error } = await supabase.from("service_providers").insert({ ...form, user_id: user.id });
-    setSaving(false);
-    if (error) toast.error("Failed to add service");
-    else {
-      toast.success("Service listed!");
-      setForm({ name: "", service_type: "", city: "", phone: "", description: "" });
-      setDialogOpen(false);
-      loadProviders();
+  const detectLocation = (silent = false) => {
+    if (!("geolocation" in navigator)) {
+      if (!silent) toast.error("GPS is not available on this device");
+      return;
     }
+
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+        setActiveCity("");
+        setLocating(false);
+        if (!silent) toast.success("Nearby shops updated from your GPS location");
+      },
+      () => {
+        setLocating(false);
+        if (!silent) toast.error("Location permission is needed for 10km nearby results");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    );
   };
 
-  const filtered = providers.filter(p => {
-    const q = search.toLowerCase();
-    return !search || p.name.toLowerCase().includes(q) || p.service_type.toLowerCase().includes(q) || p.city.toLowerCase().includes(q);
-  });
+  const applyCitySearch = () => {
+    setActiveCity(search.trim());
+    if (search.trim()) toast.success(`Showing shops for ${search.trim()}`);
+  };
+
+  const visibleShops = useMemo(() => {
+    const query = activeCity.trim().toLowerCase();
+    const withDistance = shops.map((shop) => ({
+      ...shop,
+      distanceKm: userLocation ? distanceKm(userLocation.lat, userLocation.lng, shop.latitude, shop.longitude) : null,
+    }));
+
+    const filtered = query
+      ? withDistance.filter((shop) => [shop.shop_name, shop.shop_name_hindi, shop.category, shop.city, shop.address, shop.pincode].some((value) => value?.toLowerCase().includes(query)))
+      : userLocation
+        ? withDistance.filter((shop) => shop.distanceKm == null || shop.distanceKm <= 10)
+        : withDistance;
+
+    return filtered.sort((a, b) => {
+      if (!!a.is_premium !== !!b.is_premium) return a.is_premium ? -1 : 1;
+      const aDistance = a.distanceKm ?? Number.POSITIVE_INFINITY;
+      const bDistance = b.distanceKm ?? Number.POSITIVE_INFINITY;
+      return aDistance - bDistance;
+    });
+  }, [activeCity, shops, userLocation]);
 
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <div className="container mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="mb-4 flex items-center justify-between">
+      <main className="container mx-auto px-4 py-6">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
               <Store className="h-6 w-6 text-primary" /> नजदीकी दुकान — Nearby Shops
             </h1>
-            <p className="text-sm text-muted-foreground">Find local shops & service providers near you</p>
+            <p className="text-sm text-muted-foreground">GPS-based live shopping directory within 10km</p>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-accent text-accent-foreground">
-                <Plus className="mr-1.5 h-4 w-4" /> List Service
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader><DialogTitle>List Your Service</DialogTitle></DialogHeader>
-              <div className="space-y-3">
-                <Input placeholder="Your Name *" value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} />
-                <Select value={form.service_type} onValueChange={v => setForm(f => ({...f, service_type: v}))}>
-                  <SelectTrigger><SelectValue placeholder="Service Type *" /></SelectTrigger>
-                  <SelectContent>
-                    {serviceTypes.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Input placeholder="City" value={form.city} onChange={e => setForm(f => ({...f, city: e.target.value}))} />
-                <Input placeholder="Phone Number" value={form.phone} onChange={e => setForm(f => ({...f, phone: e.target.value}))} />
-                <Textarea placeholder="Description of your services" value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} rows={3} />
-                <Button onClick={addProvider} disabled={saving} className="w-full">
-                  {saving ? "Saving..." : "List My Service"}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button variant="outline" onClick={() => detectLocation()} disabled={locating}>
+            <LocateFixed className="mr-1.5 h-4 w-4" /> {locating ? "Detecting..." : "Use GPS"}
+          </Button>
         </div>
 
-        {/* Premium Auto-Slider — always visible */}
         <PremiumShopSlider />
 
-        {/* Search */}
-        <div className="mb-4">
-          <div className="relative max-w-md">
+        <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_auto]">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search — Plumber, Electrician, Kirana, Chicken Shop..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
+            <Input
+              placeholder="Search city or area — Pune, Bhilai, Risali..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              onKeyDown={(event) => event.key === "Enter" && applyCitySearch()}
+              className="pl-10"
+            />
           </div>
+          <Button onClick={applyCitySearch}>Search</Button>
         </div>
 
-        {/* Service providers list — always visible */}
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <Badge variant="secondary">{visibleShops.length} shops found</Badge>
+          {activeCity ? <span>Area: {activeCity}</span> : userLocation ? <span>Showing shops within 10km of your location</span> : <span>Showing all registered shops until GPS permission is allowed</span>}
+        </div>
+
         {loading ? (
-          <div className="py-16 text-center text-muted-foreground">Loading...</div>
-        ) : filtered.length === 0 ? (
+          <div className="py-16 text-center text-muted-foreground">Loading live shops...</div>
+        ) : visibleShops.length === 0 ? (
           <div className="py-16 text-center">
             <Store className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-            <p className="text-muted-foreground">No service providers listed yet</p>
+            <p className="text-muted-foreground">No nearby shops found for this location</p>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((p) => (
-              <Card key={p.id}>
+            {visibleShops.map((shop) => (
+              <Card key={shop.id} className={shop.is_premium ? "ring-2 ring-saffron" : undefined}>
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
+                  <div className="mb-3 flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="font-semibold text-foreground">{p.name}</h3>
-                      <Badge variant="secondary" className="text-[10px] mt-0.5">{p.service_type}</Badge>
+                      <h2 className="text-base font-bold text-foreground">{shop.shop_name}</h2>
+                      {shop.shop_name_hindi && <p className="font-hindi text-xs text-muted-foreground">{shop.shop_name_hindi}</p>}
                     </div>
-                    {p.is_verified && <Badge className="bg-[hsl(var(--green-india))] text-white text-[10px]">Verified ✓</Badge>}
-                  </div>
-                  {p.description && <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{p.description}</p>}
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-                    {p.city && <span className="flex items-center gap-0.5"><MapPin className="h-3 w-3" />{p.city}</span>}
-                    {p.rating > 0 && <span className="flex items-center gap-0.5"><Star className="h-3 w-3 text-accent" />{p.rating}</span>}
-                  </div>
-                  {p.phone && (
-                    <div className="flex gap-2">
-                      <a href={`tel:${p.phone}`} className="flex-1">
-                        <Button size="sm" className="w-full bg-[hsl(var(--green-india))] text-white hover:bg-[hsl(140,60%,30%)]">
-                          <Phone className="mr-1 h-3.5 w-3.5" /> Call Now
-                        </Button>
-                      </a>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-[hsl(var(--green-india))] text-[hsl(var(--green-india))]"
-                        onClick={() => window.open(`https://wa.me/91${p.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`नमस्ते, मुझे ${p.service_type} सेवा चाहिए।`)}`, "_blank")}
-                      >
-                        <MessageCircle className="h-3.5 w-3.5" />
-                      </Button>
+                    <div className="flex flex-col items-end gap-1">
+                      {shop.is_premium && <Badge className="bg-accent text-accent-foreground">Premium</Badge>}
+                      {shop.is_verified && <ShieldCheck className="h-4 w-4 text-green-india" />}
                     </div>
-                  )}
+                  </div>
+
+                  <Badge variant="secondary" className="mb-3">{shop.category || "Local Shop"}</Badge>
+                  <div className="mb-4 space-y-2 text-sm text-muted-foreground">
+                    <p className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-saffron" />{[shop.address, shop.city, shop.pincode].filter(Boolean).join(", ") || "Location available in profile"}</p>
+                    <p className="flex items-center gap-2"><Navigation className="h-4 w-4 shrink-0 text-primary" />{shop.distanceKm == null ? "Distance calculating after GPS" : `${shop.distanceKm.toFixed(1)} km away`}</p>
+                  </div>
+
+                  <Button asChild className="w-full">
+                    <Link to={`/shop/${shop.id}`}>View Details</Link>
+                  </Button>
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };
