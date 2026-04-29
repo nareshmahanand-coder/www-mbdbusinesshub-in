@@ -28,6 +28,7 @@ const SUPERUSER_PIN = "02032026";
 const SUPERUSER_EMAIL = "superuser@mbd.local";
 const SUPERUSER_PASSWORD = "MBD_SuperUser_02032026!";
 const SHOP_APP_ORIGIN = "https://shop.mbdbusinesshub.in";
+const POST_LOGIN_MEMBERSHIP_PATH = "/membership";
 
 const getStandaloneAuthOrigin = () => {
   const hostname = window.location.hostname;
@@ -35,7 +36,7 @@ const getStandaloneAuthOrigin = () => {
   return window.location.origin;
 };
 
-const safeNextPath = (value: string | null) => (value?.startsWith("/") ? value : "/dashboard");
+const safeNextPath = (value: string | null) => (value?.startsWith("/") ? value : POST_LOGIN_MEMBERSHIP_PATH);
 
 const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const navigate = useNavigate();
@@ -64,17 +65,17 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   useEffect(() => {
     if (!authLoading && user) {
       sessionStorage.removeItem("mbd-auth-next");
-      navigate(nextPath, { replace: true });
+      navigate(POST_LOGIN_MEMBERSHIP_PATH, { replace: true });
     }
-  }, [authLoading, navigate, nextPath, user]);
+  }, [authLoading, navigate, user]);
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
-    sessionStorage.setItem("mbd-auth-next", nextPath);
+    sessionStorage.setItem("mbd-auth-next", POST_LOGIN_MEMBERSHIP_PATH);
     sessionStorage.setItem("bharat-mitra-pending-greet", "true");
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${getStandaloneAuthOrigin()}/login?next=${encodeURIComponent(nextPath)}`,
+        redirect_uri: `${getStandaloneAuthOrigin()}/login?next=${encodeURIComponent(POST_LOGIN_MEMBERSHIP_PATH)}`,
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
@@ -83,7 +84,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
         return;
       }
       if (result.redirected) return;
-      navigate(nextPath, { replace: true });
+      navigate(POST_LOGIN_MEMBERSHIP_PATH, { replace: true });
     } catch (error) {
       console.error("Google login error:", error);
       toast.error("Login failed. Please try again.");
@@ -107,7 +108,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
     }
 
     setLoading(true);
-    sessionStorage.setItem("mbd-auth-next", nextPath);
+    sessionStorage.setItem("mbd-auth-next", POST_LOGIN_MEMBERSHIP_PATH);
     try {
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
@@ -115,7 +116,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
           password,
           options: {
             data: { full_name: fullName.trim() },
-            emailRedirectTo: `${getStandaloneAuthOrigin()}/login?next=${encodeURIComponent(nextPath)}`,
+            emailRedirectTo: `${getStandaloneAuthOrigin()}/login?next=${encodeURIComponent(POST_LOGIN_MEMBERSHIP_PATH)}`,
           },
         });
         if (error) throw error;
@@ -126,7 +127,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
         toast.success("Login successful.");
       }
       sessionStorage.setItem("bharat-mitra-pending-greet", "true");
-      navigate(nextPath, { replace: true });
+      navigate(POST_LOGIN_MEMBERSHIP_PATH, { replace: true });
     } catch (error: any) {
       toast.error(error?.message || "Authentication failed. Please try again.");
     } finally {
