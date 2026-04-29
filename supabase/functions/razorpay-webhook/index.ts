@@ -42,6 +42,12 @@ function getPaymentLinkPlan(payment: any) {
 
 async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: { plan: "monthly" | "yearly"; amount: number; days: number; label: string }) {
   const notes = payment?.notes || {};
+  const paymentId = String(payment?.id || "");
+  if (paymentId) {
+    const { data } = await admin.from("payment_orders").select("*").eq("razorpay_payment_id", paymentId).maybeSingle();
+    if (data) return data;
+  }
+
   const referenceId = String(payment?.reference_id || notes.reference_id || notes.payment_link_reference_id || "");
   if (referenceId) {
     const { data } = await admin.from("payment_orders").select("*").eq("id", referenceId).maybeSingle();
@@ -74,7 +80,6 @@ async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: { plan: 
     currency: "INR",
     status: "created",
     razorpay_order_id: payment?.order_id || null,
-    razorpay_payment_id: payment?.id || null,
     receipt: `mbd_link_${linkPlan.plan}_${Date.now()}`.slice(0, 40),
     metadata: { days: linkPlan.days, label: linkPlan.label, plan_name: `bharat_gaurav_${linkPlan.plan}`, source: "razorpay_payment_link" },
   }).select("*").single();
