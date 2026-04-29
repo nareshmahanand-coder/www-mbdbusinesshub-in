@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Loader2, Crown, Lock } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { startInstantRazorpayPayment } from "@/lib/razorpayPayments";
+import { startBharatGauravPaymentLink } from "@/lib/razorpayPayments";
 
 interface MembershipOverlayProps {
   onActivated: () => void;
@@ -26,13 +26,12 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
     setPaymentFailed(null);
 
     try {
-      await startInstantRazorpayPayment({
-        module: "bharat_gaurav",
+      await startBharatGauravPaymentLink({
         plan,
         onSuccess: () => {
           toast.success("Payment successful — access unlocked!");
           onActivated();
-          window.location.reload();
+          window.location.href = "/dashboard";
         },
         onFailure: () => setPaymentFailed(plan),
       });
@@ -93,7 +92,7 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
               className="w-full h-14 text-base font-extrabold text-white shadow-lg rounded-xl font-hindi"
               style={{ backgroundColor: "#FF9933" }}
             >
-              {submitting === "monthly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "मंथली प्लान - ₹1 / Month (ऑटो-डेबिट)"}
+              {submitting === "monthly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Bharat Gaurav Membership ₹1 Plan"}
             </Button>
           </div>
 
@@ -107,7 +106,7 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
               <span className="absolute -top-2 right-3 rounded-full bg-[#1a237e] px-2 py-0.5 text-[9px] font-bold text-white">
                 BEST VALUE
               </span>
-              {submitting === "yearly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "सालाना प्लान - ₹12 / Year (ऑटो-डेबिट)"}
+              {submitting === "yearly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Bharat Gaurav Membership ₹12 Plan"}
             </Button>
           </div>
 
