@@ -771,6 +771,7 @@ const AdminDashboard = () => {
     { id: "family-preview", label: "भारत कवच", icon: ShieldAlert, count: familyMembers.length },
     { id: "inventory-preview", label: "मशाल Inventory", icon: Package, count: products.length },
     { id: "ai-preview", label: "भारत मित्र AI", icon: Brain, count: MOCK_CHATBOT_LOGS.length },
+    { id: "messages", label: "Messages", icon: MessageCircle, count: 0 },
     { id: "settings", label: "Settings", icon: Settings, count: 0 },
   ];
 
@@ -781,6 +782,23 @@ const AdminDashboard = () => {
     const expiry = new Date(start.getTime() + duration * 24 * 60 * 60 * 1000);
     return Math.ceil((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
   };
+
+  if (!loggedIn) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-sm border-primary/30 shadow-lg">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground"><LockKeyhole className="h-6 w-6" /></div>
+            <CardTitle>Staff System PIN</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Input type="password" inputMode="numeric" value={pin} onChange={(e) => setPin(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleLogin()} placeholder="Enter secure PIN" autoFocus />
+            <Button className="w-full" onClick={handleLogin}>Unlock Admin Portal</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
