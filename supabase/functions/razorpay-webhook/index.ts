@@ -148,13 +148,19 @@ serve(async (req) => {
     const orderId = payment?.order_id;
     const paymentId = payment?.id;
     const status = payment?.status;
+    const linkPlan = getPaymentLinkPlan(payment);
 
     if (!orderId || !paymentId) {
-      return new Response(JSON.stringify({ ok: true, ignored: "no_payment_order" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (!paymentId || !linkPlan) {
+        return new Response(JSON.stringify({ ok: true, ignored: "no_payment_order" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
 
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: order } = await admin.from("payment_orders").select("*").eq("razorpay_order_id", orderId).maybeSingle();
+    const { data: orderByOrderId } = orderId
+      ? await admin.from("payment_orders").select("*").eq("razorpay_order_id", orderId).maybeSingle()
+      : { data: null } as any;
+    const order = orderByOrderId || (linkPlan ? await findPaymentLinkOrder(admin, payment, linkPlan) : null);
 
     if (!order) {
       return new Response(JSON.stringify({ ok: true, ignored: "unknown_order" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
