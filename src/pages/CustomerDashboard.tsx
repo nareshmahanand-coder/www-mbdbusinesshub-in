@@ -50,6 +50,16 @@ interface ClassifiedContactRequest {
   created_at: string;
 }
 
+interface JobContactRequest {
+  id: string;
+  job_id: string;
+  seeker_id: string;
+  recruiter_id: string;
+  status: "pending" | "approved" | "rejected";
+  message: string;
+  created_at: string;
+}
+
 const CustomerDashboard = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -61,6 +71,7 @@ const CustomerDashboard = () => {
   const [myJobs, setMyJobs] = useState<MyJob[]>([]);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [contactRequests, setContactRequests] = useState<ClassifiedContactRequest[]>([]);
+  const [jobContactRequests, setJobContactRequests] = useState<JobContactRequest[]>([]);
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
