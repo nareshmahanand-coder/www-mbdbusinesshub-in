@@ -9,7 +9,7 @@ declare global {
 export type PaymentModule = "bharat_gaurav" | "merchant_premium" | "marriage_bureau";
 export type PaymentPlan = "monthly" | "yearly";
 
-const PAYMENT_LINKS: Record<"bharat_gaurav" | "merchant_premium", Record<PaymentPlan, { url: string; amount: number; planName: string; subscriptionId: string }>> = {
+const PAYMENT_LINKS: Record<PaymentModule, Record<PaymentPlan, { url: string; amount: number; planName: string; subscriptionId: string }>> = {
   bharat_gaurav: {
     monthly: { url: "https://rzp.io/rzp/HcZ53Lpl", amount: 1, planName: "Bharat Gaurav Membership ₹1 Plan", subscriptionId: "sub_ShFY15RTkXtfeU" },
     yearly: { url: "https://rzp.io/rzp/0WkIfbVd", amount: 12, planName: "Bharat Gaurav Membership ₹12 Plan", subscriptionId: "sub_ShFULxQPgrTChe" },
@@ -17,6 +17,10 @@ const PAYMENT_LINKS: Record<"bharat_gaurav" | "merchant_premium", Record<Payment
   merchant_premium: {
     monthly: { url: "https://rzp.io/rzp/PKPblN5t", amount: 99, planName: "Merchant Portal ₹99 Monthly Plan", subscriptionId: "sub_ShLRDyN197vaFh" },
     yearly: { url: "https://rzp.io/rzp/CmLBI4u", amount: 999, planName: "Merchant Portal ₹999 Yearly Plan", subscriptionId: "sub_ShLXB2CbEc64Un" },
+  },
+  marriage_bureau: {
+    monthly: { url: "https://rzp.io/rzp/d6TAK5F", amount: 99, planName: "Marriage Bureau ₹99 Monthly Plan", subscriptionId: "" },
+    yearly: { url: "https://rzp.io/rzp/WY2NejZi", amount: 999, planName: "Marriage Bureau ₹999 Yearly Plan", subscriptionId: "" },
   },
 };
 
@@ -79,7 +83,7 @@ const waitForPaymentOrderUnlock = async (paymentOrderId: string) => {
   return false;
 };
 
-const startPaymentLink = async ({ module, plan, onSuccess, onFailure }: StartPaymentOptions & { module: "bharat_gaurav" | "merchant_premium" }) => {
+const startPaymentLink = async ({ module, plan, onSuccess, onFailure }: StartPaymentOptions) => {
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
   if (!user) throw new Error("Login required");
@@ -132,6 +136,10 @@ export const startBharatGauravPaymentLink = async (options: Omit<StartPaymentOpt
 
 export const startMerchantPortalPaymentLink = async (options: Omit<StartPaymentOptions, "module">) => {
   await startPaymentLink({ ...options, module: "merchant_premium" });
+};
+
+export const startMarriageBureauPaymentLink = async (options: Omit<StartPaymentOptions, "module">) => {
+  await startPaymentLink({ ...options, module: "marriage_bureau" });
 };
 
 export const startInstantRazorpayPayment = async ({ module, plan, onSuccess, onFailure }: StartPaymentOptions) => {
