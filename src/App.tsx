@@ -27,10 +27,12 @@ import MyProfilePage from "./pages/MyProfilePage";
 import ShopProfilePage from "./pages/ShopProfilePage";
 import SkillDevelopmentPage from "./pages/SkillDevelopmentPage";
 import EkycPage from "./pages/EkycPage";
+import MembershipGatePage from "./pages/MembershipGatePage";
 import FamilySafetyPage from "./pages/FamilySafetyPage";
 import FamilyInvitePage from "./pages/FamilyInvitePage";
 import { useLastKnownLocation } from "@/hooks/useLastKnownLocation";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useKycStatus } from "@/hooks/useKycStatus";
 
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
@@ -69,6 +71,28 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const KycRequiredRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading: authLoading, isSuperUser } = useAuth();
+  const { status, loading: kycLoading } = useKycStatus();
+  const location = useLocation();
+  if (authLoading || (user && kycLoading)) return <FullScreenLoader />;
+  if (!user) {
+    const next = `${location.pathname}${location.search}`;
+    return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
+  }
+  if (!isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
+  return <>{children}</>;
+};
+
+const MembershipRoute = () => {
+  const { user, loading: authLoading, isSuperUser } = useAuth();
+  const { status, loading: kycLoading } = useKycStatus();
+  if (authLoading || (user && kycLoading)) return <FullScreenLoader />;
+  if (!user) return <Navigate to="/login?next=/membership" replace />;
+  if (!isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
+  return <MembershipGatePage onActivated={() => { window.location.href = "/dashboard"; }} />;
+};
+
 const MerchantAccessRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
@@ -78,10 +102,13 @@ const KycRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isSuperUser } = useAuth();
+  const { status, loading: kycLoading } = useKycStatus();
   const location = useLocation();
   const next = new URLSearchParams(location.search).get("next") || sessionStorage.getItem("mbd-auth-next") || "/dashboard";
-  if (loading) return <FullScreenLoader />;
+  if (loading || (user && kycLoading)) return <FullScreenLoader />;
+  if (user && !isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
+  if (user && !isSuperUser && status === "pending") return <Navigate to="/membership" replace />;
   if (user) return <Navigate to={next.startsWith("/") ? next : "/dashboard"} replace />;
   return <>{children}</>;
 };
@@ -103,28 +130,29 @@ const AppShell = () => {
         <Route path="/signup" element={<PublicLoginRoute><LoginPage initialMode="signup" /></PublicLoginRoute>} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/~oauth/*" element={<FullScreenLoader />} />
-        <Route path="/ekyc" element={<KycRoute><EkycPage /></KycRoute>} />
+        <Route path="/ekyc" element={<ProtectedRoute><KycRoute><EkycPage /></KycRoute></ProtectedRoute>} />
+        <Route path="/membership" element={<MembershipRoute />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/contact" element={<LegalPage section="contact" />} />
         <Route path="/privacy-policy" element={<LegalPage section="privacy" />} />
         <Route path="/refund-policy" element={<LegalPage section="refund" />} />
         <Route path="/" element={<PublicHomeRoute />} />
-        <Route path="/merchant" element={<ProtectedRoute><MerchantPortal /></ProtectedRoute>} />
+        <Route path="/merchant" element={<KycRequiredRoute><MerchantPortal /></KycRequiredRoute>} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
-        <Route path="/settings" element={<ProtectedRoute><Navigate to="/dashboard?tab=settings" replace /></ProtectedRoute>} />
-        <Route path="/kisan" element={<ProtectedRoute><KisanRegistration /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute><CustomerDashboard /></ProtectedRoute>} />
-        <Route path="/merchant-dashboard" element={<ProtectedRoute><MerchantAccessRoute><MerchantDashboard /></MerchantAccessRoute></ProtectedRoute>} />
-        <Route path="/matrimony" element={<ProtectedRoute><MatrimonyPage /></ProtectedRoute>} />
-        <Route path="/classifieds" element={<ProtectedRoute><ClassifiedsPage /></ProtectedRoute>} />
-        <Route path="/jobs" element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />
-        <Route path="/jobs/:id" element={<ProtectedRoute><JobDetailPage /></ProtectedRoute>} />
-        <Route path="/services" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />
-        <Route path="/my-profile" element={<ProtectedRoute><MyProfilePage /></ProtectedRoute>} />
-        <Route path="/shop/:id" element={<ProtectedRoute><ShopProfilePage /></ProtectedRoute>} />
-        <Route path="/skills" element={<ProtectedRoute><SkillDevelopmentPage /></ProtectedRoute>} />
-        <Route path="/family-safety" element={<ProtectedRoute><FamilySafetyPage /></ProtectedRoute>} />
+        <Route path="/settings" element={<KycRequiredRoute><Navigate to="/dashboard?tab=settings" replace /></KycRequiredRoute>} />
+        <Route path="/kisan" element={<KycRequiredRoute><KisanRegistration /></KycRequiredRoute>} />
+        <Route path="/dashboard" element={<KycRequiredRoute><CustomerDashboard /></KycRequiredRoute>} />
+        <Route path="/merchant-dashboard" element={<KycRequiredRoute><MerchantAccessRoute><MerchantDashboard /></MerchantAccessRoute></KycRequiredRoute>} />
+        <Route path="/matrimony" element={<KycRequiredRoute><MatrimonyPage /></KycRequiredRoute>} />
+        <Route path="/classifieds" element={<KycRequiredRoute><ClassifiedsPage /></KycRequiredRoute>} />
+        <Route path="/jobs" element={<KycRequiredRoute><JobsPage /></KycRequiredRoute>} />
+        <Route path="/jobs/:id" element={<KycRequiredRoute><JobDetailPage /></KycRequiredRoute>} />
+        <Route path="/services" element={<KycRequiredRoute><ServicesPage /></KycRequiredRoute>} />
+        <Route path="/my-profile" element={<KycRequiredRoute><MyProfilePage /></KycRequiredRoute>} />
+        <Route path="/shop/:id" element={<KycRequiredRoute><ShopProfilePage /></KycRequiredRoute>} />
+        <Route path="/skills" element={<KycRequiredRoute><SkillDevelopmentPage /></KycRequiredRoute>} />
+        <Route path="/family-safety" element={<KycRequiredRoute><FamilySafetyPage /></KycRequiredRoute>} />
         <Route path="/family-invite/:token" element={<FamilyInvitePage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
