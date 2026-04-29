@@ -46,35 +46,38 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
       <div className="h-1 w-full bg-gradient-to-r from-saffron via-white to-green-india" />
       <div className="flex flex-1 items-center justify-center px-4 py-6">
         <Card className="w-full max-w-md border-2 border-saffron/30 shadow-2xl">
-          <CardHeader className="text-center space-y-2 pb-3">
+          <CardHeader className="text-center space-y-3 pb-3 border-b border-primary/15 bg-primary/5">
             <img src={logoCircle} alt="Mera Bharat Dukaan" className="mx-auto h-20 w-20 rounded-full object-cover shadow-lg border-4 border-saffron/40" />
-            <CardTitle className="text-xl font-extrabold text-foreground flex items-center justify-center gap-2 font-hindi">
-              <Crown className="h-5 w-5 text-accent" /> भारत गौरव मेंबरशिप
+            <CardTitle className="text-lg sm:text-xl font-extrabold text-primary flex items-center justify-center gap-2 font-hindi leading-snug">
+              <Crown className="h-5 w-5 text-accent shrink-0" /> भारत गौरव मेंबरशिप: भारत के हर नागरिक के लिए आवश्यक
             </CardTitle>
-            <p className="text-[11px] font-bold tracking-wide text-primary">🇮🇳 DIGITAL INDIA INITIATIVE 🇮🇳</p>
+            <div className="space-y-2">
+              <p className="text-[11px] font-bold tracking-wide text-primary">🇮🇳 DIGITAL INDIA INITIATIVE 🇮🇳</p>
+              <div className="mx-auto inline-flex items-center justify-center rounded-md border border-primary/25 bg-background px-3 py-1.5 text-xs font-extrabold text-primary shadow-sm font-hindi">
+                बैंक वेरिफिकेशन / खाता का वेरिफिकेशन
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-xl bg-primary/10 border-2 border-primary/25 p-4">
-              <h2 className="font-hindi text-sm font-extrabold text-primary mb-2">भारत गौरव मेंबरशिप क्यों जरूरी है?</h2>
+            <div className="rounded-lg bg-primary/10 border-2 border-primary/25 p-4 shadow-sm">
+              <h2 className="font-hindi text-sm font-extrabold text-primary mb-2">मानक नागरिक सदस्यता आवश्यकता</h2>
               <p className="font-hindi text-[13px] leading-relaxed text-foreground">
-                यह <span className="font-bold text-accent">Digital India Initiative</span> का एक सुरक्षित सदस्यता चरण है। भारत गौरव मेंबरशिप से आपका अकाउंट e-KYC के बाद प्रमाणित होता है, पोर्टल की सेवाएँ सुरक्षित रहती हैं, और आप Mera Bharat Dukaan के डिजिटल व्यापार, नौकरी, शिक्षा, सेवा और स्थानीय दुकान नेटवर्क का भरोसेमंद उपयोग कर सकते हैं। मुख्य पोर्टल Razorpay द्वारा सफल भुगतान पुष्टि के बाद ही खुलेगा।
+                यह <span className="font-bold text-accent">Digital India Initiative</span> का एक सुरक्षित सदस्यता चरण है। पोर्टल की सेवाएं सुरक्षित रहती हैं। आप मेरा भारत दुकान के डिजिटल व्यापार से नौकरी, शिक्षा सेवा, स्थानीय दुकान नेटवर्क और भरोसेमंद उपयोग कर सकते हैं।
               </p>
             </div>
 
             {/* Plan Selection */}
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => setPlan("monthly")}
-                className={`rounded-xl border-2 p-4 text-center transition-all ${plan === "monthly" ? "border-accent bg-accent/10 shadow-md" : "border-border bg-card hover:border-accent/50"}`}>
+                className={`rounded-lg border-2 p-4 text-center transition-all ${plan === "monthly" ? "border-accent bg-accent/10 shadow-md" : "border-border bg-card hover:border-accent/50"}`}>
                 <p className="text-2xl font-extrabold text-foreground">₹1</p>
-                <p className="text-xs text-muted-foreground font-hindi">₹1 / Month</p>
-                <p className="text-[10px] font-bold text-accent font-hindi">ऑटो-डेबिट</p>
+                <p className="text-xs font-bold text-accent font-hindi">भारत गौरव मेंबरशिप ₹1 प्लान</p>
               </button>
               <button onClick={() => setPlan("yearly")}
-                className={`rounded-xl border-2 p-4 text-center transition-all relative ${plan === "yearly" ? "border-accent bg-accent/10 shadow-md" : "border-border bg-card hover:border-accent/50"}`}>
+                className={`rounded-lg border-2 p-4 text-center transition-all relative ${plan === "yearly" ? "border-accent bg-accent/10 shadow-md" : "border-border bg-card hover:border-accent/50"}`}>
                 <span className="absolute -top-2 right-2 rounded-full bg-green-india px-2 py-0.5 text-[9px] font-bold text-primary-foreground">BEST VALUE</span>
                 <p className="text-2xl font-extrabold text-foreground">₹12</p>
-                <p className="text-xs text-muted-foreground font-hindi">₹12 / Year</p>
-                <p className="text-[10px] font-bold text-green-india font-hindi">ऑटो-डेबिट</p>
+                <p className="text-xs font-bold text-green-india font-hindi">भारत गौरव मेंबरशिप ₹12 प्लान</p>
               </button>
             </div>
 
