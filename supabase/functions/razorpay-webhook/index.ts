@@ -9,6 +9,13 @@ const corsHeaders = {
 const enc = new TextEncoder();
 const toHex = (buffer: ArrayBuffer) => Array.from(new Uint8Array(buffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
 
+const BHARAT_GAURAV_PAYMENT_LINKS: Record<string, { plan: "monthly" | "yearly"; amount: number; days: number; label: string }> = {
+  HcZ53Lpl: { plan: "monthly", amount: 1, days: 30, label: "Bharat Gaurav Membership ₹1 Plan" },
+  "0WkIfbVd": { plan: "yearly", amount: 12, days: 365, label: "Bharat Gaurav Membership ₹12 Plan" },
+  sub_ShFY15RTkXtfeU: { plan: "monthly", amount: 1, days: 30, label: "Bharat Gaurav Membership ₹1 Plan" },
+  sub_ShFULxQPgrTChe: { plan: "yearly", amount: 12, days: 365, label: "Bharat Gaurav Membership ₹12 Plan" },
+};
+
 async function hmacSha256(message: string, secret: string) {
   const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   return toHex(await crypto.subtle.sign("HMAC", key, enc.encode(message)));
@@ -19,6 +26,64 @@ function addDays(days: number) {
   const end = new Date(now);
   end.setDate(end.getDate() + days);
   return { start: now.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
+}
+
+function getPaymentLinkPlan(payment: any) {
+  const notes = payment?.notes || {};
+  const candidates = [
+    payment?.payment_link_id,
+    payment?.subscription_id,
+    notes.payment_link_id,
+    notes.payment_link_reference_id,
+    notes.subscription_id,
+  ].filter(Boolean).map(String);
+  return candidates.map((id) => BHARAT_GAURAV_PAYMENT_LINKS[id]).find(Boolean) || null;
+}
+
+async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: { plan: "monthly" | "yearly"; amount: number; days: number; label: string }) {
+  const notes = payment?.notes || {};
+  const paymentId = String(payment?.id || "");
+  if (paymentId) {
+    const { data } = await admin.from("payment_orders").select("*").eq("razorpay_payment_id", paymentId).maybeSingle();
+    if (data) return data;
+  }
+
+  const referenceId = String(payment?.reference_id || notes.reference_id || notes.payment_link_reference_id || "");
+  if (referenceId) {
+    const { data } = await admin.from("payment_orders").select("*").eq("id", referenceId).maybeSingle();
+    if (data) return data;
+  }
+
+  const email = String(payment?.email || notes.email || notes.customer_email || "").toLowerCase();
+  if (!email) return null;
+
+  const { data: profile } = await admin.from("profiles").select("id").ilike("email", email).maybeSingle();
+  if (!profile?.id) return null;
+
+  const { data: existing } = await admin
+    .from("payment_orders")
+    .select("*")
+    .eq("user_id", profile.id)
+    .eq("module", "bharat_gaurav")
+    .eq("plan", linkPlan.plan)
+    .eq("status", "created")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (existing) return existing;
+
+  const { data: created } = await admin.from("payment_orders").insert({
+    user_id: profile.id,
+    module: "bharat_gaurav",
+    plan: linkPlan.plan,
+    amount: linkPlan.amount,
+    currency: "INR",
+    status: "created",
+    razorpay_order_id: payment?.order_id || null,
+    receipt: `mbd_link_${linkPlan.plan}_${Date.now()}`.slice(0, 40),
+    metadata: { days: linkPlan.days, label: linkPlan.label, plan_name: `bharat_gaurav_${linkPlan.plan}`, source: "razorpay_payment_link" },
+  }).select("*").single();
+  return created || null;
 }
 
 async function unlock(admin: any, order: any, paymentId: string, signature: string) {
@@ -88,13 +153,19 @@ serve(async (req) => {
     const orderId = payment?.order_id;
     const paymentId = payment?.id;
     const status = payment?.status;
+    const linkPlan = getPaymentLinkPlan(payment);
 
     if (!orderId || !paymentId) {
-      return new Response(JSON.stringify({ ok: true, ignored: "no_payment_order" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (!paymentId || !linkPlan) {
+        return new Response(JSON.stringify({ ok: true, ignored: "no_payment_order" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
     }
 
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: order } = await admin.from("payment_orders").select("*").eq("razorpay_order_id", orderId).maybeSingle();
+    const { data: orderByOrderId } = orderId
+      ? await admin.from("payment_orders").select("*").eq("razorpay_order_id", orderId).maybeSingle()
+      : { data: null } as any;
+    const order = orderByOrderId || (linkPlan ? await findPaymentLinkOrder(admin, payment, linkPlan) : null);
 
     if (!order) {
       return new Response(JSON.stringify({ ok: true, ignored: "unknown_order" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
