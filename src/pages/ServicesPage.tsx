@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
+import LocationSearchBar from "@/components/LocationSearchBar";
 import PremiumShopSlider from "@/components/PremiumShopSlider";
 import { sampleShops } from "@/data/sampleShops";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { LocateFixed, MapPin, Navigation, Search, ShieldCheck, Store } from "lucide-react";
+import { LocateFixed, MapPin, Navigation, Search, ShieldCheck, Star, Store } from "lucide-react";
 import { toast } from "sonner";
 
 interface NearbyShop {
@@ -24,6 +26,15 @@ interface NearbyShop {
   is_premium?: boolean | null;
   is_verified?: boolean | null;
   distanceKm?: number | null;
+  avgRating?: number;
+  reviewCount?: number;
+}
+
+interface ShopRating {
+  id: string;
+  shop_id: string;
+  user_id: string;
+  rating: number;
 }
 
 const toRad = (value: number) => (value * Math.PI) / 180;
@@ -38,15 +49,19 @@ const distanceKm = (fromLat: number, fromLng: number, toLat?: number | null, toL
 };
 
 const ServicesPage = () => {
+  const { user } = useAuth();
   const [shops, setShops] = useState<NearbyShop[]>([]);
   const [search, setSearch] = useState("");
+  const [locationSearch, setLocationSearch] = useState("All");
   const [activeCity, setActiveCity] = useState("");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [locating, setLocating] = useState(false);
+  const [ratings, setRatings] = useState<ShopRating[]>([]);
 
   useEffect(() => {
     loadShops();
+    loadRatings();
     detectLocation(true);
   }, []);
 
@@ -79,6 +94,11 @@ const ServicesPage = () => {
     setLoading(false);
   };
 
+  const loadRatings = async () => {
+    const { data } = await supabase.from("shop_ratings" as any).select("id, shop_id, user_id, rating");
+    setRatings((data as unknown as ShopRating[]) || []);
+  };
+
   const detectLocation = (silent = false) => {
     if (!("geolocation" in navigator)) {
       if (!silent) toast.error("GPS is not available on this device");
@@ -102,22 +122,40 @@ const ServicesPage = () => {
   };
 
   const applyCitySearch = () => {
-    setActiveCity(search.trim());
-    if (search.trim()) toast.success(`Showing shops for ${search.trim()}`);
+    setActiveCity(locationSearch === "All" ? "" : locationSearch.trim());
+    if (locationSearch !== "All" && locationSearch.trim()) toast.success(`Showing shops for ${locationSearch.trim()}`);
+  };
+
+  const rateShop = async (shopId: string, rating: number) => {
+    if (!user) { toast.info("Please login to rate a shop"); return; }
+    const { error } = await supabase.from("shop_ratings" as any).upsert({ shop_id: shopId, user_id: user.id, rating }, { onConflict: "shop_id,user_id" });
+    if (error) toast.error("Rating could not be saved");
+    else { toast.success("Shop rating saved"); await loadRatings(); }
   };
 
   const visibleShops = useMemo(() => {
     const query = activeCity.trim().toLowerCase();
+    const categoryQuery = search.trim().toLowerCase();
+    const ratingStats = ratings.reduce<Record<string, { total: number; count: number }>>((acc, item) => {
+      acc[item.shop_id] = acc[item.shop_id] || { total: 0, count: 0 };
+      acc[item.shop_id].total += item.rating;
+      acc[item.shop_id].count += 1;
+      return acc;
+    }, {});
     const withDistance = shops.map((shop) => ({
       ...shop,
       distanceKm: userLocation ? distanceKm(userLocation.lat, userLocation.lng, shop.latitude, shop.longitude) : null,
+      avgRating: ratingStats[shop.id] ? ratingStats[shop.id].total / ratingStats[shop.id].count : 0,
+      reviewCount: ratingStats[shop.id]?.count || 0,
     }));
 
-    const filtered = query
+    const locationFiltered = query
       ? withDistance.filter((shop) => [shop.shop_name, shop.shop_name_hindi, shop.category, shop.city, shop.address, shop.pincode].some((value) => value?.toLowerCase().includes(query)))
       : userLocation
         ? withDistance.filter((shop) => shop.distanceKm == null || shop.distanceKm <= 10)
         : withDistance;
+
+    const filtered = categoryQuery ? locationFiltered.filter((shop) => [shop.shop_name, shop.shop_name_hindi, shop.category, shop.address].some((value) => value?.toLowerCase().includes(categoryQuery))) : locationFiltered;
 
     return filtered.sort((a, b) => {
       if (!!a.is_premium !== !!b.is_premium) return a.is_premium ? -1 : 1;
@@ -125,7 +163,7 @@ const ServicesPage = () => {
       const bDistance = b.distanceKm ?? Number.POSITIVE_INFINITY;
       return aDistance - bDistance;
     });
-  }, [activeCity, shops, userLocation]);
+  }, [activeCity, ratings, search, shops, userLocation]);
 
   return (
     <div className="min-h-screen bg-background">
