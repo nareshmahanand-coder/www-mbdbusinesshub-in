@@ -10,7 +10,7 @@ import { User, Crown, Image, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import KycDocUpload from "@/components/KycDocUpload";
 import type { MatrimonyProfile } from "@/pages/MatrimonyPage";
-import { startInstantRazorpayPayment } from "@/lib/razorpayPayments";
+import { startMarriageBureauPaymentLink } from "@/lib/razorpayPayments";
 
 interface Props {
   user: any;
@@ -71,13 +71,12 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
     setFailedPlan(null);
 
     try {
-      await startInstantRazorpayPayment({
-        module: "marriage_bureau",
+      await startMarriageBureauPaymentLink({
         plan,
         onSuccess: () => {
-          toast.success("Payment successful — profile published!");
+          toast.success("Payment successful — Marriage Bureau unlocked!");
           onReload();
-          window.location.reload();
+          window.location.href = "/matrimony?tab=my-profile";
         },
         onFailure: () => setFailedPlan(plan),
       });
@@ -204,15 +203,22 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
 
               <Button
                 type="button"
+                onClick={() => handlePremiumPayment("monthly")}
+                disabled={payingPlan !== null}
+                className="w-full h-13 py-3 text-sm font-extrabold text-white shadow-lg rounded-xl font-hindi"
+                style={{ backgroundColor: "#FF9933" }}
+              >
+                {payingPlan === "monthly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Marriage Bureau ₹99 Monthly Plan"}
+              </Button>
+
+              <Button
+                type="button"
                 onClick={() => handlePremiumPayment("yearly")}
                 disabled={payingPlan !== null}
-                className="w-full h-13 py-3 text-sm font-extrabold text-white shadow-lg rounded-xl font-hindi relative"
+                className="w-full h-13 py-3 text-sm font-extrabold text-white shadow-lg rounded-xl font-hindi"
                 style={{ backgroundColor: "#138808" }}
               >
-                <span className="absolute -top-2 right-3 rounded-full bg-[#FF9933] px-2 py-0.5 text-[9px] font-bold text-white">
-                  BEST VALUE
-                </span>
-                {payingPlan === "yearly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Yearly: ₹99"}
+                {payingPlan === "yearly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Marriage Bureau ₹999 Yearly Plan"}
               </Button>
 
               {failedPlan && (
