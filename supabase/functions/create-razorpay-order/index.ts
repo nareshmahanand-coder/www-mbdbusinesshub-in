@@ -8,8 +8,8 @@ const corsHeaders = {
 
 const PRODUCTS = {
   bharat_gaurav: {
-    monthly: { amount: 1.18, amountPaise: 118, days: 30, label: "Bharat Gaurav Monthly - GST Included" },
-    yearly: { amount: 14.16, amountPaise: 1416, days: 365, label: "Bharat Gaurav Yearly - GST Included" },
+    monthly: { amount: 1, amountPaise: 100, days: 30, label: "Bharat Gaurav Monthly" },
+    yearly: { amount: 12, amountPaise: 1200, days: 365, label: "Bharat Gaurav Yearly" },
   },
   merchant_premium: {
     monthly: { amount: 99, amountPaise: 9900, days: 30, label: "Merchant Premium Monthly" },
@@ -17,7 +17,7 @@ const PRODUCTS = {
   },
   marriage_bureau: {
     monthly: { amount: 99, amountPaise: 9900, days: 30, label: "Mera Jeevansathi Monthly Premium" },
-    yearly: { amount: 999, amountPaise: 99900, days: 365, label: "Mera Jeevansathi Yearly Premium - Best Value" },
+    yearly: { amount: 99, amountPaise: 9900, days: 365, label: "Mera Jeevansathi Yearly Premium" },
   },
 } as const;
 
@@ -88,7 +88,7 @@ serve(async (req) => {
       status: "created",
       razorpay_order_id: order.id,
       receipt,
-      metadata: { days: product.days, label: product.label },
+      metadata: { days: product.days, label: product.label, plan_name: `${module}_${plan}` },
     });
 
     if (insertError) throw insertError;
