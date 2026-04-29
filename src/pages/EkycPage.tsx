@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Camera, ShieldCheck, RefreshCw, Loader2, Upload, X, CreditCard, AlertCircle, Clock } from "lucide-react";
+import { Camera, ShieldCheck, RefreshCw, Loader2, Upload, X, CreditCard, AlertCircle, Clock, Landmark, Smartphone, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useKycStatus } from "@/hooks/useKycStatus";
 
-type Side = "front" | "back";
+type DocSide = "front" | "back";
+type SelfieKind = "selfie" | "selfieWithAadhaar";
+
+type CaptureTarget = DocSide | SelfieKind;
 
 const dataUrlToBlob = (dataUrl: string): Blob => {
   const [header, b64] = dataUrl.split(",");
@@ -21,6 +24,8 @@ const dataUrlToBlob = (dataUrl: string): Blob => {
   return new Blob([buf], { type: mime });
 };
 
+const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
 const EkycPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -28,54 +33,61 @@ const EkycPage = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  const frontInputRef = useRef<HTMLInputElement | null>(null);
+  const backInputRef = useRef<HTMLInputElement | null>(null);
+  const selfieInputRef = useRef<HTMLInputElement | null>(null);
+  const selfieWithAadhaarInputRef = useRef<HTMLInputElement | null>(null);
+
   const [aadhaar, setAadhaar] = useState("");
   const [linkedMobile, setLinkedMobile] = useState("");
   const [aadhaarFront, setAadhaarFront] = useState<string | null>(null);
   const [aadhaarBack, setAadhaarBack] = useState<string | null>(null);
-  const frontInputRef = useRef<HTMLInputElement | null>(null);
-  const backInputRef = useRef<HTMLInputElement | null>(null);
-  const [photo, setPhoto] = useState<string | null>(null);
+  const [selfie, setSelfie] = useState<string | null>(null);
+  const [selfieWithAadhaar, setSelfieWithAadhaar] = useState<string | null>(null);
   const [cameraOn, setCameraOn] = useState(false);
+  const [captureTarget, setCaptureTarget] = useState<CaptureTarget | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
-  // If approved → redirect home. If pending → show waiting screen. If rejected → allow re-submit.
-  useEffect(() => {
-    if (!loading && status === "approved") navigate("/", { replace: true });
-  }, [status, loading, navigate]);
 
   useEffect(() => () => stopCamera(), []);
 
-  const handleAadhaarFile = (side: Side, file?: File) => {
+  const setImageValue = (target: CaptureTarget, value: string | null) => {
+    if (target === "front") setAadhaarFront(value);
+    if (target === "back") setAadhaarBack(value);
+    if (target === "selfie") setSelfie(value);
+    if (target === "selfieWithAadhaar") setSelfieWithAadhaar(value);
+  };
+
+  const handleFile = (target: CaptureTarget, file?: File) => {
     if (!file) return;
-    const allowed = ["image/jpeg", "image/jpg", "image/png", "application/pdf"];
+    const allowPdf = target === "front" || target === "back";
+    const allowed = allowPdf ? ["image/jpeg", "image/jpg", "image/png", "application/pdf"] : ["image/jpeg", "image/jpg", "image/png"];
     if (!allowed.includes(file.type)) {
-      toast.error("केवल JPEG, PNG या PDF फ़ाइल अपलोड करें • Only JPEG, PNG or PDF allowed");
+      toast.error(allowPdf ? "केवल JPEG, PNG या PDF फ़ाइल अपलोड करें" : "केवल JPEG या PNG फोटो अपलोड करें");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("फ़ाइल बहुत बड़ी है (अधिकतम 5MB) • File too large (max 5MB)");
+      toast.error("फ़ाइल बहुत बड़ी है (अधिकतम 5MB)");
       return;
     }
     const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      if (side === "front") setAadhaarFront(result);
-      else setAadhaarBack(result);
-    };
+    reader.onload = () => setImageValue(target, reader.result as string);
     reader.readAsDataURL(file);
   };
 
   const stopCamera = () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     setCameraOn(false);
+    setCaptureTarget(null);
   };
 
-  const startCamera = async () => {
+  const startCamera = async (target: CaptureTarget) => {
     try {
-      setPhoto(null);
+      setImageValue(target, null);
+      setCaptureTarget(target);
+      const facingMode = target === "front" || target === "back" || target === "selfieWithAadhaar" ? "environment" : "user";
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "user" }, width: { ideal: 720 }, height: { ideal: 720 } },
+        video: { facingMode: { ideal: facingMode }, width: { ideal: 900 }, height: { ideal: 900 } },
         audio: false,
       });
       streamRef.current = stream;
@@ -88,29 +100,27 @@ const EkycPage = () => {
       }, 50);
     } catch {
       toast.error("कैमरा एक्सेस नहीं मिला • Camera access denied");
+      setCaptureTarget(null);
     }
   };
 
   const capture = () => {
     const video = videoRef.current;
-    if (!video) return;
-    const size = Math.min(video.videoWidth, video.videoHeight) || 480;
+    if (!video || !captureTarget) return;
+    const width = video.videoWidth || 720;
+    const height = video.videoHeight || 720;
     const canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = width;
+    canvas.height = height;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const sx = (video.videoWidth - size) / 2;
-    const sy = (video.videoHeight - size) / 2;
-    ctx.drawImage(video, sx, sy, size, size, 0, 0, size, size);
-    setPhoto(canvas.toDataURL("image/jpeg", 0.85));
+    ctx.drawImage(video, 0, 0, width, height);
+    setImageValue(captureTarget, canvas.toDataURL("image/jpeg", 0.85));
     stopCamera();
   };
 
   const uploadFile = async (path: string, blob: Blob) => {
-    const { error } = await supabase.storage
-      .from("kyc-documents")
-      .upload(path, blob, { upsert: true, contentType: blob.type });
+    const { error } = await supabase.storage.from("kyc-documents").upload(path, blob, { upsert: true, contentType: blob.type });
     if (error) throw error;
     return path;
   };
@@ -118,9 +128,10 @@ const EkycPage = () => {
   const handleSubmit = async () => {
     const digits = aadhaar.replace(/\D/g, "");
     if (digits.length !== 12) return toast.error("कृपया 12 अंकों का सही आधार नंबर दर्ज करें");
-    if (linkedMobile.length !== 10) return toast.error("कृपया आधार से लिंक 10 अंकों का मोबाइल नंबर दर्ज करें • Please enter a valid 10-digit linked mobile number");
-    if (!aadhaarFront || !aadhaarBack) return toast.error("कृपया आधार कार्ड के दोनों तरफ की फोटो अपलोड करें");
-    if (!photo) return toast.error("कृपया Live Selfie लें");
+    if (linkedMobile.length !== 10) return toast.error("कृपया आधार से लिंक 10 अंकों का मोबाइल नंबर दर्ज करें");
+    if (!aadhaarFront || !aadhaarBack) return toast.error("कृपया आधार कार्ड के Front और Back दोनों अपलोड करें");
+    if (!selfie) return toast.error("कृपया अपनी साफ सेल्फी फोटो डालें");
+    if (!selfieWithAadhaar) return toast.error("कृपया आधार कार्ड हाथ में पकड़कर सेल्फी डालें");
     if (!user) return;
 
     setSubmitting(true);
@@ -129,14 +140,15 @@ const EkycPage = () => {
       const frontPath = `${user.id}/${ts}-aadhaar-front.jpg`;
       const backPath = `${user.id}/${ts}-aadhaar-back.jpg`;
       const selfiePath = `${user.id}/${ts}-selfie.jpg`;
+      const selfieWithAadhaarPath = `${user.id}/${ts}-selfie-with-aadhaar.jpg`;
 
       await Promise.all([
         uploadFile(frontPath, dataUrlToBlob(aadhaarFront)),
         uploadFile(backPath, dataUrlToBlob(aadhaarBack)),
-        uploadFile(selfiePath, dataUrlToBlob(photo)),
+        uploadFile(selfiePath, dataUrlToBlob(selfie)),
+        uploadFile(selfieWithAadhaarPath, dataUrlToBlob(selfieWithAadhaar)),
       ]);
 
-      // If a previous rejected request exists → update it; else insert new.
       const { data: existing } = await supabase
         .from("kyc_requests")
         .select("id, status")
@@ -145,47 +157,39 @@ const EkycPage = () => {
         .limit(1)
         .maybeSingle();
 
+      const payload = {
+        aadhaar_number: digits,
+        aadhaar_linked_mobile: linkedMobile,
+        selfie_url: selfiePath,
+        selfie_with_aadhaar_url: selfieWithAadhaarPath,
+        aadhaar_front_url: frontPath,
+        aadhaar_back_url: backPath,
+        status: "pending",
+        rejection_reason: null,
+        reviewed_by: null,
+        reviewed_at: null,
+      } as never;
+
       if (existing && existing.status === "rejected") {
-        const { error } = await supabase
-          .from("kyc_requests")
-          .update({
-            aadhaar_number: digits,
-            selfie_url: selfiePath,
-            aadhaar_front_url: frontPath,
-            aadhaar_back_url: backPath,
-            status: "pending",
-            rejection_reason: null,
-            reviewed_by: null,
-            reviewed_at: null,
-          })
-          .eq("id", existing.id);
+        const { error } = await supabase.from("kyc_requests").update(payload).eq("id", existing.id);
         if (error) throw error;
       } else {
         const { data: inserted, error } = await supabase
           .from("kyc_requests")
-          .insert({
-            user_id: user.id,
-            aadhaar_number: digits,
-            selfie_url: selfiePath,
-            aadhaar_front_url: frontPath,
-            aadhaar_back_url: backPath,
-            status: "pending",
-          })
+          .insert({ user_id: user.id, ...payload } as never)
           .select("id")
           .single();
         if (error) throw error;
 
-        // Trigger AI auto-verification (non-blocking; admin can still override)
         if (inserted?.id) {
-          supabase.functions
-            .invoke("kyc-auto-verify", { body: { kycRequestId: inserted.id } })
-            .catch((err) => console.warn("auto-verify failed", err));
+          supabase.functions.invoke("kyc-auto-verify", { body: { kycRequestId: inserted.id } }).catch(() => {});
         }
       }
 
-      toast.success("KYC Submitted! AI is verifying — आप ऐप पर जा सकते हैं।");
+      toast.success("KYC Submitted — Processing...");
+      await wait(2000);
       await refresh();
-      navigate("/", { replace: true });
+      navigate("/membership", { replace: true });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Submit failed";
       toast.error(msg);
@@ -194,39 +198,33 @@ const EkycPage = () => {
     }
   };
 
-  const formatAadhaar = (v: string) => {
-    const d = v.replace(/\D/g, "").slice(0, 12);
-    return d.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
+  const formatAadhaar = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 12);
+    return digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
   };
+
+  const canSubmit = linkedMobile.length === 10 && aadhaar.replace(/\D/g, "").length === 12 && aadhaarFront && aadhaarBack && selfie && selfieWithAadhaar;
 
   if (loading) {
     return (
-      <main className="min-h-screen flex items-center justify-center">
+      <main className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </main>
     );
   }
 
-  // Pending state — waiting for admin review
   if (status === "pending") {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-background to-muted/40 px-4 py-8 flex items-start justify-center">
-        <Card className="w-full max-w-md border-0 shadow-lg">
-          <CardHeader className="text-center pb-3">
-            <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-orange-500/10">
-              <Clock className="h-7 w-7 text-orange-500" />
+      <main className="flex min-h-screen items-start justify-center bg-background px-4 py-8">
+        <Card className="w-full max-w-md border border-primary/20 shadow-xl">
+          <CardContent className="space-y-4 p-6 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <Clock className="h-8 w-8 text-primary" />
             </div>
-            <CardTitle className="text-xl">समीक्षा में • Under Review</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-center">
-            <p className="text-sm text-muted-foreground">
-              आपका KYC एडमिन के पास भेज दिया गया है। स्वीकृत होते ही आपको सूचना मिल जाएगी।
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Your KYC has been submitted. You'll get access once an admin approves it.
-            </p>
-            <Button className="w-full" onClick={() => navigate("/", { replace: true })}>
-              Continue to App • ऐप पर जाएं
+            <h1 className="text-xl font-extrabold text-foreground">KYC Processing</h1>
+            <p className="font-hindi text-sm text-muted-foreground">आपका e-KYC जमा हो गया है। अब भारत गौरव मेंबरशिप पूरा करें।</p>
+            <Button className="h-12 w-full font-bold" onClick={() => navigate("/membership", { replace: true })}>
+              Bharat Gaurav Membership पर जाएं
             </Button>
             <Button variant="outline" className="w-full" onClick={() => refresh()}>
               <RefreshCw className="mr-2 h-4 w-4" /> Check Status
@@ -237,33 +235,35 @@ const EkycPage = () => {
     );
   }
 
+  const documentSlots = [
+    { target: "front" as const, title: "Aadhaar Front Side", hindi: "आधार सामने का भाग", value: aadhaarFront, inputRef: frontInputRef },
+    { target: "back" as const, title: "Aadhaar Back Side", hindi: "आधार पीछे का भाग", value: aadhaarBack, inputRef: backInputRef },
+  ];
+
+  const selfieSlots = [
+    { target: "selfie" as const, title: "Upload Your Selfie", hindi: "अपनी एक साफ़ सेल्फी फोटो डालें", value: selfie, inputRef: selfieInputRef, icon: UserCheck },
+    { target: "selfieWithAadhaar" as const, title: "Selfie with Aadhaar", hindi: "आधार कार्ड को हाथ में पकड़कर अपनी एक सेल्फी फोटो डालें", value: selfieWithAadhaar, inputRef: selfieWithAadhaarInputRef, icon: ShieldCheck },
+  ];
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-background to-muted/40 px-4 py-8 flex items-start justify-center">
-      <Card className="w-full max-w-md border-0 shadow-lg">
-        <CardHeader className="text-center pb-3">
-          <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-[hsl(var(--primary))]/10">
-            <ShieldCheck className="h-7 w-7 text-[hsl(var(--primary))]" />
+    <main className="min-h-screen bg-background px-4 py-6">
+      <div className="mx-auto w-full max-w-2xl overflow-hidden rounded-lg border border-primary/20 bg-card shadow-2xl">
+        <header className="bg-primary px-5 py-6 text-primary-foreground">
+          <div className="flex items-start gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15">
+              <Landmark className="h-7 w-7" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-extrabold leading-tight">आधिकारिक ई-केवाईसी (Official e-KYC)</h1>
+              <p className="mt-1 font-hindi text-sm text-primary-foreground/90">आपकी सुरक्षा और पहचान के लिए ई-केवाईसी अनिवार्य है।</p>
+            </div>
           </div>
-          <CardTitle className="text-xl">E-KYC सत्यापन</CardTitle>
-          <p className="text-xs text-muted-foreground">सुरक्षित पहचान सत्यापन • Secure Identity Verification</p>
-          {/* Bharat Kavach Tiranga badge */}
-          <div className="mx-auto mt-3 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1 shadow-sm">
-            <span className="flex h-4 w-6 overflow-hidden rounded-sm border border-border">
-              <span className="flex-1 bg-[#FF9933]" />
-              <span className="flex-1 bg-white" />
-              <span className="flex-1 bg-[#138808]" />
-            </span>
-            <ShieldCheck className="h-3.5 w-3.5 text-[#138808]" />
-            <span className="text-[11px] font-bold tracking-wide">
-              <span className="text-muted-foreground">Verified by</span>{" "}
-              <span className="font-hindi text-[hsl(var(--primary))]">भारत कवच</span>
-            </span>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-5">
+        </header>
+
+        <CardContent className="space-y-6 p-5">
           {status === "rejected" && (
-            <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 flex gap-2">
-              <AlertCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="flex gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
               <div className="text-xs">
                 <p className="font-semibold text-destructive">आपका KYC अस्वीकार हो गया • KYC Rejected</p>
                 {rejectionReason && <p className="mt-1 text-muted-foreground">कारण: {rejectionReason}</p>}
@@ -272,181 +272,132 @@ const EkycPage = () => {
             </div>
           )}
 
-          {/* Aadhaar */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">आधार नंबर • Aadhaar Number</label>
-            <Input
-              inputMode="numeric"
-              placeholder="1234 5678 9012"
-              value={formatAadhaar(aadhaar)}
-              onChange={(e) => setAadhaar(e.target.value.replace(/\D/g, "").slice(0, 12))}
-              maxLength={14}
-              className="text-lg tracking-widest text-center h-12"
-            />
-            <p className="text-[11px] text-muted-foreground text-center">12 अंकों का आधार नंबर दर्ज करें</p>
-          </div>
+          <section className="rounded-lg border border-border bg-background p-4">
+            <h2 className="mb-4 flex items-center gap-2 text-base font-extrabold text-foreground">
+              <CreditCard className="h-5 w-5 text-primary" /> Aadhaar Verification
+            </h2>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground">Enter Aadhaar Number <span className="font-hindi text-muted-foreground">(आधार कार्ड नंबर डालें)</span></label>
+                <Input
+                  inputMode="numeric"
+                  placeholder="1234 5678 9012"
+                  value={formatAadhaar(aadhaar)}
+                  onChange={(e) => setAadhaar(e.target.value.replace(/\D/g, "").slice(0, 12))}
+                  maxLength={14}
+                  className="h-12 text-center text-lg font-bold tracking-widest"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground">Mobile Number Linked with Aadhaar <span className="font-hindi text-muted-foreground">(आधार से लिंक मोबाइल नंबर)</span></label>
+                <div className="relative">
+                  <Smartphone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    inputMode="numeric"
+                    type="tel"
+                    placeholder="98XXXXXXXX"
+                    value={linkedMobile}
+                    onChange={(e) => setLinkedMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    maxLength={10}
+                    className="h-12 pl-10 text-center text-lg font-bold tracking-widest"
+                  />
+                </div>
+              </div>
+            </div>
+          </section>
 
-          {/* Linked Mobile Number */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Linked Mobile Number • <span className="font-hindi">आधार से लिंक मोबाइल नंबर</span></label>
-            <Input
-              inputMode="numeric"
-              type="tel"
-              placeholder="98XXXXXXXX"
-              value={linkedMobile}
-              onChange={(e) => setLinkedMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
-              maxLength={10}
-              className="text-lg tracking-widest text-center h-12"
-            />
-            <p className="text-[11px] text-muted-foreground text-center leading-snug">
-              Please enter the mobile number linked with your Aadhaar Card<br />
-              <span className="font-hindi">कृपया वही मोबाइल नंबर डालें जो आपके आधार कार्ड से लिंक है।</span>
-            </p>
-          </div>
-
-          {/* Aadhaar Card Photos */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium flex items-center gap-1.5">
-              <CreditCard className="h-4 w-4 text-[hsl(var(--primary))]" />
-              आधार कार्ड फोटो • Aadhaar Card Photo
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              {([
-                { side: "front" as Side, label: "Front Side", hindi: "सामने", value: aadhaarFront, setter: setAadhaarFront, ref: frontInputRef },
-                { side: "back" as Side, label: "Back Side", hindi: "पीछे", value: aadhaarBack, setter: setAadhaarBack, ref: backInputRef },
-              ]).map((item) => {
+          <section className="space-y-3">
+            <h2 className="flex items-center gap-2 text-base font-extrabold text-foreground">
+              <Upload className="h-5 w-5 text-primary" /> Document Upload System
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {documentSlots.map((item) => {
                 const isPdf = item.value?.startsWith("data:application/pdf");
                 return (
-                <div key={item.side} className="space-y-1">
-                  {/* Camera input (capture) */}
-                  <input
-                    ref={item.ref}
-                    type="file"
-                    accept="image/jpeg,image/png,application/pdf"
-                    className="hidden"
-                    data-mode="gallery"
-                    onChange={(e) => handleAadhaarFile(item.side, e.target.files?.[0])}
-                  />
-                  {/* Hidden camera-only input */}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="hidden"
-                    id={`cam-${item.side}`}
-                    onChange={(e) => handleAadhaarFile(item.side, e.target.files?.[0])}
-                  />
-                  {item.value ? (
-                    <div className="relative aspect-[1.6/1] w-full overflow-hidden rounded-xl border-2 border-[hsl(var(--primary))]/40 bg-muted">
-                      {isPdf ? (
-                        <div className="flex h-full w-full flex-col items-center justify-center bg-[hsl(var(--primary))]/5 text-[hsl(var(--primary))]">
-                          <CreditCard className="h-7 w-7" />
-                          <span className="text-[10px] font-semibold mt-1">PDF Uploaded</span>
-                        </div>
-                      ) : (
-                        <img src={item.value} alt={`Aadhaar ${item.label}`} className="h-full w-full object-cover" />
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => item.setter(null)}
-                        className="absolute top-1 right-1 rounded-full bg-destructive/90 p-1 text-destructive-foreground shadow"
-                        aria-label="Remove"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1">
-                        <p className="text-[10px] font-medium text-white">{item.label} • {item.hindi}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex aspect-[1.6/1] w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[hsl(var(--primary))]/40 bg-[hsl(var(--primary))]/5 p-2">
-                      <span className="text-[10px] font-semibold text-[hsl(var(--primary))] leading-tight text-center">
-                        {item.label}<br /><span className="font-hindi">({item.hindi})</span>
-                      </span>
-                      <div className="flex w-full gap-1">
-                        <button
-                          type="button"
-                          onClick={() => document.getElementById(`cam-${item.side}`)?.click()}
-                          className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-md bg-[#FF9933] px-1 py-1.5 text-white shadow-sm hover:opacity-90"
-                        >
-                          <Camera className="h-3.5 w-3.5" />
-                          <span className="text-[8px] font-bold leading-none">Camera</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => item.ref.current?.click()}
-                          className="flex flex-1 flex-col items-center justify-center gap-0.5 rounded-md bg-[#138808] px-1 py-1.5 text-white shadow-sm hover:opacity-90"
-                        >
-                          <Upload className="h-3.5 w-3.5" />
-                          <span className="text-[8px] font-bold leading-none">Gallery</span>
+                  <div key={item.target} className="rounded-lg border border-border bg-background p-3">
+                    <input ref={item.inputRef} type="file" accept="image/jpeg,image/png,application/pdf" className="hidden" onChange={(e) => handleFile(item.target, e.target.files?.[0])} />
+                    <input id={`capture-${item.target}`} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(item.target, e.target.files?.[0])} />
+                    <p className="mb-2 text-sm font-bold text-foreground">{item.title}</p>
+                    <p className="mb-3 font-hindi text-xs text-muted-foreground">{item.hindi}</p>
+                    {item.value ? (
+                      <div className="relative aspect-[1.6/1] overflow-hidden rounded-md border border-primary/30 bg-muted">
+                        {isPdf ? <div className="flex h-full items-center justify-center text-sm font-bold text-primary">PDF Uploaded</div> : <img src={item.value} alt={item.title} className="h-full w-full object-cover" />}
+                        <button type="button" onClick={() => setImageValue(item.target, null)} className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground" aria-label="Remove upload">
+                          <X className="h-4 w-4" />
                         </button>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button type="button" variant="outline" className="h-16 flex-col gap-1" onClick={() => document.getElementById(`capture-${item.target}`)?.click()}>
+                          <Camera className="h-5 w-5" /> Capture
+                        </Button>
+                        <Button type="button" variant="outline" className="h-16 flex-col gap-1" onClick={() => item.inputRef.current?.click()}>
+                          <Upload className="h-5 w-5" /> Gallery
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
-            <div className="rounded-lg border border-[hsl(var(--primary))]/20 bg-[hsl(var(--primary))]/5 p-2.5 text-center">
-              <p className="text-[11px] font-medium font-hindi text-foreground leading-snug">
-                आप कैमरा से फोटो खींच सकते हैं या अपनी गैलरी से फोटो चुन सकते हैं।
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
-                You can take a photo with the camera or choose one from your gallery.
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                Accepted formats: JPEG, PNG, PDF (max 5MB)
-              </p>
-            </div>
-          </div>
+          </section>
 
-          {/* Selfie */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Live Selfie • लाइव सेल्फी</label>
-            <div className="aspect-square w-full overflow-hidden rounded-2xl border-2 border-dashed border-border bg-muted/40 flex items-center justify-center">
-              {photo ? (
-                <img src={photo} alt="Selfie" className="h-full w-full object-cover" />
-              ) : cameraOn ? (
-                <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
-              ) : (
-                <div className="text-center text-muted-foreground p-6">
-                  <Camera className="mx-auto h-10 w-10 mb-2 opacity-60" />
-                  <p className="text-sm">अपनी फोटो लें</p>
-                </div>
-              )}
+          <section className="space-y-3">
+            <h2 className="flex items-center gap-2 text-base font-extrabold text-foreground">
+              <UserCheck className="h-5 w-5 text-primary" /> Selfie Verification
+            </h2>
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 font-hindi text-xs font-semibold text-foreground">
+              सुनिश्चित करें कि फोटो में आपका चेहरा और आधार कार्ड साफ़ दिख रहा हो
             </div>
 
-            {!cameraOn && !photo && (
-              <Button type="button" variant="outline" className="w-full h-11" onClick={startCamera}>
-                <Camera className="mr-2 h-4 w-4" /> Take Photo • फोटो लें
-              </Button>
-            )}
             {cameraOn && (
-              <Button type="button" className="w-full h-11" onClick={capture}>
-                <Camera className="mr-2 h-4 w-4" /> Capture
-              </Button>
+              <div className="rounded-lg border border-primary/30 bg-background p-3">
+                <div className="aspect-square overflow-hidden rounded-md bg-muted">
+                  <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <Button type="button" onClick={capture} className="font-bold"><Camera className="mr-2 h-4 w-4" /> Capture</Button>
+                  <Button type="button" variant="outline" onClick={stopCamera}>Cancel</Button>
+                </div>
+              </div>
             )}
-            {photo && (
-              <Button type="button" variant="outline" className="w-full h-11" onClick={startCamera}>
-                <RefreshCw className="mr-2 h-4 w-4" /> Retake • दोबारा लें
-              </Button>
-            )}
-          </div>
 
-          {/* Submit */}
-          <Button
-            onClick={handleSubmit}
-            disabled={submitting || linkedMobile.length !== 10 || aadhaar.replace(/\D/g, "").length !== 12}
-            className="w-full h-12 text-base font-semibold bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90"
-          >
-            {submitting ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</>
-            ) : (
-              <><ShieldCheck className="mr-2 h-5 w-5" /> Submit for Verification • सबमिट करें</>
-            )}
+            <div className="grid gap-3 sm:grid-cols-2">
+              {selfieSlots.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <div key={item.target} className="rounded-lg border border-border bg-background p-3">
+                    <input ref={item.inputRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={(e) => handleFile(item.target, e.target.files?.[0])} />
+                    <p className="mb-1 flex items-center gap-2 text-sm font-bold text-foreground"><Icon className="h-4 w-4 text-primary" /> {item.title}</p>
+                    <p className="mb-3 font-hindi text-xs text-muted-foreground">{item.hindi}</p>
+                    {item.value ? (
+                      <div className="relative aspect-square overflow-hidden rounded-md border border-primary/30 bg-muted">
+                        <img src={item.value} alt={item.title} className="h-full w-full object-cover" />
+                        <button type="button" onClick={() => setImageValue(item.target, null)} className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground" aria-label="Remove selfie">
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button type="button" variant="outline" className="h-16 flex-col gap-1" onClick={() => startCamera(item.target)} disabled={cameraOn}>
+                          <Camera className="h-5 w-5" /> Capture
+                        </Button>
+                        <Button type="button" variant="outline" className="h-16 flex-col gap-1" onClick={() => item.inputRef.current?.click()}>
+                          <Upload className="h-5 w-5" /> Gallery
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <Button onClick={handleSubmit} disabled={submitting || !canSubmit} className="h-14 w-full text-base font-extrabold shadow-lg">
+            {submitting ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Processing...</> : <><ShieldCheck className="mr-2 h-5 w-5" /> Submit KYC</>}
           </Button>
         </CardContent>
-      </Card>
+      </div>
     </main>
   );
 };
