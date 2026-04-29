@@ -5,8 +5,8 @@ const config: CapacitorConfig = {
   appName: 'Mera Bharat Dukaan',
   webDir: 'dist',
   server: {
-    url: 'https://8f922485-ba43-4a9f-a4e9-54880856935a.lovableproject.com?forceHideBadge=true',
-    cleartext: true,
+    url: 'https://shop.mbdbusinesshub.in',
+    cleartext: false,
   },
   android: {
     allowMixedContent: true,

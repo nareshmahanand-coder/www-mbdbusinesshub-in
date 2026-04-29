@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { SUPERUSER_FLAG } from "@/contexts/AuthContext";
+import { SUPERUSER_FLAG, useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { Loader2, MessageCircle, Lock } from "lucide-react";
@@ -21,17 +21,20 @@ const HELPLINE_WA = "919203645007";
 const SUPERUSER_PIN = "02032026";
 const SUPERUSER_EMAIL = "superuser@mbd.local";
 const SUPERUSER_PASSWORD = "MBD_SuperUser_02032026!";
-const CANONICAL_OAUTH_ORIGIN = "https://www.mbdbusinesshub.in";
+const SHOP_APP_ORIGIN = "https://shop.mbdbusinesshub.in";
 
-const getOAuthRedirectOrigin = () => {
-  if (window.location.hostname.endsWith("mbdbusinesshub.in")) {
-    return CANONICAL_OAUTH_ORIGIN;
+const getStandaloneAuthOrigin = () => {
+  const hostname = window.location.hostname;
+  if (hostname.endsWith("mbdbusinesshub.in")) {
+    return SHOP_APP_ORIGIN;
   }
   return window.location.origin;
 };
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user, loading: authLoading } = useAuth();
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPhoneInput, setShowPhoneInput] = useState(false);
@@ -39,6 +42,13 @@ const LoginPage = () => {
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [pin, setPin] = useState("");
   const [pinLoading, setPinLoading] = useState(false);
+  const nextPath = new URLSearchParams(location.search).get("next") || "/dashboard";
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate(nextPath.startsWith("/") ? nextPath : "/dashboard", { replace: true });
+    }
+  }, [authLoading, navigate, nextPath, user]);
 
   const handleSuperUserPin = async () => {
     if (pin !== SUPERUSER_PIN) {
@@ -58,7 +68,7 @@ const LoginPage = () => {
           password: SUPERUSER_PASSWORD,
           options: {
             data: { full_name: "Super User", phone: "+910000000000" },
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: getStandaloneAuthOrigin(),
           },
         });
         if (signUpError && !signUpError.message.toLowerCase().includes("already")) {
@@ -116,7 +126,7 @@ const LoginPage = () => {
               full_name: `User ${phone}`,
               phone: `+91${phone}`,
             },
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: getStandaloneAuthOrigin(),
           },
         });
 
@@ -170,7 +180,7 @@ const LoginPage = () => {
           password,
           options: {
             data: { full_name: `User ${phone}`, phone: `+91${phone}` },
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: getStandaloneAuthOrigin(),
           },
         });
         if (signUpError) {
@@ -215,7 +225,7 @@ const LoginPage = () => {
     try {
       sessionStorage.setItem("bharat-mitra-pending-greet", "true");
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: getOAuthRedirectOrigin(),
+        redirect_uri: getStandaloneAuthOrigin(),
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
@@ -225,7 +235,7 @@ const LoginPage = () => {
         return;
       }
       if (result.redirected) return;
-      navigate("/", { replace: true });
+      navigate(nextPath.startsWith("/") ? nextPath : "/dashboard", { replace: true });
     } catch (e: any) {
       console.error("Google login error:", e);
       toast.error("लॉगिन विफल। पुनः प्रयास करें।");
