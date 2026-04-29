@@ -11,8 +11,8 @@ export type PaymentPlan = "monthly" | "yearly";
 
 const PAYMENT_LINKS: Record<PaymentModule, Record<PaymentPlan, { url: string; amount: number; planName: string; subscriptionId: string }>> = {
   bharat_gaurav: {
-    monthly: { url: "https://rzp.io/rzp/HcZ53Lpl", amount: 1, planName: "Bharat Gaurav Membership ₹1 Plan", subscriptionId: "sub_ShFY15RTkXtfeU" },
-    yearly: { url: "https://rzp.io/rzp/0WkIfbVd", amount: 12, planName: "Bharat Gaurav Membership ₹12 Plan", subscriptionId: "sub_ShFULxQPgrTChe" },
+    monthly: { url: "https://rzp.io/rzp/0kTh9x8o", amount: 10, planName: "भारत गौरव मेंबरशिप ₹10 प्लान", subscriptionId: "" },
+    yearly: { url: "https://rzp.io/rzp/3jBvEwl", amount: 100, planName: "भारत गौरव मेंबरशिप ₹100 प्लान", subscriptionId: "" },
   },
   merchant_premium: {
     monthly: { url: "https://rzp.io/rzp/PKPblN5t", amount: 99, planName: "Merchant Portal ₹99 Monthly Plan", subscriptionId: "sub_ShLRDyN197vaFh" },

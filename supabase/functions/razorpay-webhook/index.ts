@@ -10,10 +10,8 @@ const enc = new TextEncoder();
 const toHex = (buffer: ArrayBuffer) => Array.from(new Uint8Array(buffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
 
 const PAYMENT_LINKS: Record<string, { module: "bharat_gaurav" | "merchant_premium" | "marriage_bureau"; plan: "monthly" | "yearly"; amount: number; days: number; label: string }> = {
-  HcZ53Lpl: { module: "bharat_gaurav", plan: "monthly", amount: 1, days: 30, label: "Bharat Gaurav Membership ₹1 Plan" },
-  "0WkIfbVd": { module: "bharat_gaurav", plan: "yearly", amount: 12, days: 365, label: "Bharat Gaurav Membership ₹12 Plan" },
-  sub_ShFY15RTkXtfeU: { module: "bharat_gaurav", plan: "monthly", amount: 1, days: 30, label: "Bharat Gaurav Membership ₹1 Plan" },
-  sub_ShFULxQPgrTChe: { module: "bharat_gaurav", plan: "yearly", amount: 12, days: 365, label: "Bharat Gaurav Membership ₹12 Plan" },
+  "0kTh9x8o": { module: "bharat_gaurav", plan: "monthly", amount: 10, days: 30, label: "भारत गौरव मेंबरशिप ₹10 प्लान" },
+  "3jBvEwl": { module: "bharat_gaurav", plan: "yearly", amount: 100, days: 365, label: "भारत गौरव मेंबरशिप ₹100 प्लान" },
   PKPblN5t: { module: "merchant_premium", plan: "monthly", amount: 99, days: 30, label: "Merchant Portal ₹99 Monthly Plan" },
   CmLBI4u: { module: "merchant_premium", plan: "yearly", amount: 999, days: 365, label: "Merchant Portal ₹999 Yearly Plan" },
   sub_ShLRDyN197vaFh: { module: "merchant_premium", plan: "monthly", amount: 99, days: 30, label: "Merchant Portal ₹99 Monthly Plan" },
