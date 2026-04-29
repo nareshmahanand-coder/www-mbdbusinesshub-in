@@ -665,6 +665,28 @@ const ClassifiedsPage = () => {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={!!activeConversation} onOpenChange={open => { if (!open) { setActiveConversation(null); setConversationMessages([]); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-left">Internal Chat</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-80 space-y-2 overflow-y-auto rounded-lg border border-border bg-muted/40 p-3">
+            {conversationMessages.length === 0 ? <p className="text-center text-sm text-muted-foreground">No messages yet.</p> : conversationMessages.map(message => (
+              <div key={message.id} className={`flex ${message.sender_id === user?.id ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[82%] rounded-lg px-3 py-2 text-sm ${message.sender_id === user?.id ? "bg-accent text-accent-foreground" : "bg-card text-card-foreground"}`}>
+                  <p className="whitespace-pre-line">{message.message}</p>
+                  <p className="mt-1 text-[10px] opacity-70">{new Date(message.created_at).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Input value={replyMessage} onChange={event => setReplyMessage(event.target.value)} onKeyDown={event => { if (event.key === "Enter") void sendReply(); }} placeholder="Type your message" />
+            <Button size="icon" onClick={sendReply} disabled={!replyMessage.trim()}><Send className="h-4 w-4" /></Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
         <DialogContent className="h-[100dvh] max-h-[100dvh] w-screen max-w-none border-0 bg-background/95 p-0 sm:rounded-none">
           {selectedAd && selectedPhotos.length > 0 && (
