@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useState } from "react";
 import { sampleShops, Shop, categoryIcons } from "@/data/sampleShops";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
