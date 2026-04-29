@@ -82,18 +82,16 @@ const KycRequiredRoute = ({ children }: { children: React.ReactNode }) => {
     const next = `${location.pathname}${location.search}`;
     return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
   }
-  if (!isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
   if (!isSuperUser && !membershipActive) return <Navigate to="/membership" replace />;
+  if (!isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
   return <>{children}</>;
 };
 
 const MembershipRoute = () => {
   const { user, loading: authLoading, isSuperUser } = useAuth();
-  const { status, loading: kycLoading } = useKycStatus();
   const { isActive: membershipActive, loading: membershipLoading } = useMembership();
-  if (authLoading || (user && (kycLoading || membershipLoading))) return <FullScreenLoader />;
+  if (authLoading || (user && membershipLoading)) return <FullScreenLoader />;
   if (!user) return <Navigate to="/login?next=/membership" replace />;
-  if (!isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
   if (!isSuperUser && membershipActive) return <Navigate to="/dashboard" replace />;
   return <MembershipGatePage onActivated={() => { window.location.href = "/dashboard"; }} />;
 };
@@ -113,8 +111,8 @@ const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const next = new URLSearchParams(location.search).get("next") || sessionStorage.getItem("mbd-auth-next") || "/dashboard";
   if (loading || (user && (kycLoading || membershipLoading))) return <FullScreenLoader />;
-  if (user && !isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
   if (user && !isSuperUser && !membershipActive) return <Navigate to="/membership" replace />;
+  if (user && !isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
   if (user) return <Navigate to={next.startsWith("/") ? next : "/dashboard"} replace />;
   return <>{children}</>;
 };
