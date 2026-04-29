@@ -913,7 +913,7 @@ const AdminDashboard = () => {
           <Card className="bg-navy text-primary-foreground">
             <CardContent className="flex items-center gap-3 p-4">
               <Users className="h-7 w-7 opacity-80" />
-              <div><p className="text-2xl font-extrabold">{shops.length}</p><p className="text-[10px] opacity-70">Total / कुल दुकानें</p></div>
+              <div><p className="text-2xl font-extrabold">{merchants.length}</p><p className="text-[10px] opacity-70">Total / कुल दुकानें</p></div>
             </CardContent>
           </Card>
           <Card className="bg-green-india text-primary-foreground">
@@ -925,7 +925,7 @@ const AdminDashboard = () => {
           <Card className="bg-saffron text-primary-foreground">
             <CardContent className="flex items-center gap-3 p-4">
               <Crown className="h-7 w-7 opacity-80" />
-              <div><p className="text-2xl font-extrabold">{premiumShops.length}</p><p className="text-[10px] opacity-70">Premium / प्रीमियम</p></div>
+              <div><p className="text-2xl font-extrabold">{premiumMerchantCount}</p><p className="text-[10px] opacity-70">Premium / प्रीमियम</p></div>
             </CardContent>
           </Card>
           <Card className="border-2 border-accent">
@@ -1007,6 +1007,7 @@ const AdminDashboard = () => {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="messages" className="text-xs">💬 Messages</TabsTrigger>
             <TabsTrigger value="slider" className="text-xs">🎠 Slider</TabsTrigger>
             <TabsTrigger value="control" className="text-xs">🛂 Shops & Users</TabsTrigger>
             <TabsTrigger value="preview" className="text-xs">👁️ System Preview</TabsTrigger>
