@@ -183,23 +183,25 @@ const ServicesPage = () => {
 
         <PremiumShopSlider />
 
-        <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_auto]">
+        <div className="mb-4 grid gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(260px,420px)_auto]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search city or area — Pune, Bhilai, Risali..."
+              placeholder="Search category — Kirana Store, Puncture Shop, Fast Food..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               onKeyDown={(event) => event.key === "Enter" && applyCitySearch()}
               className="pl-10"
             />
           </div>
+          <LocationSearchBar value={locationSearch} onChange={(location) => { setLocationSearch(location); setActiveCity(location === "All" ? "" : location); }} placeholder="Search city or area — Odisha, Pune, Bhilai..." />
           <Button onClick={applyCitySearch}>Search</Button>
         </div>
 
         <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <Badge variant="secondary">{visibleShops.length} shops found</Badge>
           {activeCity ? <span>Area: {activeCity}</span> : userLocation ? <span>Showing shops within 10km of your location</span> : <span>Showing all registered shops until GPS permission is allowed</span>}
+          {search.trim() && <span>Category: {search.trim()}</span>}
         </div>
 
         {loading ? (
@@ -226,6 +228,16 @@ const ServicesPage = () => {
                   </div>
 
                   <Badge variant="secondary" className="mb-3">{shop.category || "Local Shop"}</Badge>
+                  <div className="mb-3 flex items-center gap-2">
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button key={star} type="button" onClick={() => rateShop(shop.id, star)} className="text-accent transition-transform hover:scale-110" aria-label={`Rate ${star} stars`}>
+                          <Star className={`h-4 w-4 ${star <= Math.round(shop.avgRating || 0) ? "fill-current" : ""}`} />
+                        </button>
+                      ))}
+                    </div>
+                    <span className="text-xs font-medium text-muted-foreground">{shop.avgRating ? shop.avgRating.toFixed(1) : "New"} ({shop.reviewCount || 0})</span>
+                  </div>
                   <div className="mb-4 space-y-2 text-sm text-muted-foreground">
                     <p className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-saffron" />{[shop.address, shop.city, shop.pincode].filter(Boolean).join(", ") || "Location available in profile"}</p>
                     <p className="flex items-center gap-2"><Navigation className="h-4 w-4 shrink-0 text-primary" />{shop.distanceKm == null ? "Distance calculating after GPS" : `${shop.distanceKm.toFixed(1)} km away`}</p>
