@@ -25,6 +25,18 @@ async function unlock(admin: any, order: any, paymentId: string, signature: stri
   if (order.status === "paid") return;
   const days = Number(order.metadata?.days || (order.plan === "yearly" ? 365 : 30));
   const dates = addDays(days);
+  const basePaymentUpdate = {
+    status: "paid",
+    razorpay_payment_id: paymentId,
+    razorpay_signature: signature,
+    unlocked_at: new Date().toISOString(),
+    error_message: null,
+    metadata: {
+      ...(order.metadata || {}),
+      plan_name: order.metadata?.plan_name || `${order.module}_${order.plan}`,
+      unlock_source: "razorpay_webhook",
+    },
+  };
 
   if (order.module === "bharat_gaurav") {
     await admin.from("memberships").upsert({
@@ -53,13 +65,7 @@ async function unlock(admin: any, order: any, paymentId: string, signature: stri
     }).eq("user_id", order.user_id);
   }
 
-  await admin.from("payment_orders").update({
-    status: "paid",
-    razorpay_payment_id: paymentId,
-    razorpay_signature: signature,
-    unlocked_at: new Date().toISOString(),
-    error_message: null,
-  }).eq("id", order.id);
+  await admin.from("payment_orders").update(basePaymentUpdate).eq("id", order.id);
 }
 
 serve(async (req) => {
@@ -94,7 +100,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, ignored: "unknown_order" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (event.event === "payment.captured" || status === "captured") {
+    if (event.event === "payment.captured" && status === "captured") {
       await unlock(admin, order, paymentId, receivedSignature);
     } else if (event.event === "payment.failed" || status === "failed") {
       await admin.from("payment_orders").update({ status: "failed", razorpay_payment_id: paymentId, error_message: payment?.error_description || "Payment failed" }).eq("id", order.id);
