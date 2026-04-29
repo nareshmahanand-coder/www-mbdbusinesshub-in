@@ -462,8 +462,8 @@ const ClassifiedsPage = () => {
                 ad={ad}
                 isFeatured={idx < 2}
                 onOpen={() => openAd(ad)}
-                isNumberVisible={!!visibleCardNumbers[ad.id]}
-                onShowNumber={() => setVisibleCardNumbers(current => ({ ...current, [ad.id]: true }))}
+                isNumberVisible={false}
+                onShowNumber={() => requestSellerNumber(ad)}
                 onChat={() => startChatForAd(ad)}
               />
             ))}
@@ -610,8 +610,8 @@ const ClassifiedsPage = () => {
                   ) : (
                     <>
                       <div className="grid gap-2 sm:grid-cols-2">
-                        <Button variant="outline" disabled={selectedAd.is_sold} onClick={() => setShowNumber(true)} className="h-11">
-                          <Phone className="h-4 w-4" /> {selectedAd.is_sold ? "Sold Out" : showNumber ? (selectedAd.contact_phone || "Number unavailable") : "Show Number"}
+                        <Button variant="outline" disabled={selectedAd.is_sold} onClick={() => isSelectedNumberApproved ? toast.success("Seller approved this number") : requestSellerNumber(selectedAd)} className="h-11">
+                          <Phone className="h-4 w-4" /> {selectedAd.is_sold ? "Sold Out" : isSelectedNumberApproved ? (selectedAd.contact_phone || "Number unavailable") : requestForSelectedAd?.status === "pending" ? "Request Pending" : "Request Number"}
                         </Button>
                         <Button disabled={selectedAd.is_sold} onClick={startChat} className="h-11 bg-accent text-accent-foreground hover:bg-accent/90">
                           <MessageCircle className="h-4 w-4" /> {selectedAd.is_sold ? "Sold Out" : "Chat with Seller"}
