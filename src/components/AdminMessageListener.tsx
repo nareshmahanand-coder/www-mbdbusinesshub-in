@@ -12,6 +12,16 @@ type AdminMessage = {
   created_at: string;
 };
 
+type AdminMessageQueryClient = {
+  from: (table: "admin_messages") => {
+    select: (columns: string) => {
+      order: (column: string, options: { ascending: boolean }) => {
+        limit: (count: number) => Promise<{ data: AdminMessage[] | null }>;
+      };
+    };
+  };
+};
+
 const AdminMessageListener = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<AdminMessage[]>([]);
@@ -23,7 +33,7 @@ const AdminMessageListener = () => {
     }
 
     const loadMessages = async () => {
-      const { data } = await (supabase as any)
+      const { data } = await (supabase as unknown as AdminMessageQueryClient)
         .from("admin_messages")
         .select("id, title, message, created_at")
         .order("created_at", { ascending: false })
