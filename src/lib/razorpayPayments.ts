@@ -34,6 +34,21 @@ interface StartPaymentOptions {
   onFailure?: () => void;
 }
 
+const waitForWebhookUnlock = async (orderId: string) => {
+  for (let attempt = 0; attempt < 12; attempt += 1) {
+    const { data } = await supabase
+      .from("payment_orders")
+      .select("status, razorpay_payment_id, unlocked_at")
+      .eq("razorpay_order_id", orderId)
+      .maybeSingle();
+
+    if (data?.status === "paid" && data.razorpay_payment_id && data.unlocked_at) return true;
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+  }
+
+  return false;
+};
+
 export const startInstantRazorpayPayment = async ({ module, plan, onSuccess, onFailure }: StartPaymentOptions) => {
   await loadRazorpay();
 
@@ -54,12 +69,11 @@ export const startInstantRazorpayPayment = async ({ module, plan, onSuccess, onF
     prefill: data.prefill,
     theme: { color: "#FF9933" },
     handler: async (response: any) => {
-      const { data: verified, error: verifyError } = await supabase.functions.invoke("verify-razorpay-payment", {
-        body: response,
-      });
+      const orderId = String(response?.razorpay_order_id || data.orderId || "");
+      const unlocked = await waitForWebhookUnlock(orderId);
 
-      if (verifyError || !verified?.ok) {
-        throw new Error(verifyError?.message || verified?.error || "Payment verification failed");
+      if (!unlocked) {
+        throw new Error("Payment received. Waiting for Razorpay confirmation — please refresh in a moment.");
       }
 
       onSuccess();
