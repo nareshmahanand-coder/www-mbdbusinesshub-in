@@ -18,12 +18,12 @@ export const useMembership = () => {
 
     const today = new Date().toISOString().split("T")[0];
 
-    // Check for approved membership
+    // Check for approved/active membership
     const { data: approved } = await supabase
       .from("memberships")
       .select("id")
       .eq("user_id", user.id)
-      .eq("status", "approved")
+      .in("status", ["approved", "active"])
       .gte("ends_at", today)
       .limit(1);
 
