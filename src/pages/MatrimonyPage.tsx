@@ -75,7 +75,7 @@ const MatrimonyPage = () => {
       .filter(p => p.user_id !== user?.id)
       .filter(p => {
         if (filterGender !== "All" && p.gender !== filterGender) return false;
-        if (filterCity && !p.city?.toLowerCase().includes(filterCity.toLowerCase())) return false;
+        if (filterCity && !matchesLocation(p.city, filterCity)) return false;
         if (filterProfession && !p.profession?.toLowerCase().includes(filterProfession.toLowerCase())) return false;
         const age = getAge(p.dob);
         if (age !== null && (age < filterAgeRange[0] || age > filterAgeRange[1])) return false;
@@ -114,6 +114,8 @@ const MatrimonyPage = () => {
           </TabsList>
 
           <TabsContent value="browse" className="mt-4 space-y-5">
+            <LocationSearchBar value={filterCity || "All"} onChange={location => setFilterCity(location === "All" ? "" : location)} placeholder="Search partner location — Delhi, Bhilai, Pune..." />
+
             {/* Filters */}
             <MatrimonyFilters
               gender={filterGender} onGenderChange={setFilterGender}
