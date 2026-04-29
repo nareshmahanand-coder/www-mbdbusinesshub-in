@@ -253,7 +253,25 @@ const ClassifiedsPage = () => {
     if (!conversationId) { toast.error("Chat could not be started right now"); return; }
     const { error } = await supabase.from("classified_messages" as any).insert({ conversation_id: conversationId, sender_id: user.id, message });
     if (error) toast.error("Message not sent");
-    else toast.success("Chat started with seller");
+    else { toast.success("Chat started with seller"); await loadConversations(); setActiveSection("chats"); }
+  };
+
+  const requestSellerNumber = async (ad: ClassifiedAd) => {
+    if (!user) { toast.info("Please login to request seller number."); return; }
+    if (ad.user_id === user.id) { toast.info("This is your own listing."); return; }
+    const existing = contactRequests.find(request => request.classified_id === ad.id && request.buyer_id === user.id);
+    if (existing?.status === "approved") { toast.success("Seller approved your request. Number is visible now."); return; }
+    if (existing?.status === "pending") { toast.info("Your request is already pending with the seller."); return; }
+    const message = `Buyer is interested in ${ad.title} and requested your mobile number.`;
+    const { error } = await supabase.from("classified_contact_requests" as any).insert({ classified_id: ad.id, buyer_id: user.id, seller_id: ad.user_id, message });
+    if (error) toast.error("Could not send request");
+    else { toast.success("Request sent to seller for approval"); await loadContactRequests(); await startChatForAd(ad, `Hi, I am interested in ${ad.title}. Please approve my number request if convenient.`); }
+  };
+
+  const updateContactRequest = async (request: ContactRequest, status: "approved" | "rejected") => {
+    const { error } = await supabase.from("classified_contact_requests" as any).update({ status }).eq("id", request.id);
+    if (error) toast.error("Could not update request");
+    else { toast.success(status === "approved" ? "Mobile number request approved" : "Request rejected"); loadContactRequests(); }
   };
 
   const startChat = async () => {
