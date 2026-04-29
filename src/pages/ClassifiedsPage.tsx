@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle, Archive, Trash2, Loader2, Navigation } from "lucide-react";
+import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle, Archive, Trash2, Loader2, Navigation, Bell, CheckCircle2, Send, Lock } from "lucide-react";
 import { City, State } from "country-state-city";
 import { reverseGeocodeIndiaLocation, searchIndiaLocations } from "@/lib/googleLocation";
 
@@ -39,6 +39,24 @@ interface ClassifiedConversation {
   seller_id: string;
   last_message_at: string;
   archived_by?: string[];
+}
+
+interface ContactRequest {
+  id: string;
+  classified_id: string;
+  buyer_id: string;
+  seller_id: string;
+  status: "pending" | "approved" | "rejected";
+  message: string;
+  created_at: string;
+}
+
+interface ClassifiedMessage {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  message: string;
+  created_at: string;
 }
 
 const topCities = ["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Ahmedabad", "Chennai", "Kolkata", "Pune", "Jaipur", "Lucknow", "Patna", "Bhopal"];
@@ -79,12 +97,14 @@ const ClassifiedsPage = () => {
   const [priceRange, setPriceRange] = useState([0, 500000]);
   const [selectedAd, setSelectedAd] = useState<ClassifiedAd | null>(null);
   const [activePhoto, setActivePhoto] = useState(0);
-  const [showNumber, setShowNumber] = useState(false);
-  const [visibleCardNumbers, setVisibleCardNumbers] = useState<Record<string, boolean>>({});
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
   const [activeSection, setActiveSection] = useState<"home" | "chats" | "myAds" | "account">("home");
   const [conversations, setConversations] = useState<ClassifiedConversation[]>([]);
+  const [contactRequests, setContactRequests] = useState<ContactRequest[]>([]);
+  const [activeConversation, setActiveConversation] = useState<ClassifiedConversation | null>(null);
+  const [conversationMessages, setConversationMessages] = useState<ClassifiedMessage[]>([]);
+  const [replyMessage, setReplyMessage] = useState("");
   const [locationSearch, setLocationSearch] = useState("");
   const [locationSearchOpen, setLocationSearchOpen] = useState(false);
   const [remoteLocationResults, setRemoteLocationResults] = useState<LocationSuggestion[]>([]);
@@ -93,7 +113,7 @@ const ClassifiedsPage = () => {
   const locationInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { loadAds(); }, []);
-  useEffect(() => { if (user) loadConversations(); }, [user]);
+  useEffect(() => { if (user) { loadConversations(); loadContactRequests(); } }, [user]);
 
   const loadAds = async () => {
     setLoading(true);
