@@ -502,11 +502,15 @@ const AdminDashboard = () => {
   }, [loggedIn]);
 
   const handleLogin = () => {
-    if (pin === "02032026") { setLoggedIn(true); toast.success("Admin access granted"); }
+    if (pin === ADMIN_PIN) {
+      sessionStorage.setItem(ADMIN_PIN_SESSION_KEY, "true");
+      setLoggedIn(true);
+      toast.success("Admin access granted");
+    }
     else toast.error("Invalid PIN");
   };
 
-  const handleLogout = () => { setLoggedIn(false); setPin(""); toast.info("Logged out successfully"); };
+  const handleLogout = () => { sessionStorage.removeItem(ADMIN_PIN_SESSION_KEY); setLoggedIn(false); setPin(""); toast.info("Logged out successfully"); };
 
   const toggleVerification = (id: string) => {
     setShops((prev) => prev.map((s) => (s.id === id ? { ...s, verified: !s.verified } : s)));
@@ -592,6 +596,30 @@ const AdminDashboard = () => {
     if (error) { toast.error("Merchant update failed"); return; }
     setMerchants(prev => prev.map(m => m.id === merchantId ? { ...m, ...patch } : m));
     toast.success("Merchant control updated");
+  };
+
+  const setMerchantSubscription = async (merchantId: string, plan: "monthly" | "yearly" | "none") => {
+    await updateMerchant(merchantId, {
+      is_premium: plan !== "none",
+      premium_plan: plan === "none" ? null : plan,
+      premium_start_date: plan === "none" ? null : new Date().toISOString(),
+      plan_override: plan === "none" ? "" : plan,
+      plan_ends_at: plan === "yearly" ? new Date(Date.now() + 365 * 86400000).toISOString().split("T")[0] : plan === "monthly" ? new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0] : null,
+    } as any);
+  };
+
+  const updateMatrimonyStatus = async (profileId: string, moderation_status: string, is_published: boolean) => {
+    const { error } = await (supabase as any).from("matrimony_profiles").update({ moderation_status, is_published }).eq("id", profileId);
+    if (error) { toast.error("Matrimony update failed"); return; }
+    setMatrimonyProfiles(prev => prev.map(p => p.id === profileId ? { ...p, moderation_status, is_published } as any : p));
+    toast.success(`Matrimony profile ${moderation_status}`);
+  };
+
+  const updateFamilyStatus = async (memberId: string, admin_status: string) => {
+    const { error } = await (supabase as any).from("family_members").update({ admin_status }).eq("id", memberId);
+    if (error) { toast.error("Bharat Kavach update failed"); return; }
+    setFamilyMembers(prev => prev.map(f => f.id === memberId ? { ...f, admin_status } : f));
+    toast.success(`Family member ${admin_status}`);
   };
 
   const updateSiteSettings = async (patch: Partial<typeof settings>) => {
