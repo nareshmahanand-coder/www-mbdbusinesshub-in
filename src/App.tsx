@@ -33,6 +33,7 @@ import FamilyInvitePage from "./pages/FamilyInvitePage";
 import { useLastKnownLocation } from "@/hooks/useLastKnownLocation";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useKycStatus } from "@/hooks/useKycStatus";
+import { useMembership } from "@/hooks/useMembership";
 
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
@@ -74,22 +75,26 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const KycRequiredRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading: authLoading, isSuperUser } = useAuth();
   const { status, loading: kycLoading } = useKycStatus();
+  const { isActive: membershipActive, loading: membershipLoading } = useMembership();
   const location = useLocation();
-  if (authLoading || (user && kycLoading)) return <FullScreenLoader />;
+  if (authLoading || (user && (kycLoading || membershipLoading))) return <FullScreenLoader />;
   if (!user) {
     const next = `${location.pathname}${location.search}`;
     return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
   }
   if (!isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
+  if (!isSuperUser && !membershipActive) return <Navigate to="/membership" replace />;
   return <>{children}</>;
 };
 
 const MembershipRoute = () => {
   const { user, loading: authLoading, isSuperUser } = useAuth();
   const { status, loading: kycLoading } = useKycStatus();
-  if (authLoading || (user && kycLoading)) return <FullScreenLoader />;
+  const { isActive: membershipActive, loading: membershipLoading } = useMembership();
+  if (authLoading || (user && (kycLoading || membershipLoading))) return <FullScreenLoader />;
   if (!user) return <Navigate to="/login?next=/membership" replace />;
   if (!isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
+  if (!isSuperUser && membershipActive) return <Navigate to="/dashboard" replace />;
   return <MembershipGatePage onActivated={() => { window.location.href = "/dashboard"; }} />;
 };
 
@@ -104,11 +109,12 @@ const KycRoute = ({ children }: { children: React.ReactNode }) => {
 const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, isSuperUser } = useAuth();
   const { status, loading: kycLoading } = useKycStatus();
+  const { isActive: membershipActive, loading: membershipLoading } = useMembership();
   const location = useLocation();
   const next = new URLSearchParams(location.search).get("next") || sessionStorage.getItem("mbd-auth-next") || "/dashboard";
-  if (loading || (user && kycLoading)) return <FullScreenLoader />;
+  if (loading || (user && (kycLoading || membershipLoading))) return <FullScreenLoader />;
   if (user && !isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
-  if (user && !isSuperUser && status === "pending") return <Navigate to="/membership" replace />;
+  if (user && !isSuperUser && !membershipActive) return <Navigate to="/membership" replace />;
   if (user) return <Navigate to={next.startsWith("/") ? next : "/dashboard"} replace />;
   return <>{children}</>;
 };
