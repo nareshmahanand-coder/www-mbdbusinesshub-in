@@ -102,11 +102,10 @@ serve(async (req) => {
     }
 
     if (order.status === "paid") {
-      return new Response(JSON.stringify({ ok: true, alreadyUnlocked: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ ok: true, alreadyUnlocked: true, module: order.module }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    await unlock(admin, order, paymentId, signature);
-    return new Response(JSON.stringify({ ok: true, module: order.module }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ ok: false, pendingWebhook: true, module: order.module }), { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("verify-razorpay-payment error", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
