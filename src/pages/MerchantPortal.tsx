@@ -14,20 +14,18 @@ import { supabase } from "@/integrations/supabase/client";
 import KycDocUpload from "@/components/KycDocUpload";
 import { useLocation } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { startInstantRazorpayPayment } from "@/lib/razorpayPayments";
+import { startBharatGauravPaymentLink, startMerchantPortalPaymentLink } from "@/lib/razorpayPayments";
 
 const MERCHANT_PLANS = [
   {
     id: "monthly",
-    label: "मर्चेंट मंथली प्रीमियम",
-    price: "₹99",
+    label: "Merchant Portal ₹99 Monthly Plan",
     days: 30,
     theme: "saffron",
   },
   {
     id: "yearly",
-    label: "मर्चेंट सालाना प्रीमियम",
-    price: "₹999",
+    label: "Merchant Portal ₹999 Yearly Plan",
     days: 365,
     theme: "green",
   },
@@ -116,12 +114,11 @@ const MerchantPortal = () => {
     setFailedPlan(null);
 
     try {
-      await startInstantRazorpayPayment({
-        module: "merchant_premium",
+      await startMerchantPortalPaymentLink({
         plan: plan.id as "monthly" | "yearly",
         onSuccess: () => {
           toast.success("Payment successful — Merchant Premium activated!");
-          window.location.reload();
+          window.location.href = "/merchant-dashboard";
         },
         onFailure: () => setFailedPlan(plan.id as "monthly" | "yearly"),
       });
@@ -138,8 +135,7 @@ const MerchantPortal = () => {
     setPayingMembershipPlan(plan);
 
     try {
-      await startInstantRazorpayPayment({
-        module: "bharat_gaurav",
+      await startBharatGauravPaymentLink({
         plan,
         onSuccess: () => {
           toast.success("Payment successful — Bharat Gaurav Membership activated!");
@@ -331,12 +327,7 @@ const MerchantPortal = () => {
                     className="group flex flex-col items-center justify-center gap-1 rounded-xl px-4 py-5 text-white font-bold shadow-md transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-80"
                     style={{ backgroundColor: bg }}
                   >
-                    <span className="font-hindi text-base leading-tight">{plan.label}</span>
-                    {payingPlan === plan.id ? <Loader2 className="h-6 w-6 animate-spin" /> : <span className="text-2xl font-extrabold">{plan.price}</span>}
-                    <span className="font-hindi text-xs opacity-95">{plan.days} दिन</span>
-                    <span className="mt-1 inline-flex items-center gap-1 text-xs opacity-95">
-                      Primary merchant plan
-                    </span>
+                    {payingPlan === plan.id ? <Loader2 className="h-6 w-6 animate-spin" /> : <span className="text-base font-extrabold leading-tight">{plan.label}</span>}
                   </button>
                 );
               })}
@@ -344,13 +335,9 @@ const MerchantPortal = () => {
 
             {failedPlan && (
               <Button onClick={() => handleSubscribe(MERCHANT_PLANS.find((plan) => plan.id === failedPlan)!)} variant="outline" className="w-full">
-                Retry {failedPlan === "monthly" ? "Monthly ₹99" : "Yearly ₹999"} Payment
+                {failedPlan === "monthly" ? "Merchant Portal ₹99 Monthly Plan" : "Merchant Portal ₹999 Yearly Plan"}
               </Button>
             )}
-
-            <p className="text-center text-[11px] text-muted-foreground font-hindi">
-              Monthly: ₹99 • Yearly: ₹999
-            </p>
           </CardContent>
         </Card>
 

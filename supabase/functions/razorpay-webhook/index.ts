@@ -9,11 +9,15 @@ const corsHeaders = {
 const enc = new TextEncoder();
 const toHex = (buffer: ArrayBuffer) => Array.from(new Uint8Array(buffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
 
-const BHARAT_GAURAV_PAYMENT_LINKS: Record<string, { plan: "monthly" | "yearly"; amount: number; days: number; label: string }> = {
-  HcZ53Lpl: { plan: "monthly", amount: 1, days: 30, label: "Bharat Gaurav Membership ₹1 Plan" },
-  "0WkIfbVd": { plan: "yearly", amount: 12, days: 365, label: "Bharat Gaurav Membership ₹12 Plan" },
-  sub_ShFY15RTkXtfeU: { plan: "monthly", amount: 1, days: 30, label: "Bharat Gaurav Membership ₹1 Plan" },
-  sub_ShFULxQPgrTChe: { plan: "yearly", amount: 12, days: 365, label: "Bharat Gaurav Membership ₹12 Plan" },
+const PAYMENT_LINKS: Record<string, { module: "bharat_gaurav" | "merchant_premium"; plan: "monthly" | "yearly"; amount: number; days: number; label: string }> = {
+  HcZ53Lpl: { module: "bharat_gaurav", plan: "monthly", amount: 1, days: 30, label: "Bharat Gaurav Membership ₹1 Plan" },
+  "0WkIfbVd": { module: "bharat_gaurav", plan: "yearly", amount: 12, days: 365, label: "Bharat Gaurav Membership ₹12 Plan" },
+  sub_ShFY15RTkXtfeU: { module: "bharat_gaurav", plan: "monthly", amount: 1, days: 30, label: "Bharat Gaurav Membership ₹1 Plan" },
+  sub_ShFULxQPgrTChe: { module: "bharat_gaurav", plan: "yearly", amount: 12, days: 365, label: "Bharat Gaurav Membership ₹12 Plan" },
+  PKPblN5t: { module: "merchant_premium", plan: "monthly", amount: 99, days: 30, label: "Merchant Portal ₹99 Monthly Plan" },
+  CmLBI4u: { module: "merchant_premium", plan: "yearly", amount: 999, days: 365, label: "Merchant Portal ₹999 Yearly Plan" },
+  sub_ShLRDyN197vaFh: { module: "merchant_premium", plan: "monthly", amount: 99, days: 30, label: "Merchant Portal ₹99 Monthly Plan" },
+  sub_ShLXB2CbEc64Un: { module: "merchant_premium", plan: "yearly", amount: 999, days: 365, label: "Merchant Portal ₹999 Yearly Plan" },
 };
 
 async function hmacSha256(message: string, secret: string) {
@@ -37,10 +41,10 @@ function getPaymentLinkPlan(payment: any) {
     notes.payment_link_reference_id,
     notes.subscription_id,
   ].filter(Boolean).map(String);
-  return candidates.map((id) => BHARAT_GAURAV_PAYMENT_LINKS[id]).find(Boolean) || null;
+  return candidates.map((id) => PAYMENT_LINKS[id]).find(Boolean) || null;
 }
 
-async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: { plan: "monthly" | "yearly"; amount: number; days: number; label: string }) {
+async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: { module: "bharat_gaurav" | "merchant_premium"; plan: "monthly" | "yearly"; amount: number; days: number; label: string }) {
   const notes = payment?.notes || {};
   const paymentId = String(payment?.id || "");
   if (paymentId) {
@@ -64,7 +68,7 @@ async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: { plan: 
     .from("payment_orders")
     .select("*")
     .eq("user_id", profile.id)
-    .eq("module", "bharat_gaurav")
+    .eq("module", linkPlan.module)
     .eq("plan", linkPlan.plan)
     .eq("status", "created")
     .order("created_at", { ascending: false })
@@ -74,14 +78,14 @@ async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: { plan: 
 
   const { data: created } = await admin.from("payment_orders").insert({
     user_id: profile.id,
-    module: "bharat_gaurav",
+    module: linkPlan.module,
     plan: linkPlan.plan,
     amount: linkPlan.amount,
     currency: "INR",
     status: "created",
     razorpay_order_id: payment?.order_id || null,
     receipt: `mbd_link_${linkPlan.plan}_${Date.now()}`.slice(0, 40),
-    metadata: { days: linkPlan.days, label: linkPlan.label, plan_name: `bharat_gaurav_${linkPlan.plan}`, source: "razorpay_payment_link" },
+    metadata: { days: linkPlan.days, label: linkPlan.label, plan_name: `${linkPlan.module}_${linkPlan.plan}`, source: "razorpay_payment_link" },
   }).select("*").single();
   return created || null;
 }

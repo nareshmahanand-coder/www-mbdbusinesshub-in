@@ -9,18 +9,14 @@ declare global {
 export type PaymentModule = "bharat_gaurav" | "merchant_premium" | "marriage_bureau";
 export type PaymentPlan = "monthly" | "yearly";
 
-const BHARAT_GAURAV_PAYMENT_LINKS: Record<PaymentPlan, { url: string; amount: number; planName: string; subscriptionId: string }> = {
-  monthly: {
-    url: "https://rzp.io/rzp/HcZ53Lpl",
-    amount: 1,
-    planName: "Bharat Gaurav Membership ₹1 Plan",
-    subscriptionId: "sub_ShFY15RTkXtfeU",
+const PAYMENT_LINKS: Record<"bharat_gaurav" | "merchant_premium", Record<PaymentPlan, { url: string; amount: number; planName: string; subscriptionId: string }>> = {
+  bharat_gaurav: {
+    monthly: { url: "https://rzp.io/rzp/HcZ53Lpl", amount: 1, planName: "Bharat Gaurav Membership ₹1 Plan", subscriptionId: "sub_ShFY15RTkXtfeU" },
+    yearly: { url: "https://rzp.io/rzp/0WkIfbVd", amount: 12, planName: "Bharat Gaurav Membership ₹12 Plan", subscriptionId: "sub_ShFULxQPgrTChe" },
   },
-  yearly: {
-    url: "https://rzp.io/rzp/0WkIfbVd",
-    amount: 12,
-    planName: "Bharat Gaurav Membership ₹12 Plan",
-    subscriptionId: "sub_ShFULxQPgrTChe",
+  merchant_premium: {
+    monthly: { url: "https://rzp.io/rzp/PKPblN5t", amount: 99, planName: "Merchant Portal ₹99 Monthly Plan", subscriptionId: "sub_ShLRDyN197vaFh" },
+    yearly: { url: "https://rzp.io/rzp/CmLBI4u", amount: 999, planName: "Merchant Portal ₹999 Yearly Plan", subscriptionId: "sub_ShLXB2CbEc64Un" },
   },
 };
 
@@ -83,18 +79,18 @@ const waitForPaymentOrderUnlock = async (paymentOrderId: string) => {
   return false;
 };
 
-export const startBharatGauravPaymentLink = async ({ plan, onSuccess, onFailure }: Omit<StartPaymentOptions, "module">) => {
+const startPaymentLink = async ({ module, plan, onSuccess, onFailure }: StartPaymentOptions & { module: "bharat_gaurav" | "merchant_premium" }) => {
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
   if (!user) throw new Error("Login required");
 
-  const link = BHARAT_GAURAV_PAYMENT_LINKS[plan];
-  const receipt = `mbd_link_${plan}_${Date.now()}`.slice(0, 40);
+  const link = PAYMENT_LINKS[module][plan];
+  const receipt = `mbd_${module}_link_${Date.now()}`.slice(0, 40);
   const { data: order, error } = await supabase
     .from("payment_orders")
     .insert({
       user_id: user.id,
-      module: "bharat_gaurav",
+      module,
       plan,
       amount: link.amount,
       currency: "INR",
@@ -103,7 +99,7 @@ export const startBharatGauravPaymentLink = async ({ plan, onSuccess, onFailure 
       metadata: {
         days: plan === "yearly" ? 365 : 30,
         label: link.planName,
-        plan_name: `bharat_gaurav_${plan}`,
+        plan_name: `${module}_${plan}`,
         payment_link_url: link.url,
         payment_link_subscription_id: link.subscriptionId,
         customer_email: user.email || "",
@@ -128,6 +124,14 @@ export const startBharatGauravPaymentLink = async ({ plan, onSuccess, onFailure 
   }
 
   onSuccess();
+};
+
+export const startBharatGauravPaymentLink = async (options: Omit<StartPaymentOptions, "module">) => {
+  await startPaymentLink({ ...options, module: "bharat_gaurav" });
+};
+
+export const startMerchantPortalPaymentLink = async (options: Omit<StartPaymentOptions, "module">) => {
+  await startPaymentLink({ ...options, module: "merchant_premium" });
 };
 
 export const startInstantRazorpayPayment = async ({ module, plan, onSuccess, onFailure }: StartPaymentOptions) => {
