@@ -14,57 +14,6 @@ async function hmacSha256(message: string, secret: string) {
   return toHex(await crypto.subtle.sign("HMAC", key, enc.encode(message)));
 }
 
-function addDays(days: number) {
-  const now = new Date();
-  const end = new Date(now);
-  end.setDate(end.getDate() + days);
-  return { start: now.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
-}
-
-async function unlock(admin: any, order: any, paymentId: string, signature: string) {
-  const days = Number(order.metadata?.days || (order.plan === "yearly" ? 365 : 30));
-  const dates = addDays(days);
-
-  if (order.module === "bharat_gaurav") {
-    await admin.from("memberships").upsert({
-      user_id: order.user_id,
-      plan: order.plan,
-      amount: order.amount,
-      transaction_id: paymentId,
-      status: "approved",
-      starts_at: dates.start,
-      ends_at: dates.end,
-    }, { onConflict: "transaction_id" });
-  }
-
-  if (order.module === "merchant_premium") {
-    await admin.from("merchant_profiles").update({
-      is_premium: true,
-      premium_plan: order.plan,
-      premium_start_date: new Date().toISOString(),
-      plan_ends_at: dates.end,
-      access_status: "active",
-    }).eq("user_id", order.user_id);
-  }
-
-  if (order.module === "marriage_bureau") {
-    await admin.from("matrimony_profiles").update({
-      is_published: true,
-      subscription_plan: order.plan,
-      subscription_start: dates.start,
-      subscription_end: dates.end,
-    }).eq("user_id", order.user_id);
-  }
-
-  await admin.from("payment_orders").update({
-    status: "paid",
-    razorpay_payment_id: paymentId,
-    razorpay_signature: signature,
-    unlocked_at: new Date().toISOString(),
-    error_message: null,
-  }).eq("id", order.id);
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
