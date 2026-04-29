@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
+import LocationSearchBar from "@/components/LocationSearchBar";
 import MatrimonyProfileCard from "@/components/matrimony/ProfileCard";
 import MatrimonyFilters from "@/components/matrimony/Filters";
 import MatrimonyMyProfile from "@/components/matrimony/MyProfile";
@@ -35,6 +36,14 @@ export const getAge = (dob: string | null) => {
   return Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
 };
 
+const locationTokens = (value = "") => value.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
+const matchesLocation = (profileCity = "", selectedLocation = "All") => {
+  if (selectedLocation === "All") return true;
+  const profileTokens = locationTokens(profileCity);
+  const selectedTokens = locationTokens(selectedLocation);
+  return profileTokens.some(token => selectedTokens.includes(token)) || selectedTokens.some(token => profileTokens.includes(token));
+};
+
 const MatrimonyPage = () => {
   const { user } = useAuth();
   const [tab, setTab] = useState("browse");
@@ -66,7 +75,7 @@ const MatrimonyPage = () => {
       .filter(p => p.user_id !== user?.id)
       .filter(p => {
         if (filterGender !== "All" && p.gender !== filterGender) return false;
-        if (filterCity && !p.city?.toLowerCase().includes(filterCity.toLowerCase())) return false;
+        if (filterCity && !matchesLocation(p.city, filterCity)) return false;
         if (filterProfession && !p.profession?.toLowerCase().includes(filterProfession.toLowerCase())) return false;
         const age = getAge(p.dob);
         if (age !== null && (age < filterAgeRange[0] || age > filterAgeRange[1])) return false;
@@ -105,6 +114,8 @@ const MatrimonyPage = () => {
           </TabsList>
 
           <TabsContent value="browse" className="mt-4 space-y-5">
+            <LocationSearchBar value={filterCity || "All"} onChange={location => setFilterCity(location === "All" ? "" : location)} placeholder="Search partner location — Delhi, Bhilai, Pune..." />
+
             {/* Filters */}
             <MatrimonyFilters
               gender={filterGender} onGenderChange={setFilterGender}

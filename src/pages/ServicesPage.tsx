@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
+import LocationSearchBar from "@/components/LocationSearchBar";
 import PremiumShopSlider from "@/components/PremiumShopSlider";
 import { sampleShops } from "@/data/sampleShops";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { LocateFixed, MapPin, Navigation, Search, ShieldCheck, Store } from "lucide-react";
+import { LocateFixed, MapPin, Navigation, Search, ShieldCheck, Star, Store } from "lucide-react";
 import { toast } from "sonner";
 
 interface NearbyShop {
@@ -24,6 +26,15 @@ interface NearbyShop {
   is_premium?: boolean | null;
   is_verified?: boolean | null;
   distanceKm?: number | null;
+  avgRating?: number;
+  reviewCount?: number;
+}
+
+interface ShopRating {
+  id: string;
+  shop_id: string;
+  user_id: string;
+  rating: number;
 }
 
 const toRad = (value: number) => (value * Math.PI) / 180;
@@ -38,15 +49,19 @@ const distanceKm = (fromLat: number, fromLng: number, toLat?: number | null, toL
 };
 
 const ServicesPage = () => {
+  const { user } = useAuth();
   const [shops, setShops] = useState<NearbyShop[]>([]);
   const [search, setSearch] = useState("");
+  const [locationSearch, setLocationSearch] = useState("All");
   const [activeCity, setActiveCity] = useState("");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [locating, setLocating] = useState(false);
+  const [ratings, setRatings] = useState<ShopRating[]>([]);
 
   useEffect(() => {
     loadShops();
+    loadRatings();
     detectLocation(true);
   }, []);
 
@@ -79,6 +94,11 @@ const ServicesPage = () => {
     setLoading(false);
   };
 
+  const loadRatings = async () => {
+    const { data } = await supabase.from("shop_ratings" as any).select("id, shop_id, user_id, rating");
+    setRatings((data as unknown as ShopRating[]) || []);
+  };
+
   const detectLocation = (silent = false) => {
     if (!("geolocation" in navigator)) {
       if (!silent) toast.error("GPS is not available on this device");
@@ -102,22 +122,40 @@ const ServicesPage = () => {
   };
 
   const applyCitySearch = () => {
-    setActiveCity(search.trim());
-    if (search.trim()) toast.success(`Showing shops for ${search.trim()}`);
+    setActiveCity(locationSearch === "All" ? "" : locationSearch.trim());
+    if (locationSearch !== "All" && locationSearch.trim()) toast.success(`Showing shops for ${locationSearch.trim()}`);
+  };
+
+  const rateShop = async (shopId: string, rating: number) => {
+    if (!user) { toast.info("Please login to rate a shop"); return; }
+    const { error } = await supabase.from("shop_ratings" as any).upsert({ shop_id: shopId, user_id: user.id, rating }, { onConflict: "shop_id,user_id" });
+    if (error) toast.error("Rating could not be saved");
+    else { toast.success("Shop rating saved"); await loadRatings(); }
   };
 
   const visibleShops = useMemo(() => {
     const query = activeCity.trim().toLowerCase();
+    const categoryQuery = search.trim().toLowerCase();
+    const ratingStats = ratings.reduce<Record<string, { total: number; count: number }>>((acc, item) => {
+      acc[item.shop_id] = acc[item.shop_id] || { total: 0, count: 0 };
+      acc[item.shop_id].total += item.rating;
+      acc[item.shop_id].count += 1;
+      return acc;
+    }, {});
     const withDistance = shops.map((shop) => ({
       ...shop,
       distanceKm: userLocation ? distanceKm(userLocation.lat, userLocation.lng, shop.latitude, shop.longitude) : null,
+      avgRating: ratingStats[shop.id] ? ratingStats[shop.id].total / ratingStats[shop.id].count : 0,
+      reviewCount: ratingStats[shop.id]?.count || 0,
     }));
 
-    const filtered = query
+    const locationFiltered = query
       ? withDistance.filter((shop) => [shop.shop_name, shop.shop_name_hindi, shop.category, shop.city, shop.address, shop.pincode].some((value) => value?.toLowerCase().includes(query)))
       : userLocation
         ? withDistance.filter((shop) => shop.distanceKm == null || shop.distanceKm <= 10)
         : withDistance;
+
+    const filtered = categoryQuery ? locationFiltered.filter((shop) => [shop.shop_name, shop.shop_name_hindi, shop.category, shop.address].some((value) => value?.toLowerCase().includes(categoryQuery))) : locationFiltered;
 
     return filtered.sort((a, b) => {
       if (!!a.is_premium !== !!b.is_premium) return a.is_premium ? -1 : 1;
@@ -125,7 +163,7 @@ const ServicesPage = () => {
       const bDistance = b.distanceKm ?? Number.POSITIVE_INFINITY;
       return aDistance - bDistance;
     });
-  }, [activeCity, shops, userLocation]);
+  }, [activeCity, ratings, search, shops, userLocation]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -145,23 +183,25 @@ const ServicesPage = () => {
 
         <PremiumShopSlider />
 
-        <div className="mb-4 grid gap-2 sm:grid-cols-[1fr_auto]">
+        <div className="mb-4 grid gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(260px,420px)_auto]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search city or area — Pune, Bhilai, Risali..."
+              placeholder="Search category — Kirana Store, Puncture Shop, Fast Food..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               onKeyDown={(event) => event.key === "Enter" && applyCitySearch()}
               className="pl-10"
             />
           </div>
+          <LocationSearchBar value={locationSearch} onChange={(location) => { setLocationSearch(location); setActiveCity(location === "All" ? "" : location); }} placeholder="Search city or area — Odisha, Pune, Bhilai..." />
           <Button onClick={applyCitySearch}>Search</Button>
         </div>
 
         <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <Badge variant="secondary">{visibleShops.length} shops found</Badge>
           {activeCity ? <span>Area: {activeCity}</span> : userLocation ? <span>Showing shops within 10km of your location</span> : <span>Showing all registered shops until GPS permission is allowed</span>}
+          {search.trim() && <span>Category: {search.trim()}</span>}
         </div>
 
         {loading ? (
@@ -188,6 +228,16 @@ const ServicesPage = () => {
                   </div>
 
                   <Badge variant="secondary" className="mb-3">{shop.category || "Local Shop"}</Badge>
+                  <div className="mb-3 flex items-center gap-2">
+                    <div className="flex items-center gap-0.5">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button key={star} type="button" onClick={() => rateShop(shop.id, star)} className="text-accent transition-transform hover:scale-110" aria-label={`Rate ${star} stars`}>
+                          <Star className={`h-4 w-4 ${star <= Math.round(shop.avgRating || 0) ? "fill-current" : ""}`} />
+                        </button>
+                      ))}
+                    </div>
+                    <span className="text-xs font-medium text-muted-foreground">{shop.avgRating ? shop.avgRating.toFixed(1) : "New"} ({shop.reviewCount || 0})</span>
+                  </div>
                   <div className="mb-4 space-y-2 text-sm text-muted-foreground">
                     <p className="flex items-start gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-saffron" />{[shop.address, shop.city, shop.pincode].filter(Boolean).join(", ") || "Location available in profile"}</p>
                     <p className="flex items-center gap-2"><Navigation className="h-4 w-4 shrink-0 text-primary" />{shop.distanceKm == null ? "Distance calculating after GPS" : `${shop.distanceKm.toFixed(1)} km away`}</p>
