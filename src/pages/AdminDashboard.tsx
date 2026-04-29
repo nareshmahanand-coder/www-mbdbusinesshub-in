@@ -1228,9 +1228,14 @@ const AdminDashboard = () => {
                               <p className="text-xs text-muted-foreground">Plan: {p.subscription_plan || "Not paid"}</p>
                             </div>
                           </div>
-                          <Button size="sm" onClick={() => publishMatrimony(p.id)} className="bg-[hsl(340,80%,50%)] hover:bg-[hsl(340,80%,45%)] text-primary-foreground h-8">
-                            <CheckCircle2 className="mr-1 h-4 w-4" /> Verify & Publish
-                          </Button>
+                          <div className="flex flex-wrap gap-2">
+                            <Button size="sm" onClick={() => updateMatrimonyStatus(p.id, "approved", true)} className="h-8">
+                              <CheckCircle2 className="mr-1 h-4 w-4" /> Approve
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => updateMatrimonyStatus(p.id, "rejected", false)} className="h-8">Reject</Button>
+                            <Button size="sm" variant="destructive" onClick={() => updateMatrimonyStatus(p.id, "suspended", false)} className="h-8">Suspend</Button>
+                            <Button size="sm" variant="secondary" onClick={() => updateMatrimonyStatus(p.id, "cancelled", false)} className="h-8">Cancel</Button>
+                          </div>
                         </div>
                         {/* KYC Documents */}
                         {(p.aadhar_url || p.pan_url) && (
