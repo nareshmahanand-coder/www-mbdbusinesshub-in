@@ -168,10 +168,10 @@ const EkycPage = () => {
         rejection_reason: null,
         reviewed_by: null,
         reviewed_at: null,
-      } as never;
+      };
 
       if (existing && existing.status === "rejected") {
-        const { error } = await supabase.from("kyc_requests").update(payload).eq("id", existing.id);
+        const { error } = await supabase.from("kyc_requests").update(payload as never).eq("id", existing.id);
         if (error) throw error;
       } else {
         const { data: inserted, error } = await supabase
