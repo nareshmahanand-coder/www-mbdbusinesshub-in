@@ -14,20 +14,18 @@ import { supabase } from "@/integrations/supabase/client";
 import KycDocUpload from "@/components/KycDocUpload";
 import { useLocation } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { startInstantRazorpayPayment } from "@/lib/razorpayPayments";
+import { startBharatGauravPaymentLink, startMerchantPortalPaymentLink } from "@/lib/razorpayPayments";
 
 const MERCHANT_PLANS = [
   {
     id: "monthly",
-    label: "मर्चेंट मंथली प्रीमियम",
-    price: "₹99",
+    label: "Merchant Portal ₹99 Monthly Plan",
     days: 30,
     theme: "saffron",
   },
   {
     id: "yearly",
-    label: "मर्चेंट सालाना प्रीमियम",
-    price: "₹999",
+    label: "Merchant Portal ₹999 Yearly Plan",
     days: 365,
     theme: "green",
   },
@@ -116,12 +114,11 @@ const MerchantPortal = () => {
     setFailedPlan(null);
 
     try {
-      await startInstantRazorpayPayment({
-        module: "merchant_premium",
+      await startMerchantPortalPaymentLink({
         plan: plan.id as "monthly" | "yearly",
         onSuccess: () => {
           toast.success("Payment successful — Merchant Premium activated!");
-          window.location.reload();
+          window.location.href = "/merchant-dashboard";
         },
         onFailure: () => setFailedPlan(plan.id as "monthly" | "yearly"),
       });
@@ -138,8 +135,7 @@ const MerchantPortal = () => {
     setPayingMembershipPlan(plan);
 
     try {
-      await startInstantRazorpayPayment({
-        module: "bharat_gaurav",
+      await startBharatGauravPaymentLink({
         plan,
         onSuccess: () => {
           toast.success("Payment successful — Bharat Gaurav Membership activated!");
