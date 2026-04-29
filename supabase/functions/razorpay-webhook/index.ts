@@ -46,7 +46,7 @@ function getPaymentLinkPlan(payment: any) {
   return candidates.map((id) => PAYMENT_LINKS[id]).find(Boolean) || null;
 }
 
-async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: { module: "bharat_gaurav" | "merchant_premium" | "marriage_bureau"; plan: "monthly" | "yearly"; amount: number; days: number; label: string }) {
+async function findExistingPaymentOrder(admin: any, payment: any) {
   const notes = payment?.notes || {};
   const paymentId = String(payment?.id || "");
   if (paymentId) {
@@ -59,6 +59,14 @@ async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: { module
     const { data } = await admin.from("payment_orders").select("*").eq("id", referenceId).maybeSingle();
     if (data) return data;
   }
+
+  return null;
+}
+
+async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: { module: "bharat_gaurav" | "merchant_premium" | "marriage_bureau"; plan: "monthly" | "yearly"; amount: number; days: number; label: string }) {
+  const notes = payment?.notes || {};
+  const existingByReference = await findExistingPaymentOrder(admin, payment);
+  if (existingByReference) return existingByReference;
 
   const email = String(payment?.email || notes.email || notes.customer_email || "").toLowerCase();
   if (!email) return null;
@@ -162,7 +170,7 @@ serve(async (req) => {
     const linkPlan = getPaymentLinkPlan(payment);
 
     if (!orderId || !paymentId) {
-      if (!paymentId || !linkPlan) {
+      if (!paymentId) {
         return new Response(JSON.stringify({ ok: true, ignored: "no_payment_order" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
     }
@@ -171,7 +179,7 @@ serve(async (req) => {
     const { data: orderByOrderId } = orderId
       ? await admin.from("payment_orders").select("*").eq("razorpay_order_id", orderId).maybeSingle()
       : { data: null } as any;
-    const order = orderByOrderId || (linkPlan ? await findPaymentLinkOrder(admin, payment, linkPlan) : null);
+    const order = orderByOrderId || await findExistingPaymentOrder(admin, payment) || (linkPlan ? await findPaymentLinkOrder(admin, payment, linkPlan) : null);
 
     if (!order) {
       return new Response(JSON.stringify({ ok: true, ignored: "unknown_order" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
