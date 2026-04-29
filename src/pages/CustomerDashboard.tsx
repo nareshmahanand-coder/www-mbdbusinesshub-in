@@ -322,6 +322,30 @@ const CustomerDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                {recruiterRequests.length > 0 && (
+                  <div className="mb-4 space-y-2 rounded-lg border border-border bg-muted/40 p-3">
+                    <p className="flex items-center gap-2 text-sm font-extrabold text-foreground">
+                      <Bell className="h-4 w-4 text-accent" /> Job Seeker Contact Requests
+                      {pendingRecruiterRequests.length > 0 && <Badge variant="secondary">{pendingRecruiterRequests.length} pending</Badge>}
+                    </p>
+                    {recruiterRequests.map((request) => {
+                      const job = myJobs.find((item) => item.id === request.job_id);
+                      return (
+                        <div key={request.id} className="flex flex-col gap-2 rounded-md border border-border bg-card p-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-foreground">{job?.title || "Your job post"}</p>
+                            <p className="text-xs text-muted-foreground">{request.message || "Job seeker requested your contact number"}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={request.status === "approved" ? "default" : request.status === "rejected" ? "destructive" : "secondary"}>{request.status}</Badge>
+                            {request.status === "pending" && <Button size="sm" onClick={() => updateJobContactRequest(request, "approved")}><CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Approve</Button>}
+                            {request.status === "pending" && <Button size="sm" variant="outline" onClick={() => updateJobContactRequest(request, "rejected")}>Reject</Button>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 {myJobs.length === 0 ? (
                   <div className="py-12 text-center">
                     <Briefcase className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
