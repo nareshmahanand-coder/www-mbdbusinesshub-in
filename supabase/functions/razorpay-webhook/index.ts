@@ -207,7 +207,7 @@ serve(async (req) => {
     const orderId = payment?.order_id;
     const paymentId = payment?.id;
     const status = payment?.status;
-    const linkPlan = getPaymentLinkPlan(payment);
+    const linkPlan = getPaymentLinkPlan(payment) || inferPaymentLinkPlan(payment);
 
     if (!orderId || !paymentId) {
       if (!paymentId) {
