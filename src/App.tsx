@@ -20,6 +20,7 @@ import MerchantDashboard from "./pages/MerchantDashboard";
 import MatrimonyPage from "./pages/MatrimonyPage";
 import ClassifiedsPage from "./pages/ClassifiedsPage";
 import JobsPage from "./pages/JobsPage";
+import JobDetailPage from "./pages/JobDetailPage";
 import ServicesPage from "./pages/ServicesPage";
 import MyProfilePage from "./pages/MyProfilePage";
 import ShopProfilePage from "./pages/ShopProfilePage";
@@ -103,6 +104,7 @@ const AppShell = () => {
         <Route path="/matrimony" element={<ProtectedRoute><MatrimonyPage /></ProtectedRoute>} />
         <Route path="/classifieds" element={<ProtectedRoute><ClassifiedsPage /></ProtectedRoute>} />
         <Route path="/jobs" element={<ProtectedRoute><JobsPage /></ProtectedRoute>} />
+        <Route path="/jobs/:id" element={<ProtectedRoute><JobDetailPage /></ProtectedRoute>} />
         <Route path="/services" element={<ProtectedRoute><ServicesPage /></ProtectedRoute>} />
         <Route path="/my-profile" element={<ProtectedRoute><MyProfilePage /></ProtectedRoute>} />
         <Route path="/shop/:id" element={<ProtectedRoute><ShopProfilePage /></ProtectedRoute>} />
