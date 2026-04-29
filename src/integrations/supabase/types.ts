@@ -728,6 +728,7 @@ export type Database = {
         Row: {
           aadhaar_back_url: string
           aadhaar_front_url: string
+          aadhaar_linked_mobile: string
           aadhaar_number: string
           created_at: string
           id: string
@@ -735,6 +736,7 @@ export type Database = {
           reviewed_at: string | null
           reviewed_by: string | null
           selfie_url: string
+          selfie_with_aadhaar_url: string
           status: string
           updated_at: string
           user_id: string
@@ -742,6 +744,7 @@ export type Database = {
         Insert: {
           aadhaar_back_url: string
           aadhaar_front_url: string
+          aadhaar_linked_mobile?: string
           aadhaar_number: string
           created_at?: string
           id?: string
@@ -749,6 +752,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           selfie_url: string
+          selfie_with_aadhaar_url?: string
           status?: string
           updated_at?: string
           user_id: string
@@ -756,6 +760,7 @@ export type Database = {
         Update: {
           aadhaar_back_url?: string
           aadhaar_front_url?: string
+          aadhaar_linked_mobile?: string
           aadhaar_number?: string
           created_at?: string
           id?: string
@@ -763,6 +768,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewed_by?: string | null
           selfie_url?: string
+          selfie_with_aadhaar_url?: string
           status?: string
           updated_at?: string
           user_id?: string
