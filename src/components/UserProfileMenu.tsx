@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, LayoutDashboard, Store, Settings, BadgeCheck, Clock, ShieldCheck } from "lucide-react";
+import { User, LogOut, LayoutDashboard, Store, Settings, BadgeCheck, Clock } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useKycStatus } from "@/hooks/useKycStatus";
 import { Badge } from "@/components/ui/badge";
@@ -96,12 +96,6 @@ const UserProfileMenu = () => {
           <Link to="/settings" className="flex items-center gap-2 cursor-pointer">
             <Settings className="h-4 w-4" />
             <span>Account Settings</span>
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/admin" className="flex items-center gap-2 cursor-pointer">
-            <ShieldCheck className="h-4 w-4" />
-            <span>Admin Portal</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
