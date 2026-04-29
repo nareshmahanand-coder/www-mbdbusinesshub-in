@@ -46,7 +46,7 @@ const matchesLocation = (profileCity = "", selectedLocation = "All") => {
 
 const MatrimonyPage = () => {
   const { user } = useAuth();
-  const [tab, setTab] = useState("browse");
+  const [tab, setTab] = useState(() => new URLSearchParams(window.location.search).get("tab") === "my-profile" ? "my-profile" : "browse");
   const [profiles, setProfiles] = useState<MatrimonyProfile[]>([]);
   const [myProfile, setMyProfile] = useState<MatrimonyProfile | null>(null);
   const [loading, setLoading] = useState(true);
