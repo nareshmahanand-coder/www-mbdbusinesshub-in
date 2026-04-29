@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import KycDocUpload from "@/components/KycDocUpload";
 import { useLocation } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { startBharatGauravPaymentLink, startMerchantPortalPaymentLink } from "@/lib/razorpayPayments";
+import { startMerchantPortalPaymentLink } from "@/lib/razorpayPayments";
 
 const MERCHANT_PLANS = [
   {
@@ -39,7 +39,6 @@ const MerchantPortal = () => {
   const [submitted, setSubmitted] = useState(false);
   const [payingPlan, setPayingPlan] = useState<"monthly" | "yearly" | null>(null);
   const [failedPlan, setFailedPlan] = useState<"monthly" | "yearly" | null>(null);
-  const [payingMembershipPlan, setPayingMembershipPlan] = useState<"monthly" | "yearly" | null>(null);
   
   const [shopPhotos, setShopPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -127,25 +126,6 @@ const MerchantPortal = () => {
       toast.error(error instanceof Error ? error.message : "Payment failed. Please retry.");
     } finally {
       setPayingPlan(null);
-    }
-  };
-
-  const handleBharatGauravPay = async (plan: "monthly" | "yearly") => {
-    if (!user) { toast.error("Please login first"); return; }
-    setPayingMembershipPlan(plan);
-
-    try {
-      await startBharatGauravPaymentLink({
-        plan,
-        onSuccess: () => {
-          toast.success("Payment successful — Bharat Gaurav Membership activated!");
-          window.location.reload();
-        },
-      });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Payment failed. Please retry.");
-    } finally {
-      setPayingMembershipPlan(null);
     }
   };
 
@@ -305,7 +285,7 @@ const MerchantPortal = () => {
           </CardHeader>
           <CardContent className="space-y-5">
             <p className="font-hindi text-sm leading-relaxed text-foreground/90 bg-white/60 rounded-lg p-3 border border-border">
-              <strong>मर्चेंट पोर्टल प्रीमियम क्यों चुनें?</strong> प्रीमियम मर्चेंट बनने पर आपको जीरो कमीशन बिक्री, एडवांस वेंडर डैशबोर्ड और अपनी दुकान को प्राथमिकता के साथ लिस्ट करने की सुविधा मिलती है। अपना पसंदीदा ऑटो-डेबिट प्लान चुनें और व्यापार बढ़ाएं।
+              <strong>मर्चेंट पोर्टल प्रीमियम क्यों चुनें?</strong> प्रीमियम मर्चेंट बनने पर आपको जीरो कमीशन बिक्री, एडवांस वेंडर डैशबोर्ड और अपनी दुकान को प्राथमिकता के साथ लिस्ट करने की सुविधा मिलती है। अपना पसंदीदा मर्चेंट पोर्टल प्लान चुनें और व्यापार बढ़ाएं।
             </p>
 
             <ul className="space-y-2 font-hindi text-sm">
@@ -338,29 +318,6 @@ const MerchantPortal = () => {
                 {failedPlan === "monthly" ? "Merchant Portal ₹99 Monthly Plan" : "Merchant Portal ₹999 Yearly Plan"}
               </Button>
             )}
-          </CardContent>
-        </Card>
-
-        <Card className="mb-6 border-primary/30 bg-card/95 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base font-hindi">
-              <Crown className="h-5 w-5 text-primary" /> भारत गौरव मेंबरशिप • Standalone
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="font-hindi text-sm text-muted-foreground">
-              यह मुख्य मर्चेंट प्लान से अलग सदस्यता है। Existing Razorpay payment link वही रहेगा।
-            </p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Button onClick={() => handleBharatGauravPay("monthly")} disabled={payingMembershipPlan !== null} variant="outline" className="font-hindi">
-                {payingMembershipPlan === "monthly" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                ₹1 / Month
-              </Button>
-              <Button onClick={() => handleBharatGauravPay("yearly")} disabled={payingMembershipPlan !== null} variant="outline" className="font-hindi">
-                {payingMembershipPlan === "yearly" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                ₹12 / Year
-              </Button>
-            </div>
           </CardContent>
         </Card>
 
