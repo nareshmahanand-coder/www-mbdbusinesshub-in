@@ -10,7 +10,7 @@ import { User, Crown, Image, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import KycDocUpload from "@/components/KycDocUpload";
 import type { MatrimonyProfile } from "@/pages/MatrimonyPage";
-import { startMarriageBureauPaymentLink } from "@/lib/razorpayPayments";
+import { startMarriageBureauPaymentLink, syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
 
 interface Props {
   user: any;
@@ -23,6 +23,7 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
   const [saving, setSaving] = useState(false);
   const [payingPlan, setPayingPlan] = useState<"monthly" | "yearly" | null>(null);
   const [failedPlan, setFailedPlan] = useState<"monthly" | "yearly" | null>(null);
+  const [syncingPlan, setSyncingPlan] = useState<"monthly" | "yearly" | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [aadharUrl, setAadharUrl] = useState("");
   const [panUrl, setPanUrl] = useState("");
@@ -85,6 +86,22 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
       toast.error(error instanceof Error ? error.message : "Payment failed. Please retry.");
     } finally {
       setPayingPlan(null);
+    }
+  };
+
+  const handleManualSync = async (plan: "monthly" | "yearly") => {
+    setSyncingPlan(plan);
+    try {
+      const result = await syncLatestRazorpayPayment({ module: "marriage_bureau", plan });
+      if (result.ok) {
+        toast.success("Payment confirmed — Marriage Bureau unlocked!");
+        onReload();
+        window.location.href = "/matrimony?tab=my-profile";
+      } else {
+        toast.info(result.error || "Payment confirmation is still pending. Please try again shortly.");
+      }
+    } finally {
+      setSyncingPlan(null);
     }
   };
 
@@ -225,11 +242,12 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => handlePremiumPayment(failedPlan)}
-                  disabled={payingPlan !== null}
+                  onClick={() => handleManualSync(failedPlan)}
+                  disabled={payingPlan !== null || syncingPlan !== null}
                   className="w-full h-10 text-sm font-bold border-[#1a237e] text-[#1a237e] rounded-lg"
                 >
-                  Retry Payment
+                  {syncingPlan === failedPlan ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Manual Sync
                 </Button>
               )}
 

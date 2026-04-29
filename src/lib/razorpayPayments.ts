@@ -51,6 +51,17 @@ interface StartPaymentOptions {
 
 type RazorpaySuccessResponse = {
   razorpay_order_id?: string;
+  razorpay_payment_id?: string;
+  razorpay_signature?: string;
+};
+
+type SyncPaymentOptions = {
+  module?: PaymentModule;
+  plan?: PaymentPlan;
+  paymentOrderId?: string;
+  razorpay_order_id?: string;
+  razorpay_payment_id?: string;
+  razorpay_signature?: string;
 };
 
 const waitForWebhookUnlock = async (orderId: string) => {
@@ -94,7 +105,7 @@ const waitForActiveMembership = async () => {
       .from("memberships")
       .select("id")
       .eq("user_id", user.id)
-      .eq("status", "approved")
+      .in("status", ["approved", "active"])
       .gte("ends_at", today)
       .limit(1);
 
@@ -103,6 +114,22 @@ const waitForActiveMembership = async () => {
   }
 
   return false;
+};
+
+export const syncLatestRazorpayPayment = async ({ module, plan, paymentOrderId, razorpay_order_id, razorpay_payment_id, razorpay_signature }: SyncPaymentOptions) => {
+  const { data, error } = await supabase.functions.invoke("verify-razorpay-payment", {
+    body: {
+      module,
+      plan,
+      payment_order_id: paymentOrderId,
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    },
+  });
+
+  if (error) return { ok: false, error: error.message || "Payment sync failed" };
+  return { ok: Boolean(data?.ok), module: data?.module as PaymentModule | undefined, error: data?.error as string | undefined };
 };
 
 const startPaymentLink = async ({ module, plan, onSuccess, onFailure }: StartPaymentOptions) => {
@@ -143,10 +170,15 @@ const startPaymentLink = async ({ module, plan, onSuccess, onFailure }: StartPay
   const popup = window.open(paymentUrl.toString(), "_blank", "noopener,noreferrer");
   if (!popup) window.location.href = paymentUrl.toString();
 
-  const unlocked = await waitForPaymentOrderUnlock(order.id) || (module === "bharat_gaurav" && await waitForActiveMembership());
+  let unlocked = await waitForPaymentOrderUnlock(order.id) || (module === "bharat_gaurav" && await waitForActiveMembership());
+  if (!unlocked) {
+    const synced = await syncLatestRazorpayPayment({ module, plan, paymentOrderId: order.id });
+    unlocked = Boolean(synced.ok) || (module === "bharat_gaurav" && await waitForActiveMembership());
+  }
+
   if (!unlocked) {
     onFailure?.();
-    throw new Error("Payment received. Waiting for Razorpay confirmation — please refresh in a moment.");
+    throw new Error("Payment sync pending. If money was deducted, use Manual Sync.");
   }
 
   onSuccess();
@@ -185,10 +217,21 @@ export const startInstantRazorpayPayment = async ({ module, plan, onSuccess, onF
     theme: { color: "#FF9933" },
     handler: async (response: RazorpaySuccessResponse) => {
       const orderId = String(response?.razorpay_order_id || data.orderId || "");
-      const unlocked = await waitForWebhookUnlock(orderId);
+      let unlocked = await waitForWebhookUnlock(orderId);
+      if (!unlocked) {
+        const synced = await syncLatestRazorpayPayment({
+          module,
+          plan,
+          razorpay_order_id: orderId,
+          razorpay_payment_id: response?.razorpay_payment_id,
+          razorpay_signature: response?.razorpay_signature,
+        });
+        unlocked = Boolean(synced.ok);
+      }
 
       if (!unlocked) {
-        throw new Error("Payment received. Waiting for Razorpay confirmation — please refresh in a moment.");
+        onFailure?.();
+        return;
       }
 
       onSuccess();

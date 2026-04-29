@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import KycDocUpload from "@/components/KycDocUpload";
 import { useLocation } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { startMerchantPortalPaymentLink } from "@/lib/razorpayPayments";
+import { startMerchantPortalPaymentLink, syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
 
 const MERCHANT_PLANS = [
   {
@@ -39,6 +39,7 @@ const MerchantPortal = () => {
   const [submitted, setSubmitted] = useState(false);
   const [payingPlan, setPayingPlan] = useState<"monthly" | "yearly" | null>(null);
   const [failedPlan, setFailedPlan] = useState<"monthly" | "yearly" | null>(null);
+  const [syncingPlan, setSyncingPlan] = useState<"monthly" | "yearly" | null>(null);
   
   const [shopPhotos, setShopPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -126,6 +127,21 @@ const MerchantPortal = () => {
       toast.error(error instanceof Error ? error.message : "Payment failed. Please retry.");
     } finally {
       setPayingPlan(null);
+    }
+  };
+
+  const handleManualSync = async (planId: "monthly" | "yearly") => {
+    setSyncingPlan(planId);
+    try {
+      const result = await syncLatestRazorpayPayment({ module: "merchant_premium", plan: planId });
+      if (result.ok) {
+        toast.success("Payment confirmed — Merchant Premium activated!");
+        window.location.href = "/merchant-dashboard";
+      } else {
+        toast.info(result.error || "Payment confirmation is still pending. Please try again shortly.");
+      }
+    } finally {
+      setSyncingPlan(null);
     }
   };
 
@@ -314,8 +330,9 @@ const MerchantPortal = () => {
             </div>
 
             {failedPlan && (
-              <Button onClick={() => handleSubscribe(MERCHANT_PLANS.find((plan) => plan.id === failedPlan)!)} variant="outline" className="w-full">
-                {failedPlan === "monthly" ? "Merchant Portal ₹99 Monthly Plan" : "Merchant Portal ₹999 Yearly Plan"}
+              <Button onClick={() => handleManualSync(failedPlan)} disabled={syncingPlan !== null} variant="outline" className="w-full">
+                {syncingPlan === failedPlan ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Manual Sync
               </Button>
             )}
           </CardContent>
