@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Loader2, Crown, Lock } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { startInstantRazorpayPayment } from "@/lib/razorpayPayments";
+import { startBharatGauravPaymentLink } from "@/lib/razorpayPayments";
 
 const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
   const { user, signOut } = useAuth();
@@ -14,8 +14,8 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
   const [paymentFailed, setPaymentFailed] = useState(false);
 
   const planDetails = {
-    monthly: { price: 1, label: "₹1", duration: "1 महीना", days: 30 },
-    yearly: { price: 12, label: "₹12", duration: "1 साल", days: 365 },
+    monthly: { label: "Bharat Gaurav Membership ₹1 Plan" },
+    yearly: { label: "Bharat Gaurav Membership ₹12 Plan" },
   };
 
   const handlePayment = async () => {
@@ -24,13 +24,12 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
     setPaymentFailed(false);
 
     try {
-      await startInstantRazorpayPayment({
-        module: "bharat_gaurav",
+      await startBharatGauravPaymentLink({
         plan,
         onSuccess: () => {
           toast.success("Payment successful — membership unlocked!");
           onActivated();
-          window.location.reload();
+          window.location.href = "/dashboard";
         },
         onFailure: () => setPaymentFailed(true),
       });
@@ -82,7 +81,7 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
             <Button onClick={handlePayment} disabled={submitting}
               className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-bold text-base py-6 gap-2 shadow-lg">
               {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Crown className="h-5 w-5" />}
-              Pay {planDetails[plan].label} & Unlock Instantly
+              {planDetails[plan].label}
             </Button>
             {paymentFailed && (
               <Button onClick={handlePayment} disabled={submitting} variant="outline" className="w-full font-bold">
