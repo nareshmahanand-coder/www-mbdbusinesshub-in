@@ -1044,7 +1044,7 @@ const AdminDashboard = () => {
                 <CardTitle className="text-base flex items-center gap-2"><Users className="h-5 w-5 text-primary" /> Shops & Users Control Center</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 p-4">
-                {merchantsLoading ? <p className="py-6 text-center text-sm text-muted-foreground">Loading...</p> : merchants.map((m) => (
+                {merchantsLoading ? <p className="py-6 text-center text-sm text-muted-foreground">Loading...</p> : filteredMerchants.map((m) => (
                   <div key={m.id} className="rounded-lg border border-border p-4">
                     <div className="grid gap-3 lg:grid-cols-[1.3fr_1fr_1fr] lg:items-center">
                       <div>
@@ -1053,17 +1053,20 @@ const AdminDashboard = () => {
                         <p className="text-xs text-muted-foreground">Contact: {m.phone || m.whatsapp || m.profile_phone || m.profile_email || "N/A"}</p>
                         <p className="text-xs text-muted-foreground">PAN: {m.pan_url ? "Uploaded" : "Not uploaded"} • Aadhaar last-4: {m.aadhaar_last4 || "N/A"}</p>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button size="sm" onClick={() => updateMerchant(m.id, { is_verified: true, access_status: "active", admin_notes: "Approved by Admin Portal" } as any)}>Approve</Button>
+                        <Button size="sm" variant="outline" onClick={() => updateMerchant(m.id, { is_verified: false, access_status: "rejected", admin_notes: "Rejected by Admin Portal" } as any)}>Reject</Button>
+                        <Button size="sm" variant="destructive" onClick={() => updateMerchant(m.id, { access_status: "suspended", suspension_reason: "Suspended by Admin Portal" })}>Suspend</Button>
+                        <Button size="sm" variant="secondary" onClick={() => updateMerchant(m.id, { access_status: "cancelled", is_verified: false, is_premium: false, premium_plan: null, plan_override: "", plan_ends_at: null } as any)}>Cancel</Button>
                         <Switch checked={m.access_status !== "suspended"} onCheckedChange={(checked) => updateMerchant(m.id, { access_status: checked ? "active" : "suspended", suspension_reason: checked ? "" : "Suspended by Admin Portal" })} />
-                        <Badge variant={m.access_status === "suspended" ? "destructive" : "secondary"}>{m.access_status === "suspended" ? "Suspended" : "Active"}</Badge>
+                        <Badge variant={["suspended", "rejected", "cancelled"].includes(m.access_status) ? "destructive" : "secondary"}>{m.access_status || "active"}</Badge>
                       </div>
-                      <Select value={m.plan_override || "none"} onValueChange={(value) => updateMerchant(m.id, { plan_override: value === "none" ? "" : value, plan_ends_at: value === "yearly" ? new Date(Date.now() + 365 * 86400000).toISOString().split("T")[0] : value === "monthly" ? new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0] : null })}>
+                      <Select value={m.plan_override || "none"} onValueChange={(value) => setMerchantSubscription(m.id, value as "monthly" | "yearly" | "none")}>
                         <SelectTrigger><SelectValue placeholder="Set plan" /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">No override</SelectItem>
-                          <SelectItem value="trial">Trial</SelectItem>
-                          <SelectItem value="monthly">Monthly ₹1</SelectItem>
-                          <SelectItem value="yearly">Yearly ₹12</SelectItem>
+                          <SelectItem value="monthly">Premium Monthly ₹99</SelectItem>
+                          <SelectItem value="yearly">Premium Yearly ₹999</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
