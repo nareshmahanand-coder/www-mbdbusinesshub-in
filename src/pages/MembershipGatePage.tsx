@@ -5,12 +5,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Loader2, Crown, Landmark, HandCoins, BriefcaseBusiness, GraduationCap, ShieldCheck, Network, BadgeInfo } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { startBharatGauravPaymentLink } from "@/lib/razorpayPayments";
+import { startBharatGauravPaymentLink, syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
 
 const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
   const { user, signOut } = useAuth();
   const [plan, setPlan] = useState<"monthly" | "yearly">("monthly");
   const [submitting, setSubmitting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [paymentFailed, setPaymentFailed] = useState(false);
 
   const planDetails = {
@@ -73,6 +74,22 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
       toast.error(error instanceof Error ? error.message : "Payment failed. Please retry.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleManualSync = async () => {
+    setSyncing(true);
+    try {
+      const result = await syncLatestRazorpayPayment({ module: "bharat_gaurav", plan });
+      if (result.ok) {
+        toast.success("Payment confirmed — membership unlocked!");
+        onActivated();
+        window.location.href = "/dashboard";
+      } else {
+        toast.info(result.error || "Payment confirmation is still pending. Please try again shortly.");
+      }
+    } finally {
+      setSyncing(false);
     }
   };
 
@@ -157,8 +174,9 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
               {planDetails[plan].label}
             </Button>
             {paymentFailed && (
-              <Button onClick={handlePayment} disabled={submitting} variant="outline" className="w-full font-bold">
-                Retry Payment
+              <Button onClick={handleManualSync} disabled={submitting || syncing} variant="outline" className="w-full font-bold">
+                {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Manual Sync
               </Button>
             )}
             <button onClick={signOut} className="w-full text-center text-xs text-muted-foreground hover:text-foreground pt-2">
