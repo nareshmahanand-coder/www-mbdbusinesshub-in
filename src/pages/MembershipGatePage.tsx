@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Loader2, Crown } from "lucide-react";
+import { Loader2, Crown, Lock } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { startInstantRazorpayPayment } from "@/lib/razorpayPayments";
 
@@ -47,18 +47,18 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
       <div className="h-1 w-full bg-gradient-to-r from-saffron via-white to-green-india" />
       <div className="flex flex-1 items-center justify-center px-4 py-6">
         <Card className="w-full max-w-md border-2 border-saffron/30 shadow-2xl">
-          <CardHeader className="text-center space-y-2 pb-2">
+          <CardHeader className="text-center space-y-2 pb-3">
             <img src={logoCircle} alt="Mera Bharat Dukaan" className="mx-auto h-20 w-20 rounded-full object-cover shadow-lg border-4 border-saffron/40" />
-            <CardTitle className="text-xl font-bold text-foreground flex items-center justify-center gap-2">
+            <CardTitle className="text-xl font-extrabold text-foreground flex items-center justify-center gap-2 font-hindi">
               <Crown className="h-5 w-5 text-accent" /> भारत गौरव मेंबरशिप
             </CardTitle>
-            <p className="text-xs text-muted-foreground">Bharat Gaurav Membership — Unlock all features</p>
+            <p className="text-[11px] font-bold tracking-wide text-primary">🇮🇳 DIGITAL INDIA INITIATIVE 🇮🇳</p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-xl bg-accent/10 border border-accent/20 p-3 text-center">
-              <p className="font-hindi text-sm leading-relaxed text-foreground">
-                ऐप की सभी सुविधाओं का लाभ लेने के लिए <span className="font-bold text-accent">भारत गौरव मेंबरशिप</span> लें।
-                पेमेंट करें और <span className="font-bold text-green-india">तुरंत एक्सेस पाएं!</span>
+            <div className="rounded-xl bg-primary/10 border-2 border-primary/25 p-4">
+              <h2 className="font-hindi text-sm font-extrabold text-primary mb-2">भारत गौरव मेंबरशिप क्यों जरूरी है?</h2>
+              <p className="font-hindi text-[13px] leading-relaxed text-foreground">
+                यह <span className="font-bold text-accent">Digital India Initiative</span> का एक सुरक्षित सदस्यता चरण है। भारत गौरव मेंबरशिप से आपका अकाउंट e-KYC के बाद प्रमाणित होता है, पोर्टल की सेवाएँ सुरक्षित रहती हैं, और आप Mera Bharat Dukaan के डिजिटल व्यापार, नौकरी, शिक्षा, सेवा और स्थानीय दुकान नेटवर्क का भरोसेमंद उपयोग कर सकते हैं। मुख्य पोर्टल Razorpay द्वारा सफल भुगतान पुष्टि के बाद ही खुलेगा।
               </p>
             </div>
 
@@ -67,13 +67,15 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
               <button onClick={() => setPlan("monthly")}
                 className={`rounded-xl border-2 p-4 text-center transition-all ${plan === "monthly" ? "border-accent bg-accent/10 shadow-md" : "border-border bg-card hover:border-accent/50"}`}>
                 <p className="text-2xl font-extrabold text-foreground">₹1</p>
-                <p className="text-xs text-muted-foreground font-hindi">मासिक / Monthly</p>
+                <p className="text-xs text-muted-foreground font-hindi">₹1 / Month</p>
+                <p className="text-[10px] font-bold text-accent font-hindi">ऑटो-डेबिट</p>
               </button>
               <button onClick={() => setPlan("yearly")}
                 className={`rounded-xl border-2 p-4 text-center transition-all relative ${plan === "yearly" ? "border-accent bg-accent/10 shadow-md" : "border-border bg-card hover:border-accent/50"}`}>
                 <span className="absolute -top-2 right-2 rounded-full bg-green-india px-2 py-0.5 text-[9px] font-bold text-primary-foreground">BEST VALUE</span>
                 <p className="text-2xl font-extrabold text-foreground">₹12</p>
-                <p className="text-xs text-muted-foreground font-hindi">वार्षिक / Yearly</p>
+                <p className="text-xs text-muted-foreground font-hindi">₹12 / Year</p>
+                <p className="text-[10px] font-bold text-green-india font-hindi">ऑटो-डेबिट</p>
               </button>
             </div>
 
@@ -87,7 +89,13 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
                 Retry Payment
               </Button>
             )}
-            <p className="text-center text-[10px] text-muted-foreground font-hindi">सफल Razorpay पेमेंट के बाद एक्सेस अपने-आप खुल जाएगा ✓</p>
+            <div className="flex items-center gap-2 rounded-lg bg-muted/60 px-3 py-2">
+              <Lock className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <p className="text-[10.5px] leading-snug text-muted-foreground">
+                Payment unlock is automatic after Razorpay confirms success.
+                <span className="font-hindi"> सफल पेमेंट के बाद एक्सेस तुरंत खुल जाएगा।</span>
+              </p>
+            </div>
 
             <button onClick={signOut} className="w-full text-center text-xs text-muted-foreground hover:text-foreground pt-2">
               ← दूसरे अकाउंट से लॉगिन करें
