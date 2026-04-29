@@ -51,6 +51,17 @@ interface StartPaymentOptions {
 
 type RazorpaySuccessResponse = {
   razorpay_order_id?: string;
+  razorpay_payment_id?: string;
+  razorpay_signature?: string;
+};
+
+type SyncPaymentOptions = {
+  module?: PaymentModule;
+  plan?: PaymentPlan;
+  paymentOrderId?: string;
+  razorpay_order_id?: string;
+  razorpay_payment_id?: string;
+  razorpay_signature?: string;
 };
 
 const waitForWebhookUnlock = async (orderId: string) => {
@@ -94,7 +105,7 @@ const waitForActiveMembership = async () => {
       .from("memberships")
       .select("id")
       .eq("user_id", user.id)
-      .eq("status", "approved")
+      .in("status", ["approved", "active"])
       .gte("ends_at", today)
       .limit(1);
 
@@ -103,6 +114,22 @@ const waitForActiveMembership = async () => {
   }
 
   return false;
+};
+
+export const syncLatestRazorpayPayment = async ({ module, plan, paymentOrderId, razorpay_order_id, razorpay_payment_id, razorpay_signature }: SyncPaymentOptions) => {
+  const { data, error } = await supabase.functions.invoke("verify-razorpay-payment", {
+    body: {
+      module,
+      plan,
+      payment_order_id: paymentOrderId,
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    },
+  });
+
+  if (error) return { ok: false, error: error.message || "Payment sync failed" };
+  return { ok: Boolean(data?.ok), module: data?.module as PaymentModule | undefined, error: data?.error as string | undefined };
 };
 
 const startPaymentLink = async ({ module, plan, onSuccess, onFailure }: StartPaymentOptions) => {
