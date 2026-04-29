@@ -1,7 +1,8 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
+import LocationSearchBar from "@/components/LocationSearchBar";
 import MatrimonyProfileCard from "@/components/matrimony/ProfileCard";
 import MatrimonyFilters from "@/components/matrimony/Filters";
 import MatrimonyMyProfile from "@/components/matrimony/MyProfile";
@@ -33,6 +34,14 @@ export interface MatrimonyProfile {
 export const getAge = (dob: string | null) => {
   if (!dob) return null;
   return Math.floor((Date.now() - new Date(dob).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+};
+
+const locationTokens = (value = "") => value.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
+const matchesLocation = (profileCity = "", selectedLocation = "All") => {
+  if (selectedLocation === "All") return true;
+  const profileTokens = locationTokens(profileCity);
+  const selectedTokens = locationTokens(selectedLocation);
+  return profileTokens.some(token => selectedTokens.includes(token)) || selectedTokens.some(token => profileTokens.includes(token));
 };
 
 const MatrimonyPage = () => {
