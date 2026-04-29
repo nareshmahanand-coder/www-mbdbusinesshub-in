@@ -9,7 +9,9 @@ const corsHeaders = {
 const enc = new TextEncoder();
 const toHex = (buffer: ArrayBuffer) => Array.from(new Uint8Array(buffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
 
-const PAYMENT_LINKS: Record<string, { module: "bharat_gaurav" | "merchant_premium" | "marriage_bureau"; plan: "monthly" | "yearly"; amount: number; days: number; label: string }> = {
+type LinkPlan = { module: "bharat_gaurav" | "merchant_premium" | "marriage_bureau"; plan: "monthly" | "yearly"; amount: number; days: number; label: string };
+
+const PAYMENT_LINKS: Record<string, LinkPlan> = {
   "0kTh9x8o": { module: "bharat_gaurav", plan: "monthly", amount: 10, days: 30, label: "भारत गौरव मेंबरशिप ₹10 प्लान" },
   "3jBvEwl": { module: "bharat_gaurav", plan: "yearly", amount: 100, days: 365, label: "भारत गौरव मेंबरशिप ₹100 प्लान" },
   PKPblN5t: { module: "merchant_premium", plan: "monthly", amount: 99, days: 30, label: "Merchant Portal ₹99 Monthly Plan" },
@@ -32,16 +34,39 @@ function addDays(days: number) {
   return { start: now.toISOString().slice(0, 10), end: end.toISOString().slice(0, 10) };
 }
 
+function amountInRupees(payment: any) {
+  return Number(payment?.amount || 0) / 100;
+}
+
 function getPaymentLinkPlan(payment: any) {
   const notes = payment?.notes || {};
   const candidates = [
     payment?.payment_link_id,
+    payment?.payment_link?.id,
+    payment?.payment_link?.short_url,
+    payment?.payment_link?.short_url?.split("/").pop(),
+    payment?.short_url,
+    payment?.short_url?.split("/").pop(),
     payment?.subscription_id,
     notes.payment_link_id,
     notes.payment_link_reference_id,
+    notes.payment_link_short_url,
+    notes.payment_link_short_url?.split("/").pop(),
     notes.subscription_id,
   ].filter(Boolean).map(String);
   return candidates.map((id) => PAYMENT_LINKS[id]).find(Boolean) || null;
+}
+
+function inferPaymentLinkPlan(payment: any): LinkPlan | null {
+  const amount = amountInRupees(payment);
+  const description = `${payment?.description || ""} ${payment?.notes?.label || ""}`.toLowerCase();
+  if (Math.abs(amount - 11.8) < 0.01 || Math.abs(amount - 10) < 0.01 || description.includes("₹10")) {
+    return PAYMENT_LINKS["0kTh9x8o"];
+  }
+  if (Math.abs(amount - 118) < 0.01 || Math.abs(amount - 100) < 0.01 || description.includes("₹100")) {
+    return PAYMENT_LINKS["3jBvEwl"];
+  }
+  return null;
 }
 
 async function findExistingPaymentOrder(admin: any, payment: any) {
@@ -61,12 +86,29 @@ async function findExistingPaymentOrder(admin: any, payment: any) {
   return null;
 }
 
-async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: { module: "bharat_gaurav" | "merchant_premium" | "marriage_bureau"; plan: "monthly" | "yearly"; amount: number; days: number; label: string }) {
+async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: LinkPlan) {
   const notes = payment?.notes || {};
   const existingByReference = await findExistingPaymentOrder(admin, payment);
   if (existingByReference) return existingByReference;
 
+  const userId = String(notes.user_id || "");
   const email = String(payment?.email || notes.email || notes.customer_email || "").toLowerCase();
+  const paymentAmount = amountInRupees(payment);
+  if (userId) {
+    const { data } = await admin.from("payment_orders").select("*").eq("user_id", userId).eq("module", linkPlan.module).eq("plan", linkPlan.plan).eq("status", "created").order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (data) return data;
+  }
+
+  const { data: recentOrders } = await admin.from("payment_orders").select("*").eq("module", linkPlan.module).eq("plan", linkPlan.plan).eq("status", "created").order("created_at", { ascending: false }).limit(25);
+  const matchingRecent = (recentOrders || []).find((order: any) => {
+    const orderEmail = String(order?.metadata?.customer_email || "").toLowerCase();
+    const orderAmount = Number(order?.amount || 0);
+    const emailMatches = email && orderEmail === email;
+    const amountMatches = Math.abs(orderAmount - linkPlan.amount) < 0.01 || Math.abs(paymentAmount - orderAmount) < 0.01 || Math.abs(paymentAmount - (orderAmount * 1.18)) < 0.02;
+    return amountMatches && (emailMatches || !email);
+  });
+  if (matchingRecent) return matchingRecent;
+
   if (!email) return null;
 
   const { data: profile } = await admin.from("profiles").select("id").ilike("email", email).maybeSingle();
@@ -165,7 +207,7 @@ serve(async (req) => {
     const orderId = payment?.order_id;
     const paymentId = payment?.id;
     const status = payment?.status;
-    const linkPlan = getPaymentLinkPlan(payment);
+    const linkPlan = getPaymentLinkPlan(payment) || inferPaymentLinkPlan(payment);
 
     if (!orderId || !paymentId) {
       if (!paymentId) {

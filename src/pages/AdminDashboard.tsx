@@ -393,7 +393,7 @@ const AdminDashboard = () => {
           setMemberships(prev => [enriched, ...prev]);
           
           toast.info(
-            `🔔 नया पेमेंट! ${profile?.email || profile?.phone || "User"} ने ${newMembership.plan === "monthly" ? "₹1 मासिक" : "₹12 वार्षिक"} मेंबरशिप ली। TXN: ${newMembership.transaction_id || "N/A"}`,
+            `🔔 नया पेमेंट! ${profile?.email || profile?.phone || "User"} ने ${newMembership.plan === "monthly" ? "₹10 मासिक" : "₹100 वार्षिक"} मेंबरशिप ली। TXN: ${newMembership.transaction_id || "N/A"}`,
             { duration: 10000 }
           );
         }
@@ -1194,7 +1194,7 @@ const AdminDashboard = () => {
                         <div>
                           <p className="font-semibold text-foreground">{m.profile_email || m.profile_phone || m.user_id.slice(0, 8)}</p>
                           <p className="text-xs text-muted-foreground">
-                            {m.plan === "monthly" ? "₹1 मासिक" : "₹12 वार्षिक"} • TXN: <span className="font-mono">{m.transaction_id || "N/A"}</span> • {formatDateTime(m.created_at)}
+                            {m.plan === "monthly" ? "₹10 मासिक" : "₹100 वार्षिक"} • TXN: <span className="font-mono">{m.transaction_id || "N/A"}</span> • {formatDateTime(m.created_at)}
                           </p>
                           {m.screenshot_url && (
                             <a href={m.screenshot_url} target="_blank" rel="noopener noreferrer" className="mt-1 text-xs text-primary underline">

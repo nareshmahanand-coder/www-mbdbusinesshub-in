@@ -83,6 +83,28 @@ const waitForPaymentOrderUnlock = async (paymentOrderId: string) => {
   return false;
 };
 
+const waitForActiveMembership = async () => {
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData.user;
+  if (!user) return false;
+
+  const today = new Date().toISOString().split("T")[0];
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const { data } = await supabase
+      .from("memberships")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("status", "approved")
+      .gte("ends_at", today)
+      .limit(1);
+
+    if (data && data.length > 0) return true;
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+  }
+
+  return false;
+};
+
 const startPaymentLink = async ({ module, plan, onSuccess, onFailure }: StartPaymentOptions) => {
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
@@ -121,7 +143,7 @@ const startPaymentLink = async ({ module, plan, onSuccess, onFailure }: StartPay
   const popup = window.open(paymentUrl.toString(), "_blank", "noopener,noreferrer");
   if (!popup) window.location.href = paymentUrl.toString();
 
-  const unlocked = await waitForPaymentOrderUnlock(order.id);
+  const unlocked = await waitForPaymentOrderUnlock(order.id) || (module === "bharat_gaurav" && await waitForActiveMembership());
   if (!unlocked) {
     onFailure?.();
     throw new Error("Payment received. Waiting for Razorpay confirmation — please refresh in a moment.");
