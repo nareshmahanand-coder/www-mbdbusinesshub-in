@@ -130,6 +130,13 @@ const ClassifiedsPage = () => {
     if (data) setConversations(data as unknown as ClassifiedConversation[]);
   };
 
+  const loadContactRequests = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("classified_contact_requests" as any)
+      .select("*").order("created_at", { ascending: false });
+    if (data) setContactRequests(data as unknown as ContactRequest[]);
+  };
+
   const filtered = useMemo(() => {
     return ads.filter(a => {
       const q = search.toLowerCase();
@@ -143,6 +150,10 @@ const ClassifiedsPage = () => {
 
   const myAds = useMemo(() => ads.filter(ad => ad.user_id === user?.id), [ads, user?.id]);
   const visibleConversations = useMemo(() => conversations.filter(c => user && !(c.archived_by || []).includes(user.id)), [conversations, user]);
+  const sellerRequests = useMemo(() => contactRequests.filter(request => request.seller_id === user?.id), [contactRequests, user?.id]);
+  const pendingSellerRequests = useMemo(() => sellerRequests.filter(request => request.status === "pending"), [sellerRequests]);
+  const requestForSelectedAd = useMemo(() => selectedAd ? contactRequests.find(request => request.classified_id === selectedAd.id && request.buyer_id === user?.id) : undefined, [contactRequests, selectedAd, user?.id]);
+  const isSelectedNumberApproved = requestForSelectedAd?.status === "approved";
   const locationResults = useMemo(() => {
     const q = locationSearch.trim().toLowerCase();
     if (!q) return topCities.map(city => ({ name: city, label: city, type: "Top City" }));
@@ -221,7 +232,6 @@ const ClassifiedsPage = () => {
   const openAd = (ad: ClassifiedAd) => {
     setSelectedAd(ad);
     setActivePhoto(0);
-    setShowNumber(false);
     setLightboxOpen(false);
     setChatMessage(`Hi, I am interested in your ${ad.title}. Is it still available?`);
   };
