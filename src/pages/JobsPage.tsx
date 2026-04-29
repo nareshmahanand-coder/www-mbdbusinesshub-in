@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
+import LocationSearchBar from "@/components/LocationSearchBar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,14 @@ const emptyForm = {
   shift_timings: "", qualifications: "", responsibilities: "",
 };
 
+const locationTokens = (value = "") => value.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
+const matchesLocation = (jobLocation = "", selectedLocation = "All") => {
+  if (selectedLocation === "All") return true;
+  const jobTokens = locationTokens(jobLocation);
+  const selectedTokens = locationTokens(selectedLocation);
+  return jobTokens.some(token => selectedTokens.includes(token)) || selectedTokens.some(token => jobTokens.includes(token));
+};
+
 const JobsPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -83,6 +92,7 @@ const JobsPage = () => {
   const [saving, setSaving] = useState(false);
   const [jobImage, setJobImage] = useState<string[]>([]);
   const [form, setForm] = useState(emptyForm);
+  const [locationFilter, setLocationFilter] = useState("All");
 
   useEffect(() => { loadJobs(); }, []);
   useEffect(() => { if (user) { loadContactRequests(); loadConversations(); } }, [user]);
@@ -108,8 +118,10 @@ const JobsPage = () => {
 
   const filtered = useMemo(() => jobs.filter(j => {
     const q = search.toLowerCase();
-    return !search || [j.title, j.company_name, j.city, j.exact_location, j.job_category].some(value => value?.toLowerCase().includes(q));
-  }), [jobs, search]);
+    const matchesSearch = !search || [j.title, j.company_name, j.city, j.exact_location, j.job_category].some(value => value?.toLowerCase().includes(q));
+    const matchesCity = matchesLocation([j.exact_location, j.city].filter(Boolean).join(" "), locationFilter);
+    return matchesSearch && matchesCity;
+  }), [jobs, search, locationFilter]);
 
   const requestForJob = (job: Job) => contactRequests.find(request => request.job_id === job.id && request.seeker_id === user?.id);
 
@@ -217,7 +229,10 @@ const JobsPage = () => {
           </div>
         </div>
 
-        <Input placeholder="Search jobs by title, company, category or location..." value={search} onChange={e => setSearch(e.target.value)} className="mb-4 max-w-xl" />
+        <div className="mb-4 grid gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(260px,420px)]">
+          <Input placeholder="Search jobs by title, company or category..." value={search} onChange={e => setSearch(e.target.value)} className="h-11" />
+          <LocationSearchBar value={locationFilter} onChange={setLocationFilter} placeholder="Search job city — Chandigarh, Bhilai, Delhi..." />
+        </div>
 
         {loading ? <div className="py-16 text-center text-muted-foreground">Loading...</div> : filtered.length === 0 ? (
           <div className="py-16 text-center"><Briefcase className="mx-auto mb-3 h-10 w-10 text-muted-foreground" /><p className="text-muted-foreground">No jobs posted yet</p></div>
