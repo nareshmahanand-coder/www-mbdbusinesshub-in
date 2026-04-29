@@ -50,6 +50,16 @@ interface ClassifiedContactRequest {
   created_at: string;
 }
 
+interface JobContactRequest {
+  id: string;
+  job_id: string;
+  seeker_id: string;
+  recruiter_id: string;
+  status: "pending" | "approved" | "rejected";
+  message: string;
+  created_at: string;
+}
+
 const CustomerDashboard = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -61,6 +71,7 @@ const CustomerDashboard = () => {
   const [myJobs, setMyJobs] = useState<MyJob[]>([]);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [contactRequests, setContactRequests] = useState<ClassifiedContactRequest[]>([]);
+  const [jobContactRequests, setJobContactRequests] = useState<JobContactRequest[]>([]);
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -72,7 +83,7 @@ const CustomerDashboard = () => {
     setPhone(user.phone || "");
 
     const loadData = async () => {
-      const [savedRes, ordersRes, profileRes, adsRes, jobsRes, membershipRes, requestsRes] = await Promise.all([
+      const [savedRes, ordersRes, profileRes, adsRes, jobsRes, membershipRes, requestsRes, jobRequestsRes] = await Promise.all([
         supabase.from("saved_shops").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("orders").select("*").eq("customer_id", user.id).order("created_at", { ascending: false }),
         supabase.from("profiles").select("display_name, phone").eq("id", user.id).single(),
@@ -80,6 +91,7 @@ const CustomerDashboard = () => {
         supabase.from("jobs").select("id, title, is_active").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("memberships").select("id, plan, amount, transaction_id, status, starts_at, ends_at, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("classified_contact_requests" as any).select("*").order("created_at", { ascending: false }),
+        supabase.from("job_contact_requests" as any).select("*").order("created_at", { ascending: false }),
       ]);
 
       if (savedRes.data) setSavedShops(savedRes.data);
@@ -88,6 +100,7 @@ const CustomerDashboard = () => {
       if (jobsRes.data) setMyJobs(jobsRes.data as MyJob[]);
       if (membershipRes.data) setMemberships(membershipRes.data as Membership[]);
       if (requestsRes.data) setContactRequests(requestsRes.data as unknown as ClassifiedContactRequest[]);
+      if (jobRequestsRes.data) setJobContactRequests(jobRequestsRes.data as unknown as JobContactRequest[]);
       if (profileRes.data) {
         setDisplayName(profileRes.data.display_name || displayName);
         setPhone(profileRes.data.phone || phone);
@@ -132,8 +145,19 @@ const CustomerDashboard = () => {
     }
   };
 
+  const updateJobContactRequest = async (request: JobContactRequest, status: "approved" | "rejected") => {
+    const { error } = await supabase.from("job_contact_requests" as any).update({ status }).eq("id", request.id);
+    if (error) toast.error("Could not update job contact request");
+    else {
+      toast.success(status === "approved" ? "Recruiter number request approved" : "Request rejected");
+      setJobContactRequests(prev => prev.map(item => item.id === request.id ? { ...item, status } : item));
+    }
+  };
+
   const sellerRequests = contactRequests.filter(request => request.seller_id === user?.id);
   const pendingSellerRequests = sellerRequests.filter(request => request.status === "pending");
+  const recruiterRequests = jobContactRequests.filter(request => request.recruiter_id === user?.id);
+  const pendingRecruiterRequests = recruiterRequests.filter(request => request.status === "pending");
 
   return (
     <div className="min-h-screen bg-background">
@@ -298,6 +322,30 @@ const CustomerDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                {recruiterRequests.length > 0 && (
+                  <div className="mb-4 space-y-2 rounded-lg border border-border bg-muted/40 p-3">
+                    <p className="flex items-center gap-2 text-sm font-extrabold text-foreground">
+                      <Bell className="h-4 w-4 text-accent" /> Job Seeker Contact Requests
+                      {pendingRecruiterRequests.length > 0 && <Badge variant="secondary">{pendingRecruiterRequests.length} pending</Badge>}
+                    </p>
+                    {recruiterRequests.map((request) => {
+                      const job = myJobs.find((item) => item.id === request.job_id);
+                      return (
+                        <div key={request.id} className="flex flex-col gap-2 rounded-md border border-border bg-card p-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-foreground">{job?.title || "Your job post"}</p>
+                            <p className="text-xs text-muted-foreground">{request.message || "Job seeker requested your contact number"}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={request.status === "approved" ? "default" : request.status === "rejected" ? "destructive" : "secondary"}>{request.status}</Badge>
+                            {request.status === "pending" && <Button size="sm" onClick={() => updateJobContactRequest(request, "approved")}><CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Approve</Button>}
+                            {request.status === "pending" && <Button size="sm" variant="outline" onClick={() => updateJobContactRequest(request, "rejected")}>Reject</Button>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 {myJobs.length === 0 ? (
                   <div className="py-12 text-center">
                     <Briefcase className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />

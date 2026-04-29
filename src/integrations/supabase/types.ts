@@ -568,6 +568,96 @@ export type Database = {
         }
         Relationships: []
       }
+      job_contact_requests: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string
+          message: string
+          recruiter_id: string
+          seeker_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id: string
+          message?: string
+          recruiter_id: string
+          seeker_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string
+          message?: string
+          recruiter_id?: string
+          seeker_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      job_conversations: {
+        Row: {
+          archived_by: string[]
+          created_at: string
+          id: string
+          job_id: string
+          last_message_at: string
+          recruiter_id: string
+          seeker_id: string
+          updated_at: string
+        }
+        Insert: {
+          archived_by?: string[]
+          created_at?: string
+          id?: string
+          job_id: string
+          last_message_at?: string
+          recruiter_id: string
+          seeker_id: string
+          updated_at?: string
+        }
+        Update: {
+          archived_by?: string[]
+          created_at?: string
+          id?: string
+          job_id?: string
+          last_message_at?: string
+          recruiter_id?: string
+          seeker_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      job_messages: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          message: string
+          sender_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message?: string
+          sender_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
       jobs: {
         Row: {
           city: string | null
@@ -575,12 +665,17 @@ export type Database = {
           contact_phone: string | null
           created_at: string
           description: string | null
+          exact_location: string
           id: string
           image_url: string | null
           is_active: boolean | null
+          job_category: string
           job_type: string | null
           moderation_status: string
+          qualifications: string
+          responsibilities: string
           salary_range: string | null
+          shift_timings: string
           title: string
           updated_at: string
           user_id: string
@@ -591,12 +686,17 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           description?: string | null
+          exact_location?: string
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          job_category?: string
           job_type?: string | null
           moderation_status?: string
+          qualifications?: string
+          responsibilities?: string
           salary_range?: string | null
+          shift_timings?: string
           title?: string
           updated_at?: string
           user_id: string
@@ -607,12 +707,17 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           description?: string | null
+          exact_location?: string
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          job_category?: string
           job_type?: string | null
           moderation_status?: string
+          qualifications?: string
+          responsibilities?: string
           salary_range?: string | null
+          shift_timings?: string
           title?: string
           updated_at?: string
           user_id?: string
