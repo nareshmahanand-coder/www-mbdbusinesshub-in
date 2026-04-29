@@ -83,7 +83,7 @@ const CustomerDashboard = () => {
     setPhone(user.phone || "");
 
     const loadData = async () => {
-      const [savedRes, ordersRes, profileRes, adsRes, jobsRes, membershipRes, requestsRes] = await Promise.all([
+      const [savedRes, ordersRes, profileRes, adsRes, jobsRes, membershipRes, requestsRes, jobRequestsRes] = await Promise.all([
         supabase.from("saved_shops").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("orders").select("*").eq("customer_id", user.id).order("created_at", { ascending: false }),
         supabase.from("profiles").select("display_name, phone").eq("id", user.id).single(),
@@ -91,6 +91,7 @@ const CustomerDashboard = () => {
         supabase.from("jobs").select("id, title, is_active").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("memberships").select("id, plan, amount, transaction_id, status, starts_at, ends_at, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("classified_contact_requests" as any).select("*").order("created_at", { ascending: false }),
+        supabase.from("job_contact_requests" as any).select("*").order("created_at", { ascending: false }),
       ]);
 
       if (savedRes.data) setSavedShops(savedRes.data);
@@ -99,6 +100,7 @@ const CustomerDashboard = () => {
       if (jobsRes.data) setMyJobs(jobsRes.data as MyJob[]);
       if (membershipRes.data) setMemberships(membershipRes.data as Membership[]);
       if (requestsRes.data) setContactRequests(requestsRes.data as unknown as ClassifiedContactRequest[]);
+      if (jobRequestsRes.data) setJobContactRequests(jobRequestsRes.data as unknown as JobContactRequest[]);
       if (profileRes.data) {
         setDisplayName(profileRes.data.display_name || displayName);
         setPhone(profileRes.data.phone || phone);
@@ -143,8 +145,19 @@ const CustomerDashboard = () => {
     }
   };
 
+  const updateJobContactRequest = async (request: JobContactRequest, status: "approved" | "rejected") => {
+    const { error } = await supabase.from("job_contact_requests" as any).update({ status }).eq("id", request.id);
+    if (error) toast.error("Could not update job contact request");
+    else {
+      toast.success(status === "approved" ? "Recruiter number request approved" : "Request rejected");
+      setJobContactRequests(prev => prev.map(item => item.id === request.id ? { ...item, status } : item));
+    }
+  };
+
   const sellerRequests = contactRequests.filter(request => request.seller_id === user?.id);
   const pendingSellerRequests = sellerRequests.filter(request => request.status === "pending");
+  const recruiterRequests = jobContactRequests.filter(request => request.recruiter_id === user?.id);
+  const pendingRecruiterRequests = recruiterRequests.filter(request => request.status === "pending");
 
   return (
     <div className="min-h-screen bg-background">
