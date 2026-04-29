@@ -1116,6 +1116,40 @@ const AdminDashboard = () => {
             <Card><CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><Brain className="h-5 w-5 text-primary" /> भारत मित्र AI — Response Test Window</CardTitle></CardHeader><CardContent className="space-y-3 p-4"><Textarea value={aiQuestion} onChange={(e) => setAiQuestion(e.target.value)} className="min-h-24" /><Button onClick={testBharatMitra} disabled={aiLoading}>{aiLoading ? "Testing..." : "Test AI Response"}</Button>{aiAnswer && <div className="rounded-lg border bg-muted/40 p-4 font-hindi text-sm leading-relaxed">{aiAnswer}</div>}<div className="border-t pt-3"><p className="mb-2 text-xs font-semibold text-muted-foreground">FAQ Analytics</p>{MOCK_CHATBOT_LOGS.map((log, i) => <div key={i} className="mb-1 flex justify-between rounded border px-3 py-2 text-xs"><span>{log.question}</span><Badge variant="secondary">{log.count}</Badge></div>)}</div></CardContent></Card>
           </TabsContent>
 
+          <TabsContent value="messages">
+            <Card>
+              <CardHeader className="border-b"><CardTitle className="text-base flex items-center gap-2"><MessageCircle className="h-5 w-5 text-primary" /> Admin Communication System</CardTitle></CardHeader>
+              <CardContent className="space-y-3 p-4">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <Select value={messageTarget} onValueChange={setMessageTarget}>
+                    <SelectTrigger><SelectValue placeholder="Choose recipients" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All users</SelectItem>
+                      <SelectItem value="merchants">Merchant vendors</SelectItem>
+                      <SelectItem value="customers">General public users</SelectItem>
+                      <SelectItem value="specific">Specific user</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {messageTarget === "specific" && (
+                    <Select value={messageRecipientId} onValueChange={setMessageRecipientId}>
+                      <SelectTrigger><SelectValue placeholder="Select user" /></SelectTrigger>
+                      <SelectContent>
+                        {[...customers, ...merchants.map(m => ({ id: m.user_id, display_name: m.owner_name || m.shop_name, email: m.profile_email, phone: m.profile_phone || m.phone, provider: "merchant", created_at: m.created_at }))].map((u) => (
+                          <SelectItem key={`${u.id}-${u.provider}`} value={u.id}>{u.display_name || u.email || u.phone || u.id.slice(0, 8)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+                <Input value={messageTitle} onChange={(e) => setMessageTitle(e.target.value)} placeholder="Message title" />
+                <Textarea value={messageBody} onChange={(e) => setMessageBody(e.target.value)} placeholder="Write notification or alert..." className="min-h-28" />
+                <Button onClick={sendAdminMessage} disabled={messageSending}>
+                  <Send className="mr-2 h-4 w-4" /> {messageSending ? "Sending..." : "Send Live Message"}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="settings">
             <Card>
               <CardHeader className="bg-muted/40 border-b"><CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Global Site Settings</CardTitle></CardHeader>
