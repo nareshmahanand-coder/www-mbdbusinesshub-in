@@ -14,8 +14,8 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
   const [paymentFailed, setPaymentFailed] = useState(false);
 
   const planDetails = {
-    monthly: { label: "भारत गौरव मेंबरशिप ₹1 प्लान" },
-    yearly: { label: "भारत गौरव मेंबरशिप ₹12 प्लान" },
+    monthly: { label: "भारत गौरव मेंबरशिप ₹10 प्लान" },
+    yearly: { label: "भारत गौरव मेंबरशिप ₹100 प्लान" },
   };
 
   const handlePayment = async () => {
@@ -50,9 +50,8 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
             <img src={logoCircle} alt="Mera Bharat Dukaan" className="mx-auto h-20 w-20 rounded-full object-cover shadow-lg border-4 border-saffron/40" />
             <div className="space-y-1 font-hindi">
               <CardTitle className="text-2xl sm:text-3xl font-extrabold text-primary leading-tight">
-                भारत गौरव मेंबरशिप
+                भारत गौरव मेंबरशिप: भारत के हर नागरिक के लिए आवश्यक है
               </CardTitle>
-              <p className="text-base font-bold text-foreground">भारत के हर नागरिक के लिए आवश्यक है</p>
             </div>
             <div className="mx-auto w-full rounded-lg border border-primary/20 bg-background p-3 shadow-sm">
               <div className="flex items-center justify-center gap-3">
@@ -78,16 +77,16 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
             <div className="grid grid-cols-2 gap-3">
               <button onClick={() => setPlan("monthly")}
                 className={`rounded-lg border-2 p-3 text-center transition-all ${plan === "monthly" ? "border-accent bg-accent/10 shadow-md" : "border-border bg-card hover:border-accent/50"}`}>
-                <p className="text-xs font-extrabold text-accent font-hindi leading-snug">भारत गौरव मेंबरशिप ₹1 प्लान</p>
-                <p className="mt-2 text-2xl font-extrabold text-foreground">₹1</p>
+                <p className="text-xs font-extrabold text-accent font-hindi leading-snug">भारत गौरव मेंबरशिप ₹10 प्लान</p>
+                <p className="mt-2 text-2xl font-extrabold text-foreground">₹10</p>
                 <p className="mt-1 text-sm font-extrabold text-primary font-hindi">मासिक प्लान</p>
                 <p className="text-[10px] font-semibold text-muted-foreground">Monthly Plan</p>
                 <p className="mt-2 rounded-md bg-muted px-2 py-1 text-[11px] font-bold text-foreground font-hindi">मासिक किराया</p>
               </button>
               <button onClick={() => setPlan("yearly")}
                 className={`rounded-lg border-2 p-3 text-center transition-all ${plan === "yearly" ? "border-accent bg-accent/10 shadow-md" : "border-border bg-card hover:border-accent/50"}`}>
-                <p className="text-xs font-extrabold text-green-india font-hindi leading-snug">भारत गौरव मेंबरशिप ₹12 प्लान</p>
-                <p className="mt-2 text-2xl font-extrabold text-foreground">₹12</p>
+                <p className="text-xs font-extrabold text-green-india font-hindi leading-snug">भारत गौरव मेंबरशिप ₹100 प्लान</p>
+                <p className="mt-2 text-2xl font-extrabold text-foreground">₹100</p>
                 <p className="mt-1 text-sm font-extrabold text-primary font-hindi">सालाना प्लान</p>
                 <p className="text-[10px] font-semibold text-muted-foreground">Yearly Plan</p>
                 <p className="mt-2 rounded-md bg-muted px-2 py-1 text-[11px] font-bold text-foreground font-hindi">सालाना किराया</p>
