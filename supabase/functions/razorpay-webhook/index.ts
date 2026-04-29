@@ -9,7 +9,9 @@ const corsHeaders = {
 const enc = new TextEncoder();
 const toHex = (buffer: ArrayBuffer) => Array.from(new Uint8Array(buffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
 
-type LinkPlan = { module: "bharat_gaurav" | "merchant_premium" | "marriage_bureau"; plan: "monthly" | "yearly"; amount: number; days: number; label: string };
+type ModuleName = "bharat_gaurav" | "merchant_premium" | "marriage_bureau";
+type PlanName = "monthly" | "yearly";
+type LinkPlan = { module: ModuleName; plan: PlanName; amount: number; days: number; label: string };
 
 const PAYMENT_LINKS: Record<string, LinkPlan> = {
   "0kTh9x8o": { module: "bharat_gaurav", plan: "monthly", amount: 10, days: 30, label: "भारत गौरव मेंबरशिप ₹10 प्लान" },
@@ -38,6 +40,10 @@ function amountInRupees(payment: any) {
   return Number(payment?.amount || 0) / 100;
 }
 
+function isAmountMatch(actual: number, base: number) {
+  return Math.abs(actual - base) < 0.02 || Math.abs(actual - base * 1.18) < 0.02;
+}
+
 function getPaymentLinkPlan(payment: any) {
   const notes = payment?.notes || {};
   const candidates = [
@@ -57,15 +63,19 @@ function getPaymentLinkPlan(payment: any) {
   return candidates.map((id) => PAYMENT_LINKS[id]).find(Boolean) || null;
 }
 
+function getSubscriptionPlan(subscription: any) {
+  const notes = subscription?.notes || {};
+  const candidates = [subscription?.id, subscription?.plan_id, notes.subscription_id, notes.payment_link_subscription_id].filter(Boolean).map(String);
+  return candidates.map((id) => PAYMENT_LINKS[id]).find(Boolean) || null;
+}
+
 function inferPaymentLinkPlan(payment: any): LinkPlan | null {
   const amount = amountInRupees(payment);
   const description = `${payment?.description || ""} ${payment?.notes?.label || ""}`.toLowerCase();
-  if (Math.abs(amount - 11.8) < 0.01 || Math.abs(amount - 10) < 0.01 || description.includes("₹10")) {
-    return PAYMENT_LINKS["0kTh9x8o"];
-  }
-  if (Math.abs(amount - 118) < 0.01 || Math.abs(amount - 100) < 0.01 || description.includes("₹100")) {
-    return PAYMENT_LINKS["3jBvEwl"];
-  }
+  if (isAmountMatch(amount, 10) || description.includes("₹10")) return PAYMENT_LINKS["0kTh9x8o"];
+  if (isAmountMatch(amount, 100) || description.includes("₹100")) return PAYMENT_LINKS["3jBvEwl"];
+  if (isAmountMatch(amount, 99) || description.includes("₹99")) return description.includes("marriage") ? PAYMENT_LINKS.d6TAK5F : PAYMENT_LINKS.PKPblN5t;
+  if (isAmountMatch(amount, 999) || description.includes("₹999")) return description.includes("marriage") ? PAYMENT_LINKS.WY2NejZi : PAYMENT_LINKS.CmLBI4u;
   return null;
 }
 
@@ -86,25 +96,22 @@ async function findExistingPaymentOrder(admin: any, payment: any) {
   return null;
 }
 
-async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: LinkPlan) {
-  const notes = payment?.notes || {};
-  const existingByReference = await findExistingPaymentOrder(admin, payment);
-  if (existingByReference) return existingByReference;
-
+async function findOrderByUserOrEmail(admin: any, source: any, linkPlan: LinkPlan) {
+  const notes = source?.notes || {};
   const userId = String(notes.user_id || "");
-  const email = String(payment?.email || notes.email || notes.customer_email || "").toLowerCase();
-  const paymentAmount = amountInRupees(payment);
+  const email = String(source?.email || notes.email || notes.customer_email || "").toLowerCase();
+  const amount = source?.amount ? amountInRupees(source) : linkPlan.amount;
+
   if (userId) {
-    const { data } = await admin.from("payment_orders").select("*").eq("user_id", userId).eq("module", linkPlan.module).eq("plan", linkPlan.plan).eq("status", "created").order("created_at", { ascending: false }).limit(1).maybeSingle();
+    const { data } = await admin.from("payment_orders").select("*").eq("user_id", userId).eq("module", linkPlan.module).eq("plan", linkPlan.plan).in("status", ["created", "pending", "failed"]).order("created_at", { ascending: false }).limit(1).maybeSingle();
     if (data) return data;
   }
 
-  const { data: recentOrders } = await admin.from("payment_orders").select("*").eq("module", linkPlan.module).eq("plan", linkPlan.plan).eq("status", "created").order("created_at", { ascending: false }).limit(25);
+  const { data: recentOrders } = await admin.from("payment_orders").select("*").eq("module", linkPlan.module).eq("plan", linkPlan.plan).in("status", ["created", "pending", "failed"]).order("created_at", { ascending: false }).limit(50);
   const matchingRecent = (recentOrders || []).find((order: any) => {
     const orderEmail = String(order?.metadata?.customer_email || "").toLowerCase();
-    const orderAmount = Number(order?.amount || 0);
     const emailMatches = email && orderEmail === email;
-    const amountMatches = Math.abs(orderAmount - linkPlan.amount) < 0.01 || Math.abs(paymentAmount - orderAmount) < 0.01 || Math.abs(paymentAmount - (orderAmount * 1.18)) < 0.02;
+    const amountMatches = isAmountMatch(amount, Number(order?.amount || linkPlan.amount));
     return amountMatches && (emailMatches || !email);
   });
   if (matchingRecent) return matchingRecent;
@@ -120,31 +127,106 @@ async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: LinkPlan
     .eq("user_id", profile.id)
     .eq("module", linkPlan.module)
     .eq("plan", linkPlan.plan)
-    .eq("status", "created")
+    .in("status", ["created", "pending", "failed"])
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   if (existing) return existing;
 
-  const { data: created } = await admin.from("payment_orders").insert({
+  const { data: created, error } = await admin.from("payment_orders").insert({
     user_id: profile.id,
     module: linkPlan.module,
     plan: linkPlan.plan,
     amount: linkPlan.amount,
     currency: "INR",
     status: "created",
-    razorpay_order_id: payment?.order_id || null,
+    razorpay_order_id: source?.order_id || null,
     receipt: `mbd_link_${linkPlan.plan}_${Date.now()}`.slice(0, 40),
-    metadata: { days: linkPlan.days, label: linkPlan.label, plan_name: `${linkPlan.module}_${linkPlan.plan}`, source: "razorpay_payment_link" },
+    metadata: { days: linkPlan.days, label: linkPlan.label, plan_name: `${linkPlan.module}_${linkPlan.plan}`, source: "razorpay_webhook" },
   }).select("*").single();
+  if (error) throw error;
   return created || null;
 }
 
-async function unlock(admin: any, order: any, paymentId: string, signature: string) {
-  if (order.status === "paid") return;
+async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: LinkPlan) {
+  const existingByReference = await findExistingPaymentOrder(admin, payment);
+  if (existingByReference) return existingByReference;
+  return await findOrderByUserOrEmail(admin, payment, linkPlan);
+}
+
+async function findSubscriptionOrder(admin: any, subscription: any, linkPlan: LinkPlan) {
+  const notes = subscription?.notes || {};
+  const referenceId = String(subscription?.reference_id || notes.reference_id || notes.payment_link_reference_id || "");
+  if (referenceId) {
+    const { data } = await admin.from("payment_orders").select("*").eq("id", referenceId).maybeSingle();
+    if (data) return data;
+  }
+
+  const subscriptionId = String(subscription?.id || "");
+  if (subscriptionId) {
+    const { data } = await admin
+      .from("payment_orders")
+      .select("*")
+      .eq("module", linkPlan.module)
+      .eq("plan", linkPlan.plan)
+      .eq("metadata->>payment_link_subscription_id", subscriptionId)
+      .in("status", ["created", "pending", "failed"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (data) return data;
+  }
+
+  return await findOrderByUserOrEmail(admin, subscription, linkPlan);
+}
+
+async function ensureMembership(admin: any, order: any, paymentId: string, dates: { start: string; end: string }) {
+  const { data: existing } = await admin.from("memberships").select("id").eq("transaction_id", paymentId).maybeSingle();
+  if (existing?.id) {
+    const { error } = await admin.from("memberships").update({ status: "active", starts_at: dates.start, ends_at: dates.end, updated_at: new Date().toISOString() }).eq("id", existing.id);
+    if (error) throw error;
+    return;
+  }
+
+  const { error } = await admin.from("memberships").insert({
+    user_id: order.user_id,
+    plan: order.plan,
+    amount: order.amount,
+    transaction_id: paymentId,
+    status: "active",
+    starts_at: dates.start,
+    ends_at: dates.end,
+  });
+  if (error) throw error;
+}
+
+async function unlock(admin: any, order: any, paymentId: string, signature: string, source = "razorpay_webhook") {
+  if (order.status === "paid" && order.unlocked_at) return;
   const days = Number(order.metadata?.days || (order.plan === "yearly" ? 365 : 30));
   const dates = addDays(days);
-  const basePaymentUpdate = {
+
+  if (order.module === "bharat_gaurav") {
+    await ensureMembership(admin, order, paymentId, dates);
+  } else if (order.module === "merchant_premium") {
+    const { error } = await admin.from("merchant_profiles").update({
+      is_premium: true,
+      premium_plan: order.plan,
+      premium_start_date: new Date().toISOString(),
+      plan_ends_at: dates.end,
+      access_status: "active",
+    }).eq("user_id", order.user_id);
+    if (error) throw error;
+  } else if (order.module === "marriage_bureau") {
+    const { error } = await admin.from("matrimony_profiles").update({
+      is_published: true,
+      subscription_plan: order.plan,
+      subscription_start: dates.start,
+      subscription_end: dates.end,
+    }).eq("user_id", order.user_id);
+    if (error) throw error;
+  }
+
+  const { error: paymentError } = await admin.from("payment_orders").update({
     status: "paid",
     razorpay_payment_id: paymentId,
     razorpay_signature: signature,
@@ -153,38 +235,10 @@ async function unlock(admin: any, order: any, paymentId: string, signature: stri
     metadata: {
       ...(order.metadata || {}),
       plan_name: order.metadata?.plan_name || `${order.module}_${order.plan}`,
-      unlock_source: "razorpay_webhook",
+      unlock_source: source,
     },
-  };
-
-  if (order.module === "bharat_gaurav") {
-    await admin.from("memberships").upsert({
-      user_id: order.user_id,
-      plan: order.plan,
-      amount: order.amount,
-      transaction_id: paymentId,
-      status: "approved",
-      starts_at: dates.start,
-      ends_at: dates.end,
-    }, { onConflict: "transaction_id" });
-  } else if (order.module === "merchant_premium") {
-    await admin.from("merchant_profiles").update({
-      is_premium: true,
-      premium_plan: order.plan,
-      premium_start_date: new Date().toISOString(),
-      plan_ends_at: dates.end,
-      access_status: "active",
-    }).eq("user_id", order.user_id);
-  } else if (order.module === "marriage_bureau") {
-    await admin.from("matrimony_profiles").update({
-      is_published: true,
-      subscription_plan: order.plan,
-      subscription_start: dates.start,
-      subscription_end: dates.end,
-    }).eq("user_id", order.user_id);
-  }
-
-  await admin.from("payment_orders").update(basePaymentUpdate).eq("id", order.id);
+  }).eq("id", order.id);
+  if (paymentError) throw paymentError;
 }
 
 serve(async (req) => {
@@ -203,35 +257,62 @@ serve(async (req) => {
     }
 
     const event = JSON.parse(rawBody);
-    const payment = event.payload?.payment?.entity;
-    const orderId = payment?.order_id;
-    const paymentId = payment?.id;
-    const status = payment?.status;
-    const linkPlan = getPaymentLinkPlan(payment) || inferPaymentLinkPlan(payment);
-
-    if (!orderId || !paymentId) {
-      if (!paymentId) {
-        return new Response(JSON.stringify({ ok: true, ignored: "no_payment_order" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-    }
-
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: orderByOrderId } = orderId
-      ? await admin.from("payment_orders").select("*").eq("razorpay_order_id", orderId).maybeSingle()
-      : { data: null } as any;
-    const order = orderByOrderId || await findExistingPaymentOrder(admin, payment) || (linkPlan ? await findPaymentLinkOrder(admin, payment, linkPlan) : null);
 
-    if (!order) {
-      return new Response(JSON.stringify({ ok: true, ignored: "unknown_order" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (event.event === "payment.captured") {
+      const payment = event.payload?.payment?.entity;
+      const orderId = payment?.order_id;
+      const paymentId = payment?.id;
+      const status = payment?.status;
+      const linkPlan = getPaymentLinkPlan(payment) || inferPaymentLinkPlan(payment);
+
+      if (!paymentId) {
+        return new Response(JSON.stringify({ ok: true, ignored: "no_payment_id" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const { data: orderByOrderId } = orderId
+        ? await admin.from("payment_orders").select("*").eq("razorpay_order_id", orderId).maybeSingle()
+        : { data: null } as any;
+      const order = orderByOrderId || await findExistingPaymentOrder(admin, payment) || (linkPlan ? await findPaymentLinkOrder(admin, payment, linkPlan) : null);
+
+      if (!order) {
+        console.warn("razorpay-webhook unknown captured payment", { paymentId, orderId, linkPlan });
+        return new Response(JSON.stringify({ ok: true, ignored: "unknown_order" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      if (status === "captured") await unlock(admin, order, paymentId, receivedSignature);
+      return new Response(JSON.stringify({ ok: true, processed: "payment.captured" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    if (event.event === "payment.captured" && status === "captured") {
-      await unlock(admin, order, paymentId, receivedSignature);
-    } else if (event.event === "payment.failed" || status === "failed") {
-      await admin.from("payment_orders").update({ status: "failed", razorpay_payment_id: paymentId, error_message: payment?.error_description || "Payment failed" }).eq("id", order.id);
+    if (event.event === "subscription.activated") {
+      const subscription = event.payload?.subscription?.entity;
+      const subscriptionId = subscription?.id;
+      const linkPlan = getSubscriptionPlan(subscription);
+      if (!subscriptionId || !linkPlan) {
+        return new Response(JSON.stringify({ ok: true, ignored: "unknown_subscription" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const order = await findSubscriptionOrder(admin, subscription, linkPlan);
+      if (!order) {
+        console.warn("razorpay-webhook unknown activated subscription", { subscriptionId, linkPlan });
+        return new Response(JSON.stringify({ ok: true, ignored: "unknown_subscription_order" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      await unlock(admin, order, subscriptionId, receivedSignature, "razorpay_subscription_webhook");
+      return new Response(JSON.stringify({ ok: true, processed: "subscription.activated" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (event.event === "payment.failed") {
+      const payment = event.payload?.payment?.entity;
+      const paymentId = payment?.id;
+      const order = payment ? await findExistingPaymentOrder(admin, payment) : null;
+      if (order) {
+        await admin.from("payment_orders").update({ status: "failed", razorpay_payment_id: paymentId, error_message: payment?.error_description || "Payment failed" }).eq("id", order.id);
+      }
+      return new Response(JSON.stringify({ ok: true, processed: "payment.failed" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    return new Response(JSON.stringify({ ok: true, ignored: event.event }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("razorpay-webhook error", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
