@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   ShieldCheck, ShieldX, Bell, CheckCircle2, IndianRupee, Users, Clock,
   BadgeCheck, MessageCircle, Send, XCircle, AlertTriangle, Crown,
@@ -25,6 +26,9 @@ import { toast } from "sonner";
 import { bookCategories } from "@/data/skillBooks";
 import KycReviewTab from "@/components/admin/KycReviewTab";
 import RaktadanReviewTab from "@/components/admin/RaktadanReviewTab";
+
+const ADMIN_PIN = "02032026";
+const ADMIN_PIN_SESSION_KEY = "mbd-admin-pin-ok";
 
 interface MerchantPayment {
   shopId: string;
@@ -159,6 +163,7 @@ const formatDateTime = (dateStr: string) =>
 
 const AdminDashboard = () => {
   const { settings, refresh: refreshSettings } = useSiteSettings();
+  const { user } = useAuth();
   const [shops, setShops] = useState<(Shop & { premiumStartDate?: string; premiumPlan?: "monthly" | "yearly"; joinDate?: string })[]>(
     sampleShops.map((s, i) => ({
       ...s,
@@ -168,9 +173,14 @@ const AdminDashboard = () => {
       joinDate: `2026-0${Math.min(i + 1, 3)}-${String(10 + i).padStart(2, "0")}`,
     }))
   );
-  const [loggedIn, setLoggedIn] = useState(true);
+  const [loggedIn, setLoggedIn] = useState(() => sessionStorage.getItem(ADMIN_PIN_SESSION_KEY) === "true");
   const [pin, setPin] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [messageTarget, setMessageTarget] = useState("all");
+  const [messageRecipientId, setMessageRecipientId] = useState("");
+  const [messageTitle, setMessageTitle] = useState("Important update from MBD Business Hub");
+  const [messageBody, setMessageBody] = useState("");
+  const [messageSending, setMessageSending] = useState(false);
   const [rejectReasonMap, setRejectReasonMap] = useState<Record<string, string>>({});
   const [showRejectInput, setShowRejectInput] = useState<string | null>(null);
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
