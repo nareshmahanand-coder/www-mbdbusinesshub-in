@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
@@ -15,6 +15,7 @@ import TermsPage from "./pages/TermsPage";
 import LegalPage from "./pages/LegalPage";
 import KisanRegistration from "./pages/KisanRegistration";
 import LoginPage from "./pages/LoginPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import MerchantDashboard from "./pages/MerchantDashboard";
 import MatrimonyPage from "./pages/MatrimonyPage";
@@ -58,6 +59,13 @@ const PublicHomeRoute = () => {
 };
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  if (loading) return <FullScreenLoader />;
+  if (!user) {
+    const next = `${location.pathname}${location.search}`;
+    return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
+  }
   return <>{children}</>;
 };
 
@@ -70,6 +78,11 @@ const KycRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  const next = new URLSearchParams(location.search).get("next") || sessionStorage.getItem("mbd-auth-next") || "/dashboard";
+  if (loading) return <FullScreenLoader />;
+  if (user) return <Navigate to={next.startsWith("/") ? next : "/dashboard"} replace />;
   return <>{children}</>;
 };
 
@@ -87,6 +100,8 @@ const AppShell = () => {
     <>
       <Routes>
         <Route path="/login" element={<PublicLoginRoute><LoginPage /></PublicLoginRoute>} />
+        <Route path="/signup" element={<PublicLoginRoute><LoginPage initialMode="signup" /></PublicLoginRoute>} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/~oauth/*" element={<FullScreenLoader />} />
         <Route path="/ekyc" element={<KycRoute><EkycPage /></KycRoute>} />
         <Route path="/terms" element={<TermsPage />} />
