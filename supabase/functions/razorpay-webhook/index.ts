@@ -9,7 +9,7 @@ const corsHeaders = {
 const enc = new TextEncoder();
 const toHex = (buffer: ArrayBuffer) => Array.from(new Uint8Array(buffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
 
-const PAYMENT_LINKS: Record<string, { module: "bharat_gaurav" | "merchant_premium"; plan: "monthly" | "yearly"; amount: number; days: number; label: string }> = {
+const PAYMENT_LINKS: Record<string, { module: "bharat_gaurav" | "merchant_premium" | "marriage_bureau"; plan: "monthly" | "yearly"; amount: number; days: number; label: string }> = {
   HcZ53Lpl: { module: "bharat_gaurav", plan: "monthly", amount: 1, days: 30, label: "Bharat Gaurav Membership ₹1 Plan" },
   "0WkIfbVd": { module: "bharat_gaurav", plan: "yearly", amount: 12, days: 365, label: "Bharat Gaurav Membership ₹12 Plan" },
   sub_ShFY15RTkXtfeU: { module: "bharat_gaurav", plan: "monthly", amount: 1, days: 30, label: "Bharat Gaurav Membership ₹1 Plan" },
@@ -18,6 +18,8 @@ const PAYMENT_LINKS: Record<string, { module: "bharat_gaurav" | "merchant_premiu
   CmLBI4u: { module: "merchant_premium", plan: "yearly", amount: 999, days: 365, label: "Merchant Portal ₹999 Yearly Plan" },
   sub_ShLRDyN197vaFh: { module: "merchant_premium", plan: "monthly", amount: 99, days: 30, label: "Merchant Portal ₹99 Monthly Plan" },
   sub_ShLXB2CbEc64Un: { module: "merchant_premium", plan: "yearly", amount: 999, days: 365, label: "Merchant Portal ₹999 Yearly Plan" },
+  d6TAK5F: { module: "marriage_bureau", plan: "monthly", amount: 99, days: 30, label: "Marriage Bureau ₹99 Monthly Plan" },
+  WY2NejZi: { module: "marriage_bureau", plan: "yearly", amount: 999, days: 365, label: "Marriage Bureau ₹999 Yearly Plan" },
 };
 
 async function hmacSha256(message: string, secret: string) {
@@ -44,7 +46,7 @@ function getPaymentLinkPlan(payment: any) {
   return candidates.map((id) => PAYMENT_LINKS[id]).find(Boolean) || null;
 }
 
-async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: { module: "bharat_gaurav" | "merchant_premium"; plan: "monthly" | "yearly"; amount: number; days: number; label: string }) {
+async function findPaymentLinkOrder(admin: any, payment: any, linkPlan: { module: "bharat_gaurav" | "merchant_premium" | "marriage_bureau"; plan: "monthly" | "yearly"; amount: number; days: number; label: string }) {
   const notes = payment?.notes || {};
   const paymentId = String(payment?.id || "");
   if (paymentId) {
