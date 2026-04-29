@@ -1464,7 +1464,7 @@ const AdminDashboard = () => {
                         <div>
                           <p className="font-semibold text-foreground">{p.shopName}</p>
                           <p className="text-xs text-muted-foreground">
-                            {p.plan === "monthly" ? "₹1/mo" : "₹12/yr"} • TXN: <span className="font-mono">{p.transactionId}</span> • {p.date}
+                            {p.plan === "monthly" ? "₹99/mo" : "₹999/yr"} • TXN: <span className="font-mono">{p.transactionId}</span> • {p.date}
                           </p>
                           {p.screenshotUrl && <p className="mt-1 text-xs text-navy">📎 Screenshot: {p.screenshotUrl}</p>}
                         </div>
@@ -1522,7 +1522,7 @@ const AdminDashboard = () => {
                               </div>
                             </div>
                           </td>
-                          <td className="px-3 py-3"><Badge className="bg-saffron text-primary-foreground text-[10px]">{shop.premiumPlan === "monthly" ? "₹1/mo" : "₹12/yr"}</Badge></td>
+                          <td className="px-3 py-3"><Badge className="bg-saffron text-primary-foreground text-[10px]">{shop.premiumPlan === "monthly" ? "₹99/mo" : "₹999/yr"}</Badge></td>
                           <td className="px-3 py-3">
                             {daysLeft !== null ? (
                               <span className={`text-sm font-bold ${isExpiring ? "text-destructive" : "text-foreground"}`}>
