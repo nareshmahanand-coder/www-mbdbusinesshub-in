@@ -623,6 +623,7 @@ const AdminDashboard = () => {
   };
 
   const sendAdminMessage = async () => {
+    if (!user?.id) { toast.error("Please sign in before sending admin messages"); return; }
     if (!messageTitle.trim() || !messageBody.trim()) { toast.error("Message title and body are required"); return; }
     if (messageTarget === "specific" && !messageRecipientId) { toast.error("Select a specific user first"); return; }
     setMessageSending(true);
