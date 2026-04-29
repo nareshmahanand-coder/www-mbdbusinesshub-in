@@ -49,6 +49,10 @@ interface StartPaymentOptions {
   onFailure?: () => void;
 }
 
+type RazorpaySuccessResponse = {
+  razorpay_order_id?: string;
+};
+
 const waitForWebhookUnlock = async (orderId: string) => {
   for (let attempt = 0; attempt < 12; attempt += 1) {
     const { data } = await supabase
@@ -145,7 +149,7 @@ export const startInstantRazorpayPayment = async ({ module, plan, onSuccess, onF
     order_id: data.orderId,
     prefill: data.prefill,
     theme: { color: "#FF9933" },
-    handler: async (response: any) => {
+    handler: async (response: RazorpaySuccessResponse) => {
       const orderId = String(response?.razorpay_order_id || data.orderId || "");
       const unlocked = await waitForWebhookUnlock(orderId);
 
