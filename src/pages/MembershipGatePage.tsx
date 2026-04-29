@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Loader2, Crown, Landmark } from "lucide-react";
+import { Loader2, Crown, Landmark, HandCoins, BriefcaseBusiness, GraduationCap, ShieldCheck, Network, BadgeInfo } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { startBharatGauravPaymentLink } from "@/lib/razorpayPayments";
 
@@ -17,6 +17,41 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
     monthly: { label: "भारत गौरव मेंबरशिप ₹10 प्लान" },
     yearly: { label: "भारत गौरव मेंबरशिप ₹100 प्लान" },
   };
+
+  const primeFeatures = [
+    {
+      icon: HandCoins,
+      title: "जीरो कमीशन व्यापार",
+      text: "अपने छोटे से व्यापार या दुकान का 'जीरो कमीशन' पर फ्री रजिस्ट्रेशन (Free Registration) करें और सीधे ग्राहकों से जुड़ें।",
+      highlight: true,
+    },
+    {
+      icon: BriefcaseBusiness,
+      title: "सुनिश्चित रोजगार (Jobs)",
+      text: "पोर्टल पर रजिस्ट्रेशन करने वाले हर सदस्य को उनकी योग्यता के अनुसार जॉब (Jobs) और रोजगार के अवसर प्रदान किए जाएंगे।",
+      highlight: true,
+    },
+    {
+      icon: GraduationCap,
+      title: "कौशल विकास",
+      text: "हर प्रकार की व्यावसायिक ट्रेनिंग और एनजीओ (NGO) द्वारा अधिकृत प्रमाण पत्र (Certificate) की सुविधा।",
+    },
+    {
+      icon: ShieldCheck,
+      title: "सुरक्षा चक्र",
+      text: "बेटी सुरक्षा, बाल सुरक्षा और पारिवारिक सुरक्षा का भरोसा।",
+    },
+    {
+      icon: Network,
+      title: "डिजिटल कनेक्टिविटी",
+      text: "नजदीकी दुकान नेटवर्क से सीधा जुड़ाव और डिजिटल पहचान।",
+    },
+    {
+      icon: BadgeInfo,
+      title: "अन्य सुविधाएं",
+      text: "पुराने सामान की खरीद-बिक्री, मैरिज ब्यूरो (जीवनसाथी), सरकारी लोन और सरकारी जॉब्स की सटीक जानकारी।",
+    },
+  ];
 
   const handlePayment = async () => {
     if (!user) return;
@@ -50,8 +85,9 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
             <img src={logoCircle} alt="Mera Bharat Dukaan" className="mx-auto h-20 w-20 rounded-full object-cover shadow-lg border-4 border-saffron/40" />
             <div className="space-y-1 font-hindi">
               <CardTitle className="text-2xl sm:text-3xl font-extrabold text-primary leading-tight">
-                भारत गौरव मेंबरशिप: भारत के हर नागरिक के लिए आवश्यक है
+                भारत गौरव मेंबरशिप
               </CardTitle>
+              <p className="text-base sm:text-lg font-extrabold text-foreground">भारत के हर नागरिक के लिए आवश्यक है</p>
             </div>
             <div className="mx-auto w-full rounded-lg border border-primary/20 bg-background p-3 shadow-sm">
               <div className="flex items-center justify-center gap-3">
@@ -66,12 +102,34 @@ const MembershipGatePage = ({ onActivated }: { onActivated: () => void }) => {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-lg bg-primary/10 border-2 border-primary/25 p-4 shadow-sm">
-              <h2 className="font-hindi text-base font-extrabold text-primary mb-2">मानक नागरिक सदस्यता आवश्यक है</h2>
+            <div className="rounded-lg bg-primary/10 border-2 border-primary/25 p-4 text-center shadow-sm">
+              <h2 className="font-hindi text-lg font-extrabold text-primary">मानक नागरिक सदस्यता आवश्यक है</h2>
               <p className="font-hindi text-[13px] leading-relaxed text-foreground">
                 पोर्टल की सेवाएं सुरक्षित रहती हैं। आप मेरा भारत दुकान के डिजिटल व्यापार से नौकरी, शिक्षा सेवा, स्थानीय दुकान नेटवर्क और भरोसेमंद उपयोग कर सकते हैं।
               </p>
             </div>
+
+            <section className="space-y-3" aria-labelledby="prime-features-heading">
+              <h3 id="prime-features-heading" className="font-hindi text-base font-extrabold text-primary">
+                नई मुख्य सुविधाएं
+              </h3>
+              <div className="grid gap-2">
+                {primeFeatures.map(({ icon: Icon, title, text, highlight }) => (
+                  <div
+                    key={title}
+                    className={`flex gap-3 rounded-lg border p-3 shadow-sm ${highlight ? "border-accent/50 bg-accent/10" : "border-border bg-card"}`}
+                  >
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${highlight ? "bg-accent text-accent-foreground" : "bg-primary/10 text-primary"}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div className="space-y-1 font-hindi">
+                      <p className="text-sm font-extrabold text-foreground leading-tight">{title}</p>
+                      <p className="text-[12px] leading-relaxed text-muted-foreground">{text}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
 
             {/* Plan Selection */}
             <div className="grid grid-cols-2 gap-3">
