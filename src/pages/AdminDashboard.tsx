@@ -622,6 +622,24 @@ const AdminDashboard = () => {
     toast.success(`Family member ${admin_status}`);
   };
 
+  const sendAdminMessage = async () => {
+    if (!messageTitle.trim() || !messageBody.trim()) { toast.error("Message title and body are required"); return; }
+    if (messageTarget === "specific" && !messageRecipientId) { toast.error("Select a specific user first"); return; }
+    setMessageSending(true);
+    const { error } = await (supabase as any).from("admin_messages").insert({
+      sender_id: user?.id,
+      recipient_user_id: messageTarget === "specific" ? messageRecipientId : null,
+      recipient_group: messageTarget,
+      title: messageTitle.trim(),
+      message: messageBody.trim(),
+      severity: "info",
+    });
+    setMessageSending(false);
+    if (error) { toast.error("Message could not be sent"); return; }
+    setMessageBody("");
+    toast.success("Admin message sent live");
+  };
+
   const updateSiteSettings = async (patch: Partial<typeof settings>) => {
     if (!settings.id) return;
     const { error } = await supabase.from("site_settings").update(patch).eq("id", settings.id);
@@ -631,8 +649,8 @@ const AdminDashboard = () => {
   };
 
   const downloadCSV = () => {
-    const headers = ["Shop Name", "Hindi Name", "Category", "City", "Pincode", "Verified", "Premium", "Plan", "Join Date"];
-    const rows = shops.map((s) => [s.name, s.nameHindi, s.category, s.city, s.pincode, s.verified ? "Yes" : "No", s.premium ? "Yes" : "No", s.premiumPlan || "Free", s.joinDate || "N/A"]);
+    const headers = ["Shop Name", "Owner", "Category", "City", "Phone", "Verified", "Access", "Plan", "Plan Ends"];
+    const rows = filteredMerchants.map((s) => [s.shop_name, s.owner_name || s.profile_name || "", s.category || "", s.city || "", s.phone || s.whatsapp || s.profile_phone || "", s.is_verified ? "Yes" : "No", s.access_status, s.plan_override || "Free", s.plan_ends_at || "N/A"]);
     const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -654,7 +672,14 @@ const AdminDashboard = () => {
     return list.filter((s) => s.name.toLowerCase().includes(q) || s.nameHindi.includes(q));
   }, [shops, searchQuery]);
 
-  const verifiedCount = shops.filter((s) => s.verified).length;
+  const filteredMerchants = useMemo(() => {
+    if (!searchQuery.trim()) return merchants;
+    const q = searchQuery.toLowerCase();
+    return merchants.filter((m) => [m.shop_name, m.owner_name, m.profile_name, m.category, m.city, m.phone, m.whatsapp, m.profile_email].some((v) => (v || "").toLowerCase().includes(q)));
+  }, [merchants, searchQuery]);
+
+  const verifiedCount = merchants.filter((s) => s.is_verified).length;
+  const premiumMerchantCount = merchants.filter((s) => s.plan_override || (s as any).is_premium).length;
   const pendingPayments = payments.filter((p) => !p.approved && !p.rejected);
   const monthlyEarnings = payments.filter((p) => p.approved && p.plan === "monthly").reduce((sum, p) => sum + p.amount, 0);
   const yearlyEarnings = payments.filter((p) => p.approved && p.plan === "yearly").reduce((sum, p) => sum + p.amount, 0);
