@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Heart, Settings, Trash2, Save, Store, Briefcase, Tag, Download, FileText } from "lucide-react";
+import { ShoppingBag, Heart, Settings, Trash2, Save, Store, Briefcase, Tag, Download, FileText, Bell, CheckCircle2 } from "lucide-react";
 import { downloadReceipt } from "@/lib/generateReceipt";
 import { toast } from "sonner";
 import { sampleShops } from "@/data/sampleShops";
@@ -40,6 +40,16 @@ interface Membership {
   created_at: string;
 }
 
+interface ClassifiedContactRequest {
+  id: string;
+  classified_id: string;
+  buyer_id: string;
+  seller_id: string;
+  status: "pending" | "approved" | "rejected";
+  message: string;
+  created_at: string;
+}
+
 const CustomerDashboard = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -50,6 +60,7 @@ const CustomerDashboard = () => {
   const [myAds, setMyAds] = useState<MyAd[]>([]);
   const [myJobs, setMyJobs] = useState<MyJob[]>([]);
   const [memberships, setMemberships] = useState<Membership[]>([]);
+  const [contactRequests, setContactRequests] = useState<ClassifiedContactRequest[]>([]);
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -61,13 +72,14 @@ const CustomerDashboard = () => {
     setPhone(user.phone || "");
 
     const loadData = async () => {
-      const [savedRes, ordersRes, profileRes, adsRes, jobsRes, membershipRes] = await Promise.all([
+      const [savedRes, ordersRes, profileRes, adsRes, jobsRes, membershipRes, requestsRes] = await Promise.all([
         supabase.from("saved_shops").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("orders").select("*").eq("customer_id", user.id).order("created_at", { ascending: false }),
         supabase.from("profiles").select("display_name, phone").eq("id", user.id).single(),
         supabase.from("classifieds").select("id, title, price, is_sold").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("jobs").select("id, title, is_active").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("memberships").select("id, plan, amount, transaction_id, status, starts_at, ends_at, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
+        supabase.from("classified_contact_requests" as any).select("*").order("created_at", { ascending: false }),
       ]);
 
       if (savedRes.data) setSavedShops(savedRes.data);
@@ -75,6 +87,7 @@ const CustomerDashboard = () => {
       if (adsRes.data) setMyAds(adsRes.data as MyAd[]);
       if (jobsRes.data) setMyJobs(jobsRes.data as MyJob[]);
       if (membershipRes.data) setMemberships(membershipRes.data as Membership[]);
+      if (requestsRes.data) setContactRequests(requestsRes.data as unknown as ClassifiedContactRequest[]);
       if (profileRes.data) {
         setDisplayName(profileRes.data.display_name || displayName);
         setPhone(profileRes.data.phone || phone);
@@ -109,6 +122,18 @@ const CustomerDashboard = () => {
 
   const getShopInfo = (shopId: string) =>
     sampleShops.find((s) => s.id === shopId);
+
+  const updateContactRequest = async (request: ClassifiedContactRequest, status: "approved" | "rejected") => {
+    const { error } = await supabase.from("classified_contact_requests" as any).update({ status }).eq("id", request.id);
+    if (error) toast.error("Could not update request");
+    else {
+      toast.success(status === "approved" ? "Mobile number request approved" : "Request rejected");
+      setContactRequests(prev => prev.map(item => item.id === request.id ? { ...item, status } : item));
+    }
+  };
+
+  const sellerRequests = contactRequests.filter(request => request.seller_id === user?.id);
+  const pendingSellerRequests = sellerRequests.filter(request => request.status === "pending");
 
   return (
     <div className="min-h-screen bg-background">
