@@ -191,10 +191,10 @@ const EkycPage = () => {
             <p className="font-hindi text-sm text-muted-foreground">
               {isApproved
                 ? "आपका KYC स्वीकृत हो गया है।"
-                : "आपका KYC जमा हो गया है। Admin द्वारा समीक्षा की जा रही है। आप dashboard का उपयोग कर सकते हैं।"}
+                : "आपका KYC जमा हो गया है। Admin review जारी रहेगा, आप membership payment पूरा कर सकते हैं।"}
             </p>
-            <Button className="h-12 w-full font-bold" onClick={() => navigate("/dashboard", { replace: true })}>
-              Dashboard पर जाएं
+            <Button className="h-12 w-full font-bold" onClick={() => navigate("/membership", { replace: true })}>
+              Membership पर जाएं
             </Button>
             <Button variant="outline" className="w-full" onClick={() => refresh()}>
               <RefreshCw className="mr-2 h-4 w-4" /> Check Status
