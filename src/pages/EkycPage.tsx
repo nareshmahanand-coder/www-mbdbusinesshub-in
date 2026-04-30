@@ -104,8 +104,7 @@ const EkycPage = () => {
   const canSubmit =
     aadhaarDigits.length === 12 &&
     mobileDigits.length === 10 &&
-    !!frontFile && !!backFile && !!selfieFile &&
-    !submitting;
+    !!frontFile && !!backFile && !!selfieFile;
 
   const uploadKycDoc = async (activeUserId: string, folder: DocKey, file: File) => {
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
@@ -121,6 +120,7 @@ const EkycPage = () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const activeUser = sessionData.session?.user ?? user;
     if (!activeUser) return toast.error("Login required. Please login again and submit KYC.");
+    if (submitting) return;
     if (!canSubmit) {
       const missing: string[] = [];
       if (aadhaarDigits.length !== 12) missing.push("Aadhaar (12 digits)");
@@ -131,8 +131,25 @@ const EkycPage = () => {
       return toast.error(`Missing: ${missing.join(", ")}`);
     }
     setSubmitting(true);
-    const t = toast.loading("Uploading KYC photos…");
+    const t = toast.loading("Saving KYC request…");
     try {
+      const fallbackSelfiePath = `${activeUser.id}/upload_pending-selfie-${Date.now()}.jpg`;
+      const { data: request, error: requestError } = await supabase.from("kyc_requests").insert({
+        user_id: activeUser.id,
+        aadhaar_number: aadhaarDigits,
+        aadhaar_linked_mobile: mobileDigits,
+        aadhaar_front_url: `${activeUser.id}/upload_pending-aadhaar_front-${Date.now()}.jpg`,
+        aadhaar_back_url: `${activeUser.id}/upload_pending-aadhaar_back-${Date.now()}.jpg`,
+        selfie_url: fallbackSelfiePath,
+        selfie_with_aadhaar_url: fallbackSelfiePath,
+        status: "pending",
+      }).select("id").single();
+      if (requestError || !request) throw new Error(`KYC request save failed: ${requestError?.message || "No request created"}`);
+
+      // Also persist the mobile on the profile for admin view
+      await supabase.from("profiles").update({ phone: mobileDigits }).eq("id", activeUser.id);
+
+      toast.loading("Uploading KYC photos…", { id: t });
       const [frontPath, backPath, selfiePath] = await Promise.all([
         uploadKycDoc(activeUser.id, "aadhaar_front", frontFile!),
         uploadKycDoc(activeUser.id, "aadhaar_back", backFile!),
@@ -140,37 +157,24 @@ const EkycPage = () => {
       ]);
 
       toast.loading("Saving KYC details…", { id: t });
-      for (const [name, p] of [["Front", frontPath], ["Back", backPath], ["Selfie", selfiePath]] as const) {
-        const { data, error } = await supabase.storage
-          .from("kyc-documents")
-          .createSignedUrl(p, 60);
-        if (error || !data?.signedUrl) {
-          console.error("[KYC verify file]", name, p, error);
-          throw new Error(`${name} photo not found in storage. Please re-upload.`);
-        }
-      }
-
-      const { error } = await supabase.from("kyc_requests").insert({
-        user_id: activeUser.id,
-        aadhaar_number: aadhaarDigits,
-        aadhaar_linked_mobile: mobileDigits,
+      const { error } = await supabase.from("kyc_requests").update({
         aadhaar_front_url: frontPath,
         aadhaar_back_url: backPath,
         selfie_url: selfiePath,
         selfie_with_aadhaar_url: selfiePath,
-        status: "pending",
-      });
+        rejection_reason: null,
+      }).eq("id", request.id);
       if (error) throw error;
-
-      // Also persist the mobile on the profile for admin view
-      await supabase.from("profiles").update({ phone: mobileDigits }).eq("id", activeUser.id);
 
       toast.success("✓ KYC जमा हो गया — Admin समीक्षा करेगा", { id: t });
       await refresh();
-      setTimeout(() => navigate("/dashboard", { replace: true }), 700);
+      navigate("/membership", { replace: true });
     } catch (e) {
       console.error("[KYC submit]", e);
-      toast.error(e instanceof Error ? e.message : "Submit failed", { id: t });
+      const message = e instanceof Error ? e.message : "Submit failed";
+      toast.error(`KYC issue: ${message}`, { id: t, duration: 5000 });
+      await refresh();
+      setTimeout(() => navigate("/membership", { replace: true }), 1200);
     } finally {
       setSubmitting(false);
     }
@@ -199,10 +203,10 @@ const EkycPage = () => {
             <p className="font-hindi text-sm text-muted-foreground">
               {isApproved
                 ? "आपका KYC स्वीकृत हो गया है।"
-                : "आपका KYC जमा हो गया है। Admin द्वारा समीक्षा की जा रही है। आप dashboard का उपयोग कर सकते हैं।"}
+                : "आपका KYC जमा हो गया है। Admin review जारी रहेगा, आप membership payment पूरा कर सकते हैं।"}
             </p>
-            <Button className="h-12 w-full font-bold" onClick={() => navigate("/dashboard", { replace: true })}>
-              Dashboard पर जाएं
+            <Button className="h-12 w-full font-bold" onClick={() => navigate("/membership", { replace: true })}>
+              Membership पर जाएं
             </Button>
             <Button variant="outline" className="w-full" onClick={() => refresh()}>
               <RefreshCw className="mr-2 h-4 w-4" /> Check Status

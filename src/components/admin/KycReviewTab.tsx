@@ -27,6 +27,7 @@ interface KycRow {
 }
 
 const sign = async (path: string) => {
+  if (!path || path.includes("upload_failed") || path.includes("upload_pending")) return "";
   const { data } = await supabase.storage.from("kyc-documents").createSignedUrl(path, 3600);
   return data?.signedUrl ?? "";
 };
@@ -161,18 +162,27 @@ const KycReviewTab = () => {
           <div className="grid gap-3">
             {filtered.map(row => (
               <div key={row.id} className="rounded-lg border bg-card p-3 flex flex-col sm:flex-row gap-3">
-                <img
-                  src={row.signed_selfie}
-                  alt="selfie"
-                  className="h-20 w-20 rounded-full object-cover border-2 border-navy/30 mx-auto sm:mx-0"
-                />
+                {row.signed_selfie ? (
+                  <img
+                    src={row.signed_selfie}
+                    alt="selfie"
+                    className="h-20 w-20 rounded-full object-cover border-2 border-navy/30 mx-auto sm:mx-0"
+                  />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-destructive/40 bg-destructive/5 text-[10px] font-bold text-destructive mx-auto sm:mx-0 text-center px-2">
+                    Upload Failed
+                  </div>
+                )}
                 <div className="flex-1 space-y-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-semibold text-sm truncate">{row.profile_email || row.profile_phone || row.user_id.slice(0, 8)}</p>
                     {statusBadge(row.status)}
                   </div>
                   <p className="text-xs text-muted-foreground">📱 {row.profile_phone || "—"}</p>
-                  <p className="text-xs font-mono">🆔 {maskAadhaar(row.aadhaar_number)}</p>
+                <p className="text-xs font-mono">🆔 {maskAadhaar(row.aadhaar_number)}</p>
+                {row.rejection_reason?.startsWith("Upload issue:") && (
+                  <p className="text-xs font-semibold text-destructive">⚠️ {row.rejection_reason}</p>
+                )}
                   <p className="text-[10px] text-muted-foreground">{new Date(row.created_at).toLocaleString("hi-IN")}</p>
                   {row.rejection_reason && (
                     <p className="text-xs text-destructive">कारण: {row.rejection_reason}</p>
@@ -217,21 +227,27 @@ const KycReviewTab = () => {
 
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-muted-foreground">Live Selfie</p>
-                <img src={viewing.signed_selfie} alt="selfie" className="w-48 h-48 rounded-lg object-cover border-2 border-navy/30" />
+                {viewing.signed_selfie ? (
+                  <img src={viewing.signed_selfie} alt="selfie" className="w-48 h-48 rounded-lg object-cover border-2 border-navy/30" />
+                ) : (
+                  <div className="flex h-32 w-full items-center justify-center rounded-lg border border-destructive/30 bg-destructive/5 text-sm font-semibold text-destructive">
+                    Selfie upload failed or file is missing
+                  </div>
+                )}
               </div>
 
               <div className="grid sm:grid-cols-2 gap-3">
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground mb-1">Aadhaar Front</p>
-                  <a href={viewing.signed_front} target="_blank" rel="noreferrer">
+                  {viewing.signed_front ? <a href={viewing.signed_front} target="_blank" rel="noreferrer">
                     <img src={viewing.signed_front} alt="front" className="w-full rounded-lg border-2 border-navy/30" />
-                  </a>
+                  </a> : <div className="flex h-28 items-center justify-center rounded-lg border border-destructive/30 bg-destructive/5 text-xs font-semibold text-destructive">Front upload missing</div>}
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground mb-1">Aadhaar Back</p>
-                  <a href={viewing.signed_back} target="_blank" rel="noreferrer">
+                  {viewing.signed_back ? <a href={viewing.signed_back} target="_blank" rel="noreferrer">
                     <img src={viewing.signed_back} alt="back" className="w-full rounded-lg border-2 border-navy/30" />
-                  </a>
+                  </a> : <div className="flex h-28 items-center justify-center rounded-lg border border-destructive/30 bg-destructive/5 text-xs font-semibold text-destructive">Back upload missing</div>}
                 </div>
               </div>
 
