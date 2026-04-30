@@ -297,11 +297,11 @@ const EkycPage = () => {
             <Button
               type="button"
               onClick={submit}
-              disabled={!canSubmit}
+              disabled={submitting}
               className="h-14 w-full text-base font-extrabold shadow-lg"
             >
               {submitting ? (
-                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Submitting…</>
+                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Uploading…</>
               ) : (
                 <><ShieldCheck className="mr-2 h-5 w-5" /> Submit KYC & Continue</>
               )}
