@@ -8,6 +8,7 @@ import { Camera, ShieldCheck, RefreshCw, Loader2, Upload, X, CreditCard, AlertCi
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useKycStatus } from "@/hooks/useKycStatus";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 type DocSide = "front" | "back";
 type SelfieKind = "selfie" | "selfieWithAadhaar";
@@ -47,6 +48,65 @@ const EkycPage = () => {
   const [cameraOn, setCameraOn] = useState(false);
   const [captureTarget, setCaptureTarget] = useState<CaptureTarget | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Surepass Aadhaar OTP state
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [surepassClientId, setSurepassClientId] = useState<string | null>(null);
+  const [otp, setOtp] = useState("");
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [aadhaarVerified, setAadhaarVerified] = useState(false);
+  const [verifiedProfile, setVerifiedProfile] = useState<{ full_name?: string; dob?: string; gender?: string; aadhaar_last4?: string | null } | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = window.setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [resendCooldown]);
+
+  const sendAadhaarOtp = async () => {
+    const digits = aadhaar.replace(/\D/g, "");
+    if (digits.length !== 12) return toast.error("कृपया 12 अंकों का सही आधार नंबर दर्ज करें");
+    setSendingOtp(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("surepass-aadhaar-otp", {
+        body: { aadhaar_number: digits },
+      });
+      if (error) throw error;
+      if (!data?.ok || !data?.client_id) throw new Error(data?.error || "OTP भेजने में त्रुटि");
+      setSurepassClientId(data.client_id);
+      setOtpSent(true);
+      setResendCooldown(30);
+      toast.success("OTP आपके आधार से लिंक मोबाइल पर भेज दिया गया है");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "OTP भेजने में त्रुटि";
+      toast.error(msg);
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const verifyAadhaarOtp = async () => {
+    if (!surepassClientId) return toast.error("पहले OTP भेजें");
+    if (otp.length !== 6) return toast.error("कृपया 6 अंकों का OTP दर्ज करें");
+    setVerifyingOtp(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("surepass-aadhaar-verify", {
+        body: { client_id: surepassClientId, otp },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "OTP सत्यापन विफल");
+      setAadhaarVerified(true);
+      setVerifiedProfile(data.profile || null);
+      toast.success("✓ आधार सफलतापूर्वक सत्यापित (Aadhaar Verified)");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "OTP सत्यापन विफल";
+      toast.error(msg);
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
 
   useEffect(() => () => stopCamera(), []);
 
@@ -128,6 +188,7 @@ const EkycPage = () => {
   const handleSubmit = async () => {
     const digits = aadhaar.replace(/\D/g, "");
     if (digits.length !== 12) return toast.error("कृपया 12 अंकों का सही आधार नंबर दर्ज करें");
+    if (!aadhaarVerified) return toast.error("कृपया पहले OTP द्वारा अपना आधार सत्यापित करें");
     if (linkedMobile.length !== 10) return toast.error("कृपया आधार से लिंक 10 अंकों का मोबाइल नंबर दर्ज करें");
     if (!aadhaarFront || !aadhaarBack) return toast.error("कृपया आधार कार्ड के Front और Back दोनों अपलोड करें");
     if (!selfie) return toast.error("कृपया अपनी साफ सेल्फी फोटो डालें");
@@ -203,7 +264,7 @@ const EkycPage = () => {
     return digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
   };
 
-  const canSubmit = linkedMobile.length === 10 && aadhaar.replace(/\D/g, "").length === 12 && aadhaarFront && aadhaarBack && selfie && selfieWithAadhaar;
+  const canSubmit = aadhaarVerified && linkedMobile.length === 10 && aadhaar.replace(/\D/g, "").length === 12 && aadhaarFront && aadhaarBack && selfie && selfieWithAadhaar;
 
   if (loading) {
     return (
@@ -283,11 +344,93 @@ const EkycPage = () => {
                   inputMode="numeric"
                   placeholder="1234 5678 9012"
                   value={formatAadhaar(aadhaar)}
-                  onChange={(e) => setAadhaar(e.target.value.replace(/\D/g, "").slice(0, 12))}
+                  onChange={(e) => {
+                    if (aadhaarVerified) return;
+                    setAadhaar(e.target.value.replace(/\D/g, "").slice(0, 12));
+                    if (otpSent) {
+                      setOtpSent(false);
+                      setSurepassClientId(null);
+                      setOtp("");
+                    }
+                  }}
                   maxLength={14}
+                  disabled={aadhaarVerified}
                   className="h-12 text-center text-lg font-bold tracking-widest"
                 />
               </div>
+
+              {/* Surepass OTP step */}
+              {!aadhaarVerified && (
+                <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+                  <p className="text-xs font-bold text-foreground">
+                    Step 1: Verify Aadhaar via OTP <span className="font-hindi text-muted-foreground">(आधार OTP से सत्यापन)</span>
+                  </p>
+                  {!otpSent ? (
+                    <Button
+                      type="button"
+                      onClick={sendAadhaarOtp}
+                      disabled={sendingOtp || aadhaar.replace(/\D/g, "").length !== 12}
+                      className="h-11 w-full font-bold"
+                    >
+                      {sendingOtp ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending OTP...</> : <>OTP भेजें • Send OTP</>}
+                    </Button>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="font-hindi text-xs text-muted-foreground">
+                        आधार से लिंक मोबाइल नंबर पर भेजा गया 6 अंकों का OTP दर्ज करें
+                      </p>
+                      <div className="flex justify-center">
+                        <InputOTP maxLength={6} value={otp} onChange={(v) => setOtp(v.replace(/\D/g, ""))}>
+                          <InputOTPGroup>
+                            {[0, 1, 2, 3, 4, 5].map((i) => (
+                              <InputOTPSlot key={i} index={i} />
+                            ))}
+                          </InputOTPGroup>
+                        </InputOTP>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={resendCooldown > 0 || sendingOtp}
+                          onClick={sendAadhaarOtp}
+                        >
+                          {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend OTP"}
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={verifyAadhaarOtp}
+                          disabled={verifyingOtp || otp.length !== 6}
+                          className="font-bold"
+                        >
+                          {verifyingOtp ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</> : "Verify OTP"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {aadhaarVerified && (
+                <div className="rounded-lg border border-green-500/40 bg-green-500/10 p-3">
+                  <div className="flex items-start gap-2">
+                    <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+                    <div className="text-xs">
+                      <p className="font-bold text-green-700">✓ आधार सत्यापित • Aadhaar Verified via Surepass</p>
+                      {verifiedProfile?.full_name && (
+                        <p className="mt-1 text-foreground"><span className="font-semibold">Name:</span> {verifiedProfile.full_name}</p>
+                      )}
+                      {verifiedProfile?.dob && (
+                        <p className="text-foreground"><span className="font-semibold">DOB:</span> {verifiedProfile.dob}</p>
+                      )}
+                      {verifiedProfile?.aadhaar_last4 && (
+                        <p className="text-foreground"><span className="font-semibold">Aadhaar:</span> XXXX XXXX {verifiedProfile.aadhaar_last4}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <label className="text-sm font-bold text-foreground">Mobile Number Linked with Aadhaar <span className="font-hindi text-muted-foreground">(आधार से लिंक मोबाइल नंबर)</span></label>
                 <div className="relative">
@@ -306,6 +449,17 @@ const EkycPage = () => {
             </div>
           </section>
 
+          {!aadhaarVerified && (
+            <div className="rounded-lg border border-dashed border-primary/40 bg-muted/30 p-4 text-center">
+              <p className="text-sm font-bold text-foreground">Step 2 & 3 locked</p>
+              <p className="mt-1 font-hindi text-xs text-muted-foreground">
+                आधार OTP सत्यापन पूरा होने के बाद Document Upload और Selfie सेक्शन दिखेंगे
+              </p>
+            </div>
+          )}
+
+          {aadhaarVerified && (
+          <>
           <section className="space-y-3">
             <h2 className="flex items-center gap-2 text-base font-extrabold text-foreground">
               <Upload className="h-5 w-5 text-primary" /> Document Upload System
@@ -396,6 +550,8 @@ const EkycPage = () => {
           <Button onClick={handleSubmit} disabled={submitting || !canSubmit} className="h-14 w-full text-base font-extrabold shadow-lg">
             {submitting ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Processing...</> : <><ShieldCheck className="mr-2 h-5 w-5" /> Submit KYC</>}
           </Button>
+          </>
+          )}
         </CardContent>
       </div>
     </main>
