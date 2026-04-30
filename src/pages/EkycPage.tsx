@@ -449,6 +449,17 @@ const EkycPage = () => {
             </div>
           </section>
 
+          {!aadhaarVerified && (
+            <div className="rounded-lg border border-dashed border-primary/40 bg-muted/30 p-4 text-center">
+              <p className="text-sm font-bold text-foreground">Step 2 & 3 locked</p>
+              <p className="mt-1 font-hindi text-xs text-muted-foreground">
+                आधार OTP सत्यापन पूरा होने के बाद Document Upload और Selfie सेक्शन दिखेंगे
+              </p>
+            </div>
+          )}
+
+          {aadhaarVerified && (
+          <>
           <section className="space-y-3">
             <h2 className="flex items-center gap-2 text-base font-extrabold text-foreground">
               <Upload className="h-5 w-5 text-primary" /> Document Upload System
@@ -539,6 +550,8 @@ const EkycPage = () => {
           <Button onClick={handleSubmit} disabled={submitting || !canSubmit} className="h-14 w-full text-base font-extrabold shadow-lg">
             {submitting ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Processing...</> : <><ShieldCheck className="mr-2 h-5 w-5" /> Submit KYC</>}
           </Button>
+          </>
+          )}
         </CardContent>
       </div>
     </main>
