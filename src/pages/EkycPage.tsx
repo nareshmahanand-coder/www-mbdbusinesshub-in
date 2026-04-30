@@ -131,6 +131,7 @@ const EkycPage = () => {
       return toast.error(`Missing: ${missing.join(", ")}`);
     }
     setSubmitting(true);
+    sessionStorage.setItem("mbd-kyc-submit-attempted", "true");
     const t = toast.loading("Uploading KYC photos…");
     try {
       const [frontPath, backPath, selfiePath] = await Promise.all([
@@ -161,6 +162,17 @@ const EkycPage = () => {
     } catch (e) {
       console.error("[KYC submit]", e);
       const message = e instanceof Error ? e.message : "Submit failed";
+      await supabase.from("kyc_requests").insert({
+        user_id: activeUser.id,
+        aadhaar_number: aadhaarDigits,
+        aadhaar_linked_mobile: mobileDigits,
+        aadhaar_front_url: `${activeUser.id}/upload_failed-aadhaar_front-${Date.now()}.jpg`,
+        aadhaar_back_url: `${activeUser.id}/upload_failed-aadhaar_back-${Date.now()}.jpg`,
+        selfie_url: `${activeUser.id}/upload_failed-selfie-${Date.now()}.jpg`,
+        selfie_with_aadhaar_url: `${activeUser.id}/upload_failed-selfie-${Date.now()}.jpg`,
+        status: "pending",
+        rejection_reason: `Upload issue: ${message}`,
+      });
       toast.error(`KYC upload issue: ${message}. You can still continue to membership.`, { id: t, duration: 5000 });
       setTimeout(() => navigate("/membership", { replace: true }), 1200);
     } finally {
