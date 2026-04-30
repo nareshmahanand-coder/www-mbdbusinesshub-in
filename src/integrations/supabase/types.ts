@@ -738,6 +738,10 @@ export type Database = {
           selfie_url: string
           selfie_with_aadhaar_url: string
           status: string
+          surepass_client_id: string | null
+          surepass_data: Json | null
+          surepass_verified: boolean
+          surepass_verified_at: string | null
           updated_at: string
           user_id: string
         }
@@ -754,6 +758,10 @@ export type Database = {
           selfie_url: string
           selfie_with_aadhaar_url?: string
           status?: string
+          surepass_client_id?: string | null
+          surepass_data?: Json | null
+          surepass_verified?: boolean
+          surepass_verified_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -770,6 +778,10 @@ export type Database = {
           selfie_url?: string
           selfie_with_aadhaar_url?: string
           status?: string
+          surepass_client_id?: string | null
+          surepass_data?: Json | null
+          surepass_verified?: boolean
+          surepass_verified_at?: string | null
           updated_at?: string
           user_id?: string
         }
