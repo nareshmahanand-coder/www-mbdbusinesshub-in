@@ -56,6 +56,9 @@ const MaintenanceScreen = () => (
   </div>
 );
 
+const hasKycSubmitAttempt = () =>
+  typeof window !== "undefined" && sessionStorage.getItem("mbd-kyc-submit-attempted") === "true";
+
 // Razorpay review mode: Home is public and never locked behind auth/KYC/membership.
 const PublicHomeRoute = () => {
   return <Index />;
@@ -83,7 +86,7 @@ const KycRequiredRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
   }
   // Mandatory order: KYC first, then Membership
-  if (!isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
+  if (!isSuperUser && (status === "none" || status === "rejected") && !hasKycSubmitAttempt()) return <Navigate to="/ekyc" replace />;
   if (!isSuperUser && !membershipActive) return <Navigate to="/membership" replace />;
   return <>{children}</>;
 };
@@ -95,7 +98,7 @@ const MembershipRoute = () => {
   if (authLoading || (user && (membershipLoading || kycLoading))) return <FullScreenLoader />;
   if (!user) return <Navigate to="/login?next=/membership" replace />;
   // KYC must be at least submitted (pending or approved) before membership purchase
-  if (!isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
+  if (!isSuperUser && (status === "none" || status === "rejected") && !hasKycSubmitAttempt()) return <Navigate to="/ekyc" replace />;
   if (!isSuperUser && membershipActive) return <Navigate to="/dashboard" replace />;
   return <MembershipGatePage onActivated={() => { window.location.href = "/dashboard"; }} />;
 };
@@ -116,7 +119,7 @@ const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
   const next = new URLSearchParams(location.search).get("next") || sessionStorage.getItem("mbd-auth-next") || "/dashboard";
   if (loading || (user && (kycLoading || membershipLoading))) return <FullScreenLoader />;
   // Mandatory order after login: KYC → Membership → Destination
-  if (user && !isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
+  if (user && !isSuperUser && (status === "none" || status === "rejected") && !hasKycSubmitAttempt()) return <Navigate to="/ekyc" replace />;
   if (user && !isSuperUser && !membershipActive) return <Navigate to="/membership" replace />;
   if (user) return <Navigate to={next.startsWith("/") ? next : "/dashboard"} replace />;
   return <>{children}</>;
