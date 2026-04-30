@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { CardContent } from "@/components/ui/card";
@@ -12,17 +12,21 @@ import { useKycStatus } from "@/hooks/useKycStatus";
 type DocKey = "aadhaar_front" | "aadhaar_back" | "selfie";
 
 const DocUpload = ({
-  label, labelHindi, value, onChange, userId, folder, disabled,
+  label, labelHindi, value, onChange, disabled,
 }: {
-  label: string; labelHindi: string; value: string; onChange: (path: string) => void;
-  userId: string; folder: DocKey; disabled?: boolean;
+  label: string; labelHindi: string; value: File | null; onChange: (file: File | null) => void;
+  disabled?: boolean;
 }) => {
-  const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
 
-  const upload = async (file?: File) => {
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const selectFile = (file?: File) => {
     if (!file) return;
-    if (!userId) { toast.error("Login required"); return; }
     if (file.size > 5 * 1024 * 1024) {
       toast.error(`${label}: File too large (max 5 MB). Please retake or compress.`);
       return;
@@ -31,27 +35,10 @@ const DocUpload = ({
       toast.error(`${label}: Please select an image file.`);
       return;
     }
-    setUploading(true);
-    try {
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-      const path = `${userId}/${folder}-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("kyc-documents")
-        .upload(path, file, { upsert: true, contentType: file.type || "image/jpeg" });
-      if (error) {
-        console.error("[KYC upload]", folder, error);
-        toast.error(`${label} upload failed: ${error.message}`);
-        return;
-      }
-      onChange(path);
-      try { setPreviewUrl(URL.createObjectURL(file)); } catch { /* ignore */ }
-      toast.success(`${label} uploaded ✓`);
-    } catch (e) {
-      console.error("[KYC upload exception]", folder, e);
-      toast.error(`${label} upload error: ${e instanceof Error ? e.message : "unknown"}`);
-    } finally {
-      setUploading(false);
-    }
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    onChange(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    toast.success(`${label} selected ✓`);
   };
 
   return (
@@ -72,7 +59,7 @@ const DocUpload = ({
           <button
             type="button"
             disabled={disabled}
-            onClick={() => { onChange(""); setPreviewUrl(""); }}
+            onClick={() => { onChange(null); if (previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(""); }}
             className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground shadow"
             aria-label={`Remove ${label}`}
           >
@@ -82,14 +69,15 @@ const DocUpload = ({
         </div>
       ) : (
         <label className="flex h-24 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/40 text-muted-foreground transition-colors hover:border-primary hover:text-primary">
-          {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
-          <span className="text-xs">{uploading ? "Uploading…" : `Camera / Gallery — ${label}`}</span>
+          <Camera className="h-5 w-5" />
+          <span className="text-xs">Camera / Gallery — {label}</span>
           <input
             type="file"
             accept="image/*"
-            disabled={uploading || disabled}
+            disabled={disabled}
             className="hidden"
-            onChange={(e) => upload(e.target.files?.[0])}
+            onClick={(e) => { e.currentTarget.value = ""; }}
+            onChange={(e) => selectFile(e.target.files?.[0])}
           />
         </label>
       )}
