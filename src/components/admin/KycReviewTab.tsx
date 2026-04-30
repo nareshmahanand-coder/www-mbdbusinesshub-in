@@ -227,21 +227,27 @@ const KycReviewTab = () => {
 
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-muted-foreground">Live Selfie</p>
-                <img src={viewing.signed_selfie} alt="selfie" className="w-48 h-48 rounded-lg object-cover border-2 border-navy/30" />
+                {viewing.signed_selfie ? (
+                  <img src={viewing.signed_selfie} alt="selfie" className="w-48 h-48 rounded-lg object-cover border-2 border-navy/30" />
+                ) : (
+                  <div className="flex h-32 w-full items-center justify-center rounded-lg border border-destructive/30 bg-destructive/5 text-sm font-semibold text-destructive">
+                    Selfie upload failed or file is missing
+                  </div>
+                )}
               </div>
 
               <div className="grid sm:grid-cols-2 gap-3">
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground mb-1">Aadhaar Front</p>
-                  <a href={viewing.signed_front} target="_blank" rel="noreferrer">
+                  {viewing.signed_front ? <a href={viewing.signed_front} target="_blank" rel="noreferrer">
                     <img src={viewing.signed_front} alt="front" className="w-full rounded-lg border-2 border-navy/30" />
-                  </a>
+                  </a> : <div className="flex h-28 items-center justify-center rounded-lg border border-destructive/30 bg-destructive/5 text-xs font-semibold text-destructive">Front upload missing</div>}
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground mb-1">Aadhaar Back</p>
-                  <a href={viewing.signed_back} target="_blank" rel="noreferrer">
+                  {viewing.signed_back ? <a href={viewing.signed_back} target="_blank" rel="noreferrer">
                     <img src={viewing.signed_back} alt="back" className="w-full rounded-lg border-2 border-navy/30" />
-                  </a>
+                  </a> : <div className="flex h-28 items-center justify-center rounded-lg border border-destructive/30 bg-destructive/5 text-xs font-semibold text-destructive">Back upload missing</div>}
                 </div>
               </div>
 
