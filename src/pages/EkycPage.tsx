@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Camera, ShieldCheck, RefreshCw, Loader2, Upload, X, CreditCard, AlertCircle, Clock, Landmark, Smartphone, UserCheck } from "lucide-react";
+import { Camera, ShieldCheck, RefreshCw, Loader2, Upload, X, CreditCard, AlertCircle, Clock, Landmark, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useKycStatus } from "@/hooks/useKycStatus";
@@ -40,7 +40,6 @@ const EkycPage = () => {
   const selfieWithAadhaarInputRef = useRef<HTMLInputElement | null>(null);
 
   const [aadhaar, setAadhaar] = useState("");
-  const [linkedMobile, setLinkedMobile] = useState("");
   const [aadhaarFront, setAadhaarFront] = useState<string | null>(null);
   const [aadhaarBack, setAadhaarBack] = useState<string | null>(null);
   const [selfie, setSelfie] = useState<string | null>(null);
@@ -189,7 +188,6 @@ const EkycPage = () => {
     const digits = aadhaar.replace(/\D/g, "");
     if (digits.length !== 12) return toast.error("कृपया 12 अंकों का सही आधार नंबर दर्ज करें");
     if (!aadhaarVerified) return toast.error("कृपया पहले OTP द्वारा अपना आधार सत्यापित करें");
-    if (linkedMobile.length !== 10) return toast.error("कृपया आधार से लिंक 10 अंकों का मोबाइल नंबर दर्ज करें");
     if (!aadhaarFront || !aadhaarBack) return toast.error("कृपया आधार कार्ड के Front और Back दोनों अपलोड करें");
     if (!selfie) return toast.error("कृपया अपनी साफ सेल्फी फोटो डालें");
     if (!selfieWithAadhaar) return toast.error("कृपया आधार कार्ड हाथ में पकड़कर सेल्फी डालें");
@@ -220,7 +218,7 @@ const EkycPage = () => {
 
       const payload = {
         aadhaar_number: digits,
-        aadhaar_linked_mobile: linkedMobile,
+        aadhaar_linked_mobile: "",
         selfie_url: selfiePath,
         selfie_with_aadhaar_url: selfieWithAadhaarPath,
         aadhaar_front_url: frontPath,
@@ -264,7 +262,7 @@ const EkycPage = () => {
     return digits.replace(/(\d{4})(?=\d)/g, "$1 ").trim();
   };
 
-  const canSubmit = aadhaarVerified && linkedMobile.length === 10 && aadhaar.replace(/\D/g, "").length === 12 && aadhaarFront && aadhaarBack && selfie && selfieWithAadhaar;
+  const canSubmit = aadhaarVerified && aadhaar.replace(/\D/g, "").length === 12 && aadhaarFront && aadhaarBack && selfie && selfieWithAadhaar;
 
   if (loading) {
     return (
@@ -430,22 +428,6 @@ const EkycPage = () => {
                   </div>
                 </div>
               )}
-
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-foreground">Mobile Number Linked with Aadhaar <span className="font-hindi text-muted-foreground">(आधार से लिंक मोबाइल नंबर)</span></label>
-                <div className="relative">
-                  <Smartphone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    inputMode="numeric"
-                    type="tel"
-                    placeholder="98XXXXXXXX"
-                    value={linkedMobile}
-                    onChange={(e) => setLinkedMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                    maxLength={10}
-                    className="h-12 pl-10 text-center text-lg font-bold tracking-widest"
-                  />
-                </div>
-              </div>
             </div>
           </section>
 
