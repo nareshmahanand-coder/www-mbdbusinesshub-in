@@ -92,9 +92,9 @@ const EkycPage = () => {
 
   const [aadhaar, setAadhaar] = useState("");
   const [mobile, setMobile] = useState("");
-  const [frontPath, setFrontPath] = useState("");
-  const [backPath, setBackPath] = useState("");
-  const [selfiePath, setSelfiePath] = useState("");
+  const [frontFile, setFrontFile] = useState<File | null>(null);
+  const [backFile, setBackFile] = useState<File | null>(null);
+  const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const formatAadhaar = (v: string) => v.replace(/\D/g, "").slice(0, 12).replace(/(\d{4})(?=\d)/g, "$1 ").trim();
@@ -104,24 +104,42 @@ const EkycPage = () => {
   const canSubmit =
     aadhaarDigits.length === 12 &&
     mobileDigits.length === 10 &&
-    !!frontPath && !!backPath && !!selfiePath &&
+    !!frontFile && !!backFile && !!selfieFile &&
     !submitting;
 
+  const uploadKycDoc = async (activeUserId: string, folder: DocKey, file: File) => {
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+    const path = `${activeUserId}/${folder}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from("kyc-documents")
+      .upload(path, file, { contentType: file.type || "image/jpeg", upsert: false });
+    if (error) throw new Error(`${folder.replace("_", " ")} upload failed: ${error.message}`);
+    return path;
+  };
+
   const submit = async () => {
-    if (!user) return toast.error("Login required");
+    const { data: sessionData } = await supabase.auth.getSession();
+    const activeUser = sessionData.session?.user ?? user;
+    if (!activeUser) return toast.error("Login required. Please login again and submit KYC.");
     if (!canSubmit) {
       const missing: string[] = [];
       if (aadhaarDigits.length !== 12) missing.push("Aadhaar (12 digits)");
       if (mobileDigits.length !== 10) missing.push("Mobile (10 digits)");
-      if (!frontPath) missing.push("Aadhaar Front photo");
-      if (!backPath) missing.push("Aadhaar Back photo");
-      if (!selfiePath) missing.push("Selfie");
+      if (!frontFile) missing.push("Aadhaar Front photo");
+      if (!backFile) missing.push("Aadhaar Back photo");
+      if (!selfieFile) missing.push("Selfie");
       return toast.error(`Missing: ${missing.join(", ")}`);
     }
     setSubmitting(true);
-    const t = toast.loading("Submitting KYC…");
+    const t = toast.loading("Uploading KYC photos…");
     try {
-      // Verify uploaded files actually exist in storage before submitting
+      const [frontPath, backPath, selfiePath] = await Promise.all([
+        uploadKycDoc(activeUser.id, "aadhaar_front", frontFile!),
+        uploadKycDoc(activeUser.id, "aadhaar_back", backFile!),
+        uploadKycDoc(activeUser.id, "selfie", selfieFile!),
+      ]);
+
+      toast.loading("Saving KYC details…", { id: t });
       for (const [name, p] of [["Front", frontPath], ["Back", backPath], ["Selfie", selfiePath]] as const) {
         const { data, error } = await supabase.storage
           .from("kyc-documents")
@@ -132,11 +150,8 @@ const EkycPage = () => {
         }
       }
 
-      // Remove any prior request for this user (rejected/none) so we have one current row
-      await supabase.from("kyc_requests").delete().eq("user_id", user.id);
-
       const { error } = await supabase.from("kyc_requests").insert({
-        user_id: user.id,
+        user_id: activeUser.id,
         aadhaar_number: aadhaarDigits,
         aadhaar_linked_mobile: mobileDigits,
         aadhaar_front_url: frontPath,
@@ -148,7 +163,7 @@ const EkycPage = () => {
       if (error) throw error;
 
       // Also persist the mobile on the profile for admin view
-      await supabase.from("profiles").update({ phone: mobileDigits }).eq("id", user.id);
+      await supabase.from("profiles").update({ phone: mobileDigits }).eq("id", activeUser.id);
 
       toast.success("✓ KYC जमा हो गया — Admin समीक्षा करेगा", { id: t });
       await refresh();
