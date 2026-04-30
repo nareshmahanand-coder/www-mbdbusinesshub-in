@@ -131,9 +131,25 @@ const EkycPage = () => {
       return toast.error(`Missing: ${missing.join(", ")}`);
     }
     setSubmitting(true);
-    sessionStorage.setItem("mbd-kyc-submit-attempted", "true");
-    const t = toast.loading("Uploading KYC photos…");
+    const t = toast.loading("Saving KYC request…");
     try {
+      const fallbackSelfiePath = `${activeUser.id}/upload_pending-selfie-${Date.now()}.jpg`;
+      const { data: request, error: requestError } = await supabase.from("kyc_requests").insert({
+        user_id: activeUser.id,
+        aadhaar_number: aadhaarDigits,
+        aadhaar_linked_mobile: mobileDigits,
+        aadhaar_front_url: `${activeUser.id}/upload_pending-aadhaar_front-${Date.now()}.jpg`,
+        aadhaar_back_url: `${activeUser.id}/upload_pending-aadhaar_back-${Date.now()}.jpg`,
+        selfie_url: fallbackSelfiePath,
+        selfie_with_aadhaar_url: fallbackSelfiePath,
+        status: "pending",
+      }).select("id").single();
+      if (requestError || !request) throw new Error(`KYC request save failed: ${requestError?.message || "No request created"}`);
+
+      // Also persist the mobile on the profile for admin view
+      await supabase.from("profiles").update({ phone: mobileDigits }).eq("id", activeUser.id);
+
+      toast.loading("Uploading KYC photos…", { id: t });
       const [frontPath, backPath, selfiePath] = await Promise.all([
         uploadKycDoc(activeUser.id, "aadhaar_front", frontFile!),
         uploadKycDoc(activeUser.id, "aadhaar_back", backFile!),
@@ -141,20 +157,14 @@ const EkycPage = () => {
       ]);
 
       toast.loading("Saving KYC details…", { id: t });
-      const { error } = await supabase.from("kyc_requests").insert({
-        user_id: activeUser.id,
-        aadhaar_number: aadhaarDigits,
-        aadhaar_linked_mobile: mobileDigits,
+      const { error } = await supabase.from("kyc_requests").update({
         aadhaar_front_url: frontPath,
         aadhaar_back_url: backPath,
         selfie_url: selfiePath,
         selfie_with_aadhaar_url: selfiePath,
-        status: "pending",
-      });
+        rejection_reason: null,
+      }).eq("id", request.id);
       if (error) throw error;
-
-      // Also persist the mobile on the profile for admin view
-      await supabase.from("profiles").update({ phone: mobileDigits }).eq("id", activeUser.id);
 
       toast.success("✓ KYC जमा हो गया — Admin समीक्षा करेगा", { id: t });
       await refresh();
@@ -162,20 +172,8 @@ const EkycPage = () => {
     } catch (e) {
       console.error("[KYC submit]", e);
       const message = e instanceof Error ? e.message : "Submit failed";
-      const fallbackSelfiePath = `${activeUser.id}/upload_failed-selfie-${Date.now()}.jpg`;
-      const { error: fallbackError } = await supabase.from("kyc_requests").insert({
-        user_id: activeUser.id,
-        aadhaar_number: aadhaarDigits,
-        aadhaar_linked_mobile: mobileDigits,
-        aadhaar_front_url: `${activeUser.id}/upload_failed-aadhaar_front-${Date.now()}.jpg`,
-        aadhaar_back_url: `${activeUser.id}/upload_failed-aadhaar_back-${Date.now()}.jpg`,
-        selfie_url: fallbackSelfiePath,
-        selfie_with_aadhaar_url: fallbackSelfiePath,
-        status: "pending",
-        rejection_reason: `Upload issue: ${message}`,
-      });
-      if (fallbackError) console.error("[KYC fallback insert]", fallbackError);
-      toast.error(`KYC upload issue: ${message}. You can still continue to membership.`, { id: t, duration: 5000 });
+      toast.error(`KYC issue: ${message}`, { id: t, duration: 5000 });
+      await refresh();
       setTimeout(() => navigate("/membership", { replace: true }), 1200);
     } finally {
       setSubmitting(false);
