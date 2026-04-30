@@ -58,31 +58,48 @@ serve(async (req) => {
       });
     }
 
-    const upstream = await fetch(`${SUREPASS_BASE_URL}/api/v1/aadhaar-v2/submit-otp`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${SUREPASS_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ client_id: clientId, otp }),
-    });
+    // Sandbox mode: accept any 6-digit OTP as success (Surepass sandbox does not deliver real OTPs).
+    const isSandbox = SUREPASS_BASE_URL.includes("sandbox");
+    let json: any = null;
+    let data: any = {};
 
-    const text = await upstream.text();
-    let json: any;
-    try { json = JSON.parse(text); } catch { json = { raw: text }; }
+    if (isSandbox && otp.length === 6) {
+      console.log("[surepass-aadhaar-verify] Sandbox bypass: accepting OTP", { clientId });
+      data = {
+        full_name: "Sandbox Test User",
+        dob: "1990-01-01",
+        gender: "M",
+        aadhaar_number: "",
+        sandbox: true,
+      };
+      json = { success: true, data };
+    } else {
+      const upstream = await fetch(`${SUREPASS_BASE_URL}/api/v1/aadhaar-v2/submit-otp`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${SUREPASS_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ client_id: clientId, otp }),
+      });
 
-    if (!upstream.ok || json?.success === false) {
-      console.error("Surepass submit-otp failed", upstream.status, json);
-      return new Response(
-        JSON.stringify({
-          error: json?.message || json?.message_code || `Surepass error (${upstream.status})`,
-          details: json,
-        }),
-        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      const text = await upstream.text();
+      try { json = JSON.parse(text); } catch { json = { raw: text }; }
+
+      if (!upstream.ok || json?.success === false) {
+        console.error("Surepass submit-otp failed", upstream.status, json);
+        return new Response(
+          JSON.stringify({
+            error: json?.message || json?.message_code || `Surepass error (${upstream.status})`,
+            details: json,
+          }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      data = json?.data ?? {};
     }
 
-    const data = json?.data ?? {};
     const aadhaarNumberFromCard = String(data?.aadhaar_number ?? "").replace(/\D/g, "");
     const fullName = data?.full_name ?? data?.name ?? "";
     const dob = data?.dob ?? "";
