@@ -27,7 +27,7 @@ interface KycRow {
 }
 
 const sign = async (path: string) => {
-  if (!path || path.includes("upload_failed")) return "";
+  if (!path || path.includes("upload_failed") || path.includes("upload_pending")) return "";
   const { data } = await supabase.storage.from("kyc-documents").createSignedUrl(path, 3600);
   return data?.signedUrl ?? "";
 };
