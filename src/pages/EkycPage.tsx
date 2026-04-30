@@ -273,28 +273,25 @@ const EkycPage = () => {
               <DocUpload
                 label="Aadhaar Front"
                 labelHindi="आधार सामने"
-                value={frontPath}
-                onChange={setFrontPath}
-                userId={user?.id || ""}
-                folder="aadhaar_front"
+                value={frontFile}
+                onChange={setFrontFile}
+                disabled={submitting}
               />
               <DocUpload
                 label="Aadhaar Back"
                 labelHindi="आधार पीछे"
-                value={backPath}
-                onChange={setBackPath}
-                userId={user?.id || ""}
-                folder="aadhaar_back"
+                value={backFile}
+                onChange={setBackFile}
+                disabled={submitting}
               />
             </div>
 
             <DocUpload
               label="Selfie"
               labelHindi="अपनी फोटो"
-              value={selfiePath}
-              onChange={setSelfiePath}
-              userId={user?.id || ""}
-              folder="selfie"
+              value={selfieFile}
+              onChange={setSelfieFile}
+              disabled={submitting}
             />
 
             <Button
