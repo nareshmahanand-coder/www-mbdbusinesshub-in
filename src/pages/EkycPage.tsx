@@ -104,8 +104,7 @@ const EkycPage = () => {
   const canSubmit =
     aadhaarDigits.length === 12 &&
     mobileDigits.length === 10 &&
-    !!frontFile && !!backFile && !!selfieFile &&
-    !submitting;
+    !!frontFile && !!backFile && !!selfieFile;
 
   const uploadKycDoc = async (activeUserId: string, folder: DocKey, file: File) => {
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
@@ -121,6 +120,7 @@ const EkycPage = () => {
     const { data: sessionData } = await supabase.auth.getSession();
     const activeUser = sessionData.session?.user ?? user;
     if (!activeUser) return toast.error("Login required. Please login again and submit KYC.");
+    if (submitting) return;
     if (!canSubmit) {
       const missing: string[] = [];
       if (aadhaarDigits.length !== 12) missing.push("Aadhaar (12 digits)");
@@ -140,16 +140,6 @@ const EkycPage = () => {
       ]);
 
       toast.loading("Saving KYC details…", { id: t });
-      for (const [name, p] of [["Front", frontPath], ["Back", backPath], ["Selfie", selfiePath]] as const) {
-        const { data, error } = await supabase.storage
-          .from("kyc-documents")
-          .createSignedUrl(p, 60);
-        if (error || !data?.signedUrl) {
-          console.error("[KYC verify file]", name, p, error);
-          throw new Error(`${name} photo not found in storage. Please re-upload.`);
-        }
-      }
-
       const { error } = await supabase.from("kyc_requests").insert({
         user_id: activeUser.id,
         aadhaar_number: aadhaarDigits,
@@ -167,10 +157,12 @@ const EkycPage = () => {
 
       toast.success("✓ KYC जमा हो गया — Admin समीक्षा करेगा", { id: t });
       await refresh();
-      setTimeout(() => navigate("/dashboard", { replace: true }), 700);
+      navigate("/membership", { replace: true });
     } catch (e) {
       console.error("[KYC submit]", e);
-      toast.error(e instanceof Error ? e.message : "Submit failed", { id: t });
+      const message = e instanceof Error ? e.message : "Submit failed";
+      toast.error(`KYC upload issue: ${message}. You can still continue to membership.`, { id: t, duration: 5000 });
+      setTimeout(() => navigate("/membership", { replace: true }), 1200);
     } finally {
       setSubmitting(false);
     }
