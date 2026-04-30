@@ -92,7 +92,7 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
               className="w-full h-14 text-base font-extrabold text-white shadow-lg rounded-xl font-hindi"
               style={{ backgroundColor: "#FF9933" }}
             >
-              {submitting === "monthly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Bharat Gaurav Membership ₹1 Plan"}
+              {submitting === "monthly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mera Bharat Gaurav Membership ₹10 Monthly"}
             </Button>
           </div>
 
@@ -106,7 +106,7 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
               <span className="absolute -top-2 right-3 rounded-full bg-[#1a237e] px-2 py-0.5 text-[9px] font-bold text-white">
                 BEST VALUE
               </span>
-              {submitting === "yearly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Bharat Gaurav Membership ₹12 Plan"}
+              {submitting === "yearly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mera Bharat Gaurav Membership ₹100 Yearly"}
             </Button>
           </div>
 
