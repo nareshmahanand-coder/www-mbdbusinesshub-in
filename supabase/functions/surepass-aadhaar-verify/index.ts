@@ -120,7 +120,14 @@ serve(async (req) => {
       surepass_verified: true,
       surepass_verified_at: new Date().toISOString(),
       surepass_data: data,
-    };
+    } as Record<string, unknown>;
+
+    // In sandbox mode, auto-approve the KYC so the user can proceed to membership immediately.
+    if (isSandbox) {
+      updatePayload.status = "approved";
+      updatePayload.rejection_reason = null;
+      updatePayload.reviewed_at = new Date().toISOString();
+    }
 
     if (existing?.id) {
       const { error: updErr } = await admin
@@ -138,7 +145,7 @@ serve(async (req) => {
         selfie_with_aadhaar_url: "pending",
         aadhaar_front_url: "pending",
         aadhaar_back_url: "pending",
-        status: "draft",
+        status: isSandbox ? "approved" : "draft",
         ...updatePayload,
       };
       const { error: insErr } = await admin.from("kyc_requests").insert(draft);
