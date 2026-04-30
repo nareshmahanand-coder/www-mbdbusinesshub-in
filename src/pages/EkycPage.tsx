@@ -121,9 +121,29 @@ const EkycPage = () => {
 
   const submit = async () => {
     if (!user) return toast.error("Login required");
-    if (!canSubmit) return toast.error("कृपया सभी फ़ील्ड भरें और दस्तावेज़ अपलोड करें");
+    if (!canSubmit) {
+      const missing: string[] = [];
+      if (aadhaarDigits.length !== 12) missing.push("Aadhaar (12 digits)");
+      if (mobileDigits.length !== 10) missing.push("Mobile (10 digits)");
+      if (!frontPath) missing.push("Aadhaar Front photo");
+      if (!backPath) missing.push("Aadhaar Back photo");
+      if (!selfiePath) missing.push("Selfie");
+      return toast.error(`Missing: ${missing.join(", ")}`);
+    }
     setSubmitting(true);
+    const t = toast.loading("Submitting KYC…");
     try {
+      // Verify uploaded files actually exist in storage before submitting
+      for (const [name, p] of [["Front", frontPath], ["Back", backPath], ["Selfie", selfiePath]] as const) {
+        const { data, error } = await supabase.storage
+          .from("kyc-documents")
+          .createSignedUrl(p, 60);
+        if (error || !data?.signedUrl) {
+          console.error("[KYC verify file]", name, p, error);
+          throw new Error(`${name} photo not found in storage. Please re-upload.`);
+        }
+      }
+
       // Remove any prior request for this user (rejected/none) so we have one current row
       await supabase.from("kyc_requests").delete().eq("user_id", user.id);
 
@@ -142,11 +162,12 @@ const EkycPage = () => {
       // Also persist the mobile on the profile for admin view
       await supabase.from("profiles").update({ phone: mobileDigits }).eq("id", user.id);
 
-      toast.success("✓ KYC जमा हो गया — Admin समीक्षा करेगा");
+      toast.success("✓ KYC जमा हो गया — Admin समीक्षा करेगा", { id: t });
       await refresh();
-      setTimeout(() => navigate("/dashboard", { replace: true }), 600);
+      setTimeout(() => navigate("/dashboard", { replace: true }), 700);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Submit failed");
+      console.error("[KYC submit]", e);
+      toast.error(e instanceof Error ? e.message : "Submit failed", { id: t });
     } finally {
       setSubmitting(false);
     }
