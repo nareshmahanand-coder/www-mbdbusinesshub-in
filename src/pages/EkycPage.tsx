@@ -330,211 +330,91 @@ const EkycPage = () => {
                 <p className="mt-1 text-muted-foreground">कृपया सही दस्तावेज़ के साथ दोबारा सबमिट करें।</p>
               </div>
             </div>
-          )}
-
-          <section className="rounded-lg border border-border bg-background p-4">
-            <h2 className="mb-4 flex items-center gap-2 text-base font-extrabold text-foreground">
+          <section className="rounded-lg border border-border bg-background p-5">
+            <h2 className="mb-5 flex items-center gap-2 text-base font-extrabold text-foreground">
               <CreditCard className="h-5 w-5 text-primary" /> Aadhaar Verification
             </h2>
-            <div className="space-y-4">
+
+            <div className="space-y-5">
+              {/* Aadhaar Number + Send OTP */}
               <div className="space-y-2">
-                <label className="text-sm font-bold text-foreground">Enter Aadhaar Number <span className="font-hindi text-muted-foreground">(आधार कार्ड नंबर डालें)</span></label>
-                <Input
-                  inputMode="numeric"
-                  placeholder="1234 5678 9012"
-                  value={formatAadhaar(aadhaar)}
-                  onChange={(e) => {
-                    if (aadhaarVerified) return;
-                    setAadhaar(e.target.value.replace(/\D/g, "").slice(0, 12));
-                    if (otpSent) {
-                      setOtpSent(false);
-                      setSurepassClientId(null);
-                      setOtp("");
-                    }
-                  }}
-                  maxLength={14}
-                  disabled={aadhaarVerified}
-                  className="h-12 text-center text-lg font-bold tracking-widest"
-                />
+                <label className="text-sm font-bold text-foreground">
+                  Aadhaar Number <span className="font-hindi text-muted-foreground">(आधार नंबर)</span>
+                </label>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    inputMode="numeric"
+                    placeholder="1234 5678 9012"
+                    value={formatAadhaar(aadhaar)}
+                    onChange={(e) => {
+                      if (aadhaarVerified) return;
+                      setAadhaar(e.target.value.replace(/\D/g, "").slice(0, 12));
+                    }}
+                    maxLength={14}
+                    disabled={aadhaarVerified}
+                    className="h-12 flex-1 text-center text-lg font-bold tracking-widest sm:text-left"
+                  />
+                  <Button
+                    type="button"
+                    onClick={sendAadhaarOtp}
+                    disabled={sendingOtp || aadhaarVerified || aadhaar.replace(/\D/g, "").length !== 12 || resendCooldown > 0}
+                    className="h-12 font-bold sm:w-44"
+                  >
+                    {sendingOtp ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</>
+                    ) : resendCooldown > 0 ? (
+                      `Resend in ${resendCooldown}s`
+                    ) : otpSent ? (
+                      "Resend OTP"
+                    ) : (
+                      "Send OTP"
+                    )}
+                  </Button>
+                </div>
               </div>
 
-              {/* Surepass OTP step */}
-              {!aadhaarVerified && (
-                <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
-                  <p className="text-xs font-bold text-foreground">
-                    Step 1: Verify Aadhaar via OTP <span className="font-hindi text-muted-foreground">(आधार OTP से सत्यापन)</span>
-                  </p>
-                  {!otpSent ? (
-                    <Button
-                      type="button"
-                      onClick={sendAadhaarOtp}
-                      disabled={sendingOtp || aadhaar.replace(/\D/g, "").length !== 12}
-                      className="h-11 w-full font-bold"
-                    >
-                      {sendingOtp ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending OTP...</> : <>OTP भेजें • Send OTP</>}
-                    </Button>
-                  ) : (
-                    <div className="space-y-3">
-                      <p className="font-hindi text-xs text-muted-foreground">
-                        आधार से लिंक मोबाइल नंबर पर भेजा गया 6 अंकों का OTP दर्ज करें
-                      </p>
-                      <div className="flex justify-center">
-                        <InputOTP maxLength={6} value={otp} onChange={(v) => setOtp(v.replace(/\D/g, ""))}>
-                          <InputOTPGroup>
-                            {[0, 1, 2, 3, 4, 5].map((i) => (
-                              <InputOTPSlot key={i} index={i} />
-                            ))}
-                          </InputOTPGroup>
-                        </InputOTP>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={resendCooldown > 0 || sendingOtp}
-                          onClick={sendAadhaarOtp}
-                        >
-                          {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend OTP"}
-                        </Button>
-                        <Button
-                          type="button"
-                          onClick={verifyAadhaarOtp}
-                          disabled={verifyingOtp || otp.length !== 6}
-                          className="font-bold"
-                        >
-                          {verifyingOtp ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying...</> : "Verify OTP"}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+              {/* OTP Box — always visible */}
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-foreground">
+                  Enter 6-Digit OTP <span className="font-hindi text-muted-foreground">(6 अंकों का OTP)</span>
+                </label>
+                <div className="flex justify-center rounded-lg border border-border bg-muted/30 py-3">
+                  <InputOTP maxLength={6} value={otp} onChange={(v) => setOtp(v.replace(/\D/g, ""))} disabled={aadhaarVerified}>
+                    <InputOTPGroup>
+                      {[0, 1, 2, 3, 4, 5].map((i) => (
+                        <InputOTPSlot key={i} index={i} className="h-12 w-12 text-lg font-bold" />
+                      ))}
+                    </InputOTPGroup>
+                  </InputOTP>
                 </div>
-              )}
+                <p className="text-center text-xs text-muted-foreground">
+                  Sandbox mode: any 6 digits will be accepted as success
+                </p>
+              </div>
+
+              {/* Verify & Proceed */}
+              <Button
+                type="button"
+                onClick={verifyAadhaarOtp}
+                disabled={verifyingOtp || aadhaarVerified || otp.length !== 6 || aadhaar.replace(/\D/g, "").length !== 12}
+                className="h-14 w-full text-base font-extrabold shadow-lg"
+              >
+                {verifyingOtp ? (
+                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Verifying...</>
+                ) : aadhaarVerified ? (
+                  <><ShieldCheck className="mr-2 h-5 w-5" /> Verified — Redirecting...</>
+                ) : (
+                  <><ShieldCheck className="mr-2 h-5 w-5" /> Verify & Proceed</>
+                )}
+              </Button>
 
               {aadhaarVerified && (
-                <div className="rounded-lg border border-green-500/40 bg-green-500/10 p-3">
-                  <div className="flex items-start gap-2">
-                    <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
-                    <div className="text-xs">
-                      <p className="font-bold text-green-700">✓ आधार सत्यापित • Aadhaar Verified via Surepass</p>
-                      {verifiedProfile?.full_name && (
-                        <p className="mt-1 text-foreground"><span className="font-semibold">Name:</span> {verifiedProfile.full_name}</p>
-                      )}
-                      {verifiedProfile?.dob && (
-                        <p className="text-foreground"><span className="font-semibold">DOB:</span> {verifiedProfile.dob}</p>
-                      )}
-                      {verifiedProfile?.aadhaar_last4 && (
-                        <p className="text-foreground"><span className="font-semibold">Aadhaar:</span> XXXX XXXX {verifiedProfile.aadhaar_last4}</p>
-                      )}
-                    </div>
-                  </div>
+                <div className="rounded-lg border border-green-500/40 bg-green-500/10 p-3 text-center text-xs font-bold text-green-700">
+                  ✓ Aadhaar Verified — Taking you to Bharat Gaurav Membership
                 </div>
               )}
             </div>
           </section>
-
-          {!aadhaarVerified && (
-            <div className="rounded-lg border border-dashed border-primary/40 bg-muted/30 p-4 text-center">
-              <p className="text-sm font-bold text-foreground">Step 2 & 3 locked</p>
-              <p className="mt-1 font-hindi text-xs text-muted-foreground">
-                आधार OTP सत्यापन पूरा होने के बाद Document Upload और Selfie सेक्शन दिखेंगे
-              </p>
-            </div>
-          )}
-
-          {aadhaarVerified && (
-          <>
-          <section className="space-y-3">
-            <h2 className="flex items-center gap-2 text-base font-extrabold text-foreground">
-              <Upload className="h-5 w-5 text-primary" /> Document Upload System
-            </h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {documentSlots.map((item) => {
-                const isPdf = item.value?.startsWith("data:application/pdf");
-                return (
-                  <div key={item.target} className="rounded-lg border border-border bg-background p-3">
-                    <input ref={item.inputRef} type="file" accept="image/jpeg,image/png,application/pdf" className="hidden" onChange={(e) => handleFile(item.target, e.target.files?.[0])} />
-                    <input id={`capture-${item.target}`} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFile(item.target, e.target.files?.[0])} />
-                    <p className="mb-2 text-sm font-bold text-foreground">{item.title}</p>
-                    <p className="mb-3 font-hindi text-xs text-muted-foreground">{item.hindi}</p>
-                    {item.value ? (
-                      <div className="relative aspect-[1.6/1] overflow-hidden rounded-md border border-primary/30 bg-muted">
-                        {isPdf ? <div className="flex h-full items-center justify-center text-sm font-bold text-primary">PDF Uploaded</div> : <img src={item.value} alt={item.title} className="h-full w-full object-cover" />}
-                        <button type="button" onClick={() => setImageValue(item.target, null)} className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground" aria-label="Remove upload">
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button type="button" variant="outline" className="h-16 flex-col gap-1" onClick={() => document.getElementById(`capture-${item.target}`)?.click()}>
-                          <Camera className="h-5 w-5" /> Capture
-                        </Button>
-                        <Button type="button" variant="outline" className="h-16 flex-col gap-1" onClick={() => item.inputRef.current?.click()}>
-                          <Upload className="h-5 w-5" /> Gallery
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="flex items-center gap-2 text-base font-extrabold text-foreground">
-              <UserCheck className="h-5 w-5 text-primary" /> Selfie Verification
-            </h2>
-            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 font-hindi text-xs font-semibold text-foreground">
-              सुनिश्चित करें कि फोटो में आपका चेहरा और आधार कार्ड साफ़ दिख रहा हो
-            </div>
-
-            {cameraOn && (
-              <div className="rounded-lg border border-primary/30 bg-background p-3">
-                <div className="aspect-square overflow-hidden rounded-md bg-muted">
-                  <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
-                </div>
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <Button type="button" onClick={capture} className="font-bold"><Camera className="mr-2 h-4 w-4" /> Capture</Button>
-                  <Button type="button" variant="outline" onClick={stopCamera}>Cancel</Button>
-                </div>
-              </div>
-            )}
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              {selfieSlots.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div key={item.target} className="rounded-lg border border-border bg-background p-3">
-                    <input ref={item.inputRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={(e) => handleFile(item.target, e.target.files?.[0])} />
-                    <p className="mb-1 flex items-center gap-2 text-sm font-bold text-foreground"><Icon className="h-4 w-4 text-primary" /> {item.title}</p>
-                    <p className="mb-3 font-hindi text-xs text-muted-foreground">{item.hindi}</p>
-                    {item.value ? (
-                      <div className="relative aspect-square overflow-hidden rounded-md border border-primary/30 bg-muted">
-                        <img src={item.value} alt={item.title} className="h-full w-full object-cover" />
-                        <button type="button" onClick={() => setImageValue(item.target, null)} className="absolute right-2 top-2 rounded-full bg-destructive p-1 text-destructive-foreground" aria-label="Remove selfie">
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button type="button" variant="outline" className="h-16 flex-col gap-1" onClick={() => startCamera(item.target)} disabled={cameraOn}>
-                          <Camera className="h-5 w-5" /> Capture
-                        </Button>
-                        <Button type="button" variant="outline" className="h-16 flex-col gap-1" onClick={() => item.inputRef.current?.click()}>
-                          <Upload className="h-5 w-5" /> Gallery
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <Button onClick={handleSubmit} disabled={submitting || !canSubmit} className="h-14 w-full text-base font-extrabold shadow-lg">
-            {submitting ? <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Processing...</> : <><ShieldCheck className="mr-2 h-5 w-5" /> Submit KYC</>}
-          </Button>
-          </>
-          )}
         </CardContent>
       </div>
     </main>
