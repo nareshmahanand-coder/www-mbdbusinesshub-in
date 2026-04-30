@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ShieldCheck, RefreshCw, Loader2, AlertCircle, Clock, Landmark, Camera, X, FileCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useKycStatus } from "@/hooks/useKycStatus";
+import { useKycStatus, kycSubmittedKey } from "@/hooks/useKycStatus";
 
 type DocKey = "aadhaar_front" | "aadhaar_back" | "selfie";
 
@@ -90,6 +90,14 @@ const EkycPage = () => {
   const navigate = useNavigate();
   const { status, rejectionReason, loading, refresh } = useKycStatus();
 
+  // If KYC is already submitted (pending/approved), never show the form again.
+  // Send the user straight to the Membership page.
+  useEffect(() => {
+    if (!loading && (status === "pending" || status === "approved")) {
+      navigate("/membership", { replace: true });
+    }
+  }, [loading, status, navigate]);
+
   const [aadhaar, setAadhaar] = useState("");
   const [mobile, setMobile] = useState("");
   const [frontFile, setFrontFile] = useState<File | null>(null);
@@ -121,6 +129,23 @@ const EkycPage = () => {
     const activeUser = sessionData.session?.user ?? user;
     if (!activeUser) return toast.error("Login required. Please login again and submit KYC.");
     if (submitting) return;
+
+    // If a KYC row already exists (pending or approved), do not block — go to membership.
+    const { data: existing } = await supabase
+      .from("kyc_requests")
+      .select("id, status")
+      .eq("user_id", activeUser.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existing && (existing.status === "pending" || existing.status === "approved")) {
+      try { localStorage.setItem(kycSubmittedKey(activeUser.id), existing.status); } catch {}
+      toast.success("KYC already submitted — proceeding to Membership.");
+      navigate("/membership", { replace: true });
+      setTimeout(() => { if (window.location.pathname !== "/membership") window.location.replace("/membership"); }, 400);
+      return;
+    }
+
     if (!canSubmit) {
       const missing: string[] = [];
       if (aadhaarDigits.length !== 12) missing.push("Aadhaar (12 digits)");
@@ -132,6 +157,14 @@ const EkycPage = () => {
     }
     setSubmitting(true);
     const t = toast.loading("Saving KYC request…");
+    const goToMembership = () => {
+      try { localStorage.setItem(kycSubmittedKey(activeUser.id), "pending"); } catch {}
+      navigate("/membership", { replace: true });
+      // Hard fallback in case SPA navigation is blocked by a stale guard
+      setTimeout(() => {
+        if (window.location.pathname !== "/membership") window.location.replace("/membership");
+      }, 500);
+    };
     try {
       const fallbackSelfiePath = `${activeUser.id}/upload_pending-selfie-${Date.now()}.jpg`;
       const { data: request, error: requestError } = await supabase.from("kyc_requests").insert({
@@ -146,35 +179,45 @@ const EkycPage = () => {
       }).select("id").single();
       if (requestError || !request) throw new Error(`KYC request save failed: ${requestError?.message || "No request created"}`);
 
+      // Mark as submitted IMMEDIATELY so route guards never bounce back to /ekyc.
+      try { localStorage.setItem(kycSubmittedKey(activeUser.id), "pending"); } catch {}
+
       // Also persist the mobile on the profile for admin view
       await supabase.from("profiles").update({ phone: mobileDigits }).eq("id", activeUser.id);
 
       toast.loading("Uploading KYC photos…", { id: t });
-      const [frontPath, backPath, selfiePath] = await Promise.all([
-        uploadKycDoc(activeUser.id, "aadhaar_front", frontFile!),
-        uploadKycDoc(activeUser.id, "aadhaar_back", backFile!),
-        uploadKycDoc(activeUser.id, "selfie", selfieFile!),
-      ]);
+      try {
+        const [frontPath, backPath, selfiePath] = await Promise.all([
+          uploadKycDoc(activeUser.id, "aadhaar_front", frontFile!),
+          uploadKycDoc(activeUser.id, "aadhaar_back", backFile!),
+          uploadKycDoc(activeUser.id, "selfie", selfieFile!),
+        ]);
 
-      toast.loading("Saving KYC details…", { id: t });
-      const { error } = await supabase.from("kyc_requests").update({
-        aadhaar_front_url: frontPath,
-        aadhaar_back_url: backPath,
-        selfie_url: selfiePath,
-        selfie_with_aadhaar_url: selfiePath,
-        rejection_reason: null,
-      }).eq("id", request.id);
-      if (error) throw error;
+        toast.loading("Saving KYC details…", { id: t });
+        await supabase.from("kyc_requests").update({
+          aadhaar_front_url: frontPath,
+          aadhaar_back_url: backPath,
+          selfie_url: selfiePath,
+          selfie_with_aadhaar_url: selfiePath,
+          rejection_reason: null,
+        }).eq("id", request.id);
+      } catch (uploadErr) {
+        console.warn("[KYC] photo upload issue (non-blocking):", uploadErr);
+        const msg = uploadErr instanceof Error ? uploadErr.message : "Photo upload failed";
+        await supabase.from("kyc_requests").update({
+          rejection_reason: `Upload issue: ${msg}`,
+        }).eq("id", request.id);
+        toast.warning(`Photos failed to upload (${msg}). KYC saved as pending — Admin will request re-upload.`, { id: t, duration: 5000 });
+      }
 
-      toast.success("✓ KYC जमा हो गया — Admin समीक्षा करेगा", { id: t });
-      await refresh();
-      navigate("/membership", { replace: true });
+      toast.success("✓ KYC जमा हो गया — Membership पर ले जा रहे हैं…", { id: t });
+      goToMembership();
     } catch (e) {
       console.error("[KYC submit]", e);
       const message = e instanceof Error ? e.message : "Submit failed";
-      toast.error(`KYC issue: ${message}`, { id: t, duration: 5000 });
-      await refresh();
-      setTimeout(() => navigate("/membership", { replace: true }), 1200);
+      // Even on failure, if a row was created above we already redirected.
+      // For total failure (no row), surface the error and stay on the page.
+      toast.error(`KYC submit failed: ${message}`, { id: t, duration: 6000 });
     } finally {
       setSubmitting(false);
     }
@@ -189,30 +232,10 @@ const EkycPage = () => {
   }
 
   if (status === "pending" || status === "approved") {
-    const isApproved = status === "approved";
+    // Auto-redirect handled by useEffect above; show a tiny spinner.
     return (
-      <main className="flex min-h-screen items-start justify-center bg-background px-4 py-8">
-        <div className="w-full max-w-md rounded-lg border border-primary/20 bg-card shadow-xl">
-          <CardContent className="space-y-4 p-6 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              {isApproved ? <ShieldCheck className="h-8 w-8 text-primary" /> : <Clock className="h-8 w-8 text-primary" />}
-            </div>
-            <h1 className="text-xl font-extrabold text-foreground">
-              {isApproved ? "KYC Approved" : "KYC Submitted — Pending Review"}
-            </h1>
-            <p className="font-hindi text-sm text-muted-foreground">
-              {isApproved
-                ? "आपका KYC स्वीकृत हो गया है।"
-                : "आपका KYC जमा हो गया है। Admin review जारी रहेगा, आप membership payment पूरा कर सकते हैं।"}
-            </p>
-            <Button className="h-12 w-full font-bold" onClick={() => navigate("/membership", { replace: true })}>
-              Membership पर जाएं
-            </Button>
-            <Button variant="outline" className="w-full" onClick={() => refresh()}>
-              <RefreshCw className="mr-2 h-4 w-4" /> Check Status
-            </Button>
-          </CardContent>
-        </div>
+      <main className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </main>
     );
   }

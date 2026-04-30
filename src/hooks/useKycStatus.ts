@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 
 export type KycStatus = "none" | "pending" | "approved" | "rejected";
 
+export const kycSubmittedKey = (userId: string) => `mbd-kyc-submitted-${userId}`;
+
 export const useKycStatus = () => {
   const { user } = useAuth();
   const [status, setStatus] = useState<KycStatus>("none");
@@ -27,8 +29,21 @@ export const useKycStatus = () => {
     if (data) {
       setStatus(data.status as KycStatus);
       setRejectionReason(data.rejection_reason ?? null);
+      if (data.status === "pending" || data.status === "approved") {
+        try { localStorage.setItem(kycSubmittedKey(user.id), data.status); } catch {}
+      } else if (data.status === "rejected") {
+        try { localStorage.removeItem(kycSubmittedKey(user.id)); } catch {}
+      }
     } else {
-      setStatus("none");
+      // Fallback: if a local marker exists from a recent submit, treat as pending
+      // to avoid the redirect loop while the DB row propagates.
+      let localMarker: string | null = null;
+      try { localMarker = localStorage.getItem(kycSubmittedKey(user.id)); } catch {}
+      if (localMarker === "pending" || localMarker === "approved") {
+        setStatus(localMarker as KycStatus);
+      } else {
+        setStatus("none");
+      }
       setRejectionReason(null);
     }
     setLoading(false);
