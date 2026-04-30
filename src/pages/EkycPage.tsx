@@ -162,17 +162,19 @@ const EkycPage = () => {
     } catch (e) {
       console.error("[KYC submit]", e);
       const message = e instanceof Error ? e.message : "Submit failed";
-      await supabase.from("kyc_requests").insert({
+      const fallbackSelfiePath = `${activeUser.id}/upload_failed-selfie-${Date.now()}.jpg`;
+      const { error: fallbackError } = await supabase.from("kyc_requests").insert({
         user_id: activeUser.id,
         aadhaar_number: aadhaarDigits,
         aadhaar_linked_mobile: mobileDigits,
         aadhaar_front_url: `${activeUser.id}/upload_failed-aadhaar_front-${Date.now()}.jpg`,
         aadhaar_back_url: `${activeUser.id}/upload_failed-aadhaar_back-${Date.now()}.jpg`,
-        selfie_url: `${activeUser.id}/upload_failed-selfie-${Date.now()}.jpg`,
-        selfie_with_aadhaar_url: `${activeUser.id}/upload_failed-selfie-${Date.now()}.jpg`,
+        selfie_url: fallbackSelfiePath,
+        selfie_with_aadhaar_url: fallbackSelfiePath,
         status: "pending",
         rejection_reason: `Upload issue: ${message}`,
       });
+      if (fallbackError) console.error("[KYC fallback insert]", fallbackError);
       toast.error(`KYC upload issue: ${message}. You can still continue to membership.`, { id: t, duration: 5000 });
       setTimeout(() => navigate("/membership", { replace: true }), 1200);
     } finally {
