@@ -330,6 +330,8 @@ const EkycPage = () => {
                 <p className="mt-1 text-muted-foreground">कृपया सही दस्तावेज़ के साथ दोबारा सबमिट करें।</p>
               </div>
             </div>
+          )}
+
           <section className="rounded-lg border border-border bg-background p-5">
             <h2 className="mb-5 flex items-center gap-2 text-base font-extrabold text-foreground">
               <CreditCard className="h-5 w-5 text-primary" /> Aadhaar Verification
