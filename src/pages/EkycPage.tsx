@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { CardContent } from "@/components/ui/card";
@@ -12,17 +12,21 @@ import { useKycStatus } from "@/hooks/useKycStatus";
 type DocKey = "aadhaar_front" | "aadhaar_back" | "selfie";
 
 const DocUpload = ({
-  label, labelHindi, value, onChange, userId, folder, disabled,
+  label, labelHindi, value, onChange, disabled,
 }: {
-  label: string; labelHindi: string; value: string; onChange: (path: string) => void;
-  userId: string; folder: DocKey; disabled?: boolean;
+  label: string; labelHindi: string; value: File | null; onChange: (file: File | null) => void;
+  disabled?: boolean;
 }) => {
-  const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>("");
 
-  const upload = async (file?: File) => {
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const selectFile = (file?: File) => {
     if (!file) return;
-    if (!userId) { toast.error("Login required"); return; }
     if (file.size > 5 * 1024 * 1024) {
       toast.error(`${label}: File too large (max 5 MB). Please retake or compress.`);
       return;
@@ -31,27 +35,10 @@ const DocUpload = ({
       toast.error(`${label}: Please select an image file.`);
       return;
     }
-    setUploading(true);
-    try {
-      const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-      const path = `${userId}/${folder}-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("kyc-documents")
-        .upload(path, file, { upsert: true, contentType: file.type || "image/jpeg" });
-      if (error) {
-        console.error("[KYC upload]", folder, error);
-        toast.error(`${label} upload failed: ${error.message}`);
-        return;
-      }
-      onChange(path);
-      try { setPreviewUrl(URL.createObjectURL(file)); } catch { /* ignore */ }
-      toast.success(`${label} uploaded ✓`);
-    } catch (e) {
-      console.error("[KYC upload exception]", folder, e);
-      toast.error(`${label} upload error: ${e instanceof Error ? e.message : "unknown"}`);
-    } finally {
-      setUploading(false);
-    }
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    onChange(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    toast.success(`${label} selected ✓`);
   };
 
   return (
@@ -72,7 +59,7 @@ const DocUpload = ({
           <button
             type="button"
             disabled={disabled}
-            onClick={() => { onChange(""); setPreviewUrl(""); }}
+            onClick={() => { onChange(null); if (previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(""); }}
             className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground shadow"
             aria-label={`Remove ${label}`}
           >
@@ -82,14 +69,15 @@ const DocUpload = ({
         </div>
       ) : (
         <label className="flex h-24 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/40 text-muted-foreground transition-colors hover:border-primary hover:text-primary">
-          {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
-          <span className="text-xs">{uploading ? "Uploading…" : `Camera / Gallery — ${label}`}</span>
+          <Camera className="h-5 w-5" />
+          <span className="text-xs">Camera / Gallery — {label}</span>
           <input
             type="file"
             accept="image/*"
-            disabled={uploading || disabled}
+            disabled={disabled}
             className="hidden"
-            onChange={(e) => upload(e.target.files?.[0])}
+            onClick={(e) => { e.currentTarget.value = ""; }}
+            onChange={(e) => selectFile(e.target.files?.[0])}
           />
         </label>
       )}
@@ -104,9 +92,9 @@ const EkycPage = () => {
 
   const [aadhaar, setAadhaar] = useState("");
   const [mobile, setMobile] = useState("");
-  const [frontPath, setFrontPath] = useState("");
-  const [backPath, setBackPath] = useState("");
-  const [selfiePath, setSelfiePath] = useState("");
+  const [frontFile, setFrontFile] = useState<File | null>(null);
+  const [backFile, setBackFile] = useState<File | null>(null);
+  const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const formatAadhaar = (v: string) => v.replace(/\D/g, "").slice(0, 12).replace(/(\d{4})(?=\d)/g, "$1 ").trim();
@@ -116,24 +104,42 @@ const EkycPage = () => {
   const canSubmit =
     aadhaarDigits.length === 12 &&
     mobileDigits.length === 10 &&
-    !!frontPath && !!backPath && !!selfiePath &&
+    !!frontFile && !!backFile && !!selfieFile &&
     !submitting;
 
+  const uploadKycDoc = async (activeUserId: string, folder: DocKey, file: File) => {
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+    const path = `${activeUserId}/${folder}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage
+      .from("kyc-documents")
+      .upload(path, file, { contentType: file.type || "image/jpeg", upsert: false });
+    if (error) throw new Error(`${folder.replace("_", " ")} upload failed: ${error.message}`);
+    return path;
+  };
+
   const submit = async () => {
-    if (!user) return toast.error("Login required");
+    const { data: sessionData } = await supabase.auth.getSession();
+    const activeUser = sessionData.session?.user ?? user;
+    if (!activeUser) return toast.error("Login required. Please login again and submit KYC.");
     if (!canSubmit) {
       const missing: string[] = [];
       if (aadhaarDigits.length !== 12) missing.push("Aadhaar (12 digits)");
       if (mobileDigits.length !== 10) missing.push("Mobile (10 digits)");
-      if (!frontPath) missing.push("Aadhaar Front photo");
-      if (!backPath) missing.push("Aadhaar Back photo");
-      if (!selfiePath) missing.push("Selfie");
+      if (!frontFile) missing.push("Aadhaar Front photo");
+      if (!backFile) missing.push("Aadhaar Back photo");
+      if (!selfieFile) missing.push("Selfie");
       return toast.error(`Missing: ${missing.join(", ")}`);
     }
     setSubmitting(true);
-    const t = toast.loading("Submitting KYC…");
+    const t = toast.loading("Uploading KYC photos…");
     try {
-      // Verify uploaded files actually exist in storage before submitting
+      const [frontPath, backPath, selfiePath] = await Promise.all([
+        uploadKycDoc(activeUser.id, "aadhaar_front", frontFile!),
+        uploadKycDoc(activeUser.id, "aadhaar_back", backFile!),
+        uploadKycDoc(activeUser.id, "selfie", selfieFile!),
+      ]);
+
+      toast.loading("Saving KYC details…", { id: t });
       for (const [name, p] of [["Front", frontPath], ["Back", backPath], ["Selfie", selfiePath]] as const) {
         const { data, error } = await supabase.storage
           .from("kyc-documents")
@@ -144,11 +150,8 @@ const EkycPage = () => {
         }
       }
 
-      // Remove any prior request for this user (rejected/none) so we have one current row
-      await supabase.from("kyc_requests").delete().eq("user_id", user.id);
-
       const { error } = await supabase.from("kyc_requests").insert({
-        user_id: user.id,
+        user_id: activeUser.id,
         aadhaar_number: aadhaarDigits,
         aadhaar_linked_mobile: mobileDigits,
         aadhaar_front_url: frontPath,
@@ -160,7 +163,7 @@ const EkycPage = () => {
       if (error) throw error;
 
       // Also persist the mobile on the profile for admin view
-      await supabase.from("profiles").update({ phone: mobileDigits }).eq("id", user.id);
+      await supabase.from("profiles").update({ phone: mobileDigits }).eq("id", activeUser.id);
 
       toast.success("✓ KYC जमा हो गया — Admin समीक्षा करेगा", { id: t });
       await refresh();
@@ -270,38 +273,35 @@ const EkycPage = () => {
               <DocUpload
                 label="Aadhaar Front"
                 labelHindi="आधार सामने"
-                value={frontPath}
-                onChange={setFrontPath}
-                userId={user?.id || ""}
-                folder="aadhaar_front"
+                value={frontFile}
+                onChange={setFrontFile}
+                disabled={submitting}
               />
               <DocUpload
                 label="Aadhaar Back"
                 labelHindi="आधार पीछे"
-                value={backPath}
-                onChange={setBackPath}
-                userId={user?.id || ""}
-                folder="aadhaar_back"
+                value={backFile}
+                onChange={setBackFile}
+                disabled={submitting}
               />
             </div>
 
             <DocUpload
               label="Selfie"
               labelHindi="अपनी फोटो"
-              value={selfiePath}
-              onChange={setSelfiePath}
-              userId={user?.id || ""}
-              folder="selfie"
+              value={selfieFile}
+              onChange={setSelfieFile}
+              disabled={submitting}
             />
 
             <Button
               type="button"
               onClick={submit}
-              disabled={!canSubmit}
+              disabled={submitting}
               className="h-14 w-full text-base font-extrabold shadow-lg"
             >
               {submitting ? (
-                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Submitting…</>
+                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Uploading…</>
               ) : (
                 <><ShieldCheck className="mr-2 h-5 w-5" /> Submit KYC & Continue</>
               )}
