@@ -18,18 +18,42 @@ const DocUpload = ({
   userId: string; folder: DocKey; disabled?: boolean;
 }) => {
   const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
+
   const upload = async (file?: File) => {
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) return toast.error("File too large (max 5 MB)");
+    if (!userId) { toast.error("Login required"); return; }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(`${label}: File too large (max 5 MB). Please retake or compress.`);
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast.error(`${label}: Please select an image file.`);
+      return;
+    }
     setUploading(true);
-    const ext = file.name.split(".").pop() || "jpg";
-    const path = `${userId}/${folder}-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("kyc-documents").upload(path, file, { upsert: true });
-    if (error) { toast.error(error.message); setUploading(false); return; }
-    onChange(path);
-    toast.success(`${label} uploaded`);
-    setUploading(false);
+    try {
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+      const path = `${userId}/${folder}-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("kyc-documents")
+        .upload(path, file, { upsert: true, contentType: file.type || "image/jpeg" });
+      if (error) {
+        console.error("[KYC upload]", folder, error);
+        toast.error(`${label} upload failed: ${error.message}`);
+        return;
+      }
+      onChange(path);
+      try { setPreviewUrl(URL.createObjectURL(file)); } catch { /* ignore */ }
+      toast.success(`${label} uploaded ✓`);
+    } catch (e) {
+      console.error("[KYC upload exception]", folder, e);
+      toast.error(`${label} upload error: ${e instanceof Error ? e.message : "unknown"}`);
+    } finally {
+      setUploading(false);
+    }
   };
+
   return (
     <div>
       <label className="mb-1 flex items-center gap-1 text-xs font-bold text-foreground">
@@ -38,14 +62,19 @@ const DocUpload = ({
       </label>
       {value ? (
         <div className="relative inline-block">
-          <div className="flex h-24 w-32 items-center justify-center rounded-lg border-2 border-primary/40 bg-primary/5">
-            <FileCheck className="h-8 w-8 text-primary" />
+          <div className="flex h-24 w-32 items-center justify-center overflow-hidden rounded-lg border-2 border-primary/40 bg-primary/5">
+            {previewUrl ? (
+              <img src={previewUrl} alt={label} className="h-full w-full object-cover" />
+            ) : (
+              <FileCheck className="h-8 w-8 text-primary" />
+            )}
           </div>
           <button
             type="button"
             disabled={disabled}
-            onClick={() => onChange("")}
+            onClick={() => { onChange(""); setPreviewUrl(""); }}
             className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-destructive-foreground shadow"
+            aria-label={`Remove ${label}`}
           >
             <X className="h-3 w-3" />
           </button>
@@ -54,11 +83,10 @@ const DocUpload = ({
       ) : (
         <label className="flex h-24 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border bg-muted/40 text-muted-foreground transition-colors hover:border-primary hover:text-primary">
           {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
-          <span className="text-xs">{uploading ? "Uploading…" : `Take/Upload ${label}`}</span>
+          <span className="text-xs">{uploading ? "Uploading…" : `Camera / Gallery — ${label}`}</span>
           <input
             type="file"
             accept="image/*"
-            capture="environment"
             disabled={uploading || disabled}
             className="hidden"
             onChange={(e) => upload(e.target.files?.[0])}
@@ -93,9 +121,29 @@ const EkycPage = () => {
 
   const submit = async () => {
     if (!user) return toast.error("Login required");
-    if (!canSubmit) return toast.error("कृपया सभी फ़ील्ड भरें और दस्तावेज़ अपलोड करें");
+    if (!canSubmit) {
+      const missing: string[] = [];
+      if (aadhaarDigits.length !== 12) missing.push("Aadhaar (12 digits)");
+      if (mobileDigits.length !== 10) missing.push("Mobile (10 digits)");
+      if (!frontPath) missing.push("Aadhaar Front photo");
+      if (!backPath) missing.push("Aadhaar Back photo");
+      if (!selfiePath) missing.push("Selfie");
+      return toast.error(`Missing: ${missing.join(", ")}`);
+    }
     setSubmitting(true);
+    const t = toast.loading("Submitting KYC…");
     try {
+      // Verify uploaded files actually exist in storage before submitting
+      for (const [name, p] of [["Front", frontPath], ["Back", backPath], ["Selfie", selfiePath]] as const) {
+        const { data, error } = await supabase.storage
+          .from("kyc-documents")
+          .createSignedUrl(p, 60);
+        if (error || !data?.signedUrl) {
+          console.error("[KYC verify file]", name, p, error);
+          throw new Error(`${name} photo not found in storage. Please re-upload.`);
+        }
+      }
+
       // Remove any prior request for this user (rejected/none) so we have one current row
       await supabase.from("kyc_requests").delete().eq("user_id", user.id);
 
@@ -114,11 +162,12 @@ const EkycPage = () => {
       // Also persist the mobile on the profile for admin view
       await supabase.from("profiles").update({ phone: mobileDigits }).eq("id", user.id);
 
-      toast.success("✓ KYC जमा हो गया — Admin समीक्षा करेगा");
+      toast.success("✓ KYC जमा हो गया — Admin समीक्षा करेगा", { id: t });
       await refresh();
-      setTimeout(() => navigate("/dashboard", { replace: true }), 600);
+      setTimeout(() => navigate("/dashboard", { replace: true }), 700);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Submit failed");
+      console.error("[KYC submit]", e);
+      toast.error(e instanceof Error ? e.message : "Submit failed", { id: t });
     } finally {
       setSubmitting(false);
     }
