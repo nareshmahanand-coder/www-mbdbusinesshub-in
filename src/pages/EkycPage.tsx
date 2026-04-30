@@ -87,18 +87,19 @@ const EkycPage = () => {
   };
 
   const verifyAadhaarOtp = async () => {
-    if (!surepassClientId) return toast.error("पहले OTP भेजें");
     if (otp.length !== 6) return toast.error("कृपया 6 अंकों का OTP दर्ज करें");
     setVerifyingOtp(true);
     try {
       const { data, error } = await supabase.functions.invoke("surepass-aadhaar-verify", {
-        body: { client_id: surepassClientId, otp },
+        body: { client_id: surepassClientId || "sandbox", otp },
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.error || "OTP सत्यापन विफल");
       setAadhaarVerified(true);
       setVerifiedProfile(data.profile || null);
-      toast.success("✓ आधार सफलतापूर्वक सत्यापित (Aadhaar Verified)");
+      toast.success("✓ Aadhaar Verified — Redirecting to Membership");
+      await refresh();
+      setTimeout(() => navigate("/membership", { replace: true }), 600);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "OTP सत्यापन विफल";
       toast.error(msg);
