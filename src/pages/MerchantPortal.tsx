@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { shopCategories } from "@/data/sampleShops";
-import { Store, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, Image, Loader2 } from "lucide-react";
+import { Store, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, Image, Loader2, Upload, X } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,9 +44,24 @@ const MerchantPortal = () => {
   const [uploading, setUploading] = useState(false);
   const shopPhotoRef = useRef<HTMLInputElement>(null);
 
+  // KYC documents
+  const [aadhaarFrontUrl, setAadhaarFrontUrl] = useState<string>("");
+  const [aadhaarBackUrl, setAadhaarBackUrl] = useState<string>("");
+  const [panUrl, setPanUrl] = useState<string>("");
+  const [gstUrl, setGstUrl] = useState<string>("");
+  const [foodLicenseUrl, setFoodLicenseUrl] = useState<string>("");
+  const [skipGst, setSkipGst] = useState(false);
+  const [skipFood, setSkipFood] = useState(false);
+  const aadhaarFrontRef = useRef<HTMLInputElement>(null);
+  const aadhaarBackRef = useRef<HTMLInputElement>(null);
+  const panRef = useRef<HTMLInputElement>(null);
+  const gstRef = useRef<HTMLInputElement>(null);
+  const foodRef = useRef<HTMLInputElement>(null);
+
   const [form, setForm] = useState({
     shopName: "", shopNameHindi: "", category: "", address: "",
-    pincode: "", whatsapp: "", phone: "", description: "", ownerName: "", aadhaarLast4: "",
+    pincode: "", whatsapp: "", phone: "", description: "", ownerName: "",
+    aadhaarNumber: "", panNumber: "",
   });
 
   const handleFileUpload = async (file: File, folder: string): Promise<string | null> => {
@@ -68,17 +83,42 @@ const MerchantPortal = () => {
     if (url) { setShopPhotos(prev => [...prev, url]); toast.success("Photo uploaded!"); }
   };
 
+  const handleKycUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    folder: string,
+    setter: (url: string) => void,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const url = await handleFileUpload(file, folder);
+    if (url) { setter(url); toast.success("Document uploaded!"); }
+  };
+
+  const isAadhaarValid = /^\d{12}$/.test(form.aadhaarNumber.replace(/\s/g, ""));
+  const isPanValid = /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(form.panNumber.toUpperCase());
+  const kycReady = !!aadhaarFrontUrl && !!aadhaarBackUrl && !!panUrl && isAadhaarValid && isPanValid;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) { toast.error("Please login first"); return; }
     if (!form.shopName || !form.category || !form.address || !form.pincode || !form.whatsapp || !form.ownerName) {
       toast.error("Please fill all required fields"); return;
     }
-    if (form.aadhaarLast4 && form.aadhaarLast4.length !== 4) { toast.error("Aadhaar last-4 must be 4 digits"); return; }
+    if (!isAadhaarValid) { toast.error("कृपया मान्य 12-अंकीय आधार नंबर दर्ज करें"); return; }
+    if (!isPanValid) { toast.error("कृपया मान्य PAN नंबर दर्ज करें (ABCDE1234F)"); return; }
+    if (!aadhaarFrontUrl || !aadhaarBackUrl) { toast.error("आधार कार्ड के दोनों फ़ोटो अपलोड करें"); return; }
+    if (!panUrl) { toast.error("PAN कार्ड का फ़ोटो अपलोड करें"); return; }
     const { error } = await supabase.from("merchant_profiles").insert({
       user_id: user.id,
       owner_name: form.ownerName,
-      aadhaar_last4: form.aadhaarLast4,
+      aadhaar_last4: form.aadhaarNumber.slice(-4),
+      aadhaar_number: form.aadhaarNumber,
+      aadhaar_front_url: aadhaarFrontUrl,
+      aadhaar_back_url: aadhaarBackUrl,
+      pan_number: form.panNumber.toUpperCase(),
+      pan_url: panUrl,
+      gst_certificate_url: skipGst ? null : (gstUrl || null),
+      food_license_url: skipFood ? null : (foodLicenseUrl || null),
       shop_name: form.shopName,
       shop_name_hindi: form.shopNameHindi,
       category: form.category,
@@ -91,8 +131,13 @@ const MerchantPortal = () => {
       access_status: "active",
     });
     if (error) { toast.error("Shop registration failed"); return; }
+    toast.success("रजिस्ट्रेशन सफल! कृपया सब्सक्रिप्शन प्लान चुनें।");
+    // Redirect to subscription/payment section immediately
+    setTimeout(() => {
+      const el = document.getElementById("merchant-subscription");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
     setSubmitted(true);
-    toast.success("Shop registration submitted for verification!");
   };
 
   const handleSubscribe = async (plan: typeof MERCHANT_PLANS[number]) => {
@@ -136,16 +181,18 @@ const MerchantPortal = () => {
     return (
       <div className="ashoka-watermark tiranga-bg min-h-screen">
         <AppHeader />
-        <div className="relative z-10 flex flex-1 items-center justify-center py-20">
-          <Card className="mx-4 max-w-md text-center">
-            <CardContent className="py-12">
-              <CheckCircle className="mx-auto mb-4 h-16 w-16 text-green-india" />
-              <h2 className="mb-2 text-2xl font-bold text-foreground">Registration Submitted!</h2>
-              <p className="font-hindi text-lg text-muted-foreground">आपकी दुकान पंजीकरण सफल!</p>
-              <p className="mt-4 text-sm text-muted-foreground">Your shop will be visible after admin verification.</p>
-              <Button className="mt-6" onClick={() => setSubmitted(false)}>Register Another Shop</Button>
+        <div className="relative z-10 container mx-auto max-w-2xl px-4 py-8">
+          <Card className="mb-6 border-green-india/40 bg-green-50">
+            <CardContent className="py-6 text-center">
+              <CheckCircle className="mx-auto mb-3 h-14 w-14 text-green-india" />
+              <h2 className="mb-1 text-xl font-bold text-foreground">Registration Submitted!</h2>
+              <p className="font-hindi text-base text-foreground/80">आपकी दुकान पंजीकरण सफल!</p>
+              <p className="mt-3 rounded-lg bg-[#FF9933]/10 px-3 py-2 font-hindi text-sm font-semibold text-[#1a237e]">
+                रजिस्ट्रेशन पूरा करने के लिए सब्सक्रिप्शन/भुगतान अनिवार्य है।
+              </p>
             </CardContent>
           </Card>
+          {renderSubscriptionCard()}
         </div>
       </div>
     );
