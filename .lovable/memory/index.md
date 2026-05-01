@@ -4,15 +4,15 @@
 - Stack: Supabase (DB/Storage/RLS) & Firebase (Phone Auth ONLY). Use jsPDF for receipts.
 - Theme: "Nationalist" (Navy Blue #1a237e, Orange #FF8C00, Gold). Strictly circular logos.
 - "Bills & Recharges" removed entirely. Never re-add.
+- KYC system fully REMOVED (table, edge functions, pages, hooks, route guards). Do not re-add unless explicitly requested.
 - Admin PIN is '02032026'. Super User bypass uses same PIN at /login → "Official Authorized System".
 - 0% commission. Premium requires manual Admin verification of UPI screenshot.
-- KYC (Aadhar + PAN) is mandatory for Merchants/Matrimony.
 - Helpline / SOS WhatsApp number: 919203645007. Never use admin number 919131572290.
 
 ## Memories
 - [Nationalist Theme](mem://style/nationalist-theme) — Visual styling, colors (#1a237e, Orange #FF8C00), and circular logos
 - [Business & Monetization](mem://project/business-model) — Premium tiers, UPI integration, and admin verification flow
-- [User Roles & KYC](mem://features/user-roles) — Admin, Merchant, Customer roles and mandatory KYC requirements
+- [User Roles](mem://features/user-roles) — Admin, Merchant, Customer roles
 - [Authentication](mem://auth/login-flow) — Firebase Phone Auth, Supabase mapping, and reCAPTCHA
 - [Branding & Localization](mem://project/branding) — App naming, slogans, language switcher, and removed features
 - [Bharat Mitra AI](mem://features/chatbot) — Gemini-powered floating assistant, UI, and complaint handling
