@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { bookCategories } from "@/data/skillBooks";
-import KycReviewTab from "@/components/admin/KycReviewTab";
 import RaktadanReviewTab from "@/components/admin/RaktadanReviewTab";
 
 const ADMIN_PIN = "02032026";
@@ -991,7 +990,6 @@ const AdminDashboard = () => {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="kyc" className="text-xs">🪪 E-KYC</TabsTrigger>
             <TabsTrigger value="raktadan" className="text-xs">🩸 रक्तदान</TabsTrigger>
             <TabsTrigger value="whatsapp" className="text-xs relative">
               📱 WhatsApp
@@ -1163,10 +1161,6 @@ const AdminDashboard = () => {
                 <Button variant="outline" onClick={() => updateSiteSettings({ admin_security_updated_at: new Date().toISOString() })}>Mark Admin Password / PIN Changed</Button>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="kyc">
-            <KycReviewTab />
           </TabsContent>
 
           <TabsContent value="raktadan">
