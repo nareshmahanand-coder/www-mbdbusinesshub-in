@@ -374,6 +374,34 @@ const MerchantPortal = () => {
                 <Label htmlFor="description">Shop Description</Label>
                 <Textarea id="description" placeholder="What do you sell? Any speciality?" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
               </div>
+
+              {/* Mandatory KYC Documents */}
+              <div className="rounded-xl border-2 border-[#1a237e]/20 bg-[#1a237e]/5 p-3 space-y-3">
+                <div className="text-center">
+                  <p className="font-hindi text-sm font-bold text-[#1a237e]">अनिवार्य KYC दस्तावेज़</p>
+                  <p className="text-[11px] text-muted-foreground">Aadhaar (Front + Back) and PAN photos are required</p>
+                </div>
+                <input type="file" accept="image/*" ref={aadhaarFrontRef} className="hidden" onChange={(e) => handleKycUpload(e, "kyc-aadhaar-front", setAadhaarFrontUrl)} />
+                <input type="file" accept="image/*" ref={aadhaarBackRef} className="hidden" onChange={(e) => handleKycUpload(e, "kyc-aadhaar-back", setAadhaarBackUrl)} />
+                <input type="file" accept="image/*" ref={panRef} className="hidden" onChange={(e) => handleKycUpload(e, "kyc-pan", setPanUrl)} />
+                <input type="file" accept="image/*" ref={gstRef} className="hidden" onChange={(e) => handleKycUpload(e, "kyc-gst", setGstUrl)} />
+                <input type="file" accept="image/*" ref={foodRef} className="hidden" onChange={(e) => handleKycUpload(e, "kyc-food", setFoodLicenseUrl)} />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <KycUploadTile label="Aadhaar Front" hindi="आधार फ्रंट फ़ोटो" url={aadhaarFrontUrl} onPick={() => aadhaarFrontRef.current?.click()} onClear={() => setAadhaarFrontUrl("")} />
+                  <KycUploadTile label="Aadhaar Back" hindi="आधार बैक फ़ोटो" url={aadhaarBackUrl} onPick={() => aadhaarBackRef.current?.click()} onClear={() => setAadhaarBackUrl("")} />
+                  <KycUploadTile label="PAN Card" hindi="पैन कार्ड फ़ोटो" url={panUrl} onPick={() => panRef.current?.click()} onClear={() => setPanUrl("")} />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <KycUploadTile label="GST Certificate" hindi="GST प्रमाणपत्र" url={gstUrl} onPick={() => gstRef.current?.click()} onClear={() => setGstUrl("")} optional skipped={skipGst} onSkipToggle={() => { setSkipGst((s) => !s); if (!skipGst) setGstUrl(""); }} />
+                  <KycUploadTile label="Food License" hindi="फ़ूड लाइसेंस" url={foodLicenseUrl} onPick={() => foodRef.current?.click()} onClear={() => setFoodLicenseUrl("")} optional skipped={skipFood} onSkipToggle={() => { setSkipFood((s) => !s); if (!skipFood) setFoodLicenseUrl(""); }} />
+                </div>
+                {!kycReady && (
+                  <p className="text-center text-[11px] font-semibold text-destructive font-hindi">
+                    सबमिट करने के लिए आधार और पैन के सभी फ़ोटो व नंबर भरना अनिवार्य है।
+                  </p>
+                )}
+              </div>
+
               <div>
                 <Label>Shop Photos</Label>
                 {shopPhotos.length > 0 && (
@@ -393,9 +421,12 @@ const MerchantPortal = () => {
                 </button>
               </div>
 
-              <Button type="submit" className="w-full" size="lg">
-                <Store className="mr-2 h-5 w-5" /> Submit for Verification
+              <Button type="submit" className="w-full" size="lg" disabled={!kycReady || uploading}>
+                <Store className="mr-2 h-5 w-5" /> Submit & Continue to Subscription
               </Button>
+              <p className="text-center font-hindi text-xs text-muted-foreground">
+                रजिस्ट्रेशन पूरा करने के लिए सब्सक्रिप्शन/भुगतान अनिवार्य है।
+              </p>
             </form>
           </CardContent>
         </Card>}
