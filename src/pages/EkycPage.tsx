@@ -245,9 +245,33 @@ const EkycPage = () => {
 
   const confirmBack = useCallback(() => {
     if (!pendingBack) return;
-    setBackImg(pendingBack);
+    const backDataUrl = pendingBack;
+    setBackImg(backDataUrl);
     setPendingBack(null);
     setStep("selfie");
+    // Kick off OCR in the background using the captured front + back images.
+    (async () => {
+      try {
+        if (!frontImg) return;
+        const { data, error } = await supabase.functions.invoke("kyc-ocr", {
+          body: { frontImage: frontImg, backImage: backDataUrl },
+        });
+        if (error) throw error;
+        if (data?.name || data?.address) {
+          setOcr({
+            name: data.name ?? "",
+            relation_type: data.relation_type === "husband" ? "husband" : "father",
+            relation_name: data.relation_name ?? "",
+            address: data.address ?? "",
+            aadhaar_number: data.aadhaar_number ?? aadhaar.replace(/\D/g, ""),
+          });
+          setOcrError(null);
+        }
+      } catch (e: any) {
+        console.warn("[ekyc] OCR failed, will use manual data:", e?.message);
+        setOcrError("OCR सेवा उपलब्ध नहीं — manual data used");
+      }
+    })();
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
@@ -255,7 +279,7 @@ const EkycPage = () => {
         { enableHighAccuracy: true, timeout: 10000 }
       );
     }
-  }, [pendingBack]);
+  }, [pendingBack, frontImg, aadhaar]);
 
   const confirmSelfie = useCallback(async () => {
     if (!pendingSelfie) return;
@@ -290,7 +314,12 @@ const EkycPage = () => {
         .select()
         .single();
       if (insErr) throw insErr;
-      setExisting({ ...inserted, selfie_preview: selfieDataUrl });
+      setExisting({
+        ...inserted,
+        selfie_preview: selfieDataUrl,
+        aadhaar_front_preview: frontImg,
+        aadhaar_back_preview: backImg,
+      });
       setStep("verified");
       // Stay on the verified certificate screen; user manually clicks Continue.
     } catch (e: any) {
