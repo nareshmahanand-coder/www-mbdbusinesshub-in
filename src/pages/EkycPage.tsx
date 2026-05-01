@@ -23,42 +23,19 @@ const beep = () => {
   } catch {}
 };
 
-// Laplacian variance ~ sharpness (higher = sharper)
-const measureSharpness = (video: HTMLVideoElement): number => {
-  const w = 240, h = 180;
+// Capture at the camera's native resolution for maximum clarity.
+const captureFrame = (video: HTMLVideoElement, mirror = false): string => {
+  const w = video.videoWidth;
+  const h = video.videoHeight;
   const c = document.createElement("canvas");
   c.width = w; c.height = h;
-  const ctx = c.getContext("2d");
-  if (!ctx) return 0;
+  const ctx = c.getContext("2d")!;
+  if (mirror) {
+    ctx.translate(w, 0);
+    ctx.scale(-1, 1);
+  }
   ctx.drawImage(video, 0, 0, w, h);
-  const img = ctx.getImageData(0, 0, w, h).data;
-  // Convert to gray
-  const gray = new Float32Array(w * h);
-  for (let i = 0; i < w * h; i++) {
-    const r = img[i * 4], g = img[i * 4 + 1], b = img[i * 4 + 2];
-    gray[i] = 0.299 * r + 0.587 * g + 0.114 * b;
-  }
-  // Laplacian kernel
-  let sum = 0, sumSq = 0, n = 0;
-  for (let y = 1; y < h - 1; y++) {
-    for (let x = 1; x < w - 1; x++) {
-      const i = y * w + x;
-      const v = -gray[i - w] - gray[i - 1] + 4 * gray[i] - gray[i + 1] - gray[i + w];
-      sum += v; sumSq += v * v; n++;
-    }
-  }
-  const mean = sum / n;
-  return sumSq / n - mean * mean;
-};
-
-const captureFrame = (video: HTMLVideoElement, maxW = 1280): string => {
-  const ratio = video.videoWidth ? video.videoHeight / video.videoWidth : 0.75;
-  const w = Math.min(maxW, video.videoWidth || maxW);
-  const h = Math.round(w * ratio);
-  const c = document.createElement("canvas");
-  c.width = w; c.height = h;
-  c.getContext("2d")!.drawImage(video, 0, 0, w, h);
-  return c.toDataURL("image/jpeg", 0.85);
+  return c.toDataURL("image/jpeg", 0.95);
 };
 
 const dataUrlToBlob = (dataUrl: string): Blob => {
@@ -70,147 +47,41 @@ const dataUrlToBlob = (dataUrl: string): Blob => {
   return new Blob([arr], { type: mime });
 };
 
-const SHARPNESS_THRESHOLD = 140;
-
-// Detect rectangular document edges in the video frame.
-// Returns a normalized bounding box {x,y,w,h} in 0..1 of the video, or null.
-const detectDocumentBox = (
-  video: HTMLVideoElement
-): { x: number; y: number; w: number; h: number } | null => {
-  const W = 200;
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-  if (!vw || !vh) return null;
-  const H = Math.round((W * vh) / vw);
-  const c = document.createElement("canvas");
-  c.width = W; c.height = H;
-  const ctx = c.getContext("2d");
-  if (!ctx) return null;
-  ctx.drawImage(video, 0, 0, W, H);
-  const data = ctx.getImageData(0, 0, W, H).data;
-
-  // Grayscale
-  const gray = new Uint8ClampedArray(W * H);
-  for (let i = 0; i < W * H; i++) {
-    gray[i] = (data[i * 4] * 0.299 + data[i * 4 + 1] * 0.587 + data[i * 4 + 2] * 0.114) | 0;
-  }
-  // Sobel edge magnitude, threshold to binary edge mask
-  const edges = new Uint8Array(W * H);
-  let edgeCount = 0;
-  for (let y = 1; y < H - 1; y++) {
-    for (let x = 1; x < W - 1; x++) {
-      const i = y * W + x;
-      const gx =
-        -gray[i - W - 1] - 2 * gray[i - 1] - gray[i + W - 1] +
-        gray[i - W + 1] + 2 * gray[i + 1] + gray[i + W + 1];
-      const gy =
-        -gray[i - W - 1] - 2 * gray[i - W] - gray[i - W + 1] +
-        gray[i + W - 1] + 2 * gray[i + W] + gray[i + W + 1];
-      const mag = Math.abs(gx) + Math.abs(gy);
-      if (mag > 80) { edges[i] = 1; edgeCount++; }
-    }
-  }
-  if (edgeCount < 250) return null;
-
-  // For each row, find leftmost & rightmost edge pixels — collect to find dominant rectangle.
-  // Use histogram of left/right columns weighted by row count.
-  const leftCols = new Uint32Array(W);
-  const rightCols = new Uint32Array(W);
-  const topRows = new Uint32Array(H);
-  const botRows = new Uint32Array(H);
-  for (let y = 0; y < H; y++) {
-    let lx = -1, rx = -1;
-    for (let x = 0; x < W; x++) {
-      if (edges[y * W + x]) { if (lx < 0) lx = x; rx = x; }
-    }
-    if (lx >= 0 && rx - lx > W * 0.25) {
-      leftCols[lx]++; rightCols[rx]++;
-    }
-  }
-  for (let x = 0; x < W; x++) {
-    let ty = -1, by = -1;
-    for (let y = 0; y < H; y++) {
-      if (edges[y * W + x]) { if (ty < 0) ty = y; by = y; }
-    }
-    if (ty >= 0 && by - ty > H * 0.25) {
-      topRows[ty]++; botRows[by]++;
-    }
-  }
-  const argMax = (arr: Uint32Array) => {
-    let m = 0, idx = -1;
-    for (let i = 0; i < arr.length; i++) if (arr[i] > m) { m = arr[i]; idx = i; }
-    return { idx, count: m };
-  };
-  const L = argMax(leftCols), R = argMax(rightCols);
-  const T = argMax(topRows), B = argMax(botRows);
-  if (L.idx < 0 || R.idx < 0 || T.idx < 0 || B.idx < 0) return null;
-  const x1 = Math.min(L.idx, R.idx);
-  const x2 = Math.max(L.idx, R.idx);
-  const y1 = Math.min(T.idx, B.idx);
-  const y2 = Math.max(T.idx, B.idx);
-  const bw = x2 - x1;
-  const bh = y2 - y1;
-  // Validate: must occupy a meaningful area, but not full frame
-  if (bw < W * 0.35 || bh < H * 0.20) return null;
-  if (bw > W * 0.97 && bh > H * 0.97) return null;
-  // Must have decent edge support
-  const support = L.count + R.count + T.count + B.count;
-  if (support < 30) return null;
-  return { x: x1 / W, y: y1 / H, w: bw / W, h: bh / H };
-};
-
-// Face detection using FaceDetector API (Chromium) with fallback heuristic.
-const detectFaceCentered = async (
-  video: HTMLVideoElement
-): Promise<boolean> => {
-  const FD = (window as any).FaceDetector;
-  if (!FD) {
-    // Fallback: assume centered if scene is bright enough (best-effort)
-    return true;
-  }
-  try {
-    const fd = new FD({ fastMode: true });
-    const faces = await fd.detect(video);
-    if (!faces.length) return false;
-    const f = faces[0].boundingBox;
-    const cx = f.x + f.width / 2;
-    const cy = f.y + f.height / 2;
-    const vw = video.videoWidth, vh = video.videoHeight;
-    const dx = Math.abs(cx - vw / 2) / vw;
-    const dy = Math.abs(cy - vh / 2) / vh;
-    const sizeOk = f.width > vw * 0.25 && f.width < vw * 0.85;
-    return dx < 0.18 && dy < 0.20 && sizeOk;
-  } catch {
-    return true;
-  }
-};
-
 const Scanner = ({
   facing,
   guide,
   mode,
   onCapture,
   label,
+  preview,
+  onRetake,
+  onConfirm,
 }: {
   facing: "environment" | "user";
-  guide: "rect" | "square";
+  guide: "rect" | "oval";
   mode: "document" | "face";
   onCapture: (dataUrl: string) => void;
   label: string;
+  preview: string | null;
+  onRetake: () => void;
+  onConfirm: () => void;
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [ready, setReady] = useState(false);
-  const [sharp, setSharp] = useState(0);
-  const [docBox, setDocBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
-  const [faceOk, setFaceOk] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
+    if (preview) return; // don't run camera while previewing
     let active = true;
     (async () => {
       try {
+        // Request maximum native resolution; the browser will pick the best the device offers.
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 } },
+          video: {
+            facingMode: { ideal: facing },
+            width: { ideal: 4096 },
+            height: { ideal: 2160 },
+          },
           audio: false,
         });
         if (!active) { stream.getTracks().forEach((t) => t.stop()); return; }
@@ -227,109 +98,75 @@ const Scanner = ({
     return () => {
       active = false;
       streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      setReady(false);
     };
-  }, [facing]);
-
-  useEffect(() => {
-    if (!ready) return;
-    let busy = false;
-    const id = window.setInterval(async () => {
-      const v = videoRef.current;
-      if (!v || busy) return;
-      busy = true;
-      try {
-        const s = measureSharpness(v);
-        setSharp(s);
-        if (mode === "document") {
-          const box = detectDocumentBox(v);
-          setDocBox(box);
-        } else {
-          const ok = await detectFaceCentered(v);
-          setFaceOk(ok);
-        }
-      } finally {
-        busy = false;
-      }
-    }, 250);
-    return () => window.clearInterval(id);
-  }, [ready, mode]);
-
-  const isSharp = sharp >= SHARPNESS_THRESHOLD;
-  const canCapture =
-    ready && isSharp && (mode === "document" ? !!docBox : faceOk);
-  const guideClass = guide === "square" ? "aspect-square" : "aspect-[3/4]";
+  }, [facing, preview]);
 
   const handleCapture = () => {
     const v = videoRef.current;
-    if (!v || !canCapture) return;
+    if (!v || !ready) return;
     beep();
-    onCapture(captureFrame(v, 1600));
+    // Mirror the saved selfie so it matches what the user saw on screen.
+    onCapture(captureFrame(v, facing === "user"));
   };
 
-  const statusText = !ready
-    ? "कैमरा शुरू हो रहा है..."
-    : !isSharp
-    ? "⚠️ धुंधला / Blurry — स्थिर रखें"
-    : mode === "document"
-    ? docBox
-      ? "✅ दस्तावेज़ का पता चला / Document detected"
-      : "📄 कार्ड को फ्रेम में रखें / Place card in view"
-    : faceOk
-    ? "✅ चेहरा केंद्रित / Face centered"
-    : "🙂 चेहरा फ्रेम में रखें / Center your face";
+  // Aadhaar card real aspect is ~85.6×53.98mm (~1.586:1). Use a landscape viewport
+  // for documents so the whole card fits with margin; square-ish for selfie.
+  const viewportClass = guide === "rect" ? "aspect-[4/3]" : "aspect-[3/4]";
+
+  if (preview) {
+    return (
+      <div className="space-y-3">
+        <p className="text-center text-sm font-semibold text-white">
+          {label} — पुष्टि करें / Confirm
+        </p>
+        <div className={`relative mx-auto w-full overflow-hidden rounded-2xl border-4 border-white bg-black ${viewportClass}`}>
+          <img src={preview} alt="capture preview" className="absolute inset-0 h-full w-full object-contain" />
+        </div>
+        <div className="flex items-center justify-center gap-3">
+          <Button variant="outline" onClick={onRetake} className="min-w-32">
+            फिर से लें / Retake
+          </Button>
+          <Button onClick={onConfirm} className="min-w-32 bg-[#39FF14] text-black hover:bg-[#2fdf12]">
+            <CheckCircle2 className="mr-2 h-4 w-4" /> पुष्टि / Confirm
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
       <p className="text-center text-sm font-semibold text-white">{label}</p>
-      <div
-        className={`relative mx-auto w-full overflow-hidden rounded-2xl border-4 bg-black transition-colors duration-150 ${
-          canCapture
-            ? "border-[#39FF14] shadow-[0_0_28px_rgba(57,255,20,0.75)]"
-            : "border-red-500 shadow-[0_0_18px_rgba(239,68,68,0.6)]"
-        } ${guideClass}`}
-      >
+      <div className={`relative mx-auto w-full overflow-hidden rounded-2xl border-2 border-white/40 bg-black ${viewportClass}`}>
         <video
           ref={videoRef}
           playsInline
           muted
+          autoPlay
           className={`absolute inset-0 h-full w-full object-cover ${
             facing === "user" ? "scale-x-[-1]" : ""
           }`}
         />
 
-        {/* Document green crop frame overlay */}
-        {mode === "document" && docBox && (
-          <div
-            className="pointer-events-none absolute border-4 border-[#39FF14] shadow-[0_0_18px_rgba(57,255,20,0.9)] rounded-md"
-            style={{
-              left: `${docBox.x * 100}%`,
-              top: `${docBox.y * 100}%`,
-              width: `${docBox.w * 100}%`,
-              height: `${docBox.h * 100}%`,
-            }}
-          >
-            {/* corner ticks */}
-            <span className="absolute -left-1 -top-1 h-3 w-3 border-l-4 border-t-4 border-[#39FF14]" />
-            <span className="absolute -right-1 -top-1 h-3 w-3 border-r-4 border-t-4 border-[#39FF14]" />
-            <span className="absolute -left-1 -bottom-1 h-3 w-3 border-l-4 border-b-4 border-[#39FF14]" />
-            <span className="absolute -right-1 -bottom-1 h-3 w-3 border-r-4 border-b-4 border-[#39FF14]" />
-          </div>
-        )}
-
-        {/* Selfie oval guide */}
-        {mode === "face" && (
+        {/* Static guide overlays — purely visual, no detection. */}
+        {guide === "rect" ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div
-              className={`h-[70%] w-[60%] rounded-[50%] border-4 border-dashed ${
-                faceOk ? "border-[#39FF14]" : "border-white/70"
-              }`}
-            />
+            <div className="h-[68%] w-[88%] rounded-md border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
+          </div>
+        ) : (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="h-[78%] w-[62%] rounded-[50%] border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
           </div>
         )}
 
-        {/* Status chip */}
         <div className="absolute left-3 top-3 rounded-full bg-black/70 px-3 py-1 text-xs font-bold text-white">
-          {statusText}
+          {ready
+            ? mode === "document"
+              ? "📄 कार्ड को सफेद बॉक्स में रखें"
+              : "🙂 चेहरा गोल गाइड में रखें"
+            : "कैमरा शुरू हो रहा है..."}
         </div>
       </div>
 
@@ -337,18 +174,18 @@ const Scanner = ({
         <button
           type="button"
           onClick={handleCapture}
-          disabled={!canCapture}
+          disabled={!ready}
           aria-label="Capture"
-          className={`flex h-16 w-16 items-center justify-center rounded-full border-4 transition-all ${
-            canCapture
-              ? "border-white bg-[#39FF14] hover:scale-105 active:scale-95 shadow-[0_0_22px_rgba(57,255,20,0.8)]"
-              : "border-white/40 bg-gray-500/60 cursor-not-allowed"
+          className={`flex h-20 w-20 items-center justify-center rounded-full border-4 border-white transition-all ${
+            ready
+              ? "bg-[#FF8C00] hover:scale-105 active:scale-95 shadow-[0_0_22px_rgba(255,140,0,0.8)]"
+              : "bg-gray-500/60 cursor-not-allowed"
           }`}
         >
-          <Camera className={`h-7 w-7 ${canCapture ? "text-black" : "text-white/70"}`} />
+          <Camera className="h-9 w-9 text-white" />
         </button>
-        <p className={`text-xs ${canCapture ? "text-[#39FF14]" : "text-red-300"}`}>
-          {canCapture ? "टैप करें / Tap to capture" : "बटन तब सक्रिय होगा जब फ्रेम हरा होगा"}
+        <p className="text-xs font-semibold text-white">
+          फ़ोटो खींचें / Tap to capture
         </p>
       </div>
     </div>
