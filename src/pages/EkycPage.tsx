@@ -331,7 +331,7 @@ const EkycPage = () => {
       setSelfieImg(null);
       setStep("selfie");
     }
-  }, [pendingSelfie, user, ocr, mobile, aadhaar, gps]);
+  }, [pendingSelfie, user, ocr, mobile, aadhaar, gps, frontImg, backImg]);
 
   if (authLoading || checking) {
     return (
