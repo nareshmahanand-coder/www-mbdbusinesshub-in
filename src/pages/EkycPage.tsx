@@ -218,6 +218,9 @@ const EkycPage = () => {
   const [ocrError, setOcrError] = useState<string | null>(null);
   const [existing, setExisting] = useState<any | null>(null);
   const [checking, setChecking] = useState(true);
+  // Promise that resolves once OCR has finished (success or failure). confirmSelfie awaits this
+  // so the certificate is never saved with empty Name/Father/Address fields.
+  const ocrPromiseRef = useRef<Promise<any | null> | null>(null);
 
   // Redirect away if KYC already exists
   useEffect(() => {
@@ -250,26 +253,31 @@ const EkycPage = () => {
     setPendingBack(null);
     setStep("selfie");
     // Kick off OCR in the background using the captured front + back images.
-    (async () => {
+    // Store the promise so confirmSelfie can await it before saving the certificate.
+    ocrPromiseRef.current = (async () => {
       try {
-        if (!frontImg) return;
+        if (!frontImg) return null;
         const { data, error } = await supabase.functions.invoke("kyc-ocr", {
           body: { frontImage: frontImg, backImage: backDataUrl },
         });
         if (error) throw error;
         if (data?.name || data?.address) {
-          setOcr({
+          const parsed = {
             name: data.name ?? "",
-            relation_type: data.relation_type === "husband" ? "husband" : "father",
+            relation_type: (data.relation_type === "husband" ? "husband" : "father") as "father" | "husband",
             relation_name: data.relation_name ?? "",
             address: data.address ?? "",
             aadhaar_number: data.aadhaar_number ?? aadhaar.replace(/\D/g, ""),
-          });
+          };
+          setOcr(parsed);
           setOcrError(null);
+          return parsed;
         }
+        return null;
       } catch (e: any) {
         console.warn("[ekyc] OCR failed, will use manual data:", e?.message);
         setOcrError("OCR सेवा उपलब्ध नहीं — manual data used");
+        return null;
       }
     })();
     if (navigator.geolocation) {
@@ -290,16 +298,22 @@ const EkycPage = () => {
     try {
       if (!user) throw new Error("Not signed in");
       const aadhaarDigits = aadhaar.replace(/\D/g, "");
-      const relType = ocr?.relation_type === "husband" ? "husband" : "father";
+      // Wait for the background OCR to finish so Name/Father/Address are populated.
+      let resolvedOcr = ocr;
+      if (!resolvedOcr && ocrPromiseRef.current) {
+        const fromPromise = await ocrPromiseRef.current;
+        if (fromPromise) resolvedOcr = fromPromise;
+      }
+      const relType = resolvedOcr?.relation_type === "husband" ? "husband" : "father";
       const payload = {
         user_id: user.id,
         mobile,
         aadhaar_full: aadhaarDigits,
         aadhaar_last4: aadhaarDigits.slice(-4),
-        full_name: ocr?.name ?? "",
+        full_name: resolvedOcr?.name ?? "",
         relation_type: relType,
-        relation_name: ocr?.relation_name ?? "",
-        address: ocr?.address ?? "",
+        relation_name: resolvedOcr?.relation_name ?? "",
+        address: resolvedOcr?.address ?? "",
         latitude: gps?.lat ?? null,
         longitude: gps?.lng ?? null,
         aadhaar_front_url: null,
