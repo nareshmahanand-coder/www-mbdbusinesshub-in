@@ -546,6 +546,7 @@ const EkycPage = () => {
             <Scanner
               facing="environment"
               guide="rect"
+              mode="document"
               label="📄 आधार कार्ड का सामने का भाग दिखाएं / Show Aadhaar FRONT"
               onCapture={onAadhaarFrontCaptured}
             />
@@ -557,6 +558,7 @@ const EkycPage = () => {
             <Scanner
               facing="environment"
               guide="rect"
+              mode="document"
               label="📄 आधार कार्ड का पिछला भाग दिखाएं / Show Aadhaar BACK"
               onCapture={onAadhaarBackCaptured}
             />
@@ -580,6 +582,7 @@ const EkycPage = () => {
             <Scanner
               facing="user"
               guide="square"
+              mode="face"
               label="🤳 अपना चेहरा फ्रेम में रखें / Position your face"
               onCapture={onSelfieCaptured}
             />
