@@ -207,6 +207,10 @@ const EkycPage = () => {
   const [frontImg, setFrontImg] = useState<string | null>(null);
   const [backImg, setBackImg] = useState<string | null>(null);
   const [selfieImg, setSelfieImg] = useState<string | null>(null);
+  // Pending captures awaiting user confirmation per step.
+  const [pendingFront, setPendingFront] = useState<string | null>(null);
+  const [pendingBack, setPendingBack] = useState<string | null>(null);
+  const [pendingSelfie, setPendingSelfie] = useState<string | null>(null);
   const [gps, setGps] = useState<{ lat: number; lng: number } | null>(null);
   const [ocr, setOcr] = useState<{
     name: string; relation_type: "father" | "husband"; relation_name: string; address: string; aadhaar_number: string;
@@ -232,27 +236,18 @@ const EkycPage = () => {
   const mobileValid = /^\d{10}$/.test(mobile);
   const aadhaarValid = /^\d{12}$/.test(aadhaar.replace(/\s/g, ""));
 
-  const onAadhaarFrontCaptured = useCallback((dataUrl: string) => {
-    setFrontImg(dataUrl);
+  const confirmFront = useCallback(() => {
+    if (!pendingFront) return;
+    setFrontImg(pendingFront);
+    setPendingFront(null);
     setStep("aadhaar-back");
-  }, []);
+  }, [pendingFront]);
 
-  const onAadhaarBackCaptured = useCallback(async (dataUrl: string) => {
-    setBackImg(dataUrl);
-    // Run OCR
-    try {
-      const { data, error } = await supabase.functions.invoke("kyc-ocr", {
-        body: { frontImage: frontImg, backImage: dataUrl },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setOcr(data);
-      setOcrError(null);
-    } catch (e: any) {
-      setOcrError(e?.message ?? "OCR विफल / OCR failed. कृपया मैन्युअल रूप से जांचें।");
-    }
+  const confirmBack = useCallback(() => {
+    if (!pendingBack) return;
+    setBackImg(pendingBack);
+    setPendingBack(null);
     setStep("selfie");
-    // request GPS in parallel
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
@@ -260,15 +255,34 @@ const EkycPage = () => {
         { enableHighAccuracy: true, timeout: 10000 }
       );
     }
-  }, [frontImg]);
+  }, [pendingBack]);
 
-  const onSelfieCaptured = useCallback(async (dataUrl: string) => {
-    setSelfieImg(dataUrl);
+  const confirmSelfie = useCallback(async () => {
+    if (!pendingSelfie) return;
+    const selfieDataUrl = pendingSelfie;
+    setSelfieImg(selfieDataUrl);
+    setPendingSelfie(null);
     setStep("processing");
     // Wait minimum 3s, perform uploads + insert
     const minDelay = new Promise((r) => setTimeout(r, 3000));
     try {
       if (!user) throw new Error("Not signed in");
+      // Run OCR now (after both Aadhaar sides are confirmed).
+      let ocrData = ocr;
+      if (!ocrData) {
+        try {
+          const { data, error } = await supabase.functions.invoke("kyc-ocr", {
+            body: { frontImage: frontImg, backImage: backImg },
+          });
+          if (error) throw error;
+          if (data?.error) throw new Error(data.error);
+          ocrData = data;
+          setOcr(data);
+          setOcrError(null);
+        } catch (e: any) {
+          setOcrError(e?.message ?? "OCR विफल / OCR failed");
+        }
+      }
       const ts = Date.now();
       const upload = async (name: string, dataUrl: string) => {
         const blob = dataUrlToBlob(dataUrl);
@@ -282,18 +296,18 @@ const EkycPage = () => {
       const [frontUrl, backUrl, selfieUrl] = await Promise.all([
         upload("front", frontImg!),
         upload("back", backImg!),
-        upload("selfie", dataUrl),
+        upload("selfie", selfieDataUrl),
       ]);
 
-      const aadhaarDigits = (ocr?.aadhaar_number ?? aadhaar).replace(/\D/g, "");
+      const aadhaarDigits = (ocrData?.aadhaar_number ?? aadhaar).replace(/\D/g, "");
       const payload = {
         user_id: user.id,
         mobile,
         aadhaar_last4: aadhaarDigits.slice(-4),
-        full_name: ocr?.name ?? "",
-        relation_type: ocr?.relation_type ?? "father",
-        relation_name: ocr?.relation_name ?? "",
-        address: ocr?.address ?? "",
+        full_name: ocrData?.name ?? "",
+        relation_type: ocrData?.relation_type ?? "father",
+        relation_name: ocrData?.relation_name ?? "",
+        address: ocrData?.address ?? "",
         latitude: gps?.lat ?? null,
         longitude: gps?.lng ?? null,
         aadhaar_front_url: frontUrl,
@@ -317,7 +331,7 @@ const EkycPage = () => {
       toast.error(e?.message ?? "सत्यापन विफल / Verification failed");
       setStep("selfie");
     }
-  }, [user, frontImg, backImg, ocr, mobile, aadhaar, gps]);
+  }, [pendingSelfie, user, frontImg, backImg, ocr, mobile, aadhaar, gps]);
 
   if (authLoading || checking) {
     return (
@@ -385,7 +399,10 @@ const EkycPage = () => {
               guide="rect"
               mode="document"
               label="📄 आधार कार्ड का सामने का भाग दिखाएं / Show Aadhaar FRONT"
-              onCapture={onAadhaarFrontCaptured}
+              onCapture={setPendingFront}
+              preview={pendingFront}
+              onRetake={() => setPendingFront(null)}
+              onConfirm={confirmFront}
             />
           </Card>
         )}
@@ -397,7 +414,10 @@ const EkycPage = () => {
               guide="rect"
               mode="document"
               label="📄 आधार कार्ड का पिछला भाग दिखाएं / Show Aadhaar BACK"
-              onCapture={onAadhaarBackCaptured}
+              onCapture={setPendingBack}
+              preview={pendingBack}
+              onRetake={() => setPendingBack(null)}
+              onConfirm={confirmBack}
             />
           </Card>
         )}
@@ -418,10 +438,13 @@ const EkycPage = () => {
             )}
             <Scanner
               facing="user"
-              guide="square"
+              guide="oval"
               mode="face"
               label="🤳 अपना चेहरा फ्रेम में रखें / Position your face"
-              onCapture={onSelfieCaptured}
+              onCapture={setPendingSelfie}
+              preview={pendingSelfie}
+              onRetake={() => setPendingSelfie(null)}
+              onConfirm={confirmSelfie}
             />
             {gps && (
               <p className="flex items-center justify-center gap-1 text-xs text-[#39FF14]">
