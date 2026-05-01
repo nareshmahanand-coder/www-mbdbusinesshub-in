@@ -308,7 +308,7 @@ const EkycPage = () => {
       if (insErr) throw insErr;
       setExisting(inserted);
       setStep("verified");
-      window.location.replace("/membership");
+      window.location.href = "/membership";
     } catch (e: any) {
       console.error("[ekyc] verification failed:", e);
       toast.error(e?.message ?? "सत्यापन विफल / Verification failed");
