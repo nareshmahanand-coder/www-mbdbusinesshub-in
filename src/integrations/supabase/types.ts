@@ -724,6 +724,66 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_verifications: {
+        Row: {
+          aadhaar_back_url: string | null
+          aadhaar_front_url: string | null
+          aadhaar_last4: string
+          address: string
+          created_at: string
+          full_name: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          mobile: string
+          relation_name: string
+          relation_type: string
+          selfie_url: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          verified_at: string
+        }
+        Insert: {
+          aadhaar_back_url?: string | null
+          aadhaar_front_url?: string | null
+          aadhaar_last4: string
+          address?: string
+          created_at?: string
+          full_name: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          mobile: string
+          relation_name?: string
+          relation_type?: string
+          selfie_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string
+        }
+        Update: {
+          aadhaar_back_url?: string | null
+          aadhaar_front_url?: string | null
+          aadhaar_last4?: string
+          address?: string
+          created_at?: string
+          full_name?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          mobile?: string
+          relation_name?: string
+          relation_type?: string
+          selfie_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string
+        }
+        Relationships: []
+      }
       last_known_locations: {
         Row: {
           accuracy: number | null
