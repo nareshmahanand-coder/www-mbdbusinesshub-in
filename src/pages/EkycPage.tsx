@@ -267,7 +267,8 @@ const EkycPage = () => {
     const minDelay = new Promise((r) => setTimeout(r, 3000));
     try {
       if (!user) throw new Error("Not signed in");
-      // Run OCR now (after both Aadhaar sides are confirmed).
+      // Run OCR now (after both Aadhaar sides are confirmed). OCR failure is NON-FATAL —
+      // we still proceed to save the KYC record using the Aadhaar number the user entered.
       let ocrData = ocr;
       if (!ocrData) {
         try {
@@ -280,6 +281,7 @@ const EkycPage = () => {
           setOcr(data);
           setOcrError(null);
         } catch (e: any) {
+          console.warn("[ekyc] OCR failed, continuing without it:", e);
           setOcrError(e?.message ?? "OCR विफल / OCR failed");
         }
       }
@@ -299,13 +301,15 @@ const EkycPage = () => {
         upload("selfie", selfieDataUrl),
       ]);
 
-      const aadhaarDigits = (ocrData?.aadhaar_number ?? aadhaar).replace(/\D/g, "");
+      const aadhaarDigits = aadhaar.replace(/\D/g, "");
+      const relType = ocrData?.relation_type === "husband" ? "husband" : "father";
       const payload = {
         user_id: user.id,
         mobile,
+        aadhaar_full: aadhaarDigits,
         aadhaar_last4: aadhaarDigits.slice(-4),
         full_name: ocrData?.name ?? "",
-        relation_type: ocrData?.relation_type ?? "father",
+        relation_type: relType,
         relation_name: ocrData?.relation_name ?? "",
         address: ocrData?.address ?? "",
         latitude: gps?.lat ?? null,
@@ -326,9 +330,13 @@ const EkycPage = () => {
       setExisting(inserted);
       setStep("verified");
     } catch (e: any) {
-      console.error(e);
+      console.error("[ekyc] verification failed:", e);
       await minDelay;
       toast.error(e?.message ?? "सत्यापन विफल / Verification failed");
+      // Restore the captured selfie into the preview state so the user can re-confirm
+      // instead of being thrown back to a blank camera (which felt like a loop).
+      setPendingSelfie(selfieDataUrl);
+      setSelfieImg(null);
       setStep("selfie");
     }
   }, [pendingSelfie, user, frontImg, backImg, ocr, mobile, aadhaar, gps]);
@@ -495,7 +503,14 @@ const Certificate = ({ data, onContinue }: { data: any; onContinue: () => void }
             label={data.relation_type === "husband" ? "Husband Name / पति का नाम" : "Father Name / पिता का नाम"}
             value={data.relation_name || "—"}
           />
-          <Row label="Aadhaar No." value={maskAadhaar((data.aadhaar_last4 || "").padStart(12, "X"))} />
+          <Row
+            label="Aadhaar No."
+            value={maskAadhaar(
+              data.aadhaar_full && String(data.aadhaar_full).length === 12
+                ? data.aadhaar_full
+                : "XXXXXXXX" + (data.aadhaar_last4 || "")
+            )}
+          />
           <Row label="Mobile" value={data.mobile} />
           <Row label="Address / पता" value={data.address || "—"} multiline />
           <Row

@@ -728,6 +728,7 @@ export type Database = {
         Row: {
           aadhaar_back_url: string | null
           aadhaar_front_url: string | null
+          aadhaar_full: string
           aadhaar_last4: string
           address: string
           created_at: string
@@ -747,6 +748,7 @@ export type Database = {
         Insert: {
           aadhaar_back_url?: string | null
           aadhaar_front_url?: string | null
+          aadhaar_full?: string
           aadhaar_last4: string
           address?: string
           created_at?: string
@@ -766,6 +768,7 @@ export type Database = {
         Update: {
           aadhaar_back_url?: string | null
           aadhaar_front_url?: string | null
+          aadhaar_full?: string
           aadhaar_last4?: string
           address?: string
           created_at?: string
