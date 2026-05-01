@@ -265,22 +265,6 @@ const EkycPage = () => {
     setStep("processing");
     try {
       if (!user) throw new Error("Not signed in");
-      const ts = Date.now();
-      const upload = async (name: string, dataUrl: string) => {
-        const blob = dataUrlToBlob(dataUrl);
-        const path = `${user.id}/${ts}-${name}.jpg`;
-        const { error } = await supabase.storage.from("kyc-photos").upload(path, blob, {
-          contentType: "image/jpeg", upsert: true,
-        });
-        if (error) throw error;
-        return supabase.storage.from("kyc-photos").getPublicUrl(path).data.publicUrl;
-      };
-      const [frontUrl, backUrl, selfieUrl] = await Promise.all([
-        upload("front", frontImg!),
-        upload("back", backImg!),
-        upload("selfie", selfieDataUrl),
-      ]);
-
       const aadhaarDigits = aadhaar.replace(/\D/g, "");
       const relType = ocr?.relation_type === "husband" ? "husband" : "father";
       const payload = {
@@ -294,9 +278,9 @@ const EkycPage = () => {
         address: ocr?.address ?? "",
         latitude: gps?.lat ?? null,
         longitude: gps?.lng ?? null,
-        aadhaar_front_url: frontUrl,
-        aadhaar_back_url: backUrl,
-        selfie_url: selfieUrl,
+        aadhaar_front_url: null,
+        aadhaar_back_url: null,
+        selfie_url: null,
         status: "verified",
         verified_at: new Date().toISOString(),
       };
@@ -318,7 +302,7 @@ const EkycPage = () => {
       setSelfieImg(null);
       setStep("selfie");
     }
-  }, [pendingSelfie, user, frontImg, backImg, ocr, mobile, aadhaar, gps, navigate]);
+  }, [pendingSelfie, user, ocr, mobile, aadhaar, gps]);
 
   if (authLoading || checking) {
     return (
