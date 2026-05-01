@@ -473,6 +473,13 @@ const EkycPage = () => {
 };
 
 const Certificate = ({ data, onContinue }: { data: any; onContinue: () => void }) => {
+  const aadhaarDigits = String(data.aadhaar_full || "").replace(/\D/g, "");
+  const aadhaarFormatted =
+    aadhaarDigits.length === 12
+      ? `${aadhaarDigits.slice(0, 4)} ${aadhaarDigits.slice(4, 8)} ${aadhaarDigits.slice(8, 12)}`
+      : data.aadhaar_last4
+        ? `XXXX XXXX ${data.aadhaar_last4}`
+        : "—";
   return (
     <Card className="relative overflow-hidden border-4 border-[#FF8C00] bg-white p-6 text-black shadow-2xl">
       {/* Verified stamp */}
@@ -495,15 +502,11 @@ const Certificate = ({ data, onContinue }: { data: any; onContinue: () => void }
             label={data.relation_type === "husband" ? "Husband Name / पति का नाम" : "Father Name / पिता का नाम"}
             value={data.relation_name || "—"}
           />
-          <Row
-            label="Aadhaar No."
-            value={maskAadhaar(
-              data.aadhaar_full && String(data.aadhaar_full).length === 12
-                ? data.aadhaar_full
-                : "XXXXXXXX" + (data.aadhaar_last4 || "")
-            )}
-          />
-          <Row label="Mobile" value={data.mobile} />
+          <div className="rounded-md border-2 border-[#1a237e] bg-[#1a237e]/5 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500">Aadhaar No. / आधार संख्या</p>
+            <p className="text-lg font-extrabold tracking-[0.2em] text-[#1a237e]">{aadhaarFormatted}</p>
+          </div>
+          <Row label="Mobile / मोबाइल" value={data.mobile} />
           <Row label="Address / पता" value={data.address || "—"} multiline />
           <Row
             label="GPS"
@@ -520,6 +523,38 @@ const Certificate = ({ data, onContinue }: { data: any; onContinue: () => void }
             </div>
           )}
           <p className="text-[10px] text-gray-500">Live Selfie</p>
+        </div>
+      </div>
+
+      {/* Aadhaar Front/Back previews */}
+      <div className="mt-4 grid grid-cols-2 gap-3 border-t-2 border-dashed border-gray-300 pt-3">
+        <div>
+          <p className="mb-1 text-[10px] uppercase tracking-wider text-gray-500">Aadhaar Front / सामने</p>
+          {data.aadhaar_front_preview || data.aadhaar_front_url ? (
+            <img
+              src={data.aadhaar_front_preview || data.aadhaar_front_url}
+              alt="Aadhaar Front"
+              className="h-24 w-full rounded-md border-2 border-gray-300 object-cover"
+            />
+          ) : (
+            <div className="flex h-24 w-full items-center justify-center rounded-md border-2 border-dashed border-gray-300 text-[10px] text-gray-400">
+              No image
+            </div>
+          )}
+        </div>
+        <div>
+          <p className="mb-1 text-[10px] uppercase tracking-wider text-gray-500">Aadhaar Back / पीछे</p>
+          {data.aadhaar_back_preview || data.aadhaar_back_url ? (
+            <img
+              src={data.aadhaar_back_preview || data.aadhaar_back_url}
+              alt="Aadhaar Back"
+              className="h-24 w-full rounded-md border-2 border-gray-300 object-cover"
+            />
+          ) : (
+            <div className="flex h-24 w-full items-center justify-center rounded-md border-2 border-dashed border-gray-300 text-[10px] text-gray-400">
+              No image
+            </div>
+          )}
         </div>
       </div>
 
