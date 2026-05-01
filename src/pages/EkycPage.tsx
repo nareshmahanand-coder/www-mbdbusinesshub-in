@@ -218,6 +218,7 @@ const EkycPage = () => {
   const [ocrError, setOcrError] = useState<string | null>(null);
   const [existing, setExisting] = useState<any | null>(null);
   const [checking, setChecking] = useState(true);
+  const [processingError, setProcessingError] = useState<string | null>(null);
 
   // Redirect away if KYC already exists
   useEffect(() => {
@@ -260,9 +261,12 @@ const EkycPage = () => {
   const confirmSelfie = useCallback(async () => {
     if (!pendingSelfie) return;
     const selfieDataUrl = pendingSelfie;
+    // Synchronously advance UI within the user gesture so the Scanner unmounts
+    // (its cleanup stops the camera stream) and we never bounce back to selfie.
     setSelfieImg(selfieDataUrl);
     setPendingSelfie(null);
     setStep("processing");
+    setProcessingError(null);
     // Wait minimum 3s, perform uploads + insert
     const minDelay = new Promise((r) => setTimeout(r, 3000));
     try {
@@ -281,6 +285,8 @@ const EkycPage = () => {
           setOcrError(null);
         } catch (e: any) {
           setOcrError(e?.message ?? "OCR विफल / OCR failed");
+          // Do NOT abort — proceed with whatever the user typed so we still reach
+          // the Verified certificate. Admin can review later.
         }
       }
       const ts = Date.now();
@@ -328,8 +334,10 @@ const EkycPage = () => {
     } catch (e: any) {
       console.error(e);
       await minDelay;
-      toast.error(e?.message ?? "सत्यापन विफल / Verification failed");
-      setStep("selfie");
+      const msg = e?.message ?? "सत्यापन विफल / Verification failed";
+      toast.error(msg);
+      // Stay on processing screen with retry — never re-open the selfie camera.
+      setProcessingError(msg);
     }
   }, [pendingSelfie, user, frontImg, backImg, ocr, mobile, aadhaar, gps]);
 
@@ -456,11 +464,33 @@ const EkycPage = () => {
 
         {step === "processing" && (
           <Card className="flex flex-col items-center gap-4 border-white/10 bg-white/5 p-10 text-center">
-            <Loader2 className="h-16 w-16 animate-spin text-[#FF8C00]" />
-            <p className="font-hindi text-base font-semibold text-white">
-              आपके दस्तावेजों को सत्यापित किया जा रहा है...
-            </p>
-            <p className="text-xs text-yellow-200">कृपया बैक बटन न दबाएं या ऐप बंद न करें।</p>
+            {!processingError ? (
+              <>
+                <Loader2 className="h-16 w-16 animate-spin text-[#FF8C00]" />
+                <p className="font-hindi text-base font-semibold text-white">
+                  आपके दस्तावेजों को सत्यापित किया जा रहा है...
+                </p>
+                <p className="text-xs text-yellow-200">कृपया बैक बटन न दबाएं या ऐप बंद न करें।</p>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="h-12 w-12 text-red-400" />
+                <p className="text-sm font-semibold text-white">सत्यापन विफल / Verification failed</p>
+                <p className="text-xs text-red-200">{processingError}</p>
+                <Button
+                  onClick={() => {
+                    // Re-run the same submission with the already-captured selfie.
+                    setPendingSelfie(selfieImg);
+                    setProcessingError(null);
+                    // Defer to next tick so confirmSelfie picks up pendingSelfie.
+                    setTimeout(() => confirmSelfie(), 0);
+                  }}
+                  className="mt-2 bg-[#FF8C00] font-bold text-white hover:bg-[#FF8C00]/90"
+                >
+                  पुनः प्रयास करें / Retry
+                </Button>
+              </>
+            )}
           </Card>
         )}
 
