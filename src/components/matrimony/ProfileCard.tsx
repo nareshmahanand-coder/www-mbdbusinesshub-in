@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Heart, Eye, MapPin, Briefcase, GraduationCap, Ruler, ShieldCheck, Send, Circle } from "lucide-react";
+import { Heart, Eye, MapPin, Briefcase, GraduationCap, Ruler, Send, Circle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { MatrimonyProfile } from "@/pages/MatrimonyPage";
@@ -19,7 +19,6 @@ interface Props {
 const MatrimonyProfileCard = ({ profile: p, isRecommended, userId }: Props) => {
   const [viewOpen, setViewOpen] = useState(false);
   const age = getAge(p.dob);
-  const isVerified = !!p.aadhar_url && !!p.pan_url;
   const isOnline = Math.random() > 0.5; // Simulated — replace with real presence
 
   const requestContact = async () => {
@@ -121,7 +120,6 @@ const MatrimonyProfileCard = ({ profile: p, isRecommended, userId }: Props) => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {p.name}
-              {isVerified && <ShieldCheck className="h-4 w-4 text-[hsl(140,60%,35%)]" />}
             </DialogTitle>
           </DialogHeader>
 

@@ -756,7 +756,6 @@ export type Database = {
       }
       matrimony_profiles: {
         Row: {
-          aadhar_url: string | null
           about_me: string | null
           admin_notes: string
           city: string | null
@@ -772,7 +771,6 @@ export type Database = {
           job_details: string | null
           moderation_status: string
           name: string
-          pan_url: string | null
           photos: string[] | null
           profession: string | null
           subscription_end: string | null
@@ -782,7 +780,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          aadhar_url?: string | null
           about_me?: string | null
           admin_notes?: string
           city?: string | null
@@ -798,7 +795,6 @@ export type Database = {
           job_details?: string | null
           moderation_status?: string
           name?: string
-          pan_url?: string | null
           photos?: string[] | null
           profession?: string | null
           subscription_end?: string | null
@@ -808,7 +804,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          aadhar_url?: string | null
           about_me?: string | null
           admin_notes?: string
           city?: string | null
@@ -824,7 +819,6 @@ export type Database = {
           job_details?: string | null
           moderation_status?: string
           name?: string
-          pan_url?: string | null
           photos?: string[] | null
           profession?: string | null
           subscription_end?: string | null
@@ -880,7 +874,6 @@ export type Database = {
       merchant_profiles: {
         Row: {
           aadhaar_last4: string | null
-          aadhar_url: string | null
           access_status: string
           address: string | null
           admin_notes: string
@@ -888,15 +881,12 @@ export type Database = {
           city: string | null
           created_at: string
           description: string | null
-          fssai_url: string | null
-          gst_url: string | null
           id: string
           is_premium: boolean | null
           is_verified: boolean | null
           latitude: number | null
           longitude: number | null
           owner_name: string | null
-          pan_url: string | null
           phone: string | null
           photos: string[] | null
           pincode: string | null
@@ -913,7 +903,6 @@ export type Database = {
         }
         Insert: {
           aadhaar_last4?: string | null
-          aadhar_url?: string | null
           access_status?: string
           address?: string | null
           admin_notes?: string
@@ -921,15 +910,12 @@ export type Database = {
           city?: string | null
           created_at?: string
           description?: string | null
-          fssai_url?: string | null
-          gst_url?: string | null
           id?: string
           is_premium?: boolean | null
           is_verified?: boolean | null
           latitude?: number | null
           longitude?: number | null
           owner_name?: string | null
-          pan_url?: string | null
           phone?: string | null
           photos?: string[] | null
           pincode?: string | null
@@ -946,7 +932,6 @@ export type Database = {
         }
         Update: {
           aadhaar_last4?: string | null
-          aadhar_url?: string | null
           access_status?: string
           address?: string | null
           admin_notes?: string
@@ -954,15 +939,12 @@ export type Database = {
           city?: string | null
           created_at?: string
           description?: string | null
-          fssai_url?: string | null
-          gst_url?: string | null
           id?: string
           is_premium?: boolean | null
           is_verified?: boolean | null
           latitude?: number | null
           longitude?: number | null
           owner_name?: string | null
-          pan_url?: string | null
           phone?: string | null
           photos?: string[] | null
           pincode?: string | null
