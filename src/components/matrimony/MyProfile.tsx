@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Crown, Image, Loader2 } from "lucide-react";
+import { User, Crown, Image, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import type { MatrimonyProfile } from "@/pages/MatrimonyPage";
 import { startMarriageBureauPaymentLink, syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
@@ -24,6 +24,15 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
   const [failedPlan, setFailedPlan] = useState<"monthly" | "yearly" | null>(null);
   const [syncingPlan, setSyncingPlan] = useState<"monthly" | "yearly" | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const aadhaarFrontRef = useRef<HTMLInputElement>(null);
+  const aadhaarBackRef = useRef<HTMLInputElement>(null);
+  const panRef = useRef<HTMLInputElement>(null);
+  const [aadhaarFrontUrl, setAadhaarFrontUrl] = useState<string>("");
+  const [aadhaarBackUrl, setAadhaarBackUrl] = useState<string>("");
+  const [panUrl, setPanUrl] = useState<string>("");
+  const [aadhaarNumber, setAadhaarNumber] = useState("");
+  const [panNumber, setPanNumber] = useState("");
+  const [kycUploading, setKycUploading] = useState(false);
   const [form, setForm] = useState({
     name: "", gender: "", dob: "", height: "", education: "",
     profession: "", city: "", about_me: "", family_background: "",
@@ -38,8 +47,36 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
         city: myProfile.city, about_me: myProfile.about_me, family_background: myProfile.family_background || "",
         hobbies: myProfile.hobbies || "", job_details: myProfile.job_details || "",
       });
+      setAadhaarFrontUrl(myProfile.aadhaar_front_url || "");
+      setAadhaarBackUrl(myProfile.aadhaar_back_url || "");
+      setPanUrl(myProfile.pan_url || "");
+      setAadhaarNumber(myProfile.aadhaar_number || "");
+      setPanNumber(myProfile.pan_number || "");
     }
   }, [myProfile]);
+
+  const isAadhaarValid = /^\d{12}$/.test(aadhaarNumber);
+  const isPanValid = /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(panNumber.toUpperCase());
+  const kycReady = !!aadhaarFrontUrl && !!aadhaarBackUrl && !!panUrl && isAadhaarValid && isPanValid;
+
+  const handleKycUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    folder: string,
+    setter: (url: string) => void,
+  ) => {
+    if (!user) { toast.error("Please login first"); return; }
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setKycUploading(true);
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}/matrimony-${folder}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("uploads").upload(path, file);
+    if (error) { toast.error("Upload failed"); setKycUploading(false); return; }
+    const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
+    setter(urlData.publicUrl);
+    toast.success("Document uploaded!");
+    setKycUploading(false);
+  };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!user || !myProfile) { toast.error("Please create profile first"); return; }
@@ -102,17 +139,65 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
 
   const handleSave = async () => {
     if (!user) return;
+    if (!isAadhaarValid) { toast.error("कृपया मान्य 12-अंकीय आधार नंबर दर्ज करें"); return; }
+    if (!isPanValid) { toast.error("कृपया मान्य PAN नंबर दर्ज करें (ABCDE1234F)"); return; }
+    if (!aadhaarFrontUrl || !aadhaarBackUrl) { toast.error("आधार कार्ड के दोनों फ़ोटो अपलोड करें"); return; }
+    if (!panUrl) { toast.error("PAN कार्ड का फ़ोटो अपलोड करें"); return; }
     setSaving(true);
-    const payload = { ...form, user_id: user.id, updated_at: new Date().toISOString() };
+    const payload = {
+      ...form,
+      user_id: user.id,
+      updated_at: new Date().toISOString(),
+      aadhaar_number: aadhaarNumber,
+      aadhaar_front_url: aadhaarFrontUrl,
+      aadhaar_back_url: aadhaarBackUrl,
+      pan_number: panNumber.toUpperCase(),
+      pan_url: panUrl,
+    };
     if (myProfile) {
       const { error } = await supabase.from("matrimony_profiles").update(payload).eq("id", myProfile.id);
-      if (error) toast.error("Save failed"); else { toast.success("Profile updated!"); onReload(); }
+      if (error) toast.error("Save failed"); else {
+        toast.success("Profile updated! कृपया सब्सक्रिप्शन चुनें।");
+        onReload();
+        setTimeout(() => document.getElementById("matrimony-subscription")?.scrollIntoView({ behavior: "smooth" }), 200);
+      }
     } else {
       const { error } = await supabase.from("matrimony_profiles").insert(payload);
-      if (error) toast.error("Save failed"); else { toast.success("Profile created!"); onReload(); }
+      if (error) toast.error("Save failed"); else {
+        toast.success("Profile created! कृपया सब्सक्रिप्शन चुनें।");
+        onReload();
+        setTimeout(() => document.getElementById("matrimony-subscription")?.scrollIntoView({ behavior: "smooth" }), 200);
+      }
     }
     setSaving(false);
   };
+
+  const KycTile = ({
+    label, hindi, url, onPick, onClear,
+  }: { label: string; hindi: string; url: string; onPick: () => void; onClear: () => void; }) => (
+    <div className="rounded-xl border-2 border-dashed border-border p-2 bg-white/60">
+      <div className="mb-1.5">
+        <p className="text-xs font-semibold">{label} <span className="text-destructive">*</span></p>
+        <p className="font-hindi text-[10px] text-muted-foreground">{hindi}</p>
+      </div>
+      {url ? (
+        <div className="relative">
+          <img src={url} alt={label} className="h-24 w-full rounded-lg object-cover border border-border" />
+          <button type="button" onClick={onClear} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1">
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ) : (
+        <button type="button" onClick={onPick} disabled={kycUploading}
+          className="flex h-20 w-full items-center justify-center rounded-lg border border-dashed border-[#FF9933]/50 bg-[#FF9933]/5 hover:bg-[#FF9933]/10">
+          <div className="text-center">
+            <Upload className="mx-auto h-4 w-4 text-[#FF9933]" />
+            <p className="mt-0.5 text-[10px] font-semibold text-[#1a237e]">{kycUploading ? "Uploading..." : "Upload"}</p>
+          </div>
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <Card className="max-w-lg mx-auto bg-white border-0 shadow-sm">
