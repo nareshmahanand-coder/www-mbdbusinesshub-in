@@ -177,6 +177,95 @@ const MerchantPortal = () => {
     }
   };
 
+  const renderSubscriptionCard = () => (
+    <Card
+      id="merchant-subscription"
+      className="mb-6 overflow-hidden border-0 shadow-lg"
+      style={{
+        borderTop: "6px solid #FF9933",
+        borderBottom: "6px solid #138808",
+        background: "linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 50%, #ECFDF5 100%)",
+      }}
+    >
+      <CardHeader className="text-center">
+        <Crown className="mx-auto mb-1 h-8 w-8 text-[#FF9933]" />
+        <CardTitle className="font-hindi text-xl text-foreground">
+          मर्चेंट पोर्टल प्रीमियम • Merchant Premium
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <p className="font-hindi text-sm leading-relaxed text-foreground/90 bg-white/60 rounded-lg p-3 border border-border">
+          <strong>मर्चेंट पोर्टल प्रीमियम क्यों चुनें?</strong> प्रीमियम मर्चेंट बनने पर आपको जीरो कमीशन बिक्री, एडवांस वेंडर डैशबोर्ड और अपनी दुकान को प्राथमिकता के साथ लिस्ट करने की सुविधा मिलती है।
+        </p>
+        <ul className="space-y-2 font-hindi text-sm">
+          <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#138808]" /><span>0% कमीशन — पूरी कमाई आपकी।</span></li>
+          <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#138808]" /><span>दुकान के नाम के साथ <strong>'Verified'</strong> का निशान।</span></li>
+          <li className="flex items-start gap-2"><Eye className="mt-0.5 h-5 w-5 shrink-0 text-[#138808]" /><span>प्राथमिकता लिस्टिंग — सबसे ऊपर दिखेंगे।</span></li>
+        </ul>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {MERCHANT_PLANS.map((plan) => {
+            const isSaffron = plan.theme === "saffron";
+            const bg = isSaffron ? "#FF9933" : "#138808";
+            return (
+              <button
+                key={plan.id}
+                type="button"
+                onClick={() => handleSubscribe(plan)}
+                disabled={payingPlan !== null}
+                className="group flex flex-col items-center justify-center gap-1 rounded-xl px-4 py-5 text-white font-bold shadow-md transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-80"
+                style={{ backgroundColor: bg }}
+              >
+                {payingPlan === plan.id ? <Loader2 className="h-6 w-6 animate-spin" /> : <span className="text-base font-extrabold leading-tight">{plan.label}</span>}
+              </button>
+            );
+          })}
+        </div>
+        {failedPlan && (
+          <Button onClick={() => handleManualSync(failedPlan)} disabled={syncingPlan !== null} variant="outline" className="w-full">
+            {syncingPlan === failedPlan ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Manual Sync
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  const KycUploadTile = ({
+    label, hindi, url, onPick, onClear, optional, skipped, onSkipToggle,
+  }: { label: string; hindi: string; url: string; onPick: () => void; onClear: () => void; optional?: boolean; skipped?: boolean; onSkipToggle?: () => void; }) => (
+    <div className="rounded-xl border-2 border-dashed border-border p-3 bg-white/50">
+      <div className="flex items-center justify-between mb-2">
+        <Label className="text-sm">
+          {label} {optional ? <span className="text-xs text-muted-foreground">(Optional)</span> : <span className="text-destructive">*</span>}
+          <span className="block font-hindi text-[11px] text-muted-foreground">{hindi}</span>
+        </Label>
+        {optional && onSkipToggle && (
+          <Button type="button" size="sm" variant={skipped ? "secondary" : "outline"} onClick={onSkipToggle} className="h-7 px-2 text-[11px]">
+            {skipped ? "Skipped ✓" : "Skip"}
+          </Button>
+        )}
+      </div>
+      {url && !skipped ? (
+        <div className="relative">
+          <img src={url} alt={label} className="h-28 w-full rounded-lg object-cover border border-border" />
+          <button type="button" onClick={onClear} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1">
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ) : skipped ? (
+        <p className="text-center text-xs text-muted-foreground py-6">Skipped</p>
+      ) : (
+        <button type="button" onClick={onPick} disabled={uploading}
+          className="flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-[#FF9933]/50 bg-[#FF9933]/5 hover:bg-[#FF9933]/10 transition-colors">
+          <div className="text-center">
+            <Upload className="mx-auto h-5 w-5 text-[#FF9933]" />
+            <p className="mt-1 text-[11px] font-semibold text-[#1a237e]">{uploading ? "Uploading..." : "Upload"}</p>
+          </div>
+        </button>
+      )}
+    </div>
+  );
+
   if (submitted) {
     return (
       <div className="ashoka-watermark tiranga-bg min-h-screen">
