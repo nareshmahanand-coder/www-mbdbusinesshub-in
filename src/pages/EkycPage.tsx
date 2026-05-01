@@ -290,9 +290,9 @@ const EkycPage = () => {
         .select()
         .single();
       if (insErr) throw insErr;
-      setExisting(inserted);
+      setExisting({ ...inserted, selfie_preview: selfieDataUrl });
       setStep("verified");
-      window.location.href = "/membership";
+      // Stay on the verified certificate screen; user manually clicks Continue.
     } catch (e: any) {
       console.error("[ekyc] verification failed:", e);
       toast.error(e?.message ?? "सत्यापन विफल / Verification failed");
@@ -436,7 +436,7 @@ const EkycPage = () => {
         )}
 
         {step === "verified" && existing && (
-          <Certificate data={existing} onContinue={() => navigate("/membership", { replace: true })} />
+          <Certificate data={existing} onContinue={() => { window.location.href = "/dashboard"; }} />
         )}
       </div>
     </div>
@@ -483,8 +483,8 @@ const Certificate = ({ data, onContinue }: { data: any; onContinue: () => void }
           <Row label="Verified At" value={new Date(data.verified_at).toLocaleString("en-IN")} />
         </div>
         <div className="flex flex-col items-center justify-start gap-1">
-          {data.selfie_url ? (
-            <img src={data.selfie_url} alt="Selfie" className="h-32 w-32 rounded-lg border-2 border-[#1a237e] object-cover" />
+          {data.selfie_preview || data.selfie_url ? (
+            <img src={data.selfie_preview || data.selfie_url} alt="Selfie" className="h-32 w-32 rounded-lg border-2 border-[#1a237e] object-cover" />
           ) : (
             <div className="flex h-32 w-32 items-center justify-center rounded-lg border-2 border-dashed border-gray-400">
               <Camera className="h-8 w-8 text-gray-400" />
@@ -495,7 +495,7 @@ const Certificate = ({ data, onContinue }: { data: any; onContinue: () => void }
       </div>
 
       <Button onClick={onContinue} className="mt-6 w-full bg-[#1a237e] font-bold text-white hover:bg-[#1a237e]/90">
-        Continue to Membership / आगे बढ़ें
+        Continue to Dashboard / डैशबोर्ड पर जाएँ
       </Button>
     </Card>
   );
