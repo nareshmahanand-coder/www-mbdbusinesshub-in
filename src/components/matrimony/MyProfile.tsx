@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Crown, Image, Loader2 } from "lucide-react";
+import { User, Crown, Image, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import type { MatrimonyProfile } from "@/pages/MatrimonyPage";
 import { startMarriageBureauPaymentLink, syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
@@ -24,6 +24,15 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
   const [failedPlan, setFailedPlan] = useState<"monthly" | "yearly" | null>(null);
   const [syncingPlan, setSyncingPlan] = useState<"monthly" | "yearly" | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const aadhaarFrontRef = useRef<HTMLInputElement>(null);
+  const aadhaarBackRef = useRef<HTMLInputElement>(null);
+  const panRef = useRef<HTMLInputElement>(null);
+  const [aadhaarFrontUrl, setAadhaarFrontUrl] = useState<string>("");
+  const [aadhaarBackUrl, setAadhaarBackUrl] = useState<string>("");
+  const [panUrl, setPanUrl] = useState<string>("");
+  const [aadhaarNumber, setAadhaarNumber] = useState("");
+  const [panNumber, setPanNumber] = useState("");
+  const [kycUploading, setKycUploading] = useState(false);
   const [form, setForm] = useState({
     name: "", gender: "", dob: "", height: "", education: "",
     profession: "", city: "", about_me: "", family_background: "",
@@ -38,8 +47,36 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
         city: myProfile.city, about_me: myProfile.about_me, family_background: myProfile.family_background || "",
         hobbies: myProfile.hobbies || "", job_details: myProfile.job_details || "",
       });
+      setAadhaarFrontUrl(myProfile.aadhaar_front_url || "");
+      setAadhaarBackUrl(myProfile.aadhaar_back_url || "");
+      setPanUrl(myProfile.pan_url || "");
+      setAadhaarNumber(myProfile.aadhaar_number || "");
+      setPanNumber(myProfile.pan_number || "");
     }
   }, [myProfile]);
+
+  const isAadhaarValid = /^\d{12}$/.test(aadhaarNumber);
+  const isPanValid = /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(panNumber.toUpperCase());
+  const kycReady = !!aadhaarFrontUrl && !!aadhaarBackUrl && !!panUrl && isAadhaarValid && isPanValid;
+
+  const handleKycUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    folder: string,
+    setter: (url: string) => void,
+  ) => {
+    if (!user) { toast.error("Please login first"); return; }
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setKycUploading(true);
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}/matrimony-${folder}-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("uploads").upload(path, file);
+    if (error) { toast.error("Upload failed"); setKycUploading(false); return; }
+    const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
+    setter(urlData.publicUrl);
+    toast.success("Document uploaded!");
+    setKycUploading(false);
+  };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!user || !myProfile) { toast.error("Please create profile first"); return; }
@@ -102,17 +139,65 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
 
   const handleSave = async () => {
     if (!user) return;
+    if (!isAadhaarValid) { toast.error("कृपया मान्य 12-अंकीय आधार नंबर दर्ज करें"); return; }
+    if (!isPanValid) { toast.error("कृपया मान्य PAN नंबर दर्ज करें (ABCDE1234F)"); return; }
+    if (!aadhaarFrontUrl || !aadhaarBackUrl) { toast.error("आधार कार्ड के दोनों फ़ोटो अपलोड करें"); return; }
+    if (!panUrl) { toast.error("PAN कार्ड का फ़ोटो अपलोड करें"); return; }
     setSaving(true);
-    const payload = { ...form, user_id: user.id, updated_at: new Date().toISOString() };
+    const payload = {
+      ...form,
+      user_id: user.id,
+      updated_at: new Date().toISOString(),
+      aadhaar_number: aadhaarNumber,
+      aadhaar_front_url: aadhaarFrontUrl,
+      aadhaar_back_url: aadhaarBackUrl,
+      pan_number: panNumber.toUpperCase(),
+      pan_url: panUrl,
+    };
     if (myProfile) {
       const { error } = await supabase.from("matrimony_profiles").update(payload).eq("id", myProfile.id);
-      if (error) toast.error("Save failed"); else { toast.success("Profile updated!"); onReload(); }
+      if (error) toast.error("Save failed"); else {
+        toast.success("Profile updated! कृपया सब्सक्रिप्शन चुनें।");
+        onReload();
+        setTimeout(() => document.getElementById("matrimony-subscription")?.scrollIntoView({ behavior: "smooth" }), 200);
+      }
     } else {
       const { error } = await supabase.from("matrimony_profiles").insert(payload);
-      if (error) toast.error("Save failed"); else { toast.success("Profile created!"); onReload(); }
+      if (error) toast.error("Save failed"); else {
+        toast.success("Profile created! कृपया सब्सक्रिप्शन चुनें।");
+        onReload();
+        setTimeout(() => document.getElementById("matrimony-subscription")?.scrollIntoView({ behavior: "smooth" }), 200);
+      }
     }
     setSaving(false);
   };
+
+  const KycTile = ({
+    label, hindi, url, onPick, onClear,
+  }: { label: string; hindi: string; url: string; onPick: () => void; onClear: () => void; }) => (
+    <div className="rounded-xl border-2 border-dashed border-border p-2 bg-white/60">
+      <div className="mb-1.5">
+        <p className="text-xs font-semibold">{label} <span className="text-destructive">*</span></p>
+        <p className="font-hindi text-[10px] text-muted-foreground">{hindi}</p>
+      </div>
+      {url ? (
+        <div className="relative">
+          <img src={url} alt={label} className="h-24 w-full rounded-lg object-cover border border-border" />
+          <button type="button" onClick={onClear} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1">
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ) : (
+        <button type="button" onClick={onPick} disabled={kycUploading}
+          className="flex h-20 w-full items-center justify-center rounded-lg border border-dashed border-[#FF9933]/50 bg-[#FF9933]/5 hover:bg-[#FF9933]/10">
+          <div className="text-center">
+            <Upload className="mx-auto h-4 w-4 text-[#FF9933]" />
+            <p className="mt-0.5 text-[10px] font-semibold text-[#1a237e]">{kycUploading ? "Uploading..." : "Upload"}</p>
+          </div>
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <Card className="max-w-lg mx-auto bg-white border-0 shadow-sm">
@@ -150,6 +235,39 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
         <Textarea placeholder="Hobbies (शौक)" value={form.hobbies} onChange={e => setForm(f => ({...f, hobbies: e.target.value}))} rows={2} />
         <Textarea placeholder="About Me (अपने बारे में)..." value={form.about_me} onChange={e => setForm(f => ({...f, about_me: e.target.value}))} rows={3} />
 
+        {/* Mandatory KYC */}
+        <div className="rounded-xl border-2 border-[#1a237e]/20 bg-[#1a237e]/5 p-3 space-y-3">
+          <div className="text-center">
+            <p className="font-hindi text-sm font-bold text-[#1a237e]">अनिवार्य KYC दस्तावेज़</p>
+            <p className="text-[11px] text-muted-foreground">Aadhaar (Front + Back) और PAN फ़ोटो अनिवार्य हैं</p>
+          </div>
+          <Input
+            placeholder="Aadhaar Number * (12 digits)"
+            value={aadhaarNumber}
+            onChange={(e) => setAadhaarNumber(e.target.value.replace(/\D/g, '').slice(0, 12))}
+            maxLength={12}
+          />
+          <Input
+            placeholder="PAN Number * (ABCDE1234F)"
+            value={panNumber}
+            onChange={(e) => setPanNumber(e.target.value.toUpperCase().slice(0, 10))}
+            maxLength={10}
+          />
+          <input type="file" accept="image/*" ref={aadhaarFrontRef} className="hidden" onChange={(e) => handleKycUpload(e, "aadhaar-front", setAadhaarFrontUrl)} />
+          <input type="file" accept="image/*" ref={aadhaarBackRef} className="hidden" onChange={(e) => handleKycUpload(e, "aadhaar-back", setAadhaarBackUrl)} />
+          <input type="file" accept="image/*" ref={panRef} className="hidden" onChange={(e) => handleKycUpload(e, "pan", setPanUrl)} />
+          <div className="grid gap-2 grid-cols-3">
+            <KycTile label="Aadhaar Front" hindi="आधार फ्रंट" url={aadhaarFrontUrl} onPick={() => aadhaarFrontRef.current?.click()} onClear={() => setAadhaarFrontUrl("")} />
+            <KycTile label="Aadhaar Back" hindi="आधार बैक" url={aadhaarBackUrl} onPick={() => aadhaarBackRef.current?.click()} onClear={() => setAadhaarBackUrl("")} />
+            <KycTile label="PAN Card" hindi="पैन कार्ड" url={panUrl} onPick={() => panRef.current?.click()} onClear={() => setPanUrl("")} />
+          </div>
+          {!kycReady && (
+            <p className="text-center text-[11px] font-semibold text-destructive font-hindi">
+              सेव करने के लिए आधार और पैन के सभी फ़ोटो व नंबर भरना अनिवार्य है।
+            </p>
+          )}
+        </div>
+
         {/* Photo Upload */}
         <div>
           <label className="text-xs text-muted-foreground mb-1 block">Photos (फोटो)</label>
@@ -168,12 +286,16 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
           {!myProfile && <p className="text-[10px] text-muted-foreground mt-1">Create profile first to upload photos</p>}
         </div>
 
-        <Button onClick={handleSave} disabled={saving} className="w-full bg-[hsl(340,60%,25%)] hover:bg-[hsl(340,60%,30%)] text-white">
-          {saving ? "Saving..." : myProfile ? "Update Profile" : "Create Profile"}
+        <Button onClick={handleSave} disabled={saving || !kycReady || kycUploading} className="w-full bg-[hsl(340,60%,25%)] hover:bg-[hsl(340,60%,30%)] text-white">
+          {saving ? "Saving..." : myProfile ? "Update & Continue to Subscription" : "Create & Continue to Subscription"}
         </Button>
+        <p className="text-center font-hindi text-[11px] text-muted-foreground">
+          रजिस्ट्रेशन पूरा करने के लिए सब्सक्रिप्शन/भुगतान अनिवार्य है।
+        </p>
 
         {myProfile && !myProfile.is_published && (
           <Card
+            id="matrimony-subscription"
             className="overflow-hidden border-0 shadow-lg"
             style={{
               borderTop: "5px solid #FF9933",
