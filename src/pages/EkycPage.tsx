@@ -503,7 +503,14 @@ const Certificate = ({ data, onContinue }: { data: any; onContinue: () => void }
             label={data.relation_type === "husband" ? "Husband Name / पति का नाम" : "Father Name / पिता का नाम"}
             value={data.relation_name || "—"}
           />
-          <Row label="Aadhaar No." value={maskAadhaar((data.aadhaar_last4 || "").padStart(12, "X"))} />
+          <Row
+            label="Aadhaar No."
+            value={maskAadhaar(
+              data.aadhaar_full && String(data.aadhaar_full).length === 12
+                ? data.aadhaar_full
+                : "XXXXXXXX" + (data.aadhaar_last4 || "")
+            )}
+          />
           <Row label="Mobile" value={data.mobile} />
           <Row label="Address / पता" value={data.address || "—"} multiline />
           <Row
