@@ -237,10 +237,10 @@ const MerchantPortal = () => {
                   <Label htmlFor="ownerName">Owner Name *</Label>
                   <Input id="ownerName" placeholder="Business owner name" value={form.ownerName} onChange={(e) => setForm({ ...form, ownerName: e.target.value })} required />
                 </div>
-                <div>
-                  <Label htmlFor="aadhaarLast4">Aadhaar Last-4</Label>
-                  <Input id="aadhaarLast4" placeholder="1234" value={form.aadhaarLast4} onChange={(e) => setForm({ ...form, aadhaarLast4: e.target.value.replace(/\D/g, '').slice(0, 4) })} maxLength={4} />
-                </div>
+                 <div>
+                   <Label htmlFor="aadhaarNumber">Aadhaar Number * <span className="font-hindi">(आधार नंबर)</span></Label>
+                   <Input id="aadhaarNumber" placeholder="12-digit Aadhaar" value={form.aadhaarNumber} onChange={(e) => setForm({ ...form, aadhaarNumber: e.target.value.replace(/\D/g, '').slice(0, 12) })} maxLength={12} required />
+                 </div>
                 <div>
                   <Label htmlFor="shopName">Shop Name *</Label>
                   <Input id="shopName" placeholder="e.g., Sai Kirana" value={form.shopName} onChange={(e) => setForm({ ...form, shopName: e.target.value })} required />
@@ -248,6 +248,10 @@ const MerchantPortal = () => {
                 <div>
                   <Label htmlFor="shopNameHindi">दुकान का नाम (Hindi)</Label>
                   <Input id="shopNameHindi" placeholder="e.g., साई किराना" value={form.shopNameHindi} onChange={(e) => setForm({ ...form, shopNameHindi: e.target.value })} className="font-hindi" />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label htmlFor="panNumber">PAN Number * <span className="font-hindi">(पैन नंबर)</span></Label>
+                  <Input id="panNumber" placeholder="ABCDE1234F" value={form.panNumber} onChange={(e) => setForm({ ...form, panNumber: e.target.value.toUpperCase().slice(0, 10) })} maxLength={10} required />
                 </div>
               </div>
               <div>
