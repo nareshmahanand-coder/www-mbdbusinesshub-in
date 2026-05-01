@@ -27,8 +27,6 @@ export interface MatrimonyProfile {
   subscription_plan: string | null;
   subscription_end: string | null;
   user_id: string;
-  aadhar_url: string | null;
-  pan_url: string | null;
 }
 
 export const getAge = (dob: string | null) => {

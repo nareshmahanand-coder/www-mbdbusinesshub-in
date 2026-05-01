@@ -113,8 +113,6 @@ interface MatrimonyRecord {
   created_at: string;
   profile_email?: string | null;
   profile_phone?: string | null;
-  aadhar_url?: string | null;
-  pan_url?: string | null;
 }
 
 interface MerchantRecord {
@@ -133,10 +131,6 @@ interface MerchantRecord {
   suspension_reason: string | null;
   plan_override: string | null;
   plan_ends_at: string | null;
-  aadhar_url: string | null;
-  pan_url: string | null;
-  gst_url: string | null;
-  fssai_url: string | null;
   created_at: string;
   profile_email?: string | null;
   profile_phone?: string | null;
