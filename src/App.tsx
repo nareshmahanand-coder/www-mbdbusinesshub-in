@@ -26,13 +26,11 @@ import ServicesPage from "./pages/ServicesPage";
 import MyProfilePage from "./pages/MyProfilePage";
 import ShopProfilePage from "./pages/ShopProfilePage";
 import SkillDevelopmentPage from "./pages/SkillDevelopmentPage";
-import EkycPage from "./pages/EkycPage";
 import MembershipGatePage from "./pages/MembershipGatePage";
 import FamilySafetyPage from "./pages/FamilySafetyPage";
 import FamilyInvitePage from "./pages/FamilyInvitePage";
 import { useLastKnownLocation } from "@/hooks/useLastKnownLocation";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { useKycStatus } from "@/hooks/useKycStatus";
 import { useMembership } from "@/hooks/useMembership";
 
 import NotFound from "./pages/NotFound";
@@ -74,28 +72,22 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const KycRequiredRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading: authLoading, isSuperUser } = useAuth();
-  const { status, loading: kycLoading } = useKycStatus();
   const { isActive: membershipActive, loading: membershipLoading } = useMembership();
   const location = useLocation();
-  if (authLoading || (user && (kycLoading || membershipLoading))) return <FullScreenLoader />;
+  if (authLoading || (user && membershipLoading)) return <FullScreenLoader />;
   if (!user) {
     const next = `${location.pathname}${location.search}`;
     return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
   }
-  // Mandatory order: KYC first, then Membership
-  if (!isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
   if (!isSuperUser && !membershipActive) return <Navigate to="/membership" replace />;
   return <>{children}</>;
 };
 
 const MembershipRoute = () => {
   const { user, loading: authLoading, isSuperUser } = useAuth();
-  const { status, loading: kycLoading } = useKycStatus();
   const { isActive: membershipActive, loading: membershipLoading } = useMembership();
-  if (authLoading || (user && (membershipLoading || kycLoading))) return <FullScreenLoader />;
+  if (authLoading || (user && membershipLoading)) return <FullScreenLoader />;
   if (!user) return <Navigate to="/login?next=/membership" replace />;
-  // KYC must be at least submitted (pending or approved) before membership purchase
-  if (!isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
   if (!isSuperUser && membershipActive) return <Navigate to="/dashboard" replace />;
   return <MembershipGatePage onActivated={() => { window.location.href = "/dashboard"; }} />;
 };
@@ -104,19 +96,12 @@ const MerchantAccessRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const KycRoute = ({ children }: { children: React.ReactNode }) => {
-  return <>{children}</>;
-};
-
 const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, isSuperUser } = useAuth();
-  const { status, loading: kycLoading } = useKycStatus();
   const { isActive: membershipActive, loading: membershipLoading } = useMembership();
   const location = useLocation();
   const next = new URLSearchParams(location.search).get("next") || sessionStorage.getItem("mbd-auth-next") || "/dashboard";
-  if (loading || (user && (kycLoading || membershipLoading))) return <FullScreenLoader />;
-  // Mandatory order after login: KYC → Membership → Destination
-  if (user && !isSuperUser && (status === "none" || status === "rejected")) return <Navigate to="/ekyc" replace />;
+  if (loading || (user && membershipLoading)) return <FullScreenLoader />;
   if (user && !isSuperUser && !membershipActive) return <Navigate to="/membership" replace />;
   if (user) return <Navigate to={next.startsWith("/") ? next : "/dashboard"} replace />;
   return <>{children}</>;
@@ -139,7 +124,7 @@ const AppShell = () => {
         <Route path="/signup" element={<PublicLoginRoute><LoginPage initialMode="signup" /></PublicLoginRoute>} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/~oauth/*" element={<FullScreenLoader />} />
-        <Route path="/ekyc" element={<ProtectedRoute><KycRoute><EkycPage /></KycRoute></ProtectedRoute>} />
+        <Route path="/ekyc" element={<Navigate to="/membership" replace />} />
         <Route path="/membership" element={<MembershipRoute />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/contact" element={<LegalPage section="contact" />} />

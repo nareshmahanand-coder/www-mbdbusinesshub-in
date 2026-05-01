@@ -724,69 +724,6 @@ export type Database = {
         }
         Relationships: []
       }
-      kyc_requests: {
-        Row: {
-          aadhaar_back_url: string
-          aadhaar_front_url: string
-          aadhaar_linked_mobile: string
-          aadhaar_number: string
-          created_at: string
-          id: string
-          rejection_reason: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          selfie_url: string
-          selfie_with_aadhaar_url: string
-          status: string
-          surepass_client_id: string | null
-          surepass_data: Json | null
-          surepass_verified: boolean
-          surepass_verified_at: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          aadhaar_back_url: string
-          aadhaar_front_url: string
-          aadhaar_linked_mobile?: string
-          aadhaar_number: string
-          created_at?: string
-          id?: string
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          selfie_url: string
-          selfie_with_aadhaar_url?: string
-          status?: string
-          surepass_client_id?: string | null
-          surepass_data?: Json | null
-          surepass_verified?: boolean
-          surepass_verified_at?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          aadhaar_back_url?: string
-          aadhaar_front_url?: string
-          aadhaar_linked_mobile?: string
-          aadhaar_number?: string
-          created_at?: string
-          id?: string
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          selfie_url?: string
-          selfie_with_aadhaar_url?: string
-          status?: string
-          surepass_client_id?: string | null
-          surepass_data?: Json | null
-          surepass_verified?: boolean
-          surepass_verified_at?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       last_known_locations: {
         Row: {
           accuracy: number | null

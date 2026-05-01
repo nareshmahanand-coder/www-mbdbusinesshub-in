@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, Crown, Image, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import KycDocUpload from "@/components/KycDocUpload";
 import type { MatrimonyProfile } from "@/pages/MatrimonyPage";
 import { startMarriageBureauPaymentLink, syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
 
@@ -25,8 +24,6 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
   const [failedPlan, setFailedPlan] = useState<"monthly" | "yearly" | null>(null);
   const [syncingPlan, setSyncingPlan] = useState<"monthly" | "yearly" | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [aadharUrl, setAadharUrl] = useState("");
-  const [panUrl, setPanUrl] = useState("");
   const [form, setForm] = useState({
     name: "", gender: "", dob: "", height: "", education: "",
     profession: "", city: "", about_me: "", family_background: "",
@@ -35,8 +32,6 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
 
   useEffect(() => {
     if (myProfile) {
-      setAadharUrl(myProfile.aadhar_url || "");
-      setPanUrl(myProfile.pan_url || "");
       setForm({
         name: myProfile.name, gender: myProfile.gender, dob: myProfile.dob || "",
         height: myProfile.height, education: myProfile.education, profession: myProfile.profession,
@@ -107,10 +102,8 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
 
   const handleSave = async () => {
     if (!user) return;
-    if (!aadharUrl) { toast.error("कृपया आधार कार्ड की फोटो अपलोड करें"); return; }
-    if (!panUrl) { toast.error("कृपया पैन कार्ड की फोटो अपलोड करें"); return; }
     setSaving(true);
-    const payload = { ...form, user_id: user.id, aadhar_url: aadharUrl, pan_url: panUrl, updated_at: new Date().toISOString() };
+    const payload = { ...form, user_id: user.id, updated_at: new Date().toISOString() };
     if (myProfile) {
       const { error } = await supabase.from("matrimony_profiles").update(payload).eq("id", myProfile.id);
       if (error) toast.error("Save failed"); else { toast.success("Profile updated!"); onReload(); }
@@ -173,15 +166,6 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
             {uploading ? "Uploading..." : "Upload Photo"}
           </Button>
           {!myProfile && <p className="text-[10px] text-muted-foreground mt-1">Create profile first to upload photos</p>}
-        </div>
-
-        {/* KYC Documents */}
-        <div className="rounded-xl border border-border bg-[hsl(340,20%,97%)] p-4 space-y-3">
-          <p className="text-sm font-semibold text-foreground">📄 KYC Documents • <span className="font-hindi">दस्तावेज़ सत्यापन</span></p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <KycDocUpload label="Aadhar Card" labelHindi="आधार कार्ड" required value={aadharUrl} onChange={setAadharUrl} userId={user?.id || ""} folder="kyc-aadhar" />
-            <KycDocUpload label="PAN Card" labelHindi="पैन कार्ड" required value={panUrl} onChange={setPanUrl} userId={user?.id || ""} folder="kyc-pan" />
-          </div>
         </div>
 
         <Button onClick={handleSave} disabled={saving} className="w-full bg-[hsl(340,60%,25%)] hover:bg-[hsl(340,60%,30%)] text-white">

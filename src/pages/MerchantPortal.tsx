@@ -11,7 +11,6 @@ import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import KycDocUpload from "@/components/KycDocUpload";
 import { useLocation } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { startMerchantPortalPaymentLink, syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
@@ -45,12 +44,6 @@ const MerchantPortal = () => {
   const [uploading, setUploading] = useState(false);
   const shopPhotoRef = useRef<HTMLInputElement>(null);
 
-  // KYC Documents
-  const [aadharUrl, setAadharUrl] = useState("");
-  const [panUrl, setPanUrl] = useState("");
-  const [gstUrl, setGstUrl] = useState("");
-  const [fssaiUrl, setFssaiUrl] = useState("");
-
   const [form, setForm] = useState({
     shopName: "", shopNameHindi: "", category: "", address: "",
     pincode: "", whatsapp: "", phone: "", description: "", ownerName: "", aadhaarLast4: "",
@@ -82,8 +75,6 @@ const MerchantPortal = () => {
       toast.error("Please fill all required fields"); return;
     }
     if (form.aadhaarLast4 && form.aadhaarLast4.length !== 4) { toast.error("Aadhaar last-4 must be 4 digits"); return; }
-    if (!aadharUrl) { toast.error("कृपया आधार कार्ड की फोटो अपलोड करें"); return; }
-    if (!panUrl) { toast.error("कृपया पैन कार्ड की फोटो अपलोड करें"); return; }
     const { error } = await supabase.from("merchant_profiles").insert({
       user_id: user.id,
       owner_name: form.ownerName,
@@ -97,10 +88,6 @@ const MerchantPortal = () => {
       phone: form.phone,
       description: form.description,
       photos: shopPhotos,
-      aadhar_url: aadharUrl,
-      pan_url: panUrl,
-      gst_url: gstUrl,
-      fssai_url: fssaiUrl,
       access_status: "active",
     });
     if (error) { toast.error("Shop registration failed"); return; }
@@ -264,17 +251,6 @@ const MerchantPortal = () => {
                     <p className="mt-1 text-xs text-muted-foreground">{uploading ? "Uploading..." : "Click to upload photos"}</p>
                   </div>
                 </button>
-              </div>
-
-              {/* KYC Documents */}
-              <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
-                <p className="text-sm font-semibold text-foreground">📄 KYC Documents • <span className="font-hindi">दस्तावेज़ सत्यापन</span></p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <KycDocUpload label="Aadhar Card" labelHindi="आधार कार्ड" required value={aadharUrl} onChange={setAadharUrl} userId={user?.id || ""} folder="kyc-aadhar" />
-                  <KycDocUpload label="PAN Card" labelHindi="पैन कार्ड" required value={panUrl} onChange={setPanUrl} userId={user?.id || ""} folder="kyc-pan" />
-                  <KycDocUpload label="GST Certificate" labelHindi="जीएसटी प्रमाणपत्र" value={gstUrl} onChange={setGstUrl} userId={user?.id || ""} folder="kyc-gst" />
-                  <KycDocUpload label="FSSAI License" labelHindi="फूड लाइसेंस" value={fssaiUrl} onChange={setFssaiUrl} userId={user?.id || ""} folder="kyc-fssai" />
-                </div>
               </div>
 
               <Button type="submit" className="w-full" size="lg">

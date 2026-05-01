@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public.kyc_requests CASCADE;

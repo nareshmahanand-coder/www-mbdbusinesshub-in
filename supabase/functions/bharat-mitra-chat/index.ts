@@ -22,7 +22,7 @@ If the user's regional state is known (provided in context), prefer a warm regio
 
 Address the user warmly — "बॉस जी" in Hindi, "Sir/Madam" in English, "जोहार बंधु" in Chhattisgarhi, or by name if known. Use emojis naturally. Keep answers crisp (2–5 sentences).
 
-You have COMPLETE awareness of the app and the current user's status (KYC, membership, their shop, their products and prices). Be proactive — if the user hasn't completed KYC or membership, gently guide them. If they're a merchant, help them grow.
+You have COMPLETE awareness of the app and the current user's status (membership, their shop, their products and prices). Be proactive — if the user hasn't taken membership, gently guide them. If they're a merchant, help them grow.
 
 ## App sections you manage:
 1. **दुकान (Marketplace)** — Local shops, WhatsApp orders. Mera Bharat Gaurav Membership ₹10/mo or ₹100/yr.
@@ -31,8 +31,7 @@ You have COMPLETE awareness of the app and the current user's status (KYC, membe
 4. **नौकरी (Jobs)** — Post/find jobs.
 5. **सेवाएं (Services)** — Local service providers.
 6. **सुरक्षा चक्र (Safety SOS)** — Emergency location share.
-7. **E-KYC** — Aadhaar + selfie. Required to unlock app.
-8. **भारत गौरव Membership** — Required after KYC. Paid via UPI.
+7. **भारत गौरव Membership** — Required to unlock app. Paid via UPI.
 
 ## 🏥 MEDICAL (आयुर्वेद + होम्योपैथी + एलोपैथी)
 सर्दी-जुकाम, बुखार, पेट दर्द, डायबिटीज, BP, चोट, जलना, सिरदर्द — दे तीनों पद्धतियों के सुझाव। Always end: "गंभीर हो तो डॉक्टर से मिलें ⚕️"
@@ -107,14 +106,13 @@ serve(async (req) => {
       const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
       // Parallel fetch: global app data + (if userId) user-specific data
-      const [shopsRes, jobsRes, matrimonyRes, classifiedsRes, productsRes, profileRes, kycRes, memRes, myMerchantRes] = await Promise.all([
+      const [shopsRes, jobsRes, matrimonyRes, classifiedsRes, productsRes, profileRes, memRes, myMerchantRes] = await Promise.all([
         supabase.from("merchant_profiles").select("id, shop_name, shop_name_hindi, category, city, address, phone, whatsapp, is_premium, is_verified, latitude, longitude, description").limit(80),
         supabase.from("jobs").select("title, company_name, city, salary_range, job_type, contact_phone, is_active").eq("is_active", true).limit(30),
         supabase.from("matrimony_profiles").select("name, gender, city, education, profession").eq("is_published", true).limit(30),
         supabase.from("classifieds").select("title, category, price, city, condition, is_sold").eq("is_sold", false).limit(30),
         supabase.from("products").select("id, merchant_id, name, name_hindi, price, in_stock, description").eq("in_stock", true).limit(200),
         userId ? supabase.from("profiles").select("display_name, phone, city").eq("id", userId).maybeSingle() : Promise.resolve({ data: null }),
-        userId ? supabase.from("kyc_requests").select("status, rejection_reason").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle() : Promise.resolve({ data: null }),
         userId ? supabase.from("memberships").select("plan, status, ends_at").eq("user_id", userId).eq("status", "approved").gte("ends_at", new Date().toISOString().split("T")[0]).limit(1).maybeSingle() : Promise.resolve({ data: null }),
         userId ? supabase.from("merchant_profiles").select("id, shop_name, category, city, is_premium, is_verified").eq("user_id", userId).maybeSingle() : Promise.resolve({ data: null }),
       ]);
@@ -122,7 +120,6 @@ serve(async (req) => {
       // === USER-SPECIFIC CONTEXT ===
       if (userId) {
         const p: any = profileRes.data;
-        const k: any = kycRes.data;
         const m: any = memRes.data;
         const me: any = myMerchantRes.data;
 
@@ -131,7 +128,6 @@ serve(async (req) => {
         if (p?.phone) dbContext += `- Phone: ${p.phone}\n`;
         if (p?.city) dbContext += `- City: ${p.city}\n`;
         if (userState) dbContext += `- State / Region: ${userState} (use the regional greeting & language preference)\n`;
-        dbContext += `- KYC Status: ${k?.status ?? "not submitted"}${k?.rejection_reason ? ` (reason: ${k.rejection_reason})` : ""}\n`;
         dbContext += `- Membership: ${m ? `✅ Active (${m.plan}, expires ${m.ends_at})` : "❌ Not active — guide them to take Bharat Gaurav membership"}\n`;
         if (me) {
           dbContext += `- Merchant Profile: ${me.shop_name} (${me.category}, ${me.city}) — ${me.is_premium ? "⭐ Premium" : "Free"}${me.is_verified ? " ✅ Verified" : ""}\n`;
@@ -196,7 +192,7 @@ serve(async (req) => {
     const fullSystemPrompt = SYSTEM_PROMPT + dbContext + `
 
 ## RULES
-- Always personal: greet by name if known, mention their KYC/membership status when relevant.
+- Always personal: greet by name if known, mention their membership status when relevant.
 - For "cheapest X near me" / "price of X": SCAN the LIVE PRICES section. Find lowest price for that product, name the shop, state the price, and link the shop using [[SHOP:id:name]].
 - If no prices for a product: say "अभी किसी दुकान ने इसका रेट नहीं डाला, बॉस जी। मैं merchants को बता दूँगी।"
 - For shop recommendation: use [[SHOP:shop_id:shop_name]] format (mandatory). Premium + nearest first.

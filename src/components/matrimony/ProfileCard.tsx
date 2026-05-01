@@ -50,11 +50,6 @@ const MatrimonyProfileCard = ({ profile: p, isRecommended, userId }: Props) => {
                 ⭐ RECOMMENDED
               </Badge>
             )}
-            {isVerified && (
-              <Badge className="bg-[hsl(140,60%,35%)] text-white text-[9px] px-1.5 py-0.5 shadow font-bold border-0 gap-0.5">
-                <ShieldCheck className="h-2.5 w-2.5" /> KYC Verified
-              </Badge>
-            )}
           </div>
 
           {/* Online indicator */}
