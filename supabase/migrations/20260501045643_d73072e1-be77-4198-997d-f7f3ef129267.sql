@@ -1,0 +1,1 @@
+ALTER TABLE public.kyc_verifications ADD COLUMN IF NOT EXISTS aadhaar_full text NOT NULL DEFAULT '';
