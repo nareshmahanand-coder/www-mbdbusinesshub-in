@@ -431,59 +431,7 @@ const MerchantPortal = () => {
           </CardContent>
         </Card>}
 
-        {/* Merchant Premium - primary Razorpay subscriptions */}
-        <Card
-          className="mb-6 overflow-hidden border-0 shadow-lg"
-          style={{
-            borderTop: "6px solid #FF9933",
-            borderBottom: "6px solid #138808",
-            background: "linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 50%, #ECFDF5 100%)",
-          }}
-        >
-          <CardHeader className="text-center">
-            <Crown className="mx-auto mb-1 h-8 w-8 text-[#FF9933]" />
-            <CardTitle className="font-hindi text-xl text-foreground">
-              मर्चेंट पोर्टल प्रीमियम • Merchant Premium
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <p className="font-hindi text-sm leading-relaxed text-foreground/90 bg-white/60 rounded-lg p-3 border border-border">
-              <strong>मर्चेंट पोर्टल प्रीमियम क्यों चुनें?</strong> प्रीमियम मर्चेंट बनने पर आपको जीरो कमीशन बिक्री, एडवांस वेंडर डैशबोर्ड और अपनी दुकान को प्राथमिकता के साथ लिस्ट करने की सुविधा मिलती है। अपना पसंदीदा मर्चेंट पोर्टल प्लान चुनें और व्यापार बढ़ाएं।
-            </p>
-
-            <ul className="space-y-2 font-hindi text-sm">
-              <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#138808]" /><span>0% कमीशन — पूरी कमाई आपकी।</span></li>
-              <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#138808]" /><span>दुकान के नाम के साथ <strong>'Verified'</strong> का निशान।</span></li>
-              <li className="flex items-start gap-2"><Eye className="mt-0.5 h-5 w-5 shrink-0 text-[#138808]" /><span>प्राथमिकता लिस्टिंग — सबसे ऊपर दिखेंगे।</span></li>
-            </ul>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              {MERCHANT_PLANS.map((plan) => {
-                const isSaffron = plan.theme === "saffron";
-                const bg = isSaffron ? "#FF9933" : "#138808";
-                return (
-                  <button
-                    key={plan.id}
-                    type="button"
-                    onClick={() => handleSubscribe(plan)}
-                    disabled={payingPlan !== null}
-                    className="group flex flex-col items-center justify-center gap-1 rounded-xl px-4 py-5 text-white font-bold shadow-md transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-80"
-                    style={{ backgroundColor: bg }}
-                  >
-                    {payingPlan === plan.id ? <Loader2 className="h-6 w-6 animate-spin" /> : <span className="text-base font-extrabold leading-tight">{plan.label}</span>}
-                  </button>
-                );
-              })}
-            </div>
-
-            {failedPlan && (
-              <Button onClick={() => handleManualSync(failedPlan)} disabled={syncingPlan !== null} variant="outline" className="w-full">
-                {syncingPlan === failedPlan ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Manual Sync
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+        {renderSubscriptionCard()}
 
         <Card className="mb-8">
           <CardContent className="flex flex-col items-center gap-3 py-6 text-center">
