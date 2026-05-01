@@ -265,24 +265,6 @@ const EkycPage = () => {
     setStep("processing");
     try {
       if (!user) throw new Error("Not signed in");
-      // Run OCR now (after both Aadhaar sides are confirmed). OCR failure is NON-FATAL —
-      // we still proceed to save the KYC record using the Aadhaar number the user entered.
-      let ocrData = ocr;
-      if (!ocrData) {
-        try {
-          const { data, error } = await supabase.functions.invoke("kyc-ocr", {
-            body: { frontImage: frontImg, backImage: backImg },
-          });
-          if (error) throw error;
-          if (data?.error) throw new Error(data.error);
-          ocrData = data;
-          setOcr(data);
-          setOcrError(null);
-        } catch (e: any) {
-          console.warn("[ekyc] OCR failed, continuing without it:", e);
-          setOcrError(e?.message ?? "OCR विफल / OCR failed");
-        }
-      }
       const ts = Date.now();
       const upload = async (name: string, dataUrl: string) => {
         const blob = dataUrlToBlob(dataUrl);
@@ -300,16 +282,16 @@ const EkycPage = () => {
       ]);
 
       const aadhaarDigits = aadhaar.replace(/\D/g, "");
-      const relType = ocrData?.relation_type === "husband" ? "husband" : "father";
+      const relType = ocr?.relation_type === "husband" ? "husband" : "father";
       const payload = {
         user_id: user.id,
         mobile,
         aadhaar_full: aadhaarDigits,
         aadhaar_last4: aadhaarDigits.slice(-4),
-        full_name: ocrData?.name ?? "",
+        full_name: ocr?.name ?? "",
         relation_type: relType,
-        relation_name: ocrData?.relation_name ?? "",
-        address: ocrData?.address ?? "",
+        relation_name: ocr?.relation_name ?? "",
+        address: ocr?.address ?? "",
         latitude: gps?.lat ?? null,
         longitude: gps?.lng ?? null,
         aadhaar_front_url: frontUrl,
@@ -326,8 +308,7 @@ const EkycPage = () => {
       if (insErr) throw insErr;
       setExisting(inserted);
       setStep("verified");
-      // Save complete — redirect immediately to membership page.
-      navigate("/membership", { replace: true });
+      window.location.replace("/membership");
     } catch (e: any) {
       console.error("[ekyc] verification failed:", e);
       toast.error(e?.message ?? "सत्यापन विफल / Verification failed");
