@@ -263,8 +263,6 @@ const EkycPage = () => {
     setSelfieImg(selfieDataUrl);
     setPendingSelfie(null);
     setStep("processing");
-    // Wait minimum 3s, perform uploads + insert
-    const minDelay = new Promise((r) => setTimeout(r, 3000));
     try {
       if (!user) throw new Error("Not signed in");
       // Run OCR now (after both Aadhaar sides are confirmed). OCR failure is NON-FATAL —
@@ -326,12 +324,12 @@ const EkycPage = () => {
         .select()
         .single();
       if (insErr) throw insErr;
-      await minDelay;
       setExisting(inserted);
       setStep("verified");
+      // Save complete — redirect immediately to membership page.
+      navigate("/membership", { replace: true });
     } catch (e: any) {
       console.error("[ekyc] verification failed:", e);
-      await minDelay;
       toast.error(e?.message ?? "सत्यापन विफल / Verification failed");
       // Restore the captured selfie into the preview state so the user can re-confirm
       // instead of being thrown back to a blank camera (which felt like a loop).
@@ -339,7 +337,7 @@ const EkycPage = () => {
       setSelfieImg(null);
       setStep("selfie");
     }
-  }, [pendingSelfie, user, frontImg, backImg, ocr, mobile, aadhaar, gps]);
+  }, [pendingSelfie, user, frontImg, backImg, ocr, mobile, aadhaar, gps, navigate]);
 
   if (authLoading || checking) {
     return (
