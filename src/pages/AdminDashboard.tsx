@@ -1045,7 +1045,7 @@ const AdminDashboard = () => {
                         <p className="font-semibold text-foreground">{m.shop_name || "Unnamed shop"}</p>
                         <p className="text-xs text-muted-foreground">Owner: {m.owner_name || m.profile_name || "N/A"}</p>
                         <p className="text-xs text-muted-foreground">Contact: {m.phone || m.whatsapp || m.profile_phone || m.profile_email || "N/A"}</p>
-                        <p className="text-xs text-muted-foreground">PAN: {m.pan_url ? "Uploaded" : "Not uploaded"} • Aadhaar last-4: {m.aadhaar_last4 || "N/A"}</p>
+                        <p className="text-xs text-muted-foreground">Aadhaar last-4: {m.aadhaar_last4 || "N/A"}</p>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <Button size="sm" onClick={() => updateMerchant(m.id, { is_verified: true, access_status: "active", admin_notes: "Approved by Admin Portal" } as any)}>Approve</Button>
@@ -1261,26 +1261,6 @@ const AdminDashboard = () => {
                             <Button size="sm" variant="secondary" onClick={() => updateMatrimonyStatus(p.id, "cancelled", false)} className="h-8">Cancel</Button>
                           </div>
                         </div>
-                        {/* KYC Documents */}
-                        {(p.aadhar_url || p.pan_url) && (
-                          <div className="flex flex-wrap gap-2 mt-1">
-                            <p className="w-full text-[11px] font-semibold text-foreground flex items-center gap-1"><FileText className="h-3 w-3" /> KYC Documents:</p>
-                            {p.aadhar_url && (
-                              <button onClick={() => setFullImageUrl(p.aadhar_url!)} className="group relative">
-                                <img src={p.aadhar_url} alt="Aadhar" className="h-14 w-20 rounded border border-border object-cover" />
-                                <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
-                                <span className="block text-[9px] text-center text-muted-foreground">Aadhar</span>
-                              </button>
-                            )}
-                            {p.pan_url && (
-                              <button onClick={() => setFullImageUrl(p.pan_url!)} className="group relative">
-                                <img src={p.pan_url} alt="PAN" className="h-14 w-20 rounded border border-border object-cover" />
-                                <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
-                                <span className="block text-[9px] text-center text-muted-foreground">PAN</span>
-                              </button>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
                   ))
@@ -1325,38 +1305,6 @@ const AdminDashboard = () => {
                           <p className="text-xs text-muted-foreground">{m.category} • {m.city} • {m.profile_email || m.profile_phone || "Contact N/A"}</p>
                           <p className="text-[11px] text-muted-foreground">🕐 {formatDateTime(m.created_at)}</p>
                         </div>
-                      </div>
-                      {/* KYC Documents */}
-                      <div className="flex flex-wrap gap-2">
-                        <p className="w-full text-[11px] font-semibold text-foreground flex items-center gap-1"><FileText className="h-3 w-3" /> KYC Documents:</p>
-                        {m.aadhar_url ? (
-                          <button onClick={() => setFullImageUrl(m.aadhar_url!)} className="group relative">
-                            <img src={m.aadhar_url} alt="Aadhar" className="h-14 w-20 rounded border border-border object-cover" />
-                            <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
-                            <span className="block text-[9px] text-center text-muted-foreground">Aadhar ✓</span>
-                          </button>
-                        ) : <span className="text-[10px] text-destructive">Aadhar ✗</span>}
-                        {m.pan_url ? (
-                          <button onClick={() => setFullImageUrl(m.pan_url!)} className="group relative">
-                            <img src={m.pan_url} alt="PAN" className="h-14 w-20 rounded border border-border object-cover" />
-                            <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
-                            <span className="block text-[9px] text-center text-muted-foreground">PAN ✓</span>
-                          </button>
-                        ) : <span className="text-[10px] text-destructive">PAN ✗</span>}
-                        {m.gst_url && (
-                          <button onClick={() => setFullImageUrl(m.gst_url!)} className="group relative">
-                            <img src={m.gst_url} alt="GST" className="h-14 w-20 rounded border border-border object-cover" />
-                            <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
-                            <span className="block text-[9px] text-center text-muted-foreground">GST ✓</span>
-                          </button>
-                        )}
-                        {m.fssai_url && (
-                          <button onClick={() => setFullImageUrl(m.fssai_url!)} className="group relative">
-                            <img src={m.fssai_url} alt="FSSAI" className="h-14 w-20 rounded border border-border object-cover" />
-                            <span className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded transition-opacity"><ZoomIn className="h-4 w-4 text-white" /></span>
-                            <span className="block text-[9px] text-center text-muted-foreground">FSSAI ✓</span>
-                          </button>
-                        )}
                       </div>
                     </div>
                   ))
