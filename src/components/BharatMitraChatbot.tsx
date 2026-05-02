@@ -18,7 +18,7 @@ import BloodDonorTab from "./chatbot/BloodDonorTab";
 import HealthTab from "./chatbot/HealthTab";
 import { useMembership } from "@/hooks/useMembership";
 
-const DEFAULT_INTRO = "नमस्ते / जय जोहार! 🙏 मैं भारत मित्र हूँ। मैं भारत की सभी भाषाएं — Hindi, English, Chhattisgarhi, Odia, Bengali, Tamil आदि — समझ सकती हूँ और आपकी हर तरह से मदद करने के लिए तैयार हूँ। आप किसी भी भाषा में पूछें, मैं उसी भाषा में जवाब दूँगी।";
+const DEFAULT_INTRO = "नमस्ते Boss! 🙏 मैं भारत मित्र AI हूँ। मैं भारत की सभी भाषाएं (Hindi, English, Chhattisgarhi, Odia, Bengali, Tamil, Telugu, Punjabi, Marathi, Gujarati...) जानती हूँ। क्या मैं आपसे इसी भाषा में बात करना जारी रखूँ या आप किसी और भाषा में बात करना चाहते हैं? 🇮🇳";
 
 const WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
@@ -73,7 +73,7 @@ const REGION_GREETINGS: Record<string, { text: string; lang: string }> = {
   "Assam":          { text: "নমস্কাৰ! 🙏 মেৰা ভাৰত দুকান এপত আপোনাক স্বাগতম। মই ভাৰত মিত্ৰ — কেনেদৰে সহায় কৰিব পাৰোঁ?", lang: "as-IN" },
 };
 
-const DEFAULT_GREETING = { text: "नमस्ते बॉस जी! 🙏 मैं भारत मित्र हूँ। मैं भारत की सभी भाषाएं समझ सकती हूँ और आपकी हर तरह से मदद करने के लिए तैयार हूँ।", lang: "hi-IN" };
+const DEFAULT_GREETING = { text: "नमस्ते Boss! 🙏 मैं भारत मित्र AI हूँ। मैं भारत की सभी भाषाएं जानती हूँ। क्या मैं आपसे इसी भाषा में बात करना जारी रखूँ या आप किसी और भाषा में बात करना चाहते हैं?", lang: "hi-IN" };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bharat-mitra-chat`;
 
