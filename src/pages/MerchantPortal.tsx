@@ -131,12 +131,7 @@ const MerchantPortal = () => {
       access_status: "active",
     });
     if (error) { toast.error("Shop registration failed"); return; }
-    toast.success("रजिस्ट्रेशन सफल! कृपया सब्सक्रिप्शन प्लान चुनें।");
-    // Redirect to subscription/payment section immediately
-    setTimeout(() => {
-      const el = document.getElementById("merchant-subscription");
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
+    toast.success("मुफ़्त रजिस्ट्रेशन सफल! आप चाहें तो प्रीमियम में अपग्रेड कर सकते हैं।");
     setSubmitted(true);
   };
 
@@ -192,38 +187,13 @@ const MerchantPortal = () => {
         <CardTitle className="font-hindi text-xl text-foreground">
           मर्चेंट पोर्टल प्रीमियम • Merchant Premium
         </CardTitle>
+        <p className="mt-1 text-[11px] font-bold uppercase tracking-wide text-[#138808]">
+          Optional Upgrade • वैकल्पिक अपग्रेड
+        </p>
       </CardHeader>
       <CardContent className="space-y-5">
-        {/* Bharat Gaurav Membership — Prominent CTA */}
-        <a
-          href="https://rzp.io/rzp/XkHjEaN"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block rounded-2xl p-[3px] shadow-xl transition-transform hover:-translate-y-0.5"
-          style={{ background: "linear-gradient(90deg, #FF9933 0%, #FFFFFF 50%, #138808 100%)" }}
-        >
-          <div
-            className="flex items-center justify-between gap-3 rounded-2xl px-4 py-4"
-            style={{ background: "linear-gradient(135deg, #1a237e 0%, #311b92 100%)" }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FF9933] shadow-md ring-2 ring-white">
-                <Crown className="h-6 w-6 text-white" />
-              </div>
-              <div className="text-left text-white">
-                <p className="font-hindi text-base font-extrabold leading-tight">भारत गौरव मेंबरशिप</p>
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-white/80">Bharat Gaurav • Monthly</p>
-              </div>
-            </div>
-            <div className="rounded-xl bg-white px-3 py-2 text-center shadow-md">
-              <p className="text-lg font-extrabold leading-none text-[#1a237e]">₹10</p>
-              <p className="mt-0.5 text-[10px] font-bold text-[#138808]">/ month</p>
-            </div>
-          </div>
-        </a>
-
         <p className="font-hindi text-sm leading-relaxed text-foreground/90 bg-white/60 rounded-lg p-3 border border-border">
-          <strong>मर्चेंट पोर्टल प्रीमियम क्यों चुनें?</strong> प्रीमियम मर्चेंट बनने पर आपको जीरो कमीशन बिक्री, एडवांस वेंडर डैशबोर्ड और अपनी दुकान को प्राथमिकता के साथ लिस्ट करने की सुविधा मिलती है।
+          <strong>रजिस्ट्रेशन पूरी तरह मुफ़्त है।</strong> प्रीमियम लेना ज़रूरी नहीं है — लेकिन प्रीमियम मर्चेंट बनने पर आपको जीरो कमीशन बिक्री, एडवांस वेंडर डैशबोर्ड और अपनी दुकान को प्राथमिकता के साथ लिस्ट करने की सुविधा मिलती है।
         </p>
         <ul className="space-y-2 font-hindi text-sm">
           <li className="flex items-start gap-2"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#138808]" /><span>0% कमीशन — पूरी कमाई आपकी।</span></li>
@@ -302,11 +272,14 @@ const MerchantPortal = () => {
           <Card className="mb-6 border-green-india/40 bg-green-50">
             <CardContent className="py-6 text-center">
               <CheckCircle className="mx-auto mb-3 h-14 w-14 text-green-india" />
-              <h2 className="mb-1 text-xl font-bold text-foreground">Registration Submitted!</h2>
-              <p className="font-hindi text-base text-foreground/80">आपकी दुकान पंजीकरण सफल!</p>
-              <p className="mt-3 rounded-lg bg-[#FF9933]/10 px-3 py-2 font-hindi text-sm font-semibold text-[#1a237e]">
-                रजिस्ट्रेशन पूरा करने के लिए सब्सक्रिप्शन/भुगतान अनिवार्य है।
+              <h2 className="mb-1 text-xl font-bold text-foreground">Free Registration Complete!</h2>
+              <p className="font-hindi text-base text-foreground/80">आपकी दुकान का मुफ़्त पंजीकरण सफल!</p>
+              <p className="mt-3 rounded-lg bg-[#138808]/10 px-3 py-2 font-hindi text-sm font-semibold text-[#138808]">
+                अतिरिक्त लाभ चाहिए? नीचे से प्रीमियम में अपग्रेड करें (वैकल्पिक)।
               </p>
+              <Button asChild className="mt-4" size="lg">
+                <a href="/merchant-dashboard">Continue to Dashboard</a>
+              </Button>
             </CardContent>
           </Card>
           {renderSubscriptionCard()}
@@ -330,7 +303,10 @@ const MerchantPortal = () => {
             अपनी दुकान को शहर में सबसे ऊपर दिखाएं और ज्यादा ग्राहक पाएं!
           </h1>
           <p className="mt-2 text-lg font-semibold text-foreground">Register Your Shop</p>
-          <p className="mt-1 text-sm text-muted-foreground">Free listing • 0% Commission • Direct payments</p>
+          <p className="mt-1 text-sm text-muted-foreground">Free Registration • 0% Commission • Direct payments</p>
+          <p className="mt-2 inline-block rounded-full bg-[#138808]/10 px-3 py-1 font-hindi text-xs font-bold text-[#138808]">
+            कोई भी मुफ़्त रजिस्टर कर सकता है — प्रीमियम वैकल्पिक है।
+          </p>
         </div>
 
         {!settings.merchant_registrations_enabled && (
@@ -449,11 +425,17 @@ const MerchantPortal = () => {
                 </button>
               </div>
 
-              <Button type="submit" className="w-full" size="lg" disabled={!kycReady || uploading}>
-                <Store className="mr-2 h-5 w-5" /> Submit & Continue to Subscription
+              <Button
+                type="submit"
+                size="lg"
+                disabled={!kycReady || uploading}
+                className="w-full h-14 text-base font-extrabold text-white shadow-lg"
+                style={{ background: "linear-gradient(135deg, #138808 0%, #1a237e 100%)" }}
+              >
+                <Store className="mr-2 h-5 w-5" /> Free Registration • मुफ़्त रजिस्ट्रेशन
               </Button>
               <p className="text-center font-hindi text-xs text-muted-foreground">
-                रजिस्ट्रेशन पूरा करने के लिए सब्सक्रिप्शन/भुगतान अनिवार्य है।
+                रजिस्ट्रेशन बिल्कुल मुफ़्त है। प्रीमियम लेना वैकल्पिक है।
               </p>
             </form>
           </CardContent>
