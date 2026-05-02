@@ -194,6 +194,34 @@ const MerchantPortal = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
+        {/* Bharat Gaurav Membership — Prominent CTA */}
+        <a
+          href="https://rzp.io/rzp/XkHjEaN"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block rounded-2xl p-[3px] shadow-xl transition-transform hover:-translate-y-0.5"
+          style={{ background: "linear-gradient(90deg, #FF9933 0%, #FFFFFF 50%, #138808 100%)" }}
+        >
+          <div
+            className="flex items-center justify-between gap-3 rounded-2xl px-4 py-4"
+            style={{ background: "linear-gradient(135deg, #1a237e 0%, #311b92 100%)" }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FF9933] shadow-md ring-2 ring-white">
+                <Crown className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-left text-white">
+                <p className="font-hindi text-base font-extrabold leading-tight">भारत गौरव मेंबरशिप</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-white/80">Bharat Gaurav • Monthly</p>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white px-3 py-2 text-center shadow-md">
+              <p className="text-lg font-extrabold leading-none text-[#1a237e]">₹10</p>
+              <p className="mt-0.5 text-[10px] font-bold text-[#138808]">/ month</p>
+            </div>
+          </div>
+        </a>
+
         <p className="font-hindi text-sm leading-relaxed text-foreground/90 bg-white/60 rounded-lg p-3 border border-border">
           <strong>मर्चेंट पोर्टल प्रीमियम क्यों चुनें?</strong> प्रीमियम मर्चेंट बनने पर आपको जीरो कमीशन बिक्री, एडवांस वेंडर डैशबोर्ड और अपनी दुकान को प्राथमिकता के साथ लिस्ट करने की सुविधा मिलती है।
         </p>
