@@ -131,12 +131,7 @@ const MerchantPortal = () => {
       access_status: "active",
     });
     if (error) { toast.error("Shop registration failed"); return; }
-    toast.success("रजिस्ट्रेशन सफल! कृपया सब्सक्रिप्शन प्लान चुनें।");
-    // Redirect to subscription/payment section immediately
-    setTimeout(() => {
-      const el = document.getElementById("merchant-subscription");
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
+    toast.success("मुफ़्त रजिस्ट्रेशन सफल! आप चाहें तो प्रीमियम में अपग्रेड कर सकते हैं।");
     setSubmitted(true);
   };
 
@@ -277,11 +272,14 @@ const MerchantPortal = () => {
           <Card className="mb-6 border-green-india/40 bg-green-50">
             <CardContent className="py-6 text-center">
               <CheckCircle className="mx-auto mb-3 h-14 w-14 text-green-india" />
-              <h2 className="mb-1 text-xl font-bold text-foreground">Registration Submitted!</h2>
-              <p className="font-hindi text-base text-foreground/80">आपकी दुकान पंजीकरण सफल!</p>
-              <p className="mt-3 rounded-lg bg-[#FF9933]/10 px-3 py-2 font-hindi text-sm font-semibold text-[#1a237e]">
-                रजिस्ट्रेशन पूरा करने के लिए सब्सक्रिप्शन/भुगतान अनिवार्य है।
+              <h2 className="mb-1 text-xl font-bold text-foreground">Free Registration Complete!</h2>
+              <p className="font-hindi text-base text-foreground/80">आपकी दुकान का मुफ़्त पंजीकरण सफल!</p>
+              <p className="mt-3 rounded-lg bg-[#138808]/10 px-3 py-2 font-hindi text-sm font-semibold text-[#138808]">
+                अतिरिक्त लाभ चाहिए? नीचे से प्रीमियम में अपग्रेड करें (वैकल्पिक)।
               </p>
+              <Button asChild className="mt-4" size="lg">
+                <a href="/merchant-dashboard">Continue to Dashboard</a>
+              </Button>
             </CardContent>
           </Card>
           {renderSubscriptionCard()}
