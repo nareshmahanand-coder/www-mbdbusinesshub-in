@@ -303,7 +303,10 @@ const MerchantPortal = () => {
             अपनी दुकान को शहर में सबसे ऊपर दिखाएं और ज्यादा ग्राहक पाएं!
           </h1>
           <p className="mt-2 text-lg font-semibold text-foreground">Register Your Shop</p>
-          <p className="mt-1 text-sm text-muted-foreground">Free listing • 0% Commission • Direct payments</p>
+          <p className="mt-1 text-sm text-muted-foreground">Free Registration • 0% Commission • Direct payments</p>
+          <p className="mt-2 inline-block rounded-full bg-[#138808]/10 px-3 py-1 font-hindi text-xs font-bold text-[#138808]">
+            कोई भी मुफ़्त रजिस्टर कर सकता है — प्रीमियम वैकल्पिक है।
+          </p>
         </div>
 
         {!settings.merchant_registrations_enabled && (
@@ -422,11 +425,17 @@ const MerchantPortal = () => {
                 </button>
               </div>
 
-              <Button type="submit" className="w-full" size="lg" disabled={!kycReady || uploading}>
-                <Store className="mr-2 h-5 w-5" /> Submit & Continue to Subscription
+              <Button
+                type="submit"
+                size="lg"
+                disabled={!kycReady || uploading}
+                className="w-full h-14 text-base font-extrabold text-white shadow-lg"
+                style={{ background: "linear-gradient(135deg, #138808 0%, #1a237e 100%)" }}
+              >
+                <Store className="mr-2 h-5 w-5" /> Free Registration • मुफ़्त रजिस्ट्रेशन
               </Button>
               <p className="text-center font-hindi text-xs text-muted-foreground">
-                रजिस्ट्रेशन पूरा करने के लिए सब्सक्रिप्शन/भुगतान अनिवार्य है।
+                रजिस्ट्रेशन बिल्कुल मुफ़्त है। प्रीमियम लेना वैकल्पिक है।
               </p>
             </form>
           </CardContent>
