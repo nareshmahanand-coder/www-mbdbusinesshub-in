@@ -39,6 +39,7 @@ const MerchantPortal = () => {
   const [payingPlan, setPayingPlan] = useState<"monthly" | "yearly" | null>(null);
   const [failedPlan, setFailedPlan] = useState<"monthly" | "yearly" | null>(null);
   const [syncingPlan, setSyncingPlan] = useState<"monthly" | "yearly" | null>(null);
+  const [successRedirect, setSuccessRedirect] = useState<string | null>(null);
   
   const [shopPhotos, setShopPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
