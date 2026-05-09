@@ -144,8 +144,9 @@ const MerchantPortal = () => {
       await startMerchantPortalPaymentLink({
         plan: plan.id as "monthly" | "yearly",
         onSuccess: () => {
-          toast.success("Payment successful — Merchant Premium activated!");
-          window.location.href = "/merchant-dashboard";
+          toast.success("Payment Successful — Merchant Premium अब Active है!");
+          setSuccessRedirect("/merchant-dashboard");
+          setTimeout(() => { window.location.href = "/merchant-dashboard"; }, 3000);
         },
         onFailure: () => setFailedPlan(plan.id as "monthly" | "yearly"),
       });
