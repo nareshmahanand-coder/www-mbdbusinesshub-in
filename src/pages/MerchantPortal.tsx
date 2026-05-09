@@ -147,7 +147,7 @@ const MerchantPortal = () => {
         onSuccess: () => {
           toast.success("Payment Successful — Merchant Premium अब Active है!");
           setSuccessRedirect("/merchant-dashboard");
-          setTimeout(() => { window.location.href = "/merchant-dashboard"; }, 3000);
+          // No auto-redirect — user clicks "Go to Dashboard"
         },
         onFailure: () => setFailedPlan(plan.id as "monthly" | "yearly"),
       });
@@ -166,7 +166,7 @@ const MerchantPortal = () => {
       if (result.ok) {
         toast.success("Payment Successful — Merchant Premium अब Active है!");
         setSuccessRedirect("/merchant-dashboard");
-        setTimeout(() => { window.location.href = "/merchant-dashboard"; }, 3000);
+        // No auto-redirect — user clicks "Go to Dashboard"
       } else {
         toast.info(result.error || "Payment confirmation is still pending. Please try again shortly.");
       }
@@ -225,9 +225,8 @@ const MerchantPortal = () => {
           <div className="rounded-xl border-2 border-green-600 bg-green-50 p-4 text-center space-y-3">
             <CheckCircle className="mx-auto h-10 w-10 text-green-600" />
             <p className="font-bold text-green-700">Payment Successful — Plan Active ✅</p>
-            <p className="text-xs text-muted-foreground">Redirecting to Dashboard in 3 seconds…</p>
-            <Button onClick={() => { window.location.href = successRedirect; }} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-12">
-              Proceed to Dashboard
+            <Button onClick={() => { window.location.href = "/dashboard"; }} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold h-14 text-lg rounded-xl shadow-lg">
+              Go to Dashboard
             </Button>
           </div>
         ) : failedPlan && (
