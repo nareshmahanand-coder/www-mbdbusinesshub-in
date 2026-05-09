@@ -347,7 +347,16 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
                 {payingPlan === "yearly" ? <Loader2 className="h-4 w-4 animate-spin" /> : "Marriage Bureau ₹999 Yearly Plan"}
               </Button>
 
-              {failedPlan && (
+              {successRedirect ? (
+                <div className="rounded-xl border-2 border-green-600 bg-green-50 p-4 text-center space-y-3">
+                  <CheckCircle2 className="mx-auto h-10 w-10 text-green-600" />
+                  <p className="font-bold text-green-700">Payment Successful — Plan Active ✅</p>
+                  <p className="text-xs text-muted-foreground">Redirecting in 3 seconds…</p>
+                  <Button onClick={() => { window.location.href = successRedirect; }} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-12">
+                    Proceed to Dashboard
+                  </Button>
+                </div>
+              ) : failedPlan && (
                 <Button
                   type="button"
                   variant="outline"
