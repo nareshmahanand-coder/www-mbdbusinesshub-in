@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Loader2, Crown, Lock, CheckCircle2, ArrowRight } from "lucide-react";
+import { Loader2, Crown, Lock, CheckCircle2 } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { startBharatGauravPaymentLink } from "@/lib/razorpayPayments";
 
@@ -16,14 +16,6 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
   const [submitting, setSubmitting] = useState<"monthly" | "yearly" | null>(null);
   const [paymentFailed, setPaymentFailed] = useState<"monthly" | "yearly" | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-
-  useEffect(() => {
-    if (!paymentSuccess) return;
-    const t = setTimeout(() => {
-      window.location.href = "/dashboard";
-    }, 3000);
-    return () => clearTimeout(t);
-  }, [paymentSuccess]);
 
   const handlePay = async (plan: "monthly" | "yearly") => {
     if (!user) {
@@ -38,9 +30,11 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
       await startBharatGauravPaymentLink({
         plan,
         onSuccess: () => {
-          toast.success("Payment Successful — आपकी मेंबरशिप अब Active है!");
-          onActivated();
+          toast.success("Payment Successful — Dashboard खुल रहा है...");
           setPaymentSuccess(true);
+          onActivated();
+          // INSTANT redirect — no buttons, no waiting
+          window.location.replace("/dashboard");
         },
         onFailure: () => setPaymentFailed(plan),
       });
@@ -91,15 +85,8 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
                 Payment Successful! ✅
               </h3>
               <p className="text-sm text-foreground font-hindi">
-                आपकी <span className="font-bold text-[#1a237e]">भारत गौरव मेंबरशिप</span> अब <span className="text-green-700 font-bold">Active</span> है।
+                Dashboard खुल रहा है… <Loader2 className="inline h-4 w-4 animate-spin ml-1" />
               </p>
-              <p className="text-xs text-muted-foreground">Redirecting to your Dashboard in 3 seconds…</p>
-              <Button
-                onClick={() => { window.location.href = "/dashboard"; }}
-                className="w-full h-12 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg"
-              >
-                Proceed to Dashboard <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
             </div>
           ) : (
           <>
