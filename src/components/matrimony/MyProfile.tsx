@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Crown, Image, Loader2, Upload, X } from "lucide-react";
+import { User, Crown, Image, Loader2, Upload, X, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import type { MatrimonyProfile } from "@/pages/MatrimonyPage";
 import { startMarriageBureauPaymentLink, syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
@@ -23,6 +23,7 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
   const [payingPlan, setPayingPlan] = useState<"monthly" | "yearly" | null>(null);
   const [failedPlan, setFailedPlan] = useState<"monthly" | "yearly" | null>(null);
   const [syncingPlan, setSyncingPlan] = useState<"monthly" | "yearly" | null>(null);
+  const [successRedirect, setSuccessRedirect] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const aadhaarFrontRef = useRef<HTMLInputElement>(null);
   const aadhaarBackRef = useRef<HTMLInputElement>(null);
@@ -107,9 +108,10 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
       await startMarriageBureauPaymentLink({
         plan,
         onSuccess: () => {
-          toast.success("Payment successful — Marriage Bureau unlocked!");
+          toast.success("Payment Successful — Marriage Bureau Premium अब Active है!");
           onReload();
-          window.location.href = "/matrimony?tab=my-profile";
+          setSuccessRedirect("/matrimony?tab=my-profile");
+          setTimeout(() => { window.location.href = "/matrimony?tab=my-profile"; }, 3000);
         },
         onFailure: () => setFailedPlan(plan),
       });
@@ -126,9 +128,10 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
     try {
       const result = await syncLatestRazorpayPayment({ module: "marriage_bureau", plan });
       if (result.ok) {
-        toast.success("Payment confirmed — Marriage Bureau unlocked!");
+        toast.success("Payment Successful — Marriage Bureau Premium अब Active है!");
         onReload();
-        window.location.href = "/matrimony?tab=my-profile";
+        setSuccessRedirect("/matrimony?tab=my-profile");
+        setTimeout(() => { window.location.href = "/matrimony?tab=my-profile"; }, 3000);
       } else {
         toast.info(result.error || "Payment confirmation is still pending. Please try again shortly.");
       }
