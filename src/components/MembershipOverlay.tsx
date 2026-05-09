@@ -30,11 +30,9 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
       await startBharatGauravPaymentLink({
         plan,
         onSuccess: () => {
-          toast.success("Payment Successful — Dashboard खुल रहा है...");
+          toast.success("Payment Successful ✅");
           setPaymentSuccess(true);
           onActivated();
-          // INSTANT redirect — no buttons, no waiting
-          window.location.replace("/dashboard");
         },
         onFailure: () => setPaymentFailed(plan),
       });
@@ -85,8 +83,14 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
                 Payment Successful! ✅
               </h3>
               <p className="text-sm text-foreground font-hindi">
-                Dashboard खुल रहा है… <Loader2 className="inline h-4 w-4 animate-spin ml-1" />
+                आपकी मेंबरशिप अब Active है। Dashboard पर जाने के लिए नीचे क्लिक करें।
               </p>
+              <Button
+                onClick={() => { window.location.href = "/dashboard"; }}
+                className="w-full h-14 text-lg font-extrabold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg"
+              >
+                Go to Dashboard
+              </Button>
             </div>
           ) : (
           <>

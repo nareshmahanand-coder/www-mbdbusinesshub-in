@@ -111,7 +111,7 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
           toast.success("Payment Successful — Marriage Bureau Premium अब Active है!");
           onReload();
           setSuccessRedirect("/matrimony?tab=my-profile");
-          setTimeout(() => { window.location.href = "/matrimony?tab=my-profile"; }, 3000);
+          // No auto-redirect — user clicks "Go to Dashboard"
         },
         onFailure: () => setFailedPlan(plan),
       });
@@ -131,7 +131,7 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
         toast.success("Payment Successful — Marriage Bureau Premium अब Active है!");
         onReload();
         setSuccessRedirect("/matrimony?tab=my-profile");
-        setTimeout(() => { window.location.href = "/matrimony?tab=my-profile"; }, 3000);
+        // No auto-redirect — user clicks "Go to Dashboard"
       } else {
         toast.info(result.error || "Payment confirmation is still pending. Please try again shortly.");
       }
@@ -351,9 +351,8 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
                 <div className="rounded-xl border-2 border-green-600 bg-green-50 p-4 text-center space-y-3">
                   <CheckCircle2 className="mx-auto h-10 w-10 text-green-600" />
                   <p className="font-bold text-green-700">Payment Successful — Plan Active ✅</p>
-                  <p className="text-xs text-muted-foreground">Redirecting in 3 seconds…</p>
-                  <Button onClick={() => { window.location.href = successRedirect; }} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold h-12">
-                    Proceed to Dashboard
+                  <Button onClick={() => { window.location.href = "/dashboard"; }} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold h-14 text-lg rounded-xl shadow-lg">
+                    Go to Dashboard
                   </Button>
                 </div>
               ) : failedPlan && (
