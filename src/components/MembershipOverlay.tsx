@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Loader2, Crown, Lock } from "lucide-react";
+import { Loader2, Crown, Lock, CheckCircle2, ArrowRight } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { startBharatGauravPaymentLink } from "@/lib/razorpayPayments";
 
@@ -15,6 +15,15 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
   const { user } = useAuth();
   const [submitting, setSubmitting] = useState<"monthly" | "yearly" | null>(null);
   const [paymentFailed, setPaymentFailed] = useState<"monthly" | "yearly" | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!paymentSuccess) return;
+    const t = setTimeout(() => {
+      window.location.href = "/dashboard";
+    }, 3000);
+    return () => clearTimeout(t);
+  }, [paymentSuccess]);
 
   const handlePay = async (plan: "monthly" | "yearly") => {
     if (!user) {
@@ -29,9 +38,9 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
       await startBharatGauravPaymentLink({
         plan,
         onSuccess: () => {
-          toast.success("Payment successful — access unlocked!");
+          toast.success("Payment Successful — आपकी मेंबरशिप अब Active है!");
           onActivated();
-          window.location.href = "/dashboard";
+          setPaymentSuccess(true);
         },
         onFailure: () => setPaymentFailed(plan),
       });
@@ -73,6 +82,27 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
         </CardHeader>
 
         <CardContent className="space-y-4 bg-white pt-4">
+          {paymentSuccess ? (
+            <div className="space-y-4 text-center py-4">
+              <div className="mx-auto h-20 w-20 rounded-full bg-green-100 flex items-center justify-center animate-in zoom-in">
+                <CheckCircle2 className="h-12 w-12 text-green-600" />
+              </div>
+              <h3 className="text-xl font-extrabold text-green-700 font-hindi">
+                Payment Successful! ✅
+              </h3>
+              <p className="text-sm text-foreground font-hindi">
+                आपकी <span className="font-bold text-[#1a237e]">भारत गौरव मेंबरशिप</span> अब <span className="text-green-700 font-bold">Active</span> है।
+              </p>
+              <p className="text-xs text-muted-foreground">Redirecting to your Dashboard in 3 seconds…</p>
+              <Button
+                onClick={() => { window.location.href = "/dashboard"; }}
+                className="w-full h-12 text-base font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg"
+              >
+                Proceed to Dashboard <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </div>
+          ) : (
+          <>
           {/* Importance text */}
           <div className="rounded-xl bg-gradient-to-br from-[#FF9933]/10 via-white to-[#138808]/10 border-2 border-[#1a237e]/20 p-4">
             <p className="font-bold text-sm text-[#1a237e] mb-2 font-hindi">
@@ -128,6 +158,8 @@ const MembershipOverlay = ({ onActivated }: MembershipOverlayProps) => {
               <span className="font-hindi"> सफल पेमेंट के बाद एक्सेस तुरंत खुल जाएगा।</span>
             </p>
           </div>
+          </>
+          )}
         </CardContent>
       </Card>
     </div>
