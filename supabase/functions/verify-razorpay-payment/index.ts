@@ -108,27 +108,45 @@ async function findCapturedPaymentForOrder(order: any, user: any, keyId: string,
   const data = await resp.json();
   if (!resp.ok) throw new Error(data?.error?.description || "Unable to sync Razorpay payment");
 
-  const email = String(user.email || order.metadata?.customer_email || "").toLowerCase();
-  const phone = String(user.phone || "").replace(/\D/g, "");
+  // SECURITY: per-user strict match only. The payment link URL/id is SHARED across all users,
+  // so we MUST NOT match by payment link id + amount alone — that would let User B claim
+  // User A's payment. We require either the same Razorpay order_id, or the reference_id we
+  // attached when opening the link (= our payment_orders.id), as proof that *this* user paid.
+  const userEmail = String(user.email || "").toLowerCase();
+  const userPhone = String(user.phone || "").replace(/\D/g, "");
   const baseAmount = Number(order.amount || 0);
   const orderId = String(order.razorpay_order_id || "");
-  const orderPaymentLinkUrl = String(order.metadata?.payment_link_url || "");
-  const orderPaymentLinkId = orderPaymentLinkUrl.split("/").pop() || "";
 
   return (data.items || []).find((payment: any) => {
     if (payment.status !== "captured") return false;
+
+    // Strict: same Razorpay order id (only set for create-razorpay-order checkout flow)
     if (orderId && payment.order_id === orderId) return true;
+
+    // Strict: reference_id we set when opening the payment link == our order.id
+    const noteReference = String(
+      payment.reference_id ||
+      payment.notes?.reference_id ||
+      payment.notes?.payment_link_reference_id ||
+      ""
+    );
+    if (noteReference && noteReference === order.id) {
+      return isAmountMatch(Number(payment.amount || 0), baseAmount);
+    }
+
+    // Otherwise require an exact match against THIS authenticated user's contact details.
+    // We never fall back to "amount only" or "shared payment link id" because those are
+    // not user-specific and would cross-activate accounts.
     if (!isAmountMatch(Number(payment.amount || 0), baseAmount)) return false;
 
-    const paymentEmail = String(payment.email || payment.notes?.email || payment.notes?.customer_email || "").toLowerCase();
+    const paymentEmail = String(
+      payment.email || payment.notes?.email || payment.notes?.customer_email || ""
+    ).toLowerCase();
     const paymentContact = String(payment.contact || "").replace(/\D/g, "");
-    const noteReference = String(payment.reference_id || payment.notes?.reference_id || payment.notes?.payment_link_reference_id || "");
-    const paymentLink = String(payment.payment_link_id || payment.notes?.payment_link_id || payment.notes?.payment_link_short_url || "");
 
-    if (noteReference && noteReference === order.id) return true;
-    if (orderPaymentLinkId && paymentLink.includes(orderPaymentLinkId)) return true;
-    if (email && paymentEmail === email) return true;
-    if (phone && paymentContact.endsWith(phone.slice(-10))) return true;
+    if (userEmail && paymentEmail && paymentEmail === userEmail) return true;
+    if (userPhone && paymentContact && paymentContact.endsWith(userPhone.slice(-10))) return true;
+
     return false;
   }) || null;
 }
