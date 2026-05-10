@@ -21,13 +21,20 @@ export const useMembership = () => {
     // Check for approved/active membership
     const { data: approved } = await supabase
       .from("memberships")
-      .select("id")
+      .select("id, transaction_id, amount")
       .eq("user_id", user.id)
       .in("status", ["approved", "active"])
       .gte("ends_at", today)
       .limit(1);
 
-    if (approved && approved.length > 0) {
+    const verified = (approved || []).find(
+      (m) =>
+        typeof m.transaction_id === "string" &&
+        m.transaction_id.trim().length > 0 &&
+        Number(m.amount) >= 10,
+    );
+
+    if (verified) {
       setIsActive(true);
       setIsPending(false);
       setLoading(false);
