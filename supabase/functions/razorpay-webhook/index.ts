@@ -100,6 +100,7 @@ async function findOrderByUserOrEmail(admin: any, source: any, linkPlan: LinkPla
   const notes = source?.notes || {};
   const userId = String(notes.user_id || "");
   const email = String(source?.email || notes.email || notes.customer_email || "").toLowerCase();
+  const contact = String(source?.contact || notes.contact || "").replace(/\D/g, "");
   const amount = source?.amount ? amountInRupees(source) : linkPlan.amount;
 
   if (userId) {
@@ -107,18 +108,27 @@ async function findOrderByUserOrEmail(admin: any, source: any, linkPlan: LinkPla
     if (data) return data;
   }
 
-  const { data: recentOrders } = await admin.from("payment_orders").select("*").eq("module", linkPlan.module).eq("plan", linkPlan.plan).in("status", ["created", "pending", "failed"]).order("created_at", { ascending: false }).limit(50);
-  const matchingRecent = (recentOrders || []).find((order: any) => {
-    const orderEmail = String(order?.metadata?.customer_email || "").toLowerCase();
-    const emailMatches = email && orderEmail === email;
-    const amountMatches = isAmountMatch(amount, Number(order?.amount || linkPlan.amount));
-    return amountMatches && (emailMatches || !email);
-  });
-  if (matchingRecent) return matchingRecent;
+  // SECURITY: never attribute a webhook payment to an order by amount alone — payment links
+  // are shared across users so an amount-only match would activate the most recent pending
+  // order regardless of who actually paid. Require an email or phone match against the order
+  // owner's profile.
+  if (!email && !contact) return null;
 
-  if (!email) return null;
-
-  const { data: profile } = await admin.from("profiles").select("id").ilike("email", email).maybeSingle();
+  let profile: any = null;
+  if (email) {
+    const { data } = await admin.from("profiles").select("id").ilike("email", email).maybeSingle();
+    profile = data;
+  }
+  if (!profile?.id && contact) {
+    const last10 = contact.slice(-10);
+    const { data } = await admin
+      .from("profiles")
+      .select("id, phone")
+      .ilike("phone", `%${last10}`)
+      .limit(1)
+      .maybeSingle();
+    profile = data;
+  }
   if (!profile?.id) return null;
 
   const { data: existing } = await admin
