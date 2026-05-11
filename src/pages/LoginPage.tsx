@@ -28,7 +28,7 @@ const SUPERUSER_PIN = "02032026";
 const SUPERUSER_EMAIL = "superuser@mbd.local";
 const SUPERUSER_PASSWORD = "MBD_SuperUser_02032026!";
 const SHOP_APP_ORIGIN = "https://shop.mbdbusinesshub.in";
-const POST_LOGIN_MEMBERSHIP_PATH = "/membership";
+const POST_LOGIN_MEMBERSHIP_PATH = "/dashboard";
 
 const getStandaloneAuthOrigin = () => {
   const hostname = window.location.hostname;

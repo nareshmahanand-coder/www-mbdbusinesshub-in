@@ -15,10 +15,9 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 
-export type GuardModule = "bharat_gaurav" | "merchant_premium" | "marriage_bureau";
+export type GuardModule = "merchant_premium" | "marriage_bureau";
 
 const ALLOWED_AMOUNTS: Record<GuardModule, number[]> = {
-  bharat_gaurav: [10, 100],
   merchant_premium: [99, 999],
   marriage_bureau: [99, 999],
 };
@@ -58,28 +57,6 @@ export async function verifyUserSubscription(
   }
 
   const today = new Date().toISOString().slice(0, 10);
-
-  if (module === "bharat_gaurav") {
-    const { data } = await supabase
-      .from("memberships")
-      .select("id, transaction_id, amount, status, ends_at")
-      .eq("user_id", userId)
-      .in("status", ["active", "approved"])
-      .gte("ends_at", today);
-
-    const verified = (data || []).find(
-      (m) => isRealRazorpayTxn(m.transaction_id) && isAllowedAmount("bharat_gaurav", m.amount),
-    );
-    if (verified) return { paid: true, pending: false };
-
-    const { data: pend } = await supabase
-      .from("memberships")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("status", "pending")
-      .limit(1);
-    return { paid: false, pending: (pend?.length || 0) > 0 };
-  }
 
   // For merchant_premium and marriage_bureau, the proof of payment lives in
   // payment_orders (status='paid', razorpay_payment_id starts with 'pay_').

@@ -6,14 +6,10 @@ declare global {
   }
 }
 
-export type PaymentModule = "bharat_gaurav" | "merchant_premium" | "marriage_bureau";
+export type PaymentModule = "merchant_premium" | "marriage_bureau";
 export type PaymentPlan = "monthly" | "yearly";
 
 const PAYMENT_LINKS: Record<PaymentModule, Record<PaymentPlan, { url: string; amount: number; planName: string; subscriptionId: string }>> = {
-  bharat_gaurav: {
-    monthly: { url: "https://rzp.io/rzp/oAcEpjv", amount: 10, planName: "भारत गौरव मेंबरशिप ₹10 Monthly Plan", subscriptionId: "" },
-    yearly: { url: "https://rzp.io/rzp/3jBvEwl", amount: 100, planName: "भारत गौरव मेंबरशिप ₹100 प्लान", subscriptionId: "" },
-  },
   merchant_premium: {
     monthly: { url: "https://rzp.io/rzp/PKPblN5t", amount: 99, planName: "Merchant Portal ₹99 Monthly Plan", subscriptionId: "sub_ShLRDyN197vaFh" },
     yearly: { url: "https://rzp.io/rzp/CmLBI4u", amount: 999, planName: "Merchant Portal ₹999 Yearly Plan", subscriptionId: "sub_ShLXB2CbEc64Un" },
@@ -94,28 +90,6 @@ const waitForPaymentOrderUnlock = async (paymentOrderId: string) => {
   return false;
 };
 
-const waitForActiveMembership = async () => {
-  const { data: userData } = await supabase.auth.getUser();
-  const user = userData.user;
-  if (!user) return false;
-
-  const today = new Date().toISOString().split("T")[0];
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    const { data } = await supabase
-      .from("memberships")
-      .select("id")
-      .eq("user_id", user.id)
-      .in("status", ["approved", "active"])
-      .gte("ends_at", today)
-      .limit(1);
-
-    if (data && data.length > 0) return true;
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-  }
-
-  return false;
-};
-
 export const syncLatestRazorpayPayment = async ({ module, plan, paymentOrderId, razorpay_order_id, razorpay_payment_id, razorpay_signature }: SyncPaymentOptions) => {
   const { data, error } = await supabase.functions.invoke("verify-razorpay-payment", {
     body: {
@@ -170,10 +144,10 @@ const startPaymentLink = async ({ module, plan, onSuccess, onFailure }: StartPay
   const popup = window.open(paymentUrl.toString(), "_blank", "noopener,noreferrer");
   if (!popup) window.location.href = paymentUrl.toString();
 
-  let unlocked = await waitForPaymentOrderUnlock(order.id) || (module === "bharat_gaurav" && await waitForActiveMembership());
+  let unlocked = await waitForPaymentOrderUnlock(order.id);
   if (!unlocked) {
     const synced = await syncLatestRazorpayPayment({ module, plan, paymentOrderId: order.id });
-    unlocked = Boolean(synced.ok) || (module === "bharat_gaurav" && await waitForActiveMembership());
+    unlocked = Boolean(synced.ok);
   }
 
   if (!unlocked) {
@@ -182,10 +156,6 @@ const startPaymentLink = async ({ module, plan, onSuccess, onFailure }: StartPay
   }
 
   onSuccess();
-};
-
-export const startBharatGauravPaymentLink = async (options: Omit<StartPaymentOptions, "module">) => {
-  await startPaymentLink({ ...options, module: "bharat_gaurav" });
 };
 
 export const startMerchantPortalPaymentLink = async (options: Omit<StartPaymentOptions, "module">) => {

@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Heart, Settings, Trash2, Save, Store, Briefcase, Tag, Download, FileText, Bell, CheckCircle2 } from "lucide-react";
-import { downloadReceipt } from "@/lib/generateReceipt";
+import { ShoppingBag, Heart, Settings, Trash2, Save, Briefcase, Tag, Bell, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { sampleShops } from "@/data/sampleShops";
 
@@ -29,16 +28,6 @@ interface Order {
 
 interface MyAd { id: string; title: string; price: number; is_sold: boolean; }
 interface MyJob { id: string; title: string; is_active: boolean; }
-interface Membership {
-  id: string;
-  plan: string;
-  amount: number;
-  transaction_id: string | null;
-  status: string;
-  starts_at: string;
-  ends_at: string;
-  created_at: string;
-}
 
 interface ClassifiedContactRequest {
   id: string;
@@ -69,7 +58,6 @@ const CustomerDashboard = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [myAds, setMyAds] = useState<MyAd[]>([]);
   const [myJobs, setMyJobs] = useState<MyJob[]>([]);
-  const [memberships, setMemberships] = useState<Membership[]>([]);
   const [contactRequests, setContactRequests] = useState<ClassifiedContactRequest[]>([]);
   const [jobContactRequests, setJobContactRequests] = useState<JobContactRequest[]>([]);
   const [displayName, setDisplayName] = useState("");
@@ -83,13 +71,12 @@ const CustomerDashboard = () => {
     setPhone(user.phone || "");
 
     const loadData = async () => {
-      const [savedRes, ordersRes, profileRes, adsRes, jobsRes, membershipRes, requestsRes, jobRequestsRes] = await Promise.all([
+      const [savedRes, ordersRes, profileRes, adsRes, jobsRes, requestsRes, jobRequestsRes] = await Promise.all([
         supabase.from("saved_shops").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("orders").select("*").eq("customer_id", user.id).order("created_at", { ascending: false }),
         supabase.from("profiles").select("display_name, phone").eq("id", user.id).single(),
         supabase.from("classifieds").select("id, title, price, is_sold").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("jobs").select("id, title, is_active").eq("user_id", user.id).order("created_at", { ascending: false }),
-        supabase.from("memberships").select("id, plan, amount, transaction_id, status, starts_at, ends_at, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("classified_contact_requests" as any).select("*").order("created_at", { ascending: false }),
         supabase.from("job_contact_requests" as any).select("*").order("created_at", { ascending: false }),
       ]);
@@ -98,7 +85,6 @@ const CustomerDashboard = () => {
       if (ordersRes.data) setOrders(ordersRes.data);
       if (adsRes.data) setMyAds(adsRes.data as MyAd[]);
       if (jobsRes.data) setMyJobs(jobsRes.data as MyJob[]);
-      if (membershipRes.data) setMemberships(membershipRes.data as Membership[]);
       if (requestsRes.data) setContactRequests(requestsRes.data as unknown as ClassifiedContactRequest[]);
       if (jobRequestsRes.data) setJobContactRequests(jobRequestsRes.data as unknown as JobContactRequest[]);
       if (profileRes.data) {
@@ -181,9 +167,6 @@ const CustomerDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="jobs" className="flex-1 text-xs">
               <Briefcase className="mr-1 h-3.5 w-3.5" /> My Jobs
-            </TabsTrigger>
-            <TabsTrigger value="receipts" className="flex-1 text-xs">
-              <FileText className="mr-1 h-3.5 w-3.5" /> Receipts
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex-1 text-xs">
               <Settings className="mr-1 h-3.5 w-3.5" /> Settings
@@ -359,63 +342,6 @@ const CustomerDashboard = () => {
                         <Badge variant={job.is_active ? "secondary" : "default"}>{job.is_active ? "Active" : "Closed"}</Badge>
                       </div>
                     ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="receipts" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Payment Receipts</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {memberships.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <FileText className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-                    <p className="text-muted-foreground">No payment receipts yet</p>
-                    <p className="font-hindi text-sm text-muted-foreground">अभी तक कोई रसीद नहीं</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {memberships.map((m) => {
-                      const receiptNumber = `MBD-${new Date(m.created_at).getTime().toString(36).toUpperCase()}`;
-                      return (
-                        <div key={m.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-foreground text-sm">
-                              {m.plan === "yearly" ? "Yearly Plan" : "Monthly Plan"} — ₹{m.amount}
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              TXN: {m.transaction_id || "N/A"} • {new Date(m.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
-                            </p>
-                            <Badge variant={m.status === "approved" ? "default" : "secondary"} className="mt-1 text-[10px]">
-                              {m.status === "approved" ? "Approved ✓" : m.status === "pending" ? "Pending" : m.status}
-                            </Badge>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="ml-2 gap-1 border-accent text-accent shrink-0"
-                            onClick={() =>
-                              downloadReceipt({
-                                userName: user?.user_metadata?.display_name || user?.email || "User",
-                                userEmail: user?.email || "",
-                                plan: m.plan as "monthly" | "yearly",
-                                amount: m.amount,
-                                transactionId: m.transaction_id || "N/A",
-                                startsAt: m.starts_at,
-                                endsAt: m.ends_at,
-                                receiptNumber,
-                              })
-                            }
-                          >
-                            <Download className="h-3.5 w-3.5" /> PDF
-                          </Button>
-                        </div>
-                      );
-                    })}
                   </div>
                 )}
               </CardContent>
