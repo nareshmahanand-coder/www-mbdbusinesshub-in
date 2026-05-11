@@ -95,7 +95,7 @@ const LegalPage = ({ section }: { section: LegalSection }) => {
                 <CardTitle>Digital Membership & Service Fees</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-muted-foreground">
-                <p>Mera Bharat Dukaan provides instant access to digital services such as Bharat Gaurav Membership, Mashal Portal, Marriage Bureau, and merchant premium access after successful payment.</p>
+                <p>Mera Bharat Dukaan provides instant access to digital services such as Marriage Bureau and merchant premium access after successful payment.</p>
                 <p>Because access is activated immediately, paid digital membership fees are generally non-refundable once unlocked.</p>
               </CardContent>
             </Card>
