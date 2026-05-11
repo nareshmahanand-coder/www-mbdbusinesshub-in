@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingBag, Heart, Settings, Trash2, Save, Store, Briefcase, Tag, Download, FileText, Bell, CheckCircle2 } from "lucide-react";
-import { downloadReceipt } from "@/lib/generateReceipt";
+import { ShoppingBag, Heart, Settings, Trash2, Save, Briefcase, Tag, Bell, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { sampleShops } from "@/data/sampleShops";
 
@@ -29,16 +28,6 @@ interface Order {
 
 interface MyAd { id: string; title: string; price: number; is_sold: boolean; }
 interface MyJob { id: string; title: string; is_active: boolean; }
-interface Membership {
-  id: string;
-  plan: string;
-  amount: number;
-  transaction_id: string | null;
-  status: string;
-  starts_at: string;
-  ends_at: string;
-  created_at: string;
-}
 
 interface ClassifiedContactRequest {
   id: string;
@@ -69,7 +58,6 @@ const CustomerDashboard = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [myAds, setMyAds] = useState<MyAd[]>([]);
   const [myJobs, setMyJobs] = useState<MyJob[]>([]);
-  const [memberships, setMemberships] = useState<Membership[]>([]);
   const [contactRequests, setContactRequests] = useState<ClassifiedContactRequest[]>([]);
   const [jobContactRequests, setJobContactRequests] = useState<JobContactRequest[]>([]);
   const [displayName, setDisplayName] = useState("");
@@ -83,13 +71,12 @@ const CustomerDashboard = () => {
     setPhone(user.phone || "");
 
     const loadData = async () => {
-      const [savedRes, ordersRes, profileRes, adsRes, jobsRes, membershipRes, requestsRes, jobRequestsRes] = await Promise.all([
+      const [savedRes, ordersRes, profileRes, adsRes, jobsRes, requestsRes, jobRequestsRes] = await Promise.all([
         supabase.from("saved_shops").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("orders").select("*").eq("customer_id", user.id).order("created_at", { ascending: false }),
         supabase.from("profiles").select("display_name, phone").eq("id", user.id).single(),
         supabase.from("classifieds").select("id, title, price, is_sold").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("jobs").select("id, title, is_active").eq("user_id", user.id).order("created_at", { ascending: false }),
-        supabase.from("memberships").select("id, plan, amount, transaction_id, status, starts_at, ends_at, created_at").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("classified_contact_requests" as any).select("*").order("created_at", { ascending: false }),
         supabase.from("job_contact_requests" as any).select("*").order("created_at", { ascending: false }),
       ]);
@@ -98,7 +85,6 @@ const CustomerDashboard = () => {
       if (ordersRes.data) setOrders(ordersRes.data);
       if (adsRes.data) setMyAds(adsRes.data as MyAd[]);
       if (jobsRes.data) setMyJobs(jobsRes.data as MyJob[]);
-      if (membershipRes.data) setMemberships(membershipRes.data as Membership[]);
       if (requestsRes.data) setContactRequests(requestsRes.data as unknown as ClassifiedContactRequest[]);
       if (jobRequestsRes.data) setJobContactRequests(jobRequestsRes.data as unknown as JobContactRequest[]);
       if (profileRes.data) {
@@ -181,9 +167,6 @@ const CustomerDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="jobs" className="flex-1 text-xs">
               <Briefcase className="mr-1 h-3.5 w-3.5" /> My Jobs
-            </TabsTrigger>
-            <TabsTrigger value="receipts" className="flex-1 text-xs">
-              <FileText className="mr-1 h-3.5 w-3.5" /> Receipts
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex-1 text-xs">
               <Settings className="mr-1 h-3.5 w-3.5" /> Settings

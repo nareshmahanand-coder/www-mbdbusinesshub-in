@@ -6,14 +6,10 @@ declare global {
   }
 }
 
-export type PaymentModule = "bharat_gaurav" | "merchant_premium" | "marriage_bureau";
+export type PaymentModule = "merchant_premium" | "marriage_bureau";
 export type PaymentPlan = "monthly" | "yearly";
 
 const PAYMENT_LINKS: Record<PaymentModule, Record<PaymentPlan, { url: string; amount: number; planName: string; subscriptionId: string }>> = {
-  bharat_gaurav: {
-    monthly: { url: "https://rzp.io/rzp/oAcEpjv", amount: 10, planName: "भारत गौरव मेंबरशिप ₹10 Monthly Plan", subscriptionId: "" },
-    yearly: { url: "https://rzp.io/rzp/3jBvEwl", amount: 100, planName: "भारत गौरव मेंबरशिप ₹100 प्लान", subscriptionId: "" },
-  },
   merchant_premium: {
     monthly: { url: "https://rzp.io/rzp/PKPblN5t", amount: 99, planName: "Merchant Portal ₹99 Monthly Plan", subscriptionId: "sub_ShLRDyN197vaFh" },
     yearly: { url: "https://rzp.io/rzp/CmLBI4u", amount: 999, planName: "Merchant Portal ₹999 Yearly Plan", subscriptionId: "sub_ShLXB2CbEc64Un" },
