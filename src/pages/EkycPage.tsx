@@ -479,7 +479,7 @@ const EkycPage = () => {
         )}
 
         {step === "verified" && existing && (
-          <Certificate data={existing} onContinue={() => { window.location.href = "/dashboard"; }} />
+          <Certificate data={existing} onContinue={() => { window.location.href = "/membership"; }} />
         )}
       </div>
     </div>
@@ -573,7 +573,7 @@ const Certificate = ({ data, onContinue }: { data: any; onContinue: () => void }
       </div>
 
       <Button onClick={onContinue} className="mt-6 w-full bg-[#1a237e] font-bold text-white hover:bg-[#1a237e]/90">
-        Continue to Dashboard / डैशबोर्ड पर जाएँ
+        आगे बढ़ें — भारत गौरव मेंबरशिप / Continue to Membership
       </Button>
     </Card>
   );
