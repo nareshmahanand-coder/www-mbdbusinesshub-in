@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -77,9 +77,9 @@ const BharatGauravMembershipPage = () => {
   const { isActive, loading, refresh } = useBharatGauravMembership();
   const [busy, setBusy] = useState<"monthly" | "yearly" | null>(null);
 
-  if (!loading && isActive) {
-    navigate("/dashboard", { replace: true });
-  }
+  useEffect(() => {
+    if (!loading && isActive) navigate("/dashboard", { replace: true });
+  }, [loading, isActive, navigate]);
 
   const startPayment = async (plan: "monthly" | "yearly") => {
     if (!user) { navigate("/login?next=/membership"); return; }
