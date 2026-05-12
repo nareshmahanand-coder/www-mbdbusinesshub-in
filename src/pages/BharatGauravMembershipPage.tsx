@@ -15,8 +15,9 @@ import {
   Landmark,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { startInstantRazorpayPayment } from "@/lib/razorpayPayments";
+import { startBharatGauravPaymentLink } from "@/lib/razorpayPayments";
 import { useBharatGauravMembership } from "@/hooks/useBharatGauravMembership";
+import mbdLogo from "@/assets/mbd-logo.png";
 
 const benefits = [
   {
@@ -85,8 +86,7 @@ const BharatGauravMembershipPage = () => {
     if (!user) { navigate("/login?next=/membership"); return; }
     setBusy(plan);
     try {
-      await startInstantRazorpayPayment({
-        module: "bharat_gaurav" as any,
+      await startBharatGauravPaymentLink({
         plan,
         onSuccess: async () => {
           toast.success("भुगतान सफल — डैशबोर्ड पर ले जा रहे हैं");
@@ -111,7 +111,7 @@ const BharatGauravMembershipPage = () => {
           {/* Header */}
           <div className="flex flex-col items-center text-center">
             <div className="mb-3 flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-4 border-[#FF8C00] bg-white">
-              <span className="text-xl font-extrabold text-[#1a237e]">मे.भा.दु</span>
+              <img src={mbdLogo} alt="मेरा भारत दुकान" className="h-full w-full object-cover" />
             </div>
             <h1 className="text-2xl font-extrabold text-[#1a237e]">भारत गौरव मेंबरशिप</h1>
             <p className="mt-1 text-sm font-semibold text-gray-700">भारत के हर नागरिक के लिए आवश्यक है</p>
