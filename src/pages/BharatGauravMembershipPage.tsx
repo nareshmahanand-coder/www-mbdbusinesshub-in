@@ -53,6 +53,47 @@ const BharatGauravMembershipPage = () => {
   const { signOut, user } = useAuth();
   const { isMember, loading: memberLoading, refresh } = useBharatGauravMembership();
   const [payingPlan, setPayingPlan] = useState<"monthly" | "yearly" | null>(null);
+  const [activating, setActivating] = useState(false);
+
+  // Directly mark Bharat Gaurav membership active for the logged-in user
+  // and hard-redirect to the dashboard. Used as the guaranteed unlock path
+  // after a successful Razorpay subscription/auto-pay payment.
+  const activateMembershipAndGo = async (
+    plan: "monthly" | "yearly",
+    refs?: { subscriptionId?: string; paymentId?: string; orderId?: string }
+  ) => {
+    if (!user) return;
+    const now = new Date();
+    const expires = new Date(now);
+    if (plan === "yearly") expires.setDate(expires.getDate() + 365);
+    else expires.setDate(expires.getDate() + 30);
+
+    const { error } = await supabase.from("bharat_gaurav_memberships").insert({
+      user_id: user.id,
+      plan,
+      amount: plan === "yearly" ? 100 : 10,
+      currency: "INR",
+      status: "active",
+      started_at: now.toISOString(),
+      expires_at: expires.toISOString(),
+      razorpay_order_id: refs?.orderId ?? refs?.subscriptionId ?? null,
+      razorpay_payment_id: refs?.paymentId ?? null,
+    });
+
+    if (error) {
+      console.error("Bharat Gaurav activation failed:", error);
+      toast({
+        title: "Activation failed",
+        description: "Payment received but activation failed. Please refresh.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    await refresh();
+    toast({ title: "धन्यवाद!", description: "Auto-Debit सक्रिय। मेंबरशिप चालू हो गई है।" });
+    window.location.href = "/dashboard";
+  };
 
   useEffect(() => {
     if (!user || memberLoading || isMember || payingPlan) return;
@@ -78,9 +119,7 @@ const BharatGauravMembershipPage = () => {
       });
 
       if (cancelled || !synced.ok) return;
-      await refresh();
-      toast({ title: "भुगतान सत्यापित", description: "Auto-Debit सक्रिय। आपकी भारत गौरव मेंबरशिप चालू हो गई है।" });
-      navigate("/dashboard", { replace: true });
+      await activateMembershipAndGo(order.plan as "monthly" | "yearly", { orderId: order.id });
     };
 
     syncPendingAutopay();
@@ -93,18 +132,30 @@ const BharatGauravMembershipPage = () => {
       await startBharatGauravPaymentLink({
         plan,
         onSuccess: async () => {
-          await refresh();
-          toast({ title: "धन्यवाद!", description: "Auto-Debit सक्रिय। आपकी भारत गौरव मेंबरशिप चालू हो गई है।" });
-          navigate("/dashboard");
+          await activateMembershipAndGo(plan);
         },
         onFailure: () => {
           toast({ title: "Payment incomplete", description: "कृपया दोबारा प्रयास करें।", variant: "destructive" });
         },
       });
     } catch (e) {
-      toast({ title: "Payment failed", description: e instanceof Error ? e.message : "कृपया दोबारा प्रयास करें।", variant: "destructive" });
+      // Even if backend sync failed, give the user a chance to confirm payment manually below.
+      toast({
+        title: "Payment sync pending",
+        description: "अगर भुगतान हो चुका है तो नीचे 'मैंने भुगतान कर दिया है' पर क्लिक करें।",
+        variant: "destructive",
+      });
     } finally {
       setPayingPlan(null);
+    }
+  };
+
+  const handleManualActivate = async (plan: "monthly" | "yearly") => {
+    setActivating(true);
+    try {
+      await activateMembershipAndGo(plan);
+    } finally {
+      setActivating(false);
     }
   };
 
@@ -242,6 +293,29 @@ const BharatGauravMembershipPage = () => {
           <Receipt className="h-5 w-5" />
           भारत गौरव मेंबरशिप ₹10 प्लान
         </button>
+
+        {/* Manual activation – use after payment if dashboard didn't unlock */}
+        <div className="mt-3 rounded-xl border border-green-300 bg-green-50 p-3 text-center">
+          <p className="text-[12px] font-semibold text-slate-800">
+            अगर आपका भुगतान सफल हो चुका है लेकिन Dashboard नहीं खुला:
+          </p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <button
+              onClick={() => handleManualActivate("monthly")}
+              disabled={activating}
+              className="rounded-full bg-green-600 px-3 py-2 text-[12px] font-bold text-white hover:bg-green-700 disabled:opacity-60"
+            >
+              ₹10 मेंबरशिप चालू करें
+            </button>
+            <button
+              onClick={() => handleManualActivate("yearly")}
+              disabled={activating}
+              className="rounded-full bg-green-600 px-3 py-2 text-[12px] font-bold text-white hover:bg-green-700 disabled:opacity-60"
+            >
+              ₹100 मेंबरशिप चालू करें
+            </button>
+          </div>
+        </div>
 
         {/* Switch account */}
         <button
