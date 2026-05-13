@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, Crown, Image, Loader2, Upload, X, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import type { MatrimonyProfile } from "@/pages/MatrimonyPage";
 import { startMarriageBureauPaymentLink, syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
 
@@ -18,6 +19,7 @@ interface Props {
 }
 
 const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
+  const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [payingPlan, setPayingPlan] = useState<"monthly" | "yearly" | null>(null);
@@ -110,8 +112,7 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
         onSuccess: () => {
           toast.success("Payment Successful — Marriage Bureau Premium अब Active है!");
           onReload();
-          setSuccessRedirect("/matrimony?tab=my-profile");
-          // No auto-redirect — user clicks "Go to Dashboard"
+          navigate("/dashboard", { replace: true });
         },
         onFailure: () => setFailedPlan(plan),
       });
@@ -130,8 +131,7 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
       if (result.ok) {
         toast.success("Payment Successful — Marriage Bureau Premium अब Active है!");
         onReload();
-        setSuccessRedirect("/matrimony?tab=my-profile");
-        // No auto-redirect — user clicks "Go to Dashboard"
+        navigate("/dashboard", { replace: true });
       } else {
         toast.info(result.error || "Payment confirmation is still pending. Please try again shortly.");
       }
@@ -325,15 +325,19 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
             <div className="mt-4 space-y-3">
               <button
                 type="button"
+                onClick={() => handlePremiumPayment("monthly")}
+                disabled={payingPlan !== null}
                 className="w-full rounded-xl bg-[#FF9933] px-4 py-4 text-base font-extrabold text-white shadow-md"
               >
-                Marriage Bureau ₹99 Monthly Plan
+                {payingPlan === "monthly" ? "Processing..." : "Marriage Bureau ₹99 Monthly Plan"}
               </button>
               <button
                 type="button"
+                onClick={() => handlePremiumPayment("yearly")}
+                disabled={payingPlan !== null}
                 className="w-full rounded-xl bg-[#138808] px-4 py-4 text-base font-extrabold text-white shadow-md"
               >
-                Marriage Bureau ₹999 Yearly Plan
+                {payingPlan === "yearly" ? "Processing..." : "Marriage Bureau ₹999 Yearly Plan"}
               </button>
             </div>
 
