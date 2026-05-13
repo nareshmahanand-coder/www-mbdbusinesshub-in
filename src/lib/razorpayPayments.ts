@@ -111,11 +111,17 @@ export const syncLatestRazorpayPayment = async ({ module, plan, paymentOrderId, 
 };
 
 const startPaymentLink = async ({ module, plan, onSuccess, onFailure }: StartPaymentOptions) => {
+  const link = PAYMENT_LINKS[module][plan];
+  // Open the tab SYNCHRONOUSLY inside the click gesture so popup blockers allow it.
+  const popup = window.open(link.url, "_blank", "noopener,noreferrer");
+
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
-  if (!user) throw new Error("Login required");
+  if (!user) {
+    popup?.close();
+    throw new Error("Login required");
+  }
 
-  const link = PAYMENT_LINKS[module][plan];
   const receipt = `mbd_${module}_link_${Date.now()}`.slice(0, 40);
   const { data: order, error } = await supabase
     .from("payment_orders")
@@ -139,14 +145,22 @@ const startPaymentLink = async ({ module, plan, onSuccess, onFailure }: StartPay
     .select("id")
     .single();
 
-  if (error || !order) throw new Error(error?.message || "Could not start payment");
+  if (error || !order) {
+    popup?.close();
+    throw new Error(error?.message || "Could not start payment");
+  }
 
   const paymentUrl = new URL(link.url);
   if (user.email) paymentUrl.searchParams.set("email", user.email);
   paymentUrl.searchParams.set("reference_id", order.id);
 
-  const popup = window.open(paymentUrl.toString(), "_blank", "noopener,noreferrer");
-  if (!popup) window.location.href = paymentUrl.toString();
+  // Redirect the already-opened tab to the URL that includes the user's reference_id.
+  if (popup && !popup.closed) {
+    try { popup.location.href = paymentUrl.toString(); } catch { /* cross-origin after navigation – ignore */ }
+  } else {
+    // Popup was blocked – fall back to same-tab navigation.
+    window.location.href = paymentUrl.toString();
+  }
 
   let unlocked = await waitForPaymentOrderUnlock(order.id);
   if (!unlocked) {
