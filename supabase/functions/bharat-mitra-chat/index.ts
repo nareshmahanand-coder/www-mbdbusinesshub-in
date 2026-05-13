@@ -41,18 +41,14 @@ You have COMPLETE awareness of the app and the current user's status (membership
 - Route: **/matrimony**
 - KYC mandatory (Aadhaar + PAN).
 
-### 4. Bharat Gaurav Membership (Elite Citizen)
-- **₹10/month** या **₹100/year** — exclusive citizen benefits.
-- Pitch: "Boss, सिर्फ ₹10 में Bharat Gaurav बनिए — देशभक्तों का परिवार!"
-
-### 5. Sell & Buy (Classifieds — पुरानी चीज़ें)
+### 4. Sell & Buy (Classifieds — पुरानी चीज़ें)
 - Trade old & new goods easily. Route: **/classifieds**
 
-### 6. Bharat Kavach — Family Safety (सुरक्षा चक्र)
+### 5. Bharat Kavach — Family Safety (सुरक्षा चक्र)
 - Women, children & family security: **WhatsApp live location tracking, SOS button, Safe Walk**.
 - Route: **/family-safety**. Always promote to families.
 
-### 7. Skill Development & NGO Certificates
+### 6. Skill Development & NGO Certificates
 - Vocational training + **Govt-registered NGO Certificates from "Life Show Foundation"** (Govt. Regd.).
 - Free exams, free certificates. Route: **/skill-development**
 
@@ -84,7 +80,7 @@ For technical or business issues route the user to:
 Format: "Boss, अगर और मदद चाहिए तो हमारी टीम से WhatsApp करें: +91 9203645007 या email: helpline.bharatdukaan@gmail.com 📞"
 
 ## 💎 UPGRADE NUDGE (FREE USERS)
-If the current user has NO active membership, in EVERY 2nd–3rd reply gently nudge the most relevant paid plan (Merchant Premium ₹99 / Matrimony ₹99 / Bharat Gaurav ₹10) based on the topic. Be polite, never pushy.
+If the current user is on a free plan, in EVERY 2nd–3rd reply gently nudge the most relevant paid plan (Merchant Premium ₹99 / Matrimony ₹99) based on the topic. Be polite, never pushy.
 
 ## 🌾 NANDA AGRO FARM — FLAGSHIP PARTNER (PROMOTE PROACTIVELY)
 "Mera Bharat Dukaan" का flagship farm है **नंदा एग्रो फार्म (Bhilai, Chhattisgarh)**. WhatsApp: 918305161361. Zero-waste, 100% organic, farm fresh.
@@ -144,21 +140,19 @@ serve(async (req) => {
       const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
 
       // Parallel fetch: global app data + (if userId) user-specific data
-      const [shopsRes, jobsRes, matrimonyRes, classifiedsRes, productsRes, profileRes, memRes, myMerchantRes] = await Promise.all([
+      const [shopsRes, jobsRes, matrimonyRes, classifiedsRes, productsRes, profileRes, myMerchantRes] = await Promise.all([
         supabase.from("merchant_profiles").select("id, shop_name, shop_name_hindi, category, city, address, phone, whatsapp, is_premium, is_verified, latitude, longitude, description").limit(80),
         supabase.from("jobs").select("title, company_name, city, salary_range, job_type, contact_phone, is_active").eq("is_active", true).limit(30),
         supabase.from("matrimony_profiles").select("name, gender, city, education, profession").eq("is_published", true).limit(30),
         supabase.from("classifieds").select("title, category, price, city, condition, is_sold").eq("is_sold", false).limit(30),
         supabase.from("products").select("id, merchant_id, name, name_hindi, price, in_stock, description").eq("in_stock", true).limit(200),
         userId ? supabase.from("profiles").select("display_name, phone, city").eq("id", userId).maybeSingle() : Promise.resolve({ data: null }),
-        userId ? supabase.from("memberships").select("plan, status, ends_at").eq("user_id", userId).eq("status", "approved").gte("ends_at", new Date().toISOString().split("T")[0]).limit(1).maybeSingle() : Promise.resolve({ data: null }),
         userId ? supabase.from("merchant_profiles").select("id, shop_name, category, city, is_premium, is_verified").eq("user_id", userId).maybeSingle() : Promise.resolve({ data: null }),
       ]);
 
       // === USER-SPECIFIC CONTEXT ===
       if (userId) {
         const p: any = profileRes.data;
-        const m: any = memRes.data;
         const me: any = myMerchantRes.data;
 
         dbContext += `\n### 👤 CURRENT USER:\n`;
@@ -166,7 +160,6 @@ serve(async (req) => {
         if (p?.phone) dbContext += `- Phone: ${p.phone}\n`;
         if (p?.city) dbContext += `- City: ${p.city}\n`;
         if (userState) dbContext += `- State / Region: ${userState} (use the regional greeting & language preference)\n`;
-        dbContext += `- Membership: ${m ? `✅ Active (${m.plan}, expires ${m.ends_at})` : "❌ Not active — guide them to take Bharat Gaurav membership"}\n`;
         if (me) {
           dbContext += `- Merchant Profile: ${me.shop_name} (${me.category}, ${me.city}) — ${me.is_premium ? "⭐ Premium" : "Free"}${me.is_verified ? " ✅ Verified" : ""}\n`;
           // Their products
@@ -230,7 +223,7 @@ serve(async (req) => {
     const fullSystemPrompt = SYSTEM_PROMPT + dbContext + `
 
 ## RULES
-- Always personal: greet by name if known, mention their membership status when relevant.
+- Always personal: greet by name if known.
 - For "cheapest X near me" / "price of X": SCAN the LIVE PRICES section. Find lowest price for that product, name the shop, state the price, and link the shop using [[SHOP:id:name]].
 - If no prices for a product: say "अभी किसी दुकान ने इसका रेट नहीं डाला, बॉस जी। मैं merchants को बता दूँगी।"
 - For shop recommendation: use [[SHOP:shop_id:shop_name]] format (mandatory). Premium + nearest first.

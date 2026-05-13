@@ -15,10 +15,9 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 
-export type GuardModule = "bharat_gaurav" | "merchant_premium" | "marriage_bureau";
+export type GuardModule = "merchant_premium" | "marriage_bureau";
 
 const ALLOWED_AMOUNTS: Record<GuardModule, number[]> = {
-  bharat_gaurav: [10, 100],
   merchant_premium: [99, 999],
   marriage_bureau: [99, 999],
 };
@@ -58,33 +57,6 @@ export async function verifyUserSubscription(
   }
 
   const today = new Date().toISOString().slice(0, 10);
-
-  // For bharat_gaurav, the proof of payment lives in the memberships table
-  // (populated by the razorpay-webhook on payment.captured).
-  if (module === "bharat_gaurav") {
-    const { data: rows } = await supabase
-      .from("memberships")
-      .select("id, amount, status, transaction_id, ends_at")
-      .eq("user_id", userId)
-      .in("status", ["active", "approved"])
-      .order("ends_at", { ascending: false });
-    const now = new Date();
-    const verified = (rows || []).find(
-      (r) =>
-        isRealRazorpayTxn(r.transaction_id) &&
-        isAllowedAmount("bharat_gaurav", r.amount) &&
-        (!r.ends_at || new Date(r.ends_at) >= now),
-    );
-    if (verified) return { paid: true, pending: false };
-    const { data: pend } = await supabase
-      .from("payment_orders")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("module", "bharat_gaurav")
-      .in("status", ["created", "pending"])
-      .limit(1);
-    return { paid: false, pending: (pend?.length || 0) > 0 };
-  }
 
   // For merchant_premium and marriage_bureau, the proof of payment lives in
   // payment_orders (status='paid', razorpay_payment_id starts with 'pay_').

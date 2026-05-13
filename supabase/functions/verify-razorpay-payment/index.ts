@@ -9,7 +9,7 @@ const corsHeaders = {
 const enc = new TextEncoder();
 const toHex = (buffer: ArrayBuffer) => Array.from(new Uint8Array(buffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
 
-type ModuleName = "bharat_gaurav" | "merchant_premium" | "marriage_bureau";
+type ModuleName = "merchant_premium" | "marriage_bureau";
 type PlanName = "monthly" | "yearly";
 
 async function hmacSha256(message: string, secret: string) {
@@ -30,34 +30,12 @@ function isAmountMatch(actualPaise: number, baseRupees: number) {
   return Math.abs(actualPaise - basePaise) <= 2 || Math.abs(actualPaise - taxedPaise) <= 2;
 }
 
-async function ensureMembership(admin: any, order: any, paymentId: string, dates: { start: string; end: string }) {
-  const { data: existing } = await admin.from("memberships").select("id").eq("transaction_id", paymentId).maybeSingle();
-  if (existing?.id) {
-    const { error } = await admin.from("memberships").update({ status: "active", starts_at: dates.start, ends_at: dates.end, updated_at: new Date().toISOString() }).eq("id", existing.id);
-    if (error) throw error;
-    return;
-  }
-
-  const { error } = await admin.from("memberships").insert({
-    user_id: order.user_id,
-    plan: order.plan,
-    amount: order.amount,
-    transaction_id: paymentId,
-    status: "active",
-    starts_at: dates.start,
-    ends_at: dates.end,
-  });
-  if (error) throw error;
-}
-
 async function unlock(admin: any, order: any, paymentId: string, signature: string, source: string) {
   if (order.status === "paid" && order.unlocked_at) return;
   const days = Number(order.metadata?.days || (order.plan === "yearly" ? 365 : 30));
   const dates = addDays(days);
 
-  if (order.module === "bharat_gaurav") {
-    await ensureMembership(admin, order, paymentId, dates);
-  } else if (order.module === "merchant_premium") {
+  if (order.module === "merchant_premium") {
     const { error } = await admin.from("merchant_profiles").update({
       is_premium: true,
       premium_plan: order.plan,

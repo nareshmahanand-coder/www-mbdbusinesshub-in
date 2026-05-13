@@ -86,21 +86,6 @@ interface SosAlertRecord {
   user_email?: string | null;
 }
 
-interface MembershipRecord {
-  id: string;
-  user_id: string;
-  plan: string;
-  amount: number;
-  transaction_id: string | null;
-  screenshot_url: string | null;
-  status: string;
-  starts_at: string;
-  ends_at: string;
-  created_at: string;
-  profile_email?: string | null;
-  profile_phone?: string | null;
-}
-
 interface MatrimonyRecord {
   id: string;
   user_id: string;
@@ -193,9 +178,7 @@ const AdminDashboard = () => {
   const [aiAnswer, setAiAnswer] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
-  // Membership & Matrimony states
-  const [memberships, setMemberships] = useState<MembershipRecord[]>([]);
-  const [membershipsLoading, setMembershipsLoading] = useState(false);
+  // Matrimony states
   const [matrimonyProfiles, setMatrimonyProfiles] = useState<MatrimonyRecord[]>([]);
   const [matrimonyLoading, setMatrimonyLoading] = useState(false);
   const [complaints, setComplaints] = useState<ComplaintRecord[]>([]);
@@ -219,30 +202,11 @@ const AdminDashboard = () => {
 
     const loadCustomers = async () => {
       setCustomersLoading(true);
-      // Only show users with a verified, paid membership in the admin directory
-      const today = new Date().toISOString().split("T")[0];
-      const { data: paidMemberships } = await supabase
-        .from("memberships")
-        .select("user_id, transaction_id, amount, status, ends_at")
-        .in("status", ["approved", "active"])
-        .gte("ends_at", today);
-      const paidUserIds = Array.from(
-        new Set(
-          (paidMemberships ?? [])
-            .filter((m) => typeof m.transaction_id === "string" && m.transaction_id.trim().length > 0 && Number(m.amount) >= 10)
-            .map((m) => m.user_id),
-        ),
-      );
-      if (paidUserIds.length === 0) {
-        setCustomers([]);
-        setCustomersLoading(false);
-        return;
-      }
       const { data, error } = await supabase
         .from("profiles")
         .select("id, email, phone, provider, created_at, display_name, phone_verified, phone_verified_at")
-        .in("id", paidUserIds)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(500);
       if (error) { toast.error("Customer Directory लोड नहीं हो सका"); setCustomers([]); }
       else setCustomers(data ?? []);
       setCustomersLoading(false);
@@ -270,30 +234,6 @@ const AdminDashboard = () => {
         })));
       }
       setSosLoading(false);
-    };
-
-    const loadMemberships = async () => {
-      setMembershipsLoading(true);
-      const { data } = await supabase
-        .from("memberships")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (data) {
-        const userIds = [...new Set(data.map(m => m.user_id))];
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, email, phone")
-          .in("id", userIds);
-        
-        const profileMap = new Map(profiles?.map(p => [p.id, p]) ?? []);
-        setMemberships(data.map(m => ({
-          ...m,
-          profile_email: profileMap.get(m.user_id)?.email,
-          profile_phone: profileMap.get(m.user_id)?.phone,
-        })));
-      }
-      setMembershipsLoading(false);
     };
 
     const loadMatrimony = async () => {
@@ -356,7 +296,6 @@ const AdminDashboard = () => {
     };
 
     void loadCustomers();
-    void loadMemberships();
     void loadMatrimony();
     void loadComplaints();
     void loadMerchants();
@@ -387,30 +326,6 @@ const AdminDashboard = () => {
     // Realtime subscription for new payments & merchant submissions
     const channel = supabase
       .channel('admin-realtime')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'memberships' },
-        async (payload) => {
-          const newMembership = payload.new as any;
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("email, phone")
-            .eq("id", newMembership.user_id)
-            .maybeSingle();
-          
-          const enriched = {
-            ...newMembership,
-            profile_email: profile?.email,
-            profile_phone: profile?.phone,
-          };
-          setMemberships(prev => [enriched, ...prev]);
-          
-          toast.info(
-            `🔔 नया पेमेंट! ${profile?.email || profile?.phone || "User"} ने ${newMembership.plan === "monthly" ? "₹10 मासिक" : "₹100 वार्षिक"} मेंबरशिप ली। TXN: ${newMembership.transaction_id || "N/A"}`,
-            { duration: 10000 }
-          );
-        }
-      )
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'merchant_profiles' },
@@ -465,17 +380,6 @@ const AdminDashboard = () => {
           const newUser = payload.new as CustomerRecord;
           setCustomers(prev => [newUser, ...prev.filter(c => c.id !== newUser.id)]);
           toast.info(`👤 नया यूज़र साइनअप: ${newUser.email || newUser.phone || "Unknown"}`, { duration: 6000 });
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'memberships' },
-        (payload) => {
-          const updated = payload.new as any;
-          setMemberships(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
-          if (updated.status === "approved") {
-            toast.success(`💰 Razorpay payment confirmed — ${updated.plan} membership active`, { duration: 8000 });
-          }
         }
       )
       .on(
@@ -564,32 +468,6 @@ const AdminDashboard = () => {
       return { ...s, premiumStartDate: plan === "monthly" ? new Date(newExpiry.getTime()).toISOString().split("T")[0] : newStart.toISOString().split("T")[0] };
     }));
     toast.success("✅ Premium extended by 30 days!");
-  };
-
-  // Approve Bharat Gaurav Membership
-  const approveMembership = async (membershipId: string) => {
-    const { error } = await supabase
-      .from("memberships")
-      .update({ status: "approved" })
-      .eq("id", membershipId);
-    
-    if (error) { toast.error("Approval failed"); return; }
-    
-    setMemberships(prev => prev.map(m => m.id === membershipId ? { ...m, status: "approved" } : m));
-    toast.success("✅ भारत गौरव मेंबरशिप अप्रूव हो गई!");
-  };
-
-  // Reject Bharat Gaurav Membership
-  const rejectMembership = async (membershipId: string) => {
-    const { error } = await supabase
-      .from("memberships")
-      .update({ status: "rejected" })
-      .eq("id", membershipId);
-    
-    if (error) { toast.error("Rejection failed"); return; }
-    
-    setMemberships(prev => prev.map(m => m.id === membershipId ? { ...m, status: "rejected" } : m));
-    toast.error("❌ मेंबरशिप अस्वीकृत की गई।");
   };
 
   // Verify & Publish Matrimony Profile
@@ -699,7 +577,6 @@ const AdminDashboard = () => {
   const monthlyEarnings = payments.filter((p) => p.approved && p.plan === "monthly").reduce((sum, p) => sum + p.amount, 0);
   const yearlyEarnings = payments.filter((p) => p.approved && p.plan === "yearly").reduce((sum, p) => sum + p.amount, 0);
   const totalEarnings = monthlyEarnings + yearlyEarnings;
-  const pendingMemberships = memberships.filter(m => m.status === "pending");
   const unpublishedMatrimony = matrimonyProfiles.filter(p => !p.is_published);
   const unreadComplaints = complaints.filter(c => !c.is_read);
 
@@ -832,7 +709,6 @@ const AdminDashboard = () => {
                     const cutoff = notificationsClearedAt;
                     const visibleCount =
                       pendingPayments.filter(p => !cutoff || p.date > cutoff).length +
-                      pendingMemberships.filter(m => !cutoff || m.created_at > cutoff).length +
                       unpublishedMatrimony.filter(p => !cutoff || p.created_at > cutoff).length +
                       unreadComplaints.filter(c => !cutoff || c.created_at > cutoff).length +
                       merchants.filter(m => !m.is_verified && (!cutoff || m.created_at > cutoff)).length;
@@ -852,12 +728,6 @@ const AdminDashboard = () => {
                   </button>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                {pendingMemberships.length > 0 && (
-                  <DropdownMenuItem onClick={() => { setActiveTab("memberships"); setNotifDropdownOpen(false); }}>
-                    <Crown className="mr-2 h-4 w-4 text-saffron" />
-                    <span className="text-xs">{pendingMemberships.length} pending membership(s)</span>
-                  </DropdownMenuItem>
-                )}
                 {merchants.filter(m => !m.is_verified).length > 0 && (
                   <DropdownMenuItem onClick={() => { setActiveTab("merchants"); setNotifDropdownOpen(false); }}>
                     <FileText className="mr-2 h-4 w-4 text-navy" />
@@ -882,7 +752,7 @@ const AdminDashboard = () => {
                     <span className="text-xs">{pendingPayments.length} payment(s) pending</span>
                   </DropdownMenuItem>
                 )}
-                {(pendingPayments.length + pendingMemberships.length + unpublishedMatrimony.length + unreadComplaints.length + merchants.filter(m => !m.is_verified).length) === 0 && (
+                {(pendingPayments.length + unpublishedMatrimony.length + unreadComplaints.length + merchants.filter(m => !m.is_verified).length) === 0 && (
                   <div className="px-2 py-4 text-center text-xs text-muted-foreground">No new notifications</div>
                 )}
               </DropdownMenuContent>
@@ -943,12 +813,6 @@ const AdminDashboard = () => {
               <div><p className="text-2xl font-extrabold">{premiumMerchantCount}</p><p className="text-[10px] opacity-70">Premium / प्रीमियम</p></div>
             </CardContent>
           </Card>
-          <Card className="border-2 border-accent">
-            <CardContent className="flex items-center gap-3 p-4">
-              <Bell className="h-7 w-7 text-accent" />
-              <div><p className="text-2xl font-extrabold text-accent">{pendingMemberships.length}</p><p className="text-[10px] text-muted-foreground">Membership Pending</p></div>
-            </CardContent>
-          </Card>
           <Card className="border-2 border-[hsl(340,80%,50%)]">
             <CardContent className="flex items-center gap-3 p-4">
               <Heart className="h-7 w-7 text-[hsl(340,80%,50%)]" />
@@ -984,7 +848,6 @@ const AdminDashboard = () => {
             <TabsTrigger value="family-preview" className="text-xs">कवच</TabsTrigger>
             <TabsTrigger value="inventory-preview" className="text-xs">Inventory</TabsTrigger>
             <TabsTrigger value="ai-preview" className="text-xs">AI</TabsTrigger>
-            <TabsTrigger value="memberships" className="text-xs">🏅 भारत गौरव ({pendingMemberships.length})</TabsTrigger>
             <TabsTrigger value="matrimony" className="text-xs">💕 जीवनसाथी ({unpublishedMatrimony.length})</TabsTrigger>
             <TabsTrigger value="merchants" className="text-xs relative">
               🏪 Merchants
@@ -1042,7 +905,6 @@ const AdminDashboard = () => {
               <Card>
                 <CardHeader className="bg-destructive/5 border-b"><CardTitle className="text-base flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" /> Quality Queue</CardTitle></CardHeader>
                 <CardContent className="space-y-2 p-4 text-sm">
-                  <div className="flex justify-between"><span>Pending memberships</span><Badge>{pendingMemberships.length}</Badge></div>
                   <div className="flex justify-between"><span>Unpublished profiles</span><Badge>{unpublishedMatrimony.length}</Badge></div>
                   <div className="flex justify-between"><span>Merchant KYC pending</span><Badge>{merchants.filter(m => !m.is_verified).length}</Badge></div>
                   <div className="flex justify-between"><span>Unread complaints</span><Badge variant="destructive">{unreadComplaints.length}</Badge></div>
@@ -1179,64 +1041,6 @@ const AdminDashboard = () => {
 
           <TabsContent value="raktadan">
             <RaktadanReviewTab />
-          </TabsContent>
-
-          {/* BHARAT GAURAV MEMBERSHIP SECTION */}
-          <TabsContent value="memberships">
-            <Card>
-              <CardHeader className="bg-accent/5 border-b">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Crown className="h-5 w-5 text-accent" /> भारत गौरव मेंबरशिप Verification
-                  <Badge variant="secondary">{pendingMemberships.length} Pending</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 p-4">
-                {membershipsLoading ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">Loading...</p>
-                ) : pendingMemberships.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">✅ No pending membership requests.</p>
-                ) : (
-                  pendingMemberships.map((m) => (
-                    <div key={m.id} className="rounded-lg border border-accent/30 bg-accent/5 p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div>
-                          <p className="font-semibold text-foreground">{m.profile_email || m.profile_phone || m.user_id.slice(0, 8)}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {m.plan === "monthly" ? "₹10 मासिक" : "₹100 वार्षिक"} • TXN: <span className="font-mono">{m.transaction_id || "N/A"}</span> • {formatDateTime(m.created_at)}
-                          </p>
-                          {m.screenshot_url && (
-                            <a href={m.screenshot_url} target="_blank" rel="noopener noreferrer" className="mt-1 text-xs text-primary underline">
-                              📎 View Screenshot
-                            </a>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={() => approveMembership(m.id)} className="bg-green-india hover:bg-green-india/90 text-primary-foreground h-8">
-                            <CheckCircle2 className="mr-1 h-4 w-4" /> Approve
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => rejectMembership(m.id)} className="h-8">
-                            <XCircle className="mr-1 h-4 w-4" /> Reject
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-
-                {/* Approved memberships */}
-                {memberships.filter(m => m.status === "approved").length > 0 && (
-                  <div className="mt-4 border-t pt-4">
-                    <p className="mb-2 text-xs font-semibold text-green-india">✅ Recently Approved:</p>
-                    {memberships.filter(m => m.status === "approved").slice(0, 10).map((m) => (
-                      <div key={m.id} className="mb-1 rounded bg-green-india/5 px-3 py-2 text-xs flex items-center justify-between">
-                        <span><span className="font-medium">{m.profile_email || m.profile_phone || "User"}</span> — {m.plan} plan • {formatDateTime(m.created_at)}</span>
-                        <Badge className="bg-green-india text-primary-foreground text-[9px]">Active</Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </TabsContent>
 
           {/* MATRIMONY VERIFICATION SECTION */}

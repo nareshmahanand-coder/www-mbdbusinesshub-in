@@ -29,9 +29,7 @@ import SkillDevelopmentPage from "./pages/SkillDevelopmentPage";
 import FamilySafetyPage from "./pages/FamilySafetyPage";
 import FamilyInvitePage from "./pages/FamilyInvitePage";
 import EkycPage from "./pages/EkycPage";
-import BharatGauravMembershipPage from "./pages/BharatGauravMembershipPage";
 import { useKycStatus } from "@/hooks/useKycStatus";
-import { useBharatGauravMembership } from "@/hooks/useBharatGauravMembership";
 import { useLastKnownLocation } from "@/hooks/useLastKnownLocation";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 
@@ -75,15 +73,13 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const KycRequiredRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading: authLoading, isSuperUser } = useAuth();
   const { hasKyc, loading: kycLoading } = useKycStatus();
-  const { isActive: hasMembership, loading: memLoading } = useBharatGauravMembership();
   const location = useLocation();
-  if (authLoading || (user && (kycLoading || memLoading))) return <FullScreenLoader />;
+  if (authLoading || (user && kycLoading)) return <FullScreenLoader />;
   if (!user) {
     const next = `${location.pathname}${location.search}`;
     return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
   }
   if (!isSuperUser && !hasKyc) return <Navigate to="/ekyc" replace />;
-  if (!isSuperUser && !hasMembership) return <Navigate to="/membership" replace />;
   return <>{children}</>;
 };
 
@@ -94,12 +90,10 @@ const MerchantAccessRoute = ({ children }: { children: React.ReactNode }) => {
 const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, isSuperUser } = useAuth();
   const { hasKyc, loading: kycLoading } = useKycStatus();
-  const { isActive: hasMembership, loading: memLoading } = useBharatGauravMembership();
   const location = useLocation();
   const next = new URLSearchParams(location.search).get("next") || sessionStorage.getItem("mbd-auth-next") || "/dashboard";
-  if (loading || (user && (kycLoading || memLoading))) return <FullScreenLoader />;
+  if (loading || (user && kycLoading)) return <FullScreenLoader />;
   if (user && !isSuperUser && !hasKyc) return <Navigate to="/ekyc" replace />;
-  if (user && !isSuperUser && !hasMembership) return <Navigate to="/membership" replace />;
   if (user) return <Navigate to={next.startsWith("/") ? next : "/dashboard"} replace />;
   return <>{children}</>;
 };
@@ -122,7 +116,6 @@ const AppShell = () => {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/~oauth/*" element={<FullScreenLoader />} />
         <Route path="/ekyc" element={<EkycPage />} />
-        <Route path="/membership" element={<ProtectedRoute><BharatGauravMembershipPage /></ProtectedRoute>} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/contact" element={<LegalPage section="contact" />} />
         <Route path="/privacy-policy" element={<LegalPage section="privacy" />} />

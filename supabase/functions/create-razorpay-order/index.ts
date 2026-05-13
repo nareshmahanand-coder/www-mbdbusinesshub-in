@@ -7,10 +7,6 @@ const corsHeaders = {
 };
 
 const PRODUCTS = {
-  bharat_gaurav: {
-    monthly: { amount: 10, amountPaise: 1000, days: 30, label: "Bharat Gaurav Membership ₹10 Monthly Plan" },
-    yearly: { amount: 100, amountPaise: 10000, days: 365, label: "Bharat Gaurav Membership ₹100 Yearly Plan" },
-  },
   merchant_premium: {
     monthly: { amount: 99, amountPaise: 9900, days: 30, label: "Merchant Premium Monthly" },
     yearly: { amount: 999, amountPaise: 99900, days: 365, label: "Merchant Premium Yearly - Best Value" },
