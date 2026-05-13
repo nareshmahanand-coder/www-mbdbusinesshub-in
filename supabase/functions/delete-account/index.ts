@@ -37,11 +37,57 @@ Deno.serve(async (req) => {
     }
 
     const userId = userData.user.id;
+    const userEmail = String(userData.user.email || "").trim().toLowerCase();
+    const userPhone = String(userData.user.phone || "").replace(/\D/g, "");
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+    const linkedUserIds = new Set<string>([userId]);
+    if (userEmail || userPhone) {
+      let profilesQuery = admin.from("profiles").select("id, email, phone");
+      if (userEmail && userPhone) {
+        profilesQuery = profilesQuery.or(`email.ilike.${userEmail},phone.ilike.%${userPhone.slice(-10)}`);
+      } else if (userEmail) {
+        profilesQuery = profilesQuery.ilike("email", userEmail);
+      } else if (userPhone) {
+        profilesQuery = profilesQuery.ilike("phone", `%${userPhone.slice(-10)}`);
+      }
+      const { data: linkedProfiles } = await profilesQuery;
+      for (const profile of linkedProfiles || []) {
+        if (profile?.id) linkedUserIds.add(profile.id);
+      }
+    }
+
+    const linkedIds = Array.from(linkedUserIds);
+    const bharatOrderIds = new Set<string>();
+    const { data: bharatOrders } = await admin
+      .from("payment_orders")
+      .select("id")
+      .eq("module", "bharat_gaurav")
+      .in("user_id", linkedIds);
+    for (const order of bharatOrders || []) {
+      if (order?.id) bharatOrderIds.add(order.id);
+    }
+    if (userEmail) {
+      const { data: emailOrders } = await admin
+        .from("payment_orders")
+        .select("id")
+        .eq("module", "bharat_gaurav")
+        .or(`metadata->>customer_email.eq.${userEmail},metadata->>email.eq.${userEmail}`);
+      for (const order of emailOrders || []) {
+        if (order?.id) bharatOrderIds.add(order.id);
+      }
+    }
+
+    // Deep wipe Bharat Gaurav state first, including records linked by old UID/email metadata.
+    await admin.from("bharat_gaurav_memberships").delete().in("user_id", linkedIds);
+    if (bharatOrderIds.size > 0) {
+      await admin.from("bharat_gaurav_memberships").delete().in("payment_order_id", Array.from(bharatOrderIds));
+      await admin.from("payment_orders").delete().in("id", Array.from(bharatOrderIds));
+    }
+    await admin.from("payment_orders").delete().eq("module", "bharat_gaurav").in("user_id", linkedIds);
 
     // Best-effort delete user data from app tables
     const tables = [
-      "bharat_gaurav_memberships",
       "payment_orders",
       "merchant_profiles",
       "matrimony_profiles",
@@ -61,12 +107,14 @@ Deno.serve(async (req) => {
       "user_roles",
       "profiles",
     ];
-    for (const t of tables) {
-      try {
-        await admin.from(t).delete().eq("user_id", userId);
-      } catch (_) { /* ignore */ }
+    for (const id of linkedIds) {
+      for (const t of tables) {
+        try {
+          await admin.from(t).delete().eq("user_id", id);
+        } catch (_) { /* ignore */ }
+      }
+      try { await admin.from("profiles").delete().eq("id", id); } catch (_) {}
     }
-    try { await admin.from("profiles").delete().eq("id", userId); } catch (_) {}
 
     const { error: delErr } = await admin.auth.admin.deleteUser(userId);
     if (delErr) {
