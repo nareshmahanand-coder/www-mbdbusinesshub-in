@@ -86,21 +86,6 @@ interface SosAlertRecord {
   user_email?: string | null;
 }
 
-interface MembershipRecord {
-  id: string;
-  user_id: string;
-  plan: string;
-  amount: number;
-  transaction_id: string | null;
-  screenshot_url: string | null;
-  status: string;
-  starts_at: string;
-  ends_at: string;
-  created_at: string;
-  profile_email?: string | null;
-  profile_phone?: string | null;
-}
-
 interface MatrimonyRecord {
   id: string;
   user_id: string;
@@ -193,9 +178,7 @@ const AdminDashboard = () => {
   const [aiAnswer, setAiAnswer] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
-  // Membership & Matrimony states
-  const [memberships, setMemberships] = useState<MembershipRecord[]>([]);
-  const [membershipsLoading, setMembershipsLoading] = useState(false);
+  // Matrimony states
   const [matrimonyProfiles, setMatrimonyProfiles] = useState<MatrimonyRecord[]>([]);
   const [matrimonyLoading, setMatrimonyLoading] = useState(false);
   const [complaints, setComplaints] = useState<ComplaintRecord[]>([]);
