@@ -479,7 +479,7 @@ const EkycPage = () => {
         )}
 
         {step === "verified" && existing && (
-          <Certificate data={existing} onContinue={() => { window.location.href = "/membership"; }} />
+          <Certificate data={existing} onContinue={() => { window.location.href = "/dashboard"; }} />
         )}
       </div>
     </div>
