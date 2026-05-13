@@ -11,16 +11,16 @@ export type PaymentPlan = "monthly" | "yearly";
 
 const PAYMENT_LINKS: Record<PaymentModule, Record<PaymentPlan, { url: string; amount: number; planName: string; subscriptionId: string }>> = {
   bharat_gaurav: {
-    monthly: { url: "", amount: 10, planName: "Bharat Gaurav Starter Monthly ₹10", subscriptionId: "" },
-    yearly: { url: "", amount: 100, planName: "Bharat Gaurav Annual Elite ₹100", subscriptionId: "" },
+    monthly: { url: "https://rzp.io/rzp/8ycseIj6", amount: 10, planName: "Bharat Gaurav Starter Monthly ₹10", subscriptionId: "" },
+    yearly: { url: "https://rzp.io/rzp/UY25o3q", amount: 100, planName: "Bharat Gaurav Annual Elite ₹100", subscriptionId: "" },
   },
   merchant_premium: {
-    monthly: { url: "", amount: 99, planName: "Merchant Digital Shop Monthly ₹99", subscriptionId: "" },
-    yearly: { url: "", amount: 999, planName: "Merchant Business Pro Annual ₹999", subscriptionId: "" },
+    monthly: { url: "https://rzp.io/rzp/md63vYt8", amount: 99, planName: "Merchant Digital Shop Monthly ₹99", subscriptionId: "" },
+    yearly: { url: "https://rzp.io/rzp/gdhg7YC4", amount: 999, planName: "Merchant Business Pro Annual ₹999", subscriptionId: "" },
   },
   marriage_bureau: {
-    monthly: { url: "", amount: 99, planName: "Marriage Bureau Silver Monthly ₹99", subscriptionId: "" },
-    yearly: { url: "", amount: 999, planName: "Marriage Bureau Gold Annual ₹999", subscriptionId: "" },
+    monthly: { url: "https://rzp.io/rzp/JPhHPAU", amount: 99, planName: "Marriage Bureau Silver Monthly ₹99", subscriptionId: "" },
+    yearly: { url: "https://rzp.io/rzp/8PAlZmT", amount: 999, planName: "Marriage Bureau Gold Annual ₹999", subscriptionId: "" },
   },
 };
 
