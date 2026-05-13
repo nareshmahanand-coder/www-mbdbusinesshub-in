@@ -175,7 +175,59 @@ const MerchantPortal = () => {
     }
   };
 
-  const renderSubscriptionCard = () => null;
+  const renderSubscriptionCard = () => (
+    <Card className="mb-6 overflow-hidden border-2 border-[#FF9933]/40 shadow-lg">
+      <div className="h-1.5 w-full bg-[#FF9933]" />
+      <CardContent className="bg-gradient-to-b from-[#FF9933]/5 to-[#138808]/5 p-5">
+        <div className="flex flex-col items-center text-center">
+          <Crown className="h-8 w-8 text-[#FF9933]" />
+          <h2 className="mt-2 text-xl font-extrabold text-[#1a237e]">
+            <span className="font-hindi">मर्चेंट पोर्टल प्रीमियम</span> • Merchant Premium
+          </h2>
+          <p className="mt-1 text-xs font-bold tracking-wide text-[#138808]">
+            OPTIONAL UPGRADE • <span className="font-hindi">वैकल्पिक अपग्रेड</span>
+          </p>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-gray-200 bg-white p-3 text-sm leading-relaxed text-gray-800">
+          <span className="font-hindi font-bold">रजिस्ट्रेशन पूरी तरह मुफ़्त है।</span>{" "}
+          <span className="font-hindi">
+            प्रीमियम लेना ज़रूरी नहीं है — लेकिन प्रीमियम मर्चेंट बनने पर आपको ज़ीरो कमीशन बिक्री, एडवांस वेंडर डैशबोर्ड और अपनी दुकान को प्राथमिकता के साथ लिस्ट करने की सुविधा मिलती है।
+          </span>
+        </div>
+
+        <ul className="mt-4 space-y-2 text-sm font-hindi text-gray-800">
+          <li className="flex items-start gap-2">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#138808]" />
+            <span>0% कमीशन — पूरी कमाई आपकी।</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#138808]" />
+            <span>दुकान के नाम के साथ <strong>'Verified'</strong> का निशान।</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <Eye className="mt-0.5 h-4 w-4 shrink-0 text-[#138808]" />
+            <span>प्राथमिकता लिस्टिंग — सबसे ऊपर दिखेंगे।</span>
+          </li>
+        </ul>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            className="rounded-xl bg-[#FF9933] px-4 py-4 text-base font-extrabold text-white shadow-md"
+          >
+            Merchant Portal ₹99 Monthly Plan
+          </button>
+          <button
+            type="button"
+            className="rounded-xl bg-[#138808] px-4 py-4 text-base font-extrabold text-white shadow-md"
+          >
+            Merchant Portal ₹999 Yearly Plan
+          </button>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   const KycUploadTile = ({
     label, hindi, url, onPick, onClear, optional, skipped, onSkipToggle,
