@@ -73,6 +73,7 @@ const UserProfileMenu = () => {
   };
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
