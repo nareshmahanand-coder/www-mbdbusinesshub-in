@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import {
@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useBharatGauravMembership } from "@/hooks/useBharatGauravMembership";
+import { startBharatGauravPaymentLink } from "@/lib/razorpayPayments";
+import { toast } from "sonner";
 import mbdLogo from "@/assets/mbd-logo.png";
 
 const benefits = [
@@ -54,11 +56,32 @@ const benefits = [
 const BharatGauravMembershipPage = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { isActive, loading } = useBharatGauravMembership();
+  const { isActive, loading, refresh } = useBharatGauravMembership();
+  const [payingPlan, setPayingPlan] = useState<"monthly" | "yearly" | null>(null);
 
   useEffect(() => {
     if (!loading && isActive) navigate("/dashboard", { replace: true });
   }, [loading, isActive, navigate]);
+
+  const handlePay = async (plan: "monthly" | "yearly") => {
+    if (!user) { toast.error("Please login first"); return; }
+    setPayingPlan(plan);
+    try {
+      await startBharatGauravPaymentLink({
+        plan,
+        onSuccess: async () => {
+          toast.success("Payment Successful — Bharat Gaurav Membership Active!");
+          await refresh();
+          navigate("/dashboard", { replace: true });
+        },
+        onFailure: () => toast.error("Payment failed. Please retry."),
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Payment failed. Please retry.");
+    } finally {
+      setPayingPlan(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-orange-50/40 to-emerald-50/40 px-4 py-6">
@@ -126,9 +149,11 @@ const BharatGauravMembershipPage = () => {
               <p className="text-[10px] font-bold tracking-wider text-gray-500">MONTHLY PLAN</p>
               <button
                 type="button"
+                onClick={() => handlePay("monthly")}
+                disabled={payingPlan !== null}
                 className="mt-3 w-full rounded-md bg-[#FF8C00] px-2 py-2 text-[11px] font-bold text-white"
               >
-                अभी भुगतान करें
+                {payingPlan === "monthly" ? "Processing..." : "अभी भुगतान करें"}
               </button>
             </div>
             {/* Yearly */}
@@ -141,9 +166,11 @@ const BharatGauravMembershipPage = () => {
               <p className="text-[10px] font-bold tracking-wider text-gray-500">YEARLY PLAN</p>
               <button
                 type="button"
+                onClick={() => handlePay("yearly")}
+                disabled={payingPlan !== null}
                 className="mt-3 w-full rounded-md bg-gray-100 px-2 py-2 text-[11px] font-bold text-[#1a237e]"
               >
-                अभी भुगतान करें
+                {payingPlan === "yearly" ? "Processing..." : "अभी भुगतान करें"}
               </button>
             </div>
           </div>
@@ -151,6 +178,8 @@ const BharatGauravMembershipPage = () => {
           {/* Primary CTA */}
           <button
             type="button"
+            onClick={() => handlePay("monthly")}
+            disabled={payingPlan !== null}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#FF8C00] px-4 py-3 text-sm font-extrabold text-white shadow-md"
           >
             <CreditCard className="h-4 w-4" />

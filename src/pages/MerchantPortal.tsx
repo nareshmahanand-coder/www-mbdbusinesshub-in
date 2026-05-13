@@ -11,7 +11,7 @@ import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { startMerchantPortalPaymentLink, syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
 
@@ -33,6 +33,7 @@ const MERCHANT_PLANS = [
 const MerchantPortal = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const { settings } = useSiteSettings();
   const accessMessage = (location.state as { accessMessage?: string } | null)?.accessMessage;
   const [submitted, setSubmitted] = useState(false);
@@ -146,8 +147,7 @@ const MerchantPortal = () => {
         plan: plan.id as "monthly" | "yearly",
         onSuccess: () => {
           toast.success("Payment Successful — Merchant Premium अब Active है!");
-          setSuccessRedirect("/merchant-dashboard");
-          // No auto-redirect — user clicks "Go to Dashboard"
+          navigate("/merchant-dashboard", { replace: true });
         },
         onFailure: () => setFailedPlan(plan.id as "monthly" | "yearly"),
       });
@@ -165,8 +165,7 @@ const MerchantPortal = () => {
       const result = await syncLatestRazorpayPayment({ module: "merchant_premium", plan: planId });
       if (result.ok) {
         toast.success("Payment Successful — Merchant Premium अब Active है!");
-        setSuccessRedirect("/merchant-dashboard");
-        // No auto-redirect — user clicks "Go to Dashboard"
+        navigate("/merchant-dashboard", { replace: true });
       } else {
         toast.info(result.error || "Payment confirmation is still pending. Please try again shortly.");
       }
@@ -214,15 +213,19 @@ const MerchantPortal = () => {
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <button
             type="button"
+            onClick={() => handleSubscribe(MERCHANT_PLANS.find(p => p.id === "monthly")!)}
+            disabled={payingPlan !== null}
             className="rounded-xl bg-[#FF9933] px-4 py-4 text-base font-extrabold text-white shadow-md"
           >
-            Merchant Portal ₹99 Monthly Plan
+            {payingPlan === "monthly" ? "Processing..." : "Merchant Portal ₹99 Monthly Plan"}
           </button>
           <button
             type="button"
+            onClick={() => handleSubscribe(MERCHANT_PLANS.find(p => p.id === "yearly")!)}
+            disabled={payingPlan !== null}
             className="rounded-xl bg-[#138808] px-4 py-4 text-base font-extrabold text-white shadow-md"
           >
-            Merchant Portal ₹999 Yearly Plan
+            {payingPlan === "yearly" ? "Processing..." : "Merchant Portal ₹999 Yearly Plan"}
           </button>
         </div>
       </CardContent>
