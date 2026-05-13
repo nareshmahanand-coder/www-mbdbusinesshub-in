@@ -29,6 +29,7 @@ import SkillDevelopmentPage from "./pages/SkillDevelopmentPage";
 import FamilySafetyPage from "./pages/FamilySafetyPage";
 import FamilyInvitePage from "./pages/FamilyInvitePage";
 import EkycPage from "./pages/EkycPage";
+import BharatGauravMembershipPage from "./pages/BharatGauravMembershipPage";
 import { useKycStatus } from "@/hooks/useKycStatus";
 import { useLastKnownLocation } from "@/hooks/useLastKnownLocation";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -116,6 +117,7 @@ const AppShell = () => {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/~oauth/*" element={<FullScreenLoader />} />
         <Route path="/ekyc" element={<EkycPage />} />
+        <Route path="/membership" element={<ProtectedRoute><BharatGauravMembershipPage /></ProtectedRoute>} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/contact" element={<LegalPage section="contact" />} />
         <Route path="/privacy-policy" element={<LegalPage section="privacy" />} />

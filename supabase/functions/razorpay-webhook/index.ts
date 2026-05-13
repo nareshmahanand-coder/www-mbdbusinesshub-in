@@ -9,7 +9,7 @@ const corsHeaders = {
 const enc = new TextEncoder();
 const toHex = (buffer: ArrayBuffer) => Array.from(new Uint8Array(buffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
 
-type ModuleName = "merchant_premium" | "marriage_bureau";
+type ModuleName = "merchant_premium" | "marriage_bureau" | "bharat_gaurav";
 type PlanName = "monthly" | "yearly";
 type LinkPlan = { module: ModuleName; plan: PlanName; amount: number; days: number; label: string };
 
@@ -25,6 +25,8 @@ const PAYMENT_LINKS: Record<string, LinkPlan> = {
   gdhg7YC4: { module: "merchant_premium", plan: "yearly", amount: 999, days: 365, label: "Merchant Portal ₹999 Yearly" },
   JPhHPAU: { module: "marriage_bureau", plan: "monthly", amount: 99, days: 30, label: "Marriage Bureau ₹99 Monthly" },
   "8PAlZmT": { module: "marriage_bureau", plan: "yearly", amount: 999, days: 365, label: "Marriage Bureau ₹999 Yearly" },
+  "8ycseIj6": { module: "bharat_gaurav", plan: "monthly", amount: 10, days: 30, label: "Bharat Gaurav Monthly ₹10" },
+  UY25o3q: { module: "bharat_gaurav", plan: "yearly", amount: 100, days: 365, label: "Bharat Gaurav Yearly ₹100" },
 };
 
 async function hmacSha256(message: string, secret: string) {
@@ -214,6 +216,23 @@ async function unlock(admin: any, order: any, paymentId: string, signature: stri
       subscription_start: dates.start,
       subscription_end: dates.end,
     }).eq("user_id", order.user_id);
+    if (error) throw error;
+  } else if (order.module === "bharat_gaurav") {
+    const startedAt = new Date();
+    const expiresAt = new Date(startedAt);
+    expiresAt.setDate(expiresAt.getDate() + days);
+    const { error } = await admin.from("bharat_gaurav_memberships").insert({
+      user_id: order.user_id,
+      plan: order.plan,
+      amount: order.amount,
+      currency: order.currency || "INR",
+      status: "active",
+      payment_order_id: order.id,
+      razorpay_payment_id: paymentId,
+      razorpay_order_id: order.razorpay_order_id,
+      started_at: startedAt.toISOString(),
+      expires_at: expiresAt.toISOString(),
+    });
     if (error) throw error;
   }
 

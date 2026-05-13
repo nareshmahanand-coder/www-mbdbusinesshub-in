@@ -9,7 +9,7 @@ const corsHeaders = {
 const enc = new TextEncoder();
 const toHex = (buffer: ArrayBuffer) => Array.from(new Uint8Array(buffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
 
-type ModuleName = "merchant_premium" | "marriage_bureau";
+type ModuleName = "merchant_premium" | "marriage_bureau" | "bharat_gaurav";
 type PlanName = "monthly" | "yearly";
 
 async function hmacSha256(message: string, secret: string) {
@@ -52,6 +52,23 @@ async function unlock(admin: any, order: any, paymentId: string, signature: stri
       subscription_end: dates.end,
     }).eq("user_id", order.user_id);
     if (error) throw error;
+  } else if (order.module === "bharat_gaurav") {
+    const startedAt = new Date();
+    const expiresAt = new Date(startedAt);
+    expiresAt.setDate(expiresAt.getDate() + days);
+    const { error: membershipError } = await admin.from("bharat_gaurav_memberships").insert({
+      user_id: order.user_id,
+      plan: order.plan,
+      amount: order.amount,
+      currency: order.currency || "INR",
+      status: "active",
+      payment_order_id: order.id,
+      razorpay_payment_id: paymentId,
+      razorpay_order_id: order.razorpay_order_id,
+      started_at: startedAt.toISOString(),
+      expires_at: expiresAt.toISOString(),
+    });
+    if (membershipError) throw membershipError;
   }
 
   const { error } = await admin.from("payment_orders").update({
