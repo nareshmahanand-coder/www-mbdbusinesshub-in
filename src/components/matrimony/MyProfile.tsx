@@ -296,6 +296,53 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
           रजिस्ट्रेशन पूरा करने के लिए सब्सक्रिप्शन/भुगतान अनिवार्य है।
         </p>
 
+        {/* Marriage Bureau Premium */}
+        <div
+          id="matrimony-subscription"
+          className="mt-4 overflow-hidden rounded-2xl border-2 border-[#138808]/40 shadow-sm"
+        >
+          <div className="h-1.5 w-full bg-gradient-to-r from-[#FF9933] via-white to-[#138808]" />
+          <div className="bg-gradient-to-b from-[#FF9933]/5 to-[#138808]/5 p-5">
+            <div className="flex flex-col items-center text-center">
+              <Crown className="h-7 w-7 text-[#FF9933]" />
+              <h3 className="mt-2 text-lg font-extrabold font-hindi text-[hsl(340,60%,30%)]">
+                मैरिज ब्यूरो प्रीमियम
+              </h3>
+              <p className="mt-1 text-sm font-semibold text-gray-700">
+                🇮🇳 Verified Profiles • Unlimited Contacts 🇮🇳
+              </p>
+            </div>
+
+            <div className="mt-4 rounded-xl border border-gray-200 bg-white p-3 text-sm leading-relaxed text-gray-800">
+              <p className="font-hindi font-bold">मैरिज ब्यूरो प्रीमियम क्यों चुनें?</p>
+              <p className="mt-1 font-hindi">
+                प्रोफेशनल मेंबरशिप में आपको{" "}
+                <strong className="text-[#FF9933]">सत्यापित प्रोफाइल्स (Verified Profiles)</strong> तक सीधी पहुँच,{" "}
+                <strong className="text-[#FF9933]">असीमित संपर्क विवरण</strong> और प्राथमिकता के आधार पर मैचमेकिंग सहायता मिलती है। Yearly: ₹99 प्लान चुनें।
+              </p>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              <button
+                type="button"
+                className="w-full rounded-xl bg-[#FF9933] px-4 py-4 text-base font-extrabold text-white shadow-md"
+              >
+                Marriage Bureau ₹99 Monthly Plan
+              </button>
+              <button
+                type="button"
+                className="w-full rounded-xl bg-[#138808] px-4 py-4 text-base font-extrabold text-white shadow-md"
+              >
+                Marriage Bureau ₹999 Yearly Plan
+              </button>
+            </div>
+
+            <p className="mt-3 text-center font-hindi text-[11px] text-gray-600">
+              सुरक्षित Razorpay पेमेंट के बाद आपकी verified profile publish हो जाएगी और unlimited contacts unlock होंगे।
+            </p>
+          </div>
+        </div>
+
       </CardContent>
     </Card>
   );
