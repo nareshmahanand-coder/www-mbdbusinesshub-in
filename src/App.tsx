@@ -31,6 +31,7 @@ import FamilyInvitePage from "./pages/FamilyInvitePage";
 import EkycPage from "./pages/EkycPage";
 import BharatGauravMembershipPage from "./pages/BharatGauravMembershipPage";
 import { useKycStatus } from "@/hooks/useKycStatus";
+import { useBharatGauravMembership } from "@/hooks/useBharatGauravMembership";
 import { useLastKnownLocation } from "@/hooks/useLastKnownLocation";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 
@@ -74,13 +75,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const KycRequiredRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading: authLoading, isSuperUser } = useAuth();
   const { hasKyc, loading: kycLoading } = useKycStatus();
+  const { isMember, loading: memLoading } = useBharatGauravMembership();
   const location = useLocation();
-  if (authLoading || (user && kycLoading)) return <FullScreenLoader />;
+  if (authLoading || (user && (kycLoading || memLoading))) return <FullScreenLoader />;
   if (!user) {
     const next = `${location.pathname}${location.search}`;
     return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
   }
   if (!isSuperUser && !hasKyc) return <Navigate to="/ekyc" replace />;
+  if (!isSuperUser && !isMember) return <Navigate to="/membership" replace />;
   return <>{children}</>;
 };
 
@@ -91,10 +94,12 @@ const MerchantAccessRoute = ({ children }: { children: React.ReactNode }) => {
 const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, isSuperUser } = useAuth();
   const { hasKyc, loading: kycLoading } = useKycStatus();
+  const { isMember, loading: memLoading } = useBharatGauravMembership();
   const location = useLocation();
   const next = new URLSearchParams(location.search).get("next") || sessionStorage.getItem("mbd-auth-next") || "/dashboard";
-  if (loading || (user && kycLoading)) return <FullScreenLoader />;
+  if (loading || (user && (kycLoading || memLoading))) return <FullScreenLoader />;
   if (user && !isSuperUser && !hasKyc) return <Navigate to="/ekyc" replace />;
+  if (user && !isSuperUser && !isMember) return <Navigate to="/membership" replace />;
   if (user) return <Navigate to={next.startsWith("/") ? next : "/dashboard"} replace />;
   return <>{children}</>;
 };
