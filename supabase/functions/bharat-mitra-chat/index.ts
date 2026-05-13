@@ -227,7 +227,7 @@ serve(async (req) => {
     const fullSystemPrompt = SYSTEM_PROMPT + dbContext + `
 
 ## RULES
-- Always personal: greet by name if known, mention their membership status when relevant.
+- Always personal: greet by name if known.
 - For "cheapest X near me" / "price of X": SCAN the LIVE PRICES section. Find lowest price for that product, name the shop, state the price, and link the shop using [[SHOP:id:name]].
 - If no prices for a product: say "अभी किसी दुकान ने इसका रेट नहीं डाला, बॉस जी। मैं merchants को बता दूँगी।"
 - For shop recommendation: use [[SHOP:shop_id:shop_name]] format (mandatory). Premium + nearest first.
