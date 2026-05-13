@@ -43,16 +43,16 @@ Deno.serve(async (req) => {
 
     const linkedUserIds = new Set<string>([userId]);
     if (userEmail || userPhone) {
-      let profilesQuery = admin.from("profiles").select("id, email, phone");
-      if (userEmail && userPhone) {
-        profilesQuery = profilesQuery.or(`email.ilike.${userEmail},phone.ilike.%${userPhone.slice(-10)}`);
-      } else if (userEmail) {
-        profilesQuery = profilesQuery.ilike("email", userEmail);
-      } else if (userPhone) {
-        profilesQuery = profilesQuery.ilike("phone", `%${userPhone.slice(-10)}`);
+      const linkedProfiles: Array<{ id?: string }> = [];
+      if (userEmail) {
+        const { data } = await admin.from("profiles").select("id").ilike("email", userEmail);
+        linkedProfiles.push(...(data || []));
       }
-      const { data: linkedProfiles } = await profilesQuery;
-      for (const profile of linkedProfiles || []) {
+      if (userPhone) {
+        const { data } = await admin.from("profiles").select("id").ilike("phone", `%${userPhone.slice(-10)}`);
+        linkedProfiles.push(...(data || []));
+      }
+      for (const profile of linkedProfiles) {
         if (profile?.id) linkedUserIds.add(profile.id);
       }
     }
@@ -68,11 +68,17 @@ Deno.serve(async (req) => {
       if (order?.id) bharatOrderIds.add(order.id);
     }
     if (userEmail) {
-      const { data: emailOrders } = await admin
+      const { data: customerEmailOrders } = await admin
         .from("payment_orders")
         .select("id")
         .eq("module", "bharat_gaurav")
-        .or(`metadata->>customer_email.eq.${userEmail},metadata->>email.eq.${userEmail}`);
+        .eq("metadata->>customer_email", userEmail);
+      const { data: metadataEmailOrders } = await admin
+        .from("payment_orders")
+        .select("id")
+        .eq("module", "bharat_gaurav")
+        .eq("metadata->>email", userEmail);
+      const emailOrders = [...(customerEmailOrders || []), ...(metadataEmailOrders || [])];
       for (const order of emailOrders || []) {
         if (order?.id) bharatOrderIds.add(order.id);
       }
