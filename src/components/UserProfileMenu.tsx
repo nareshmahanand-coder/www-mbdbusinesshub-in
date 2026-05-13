@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, LayoutDashboard, Store, Settings } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { User, LogOut, LayoutDashboard, Store, Settings, Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const UserProfileMenu = () => {
   const { user, signOut } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   if (!user) return null;
 
@@ -31,6 +46,30 @@ const UserProfileMenu = () => {
 
   const handleLogout = async () => {
     await signOut();
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      const { error } = await supabase.functions.invoke("delete-account", {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (error) throw error;
+      toast({ title: "Account deleted", description: "Your account has been permanently removed." });
+      await supabase.auth.signOut();
+      navigate("/login", { replace: true });
+    } catch (e: any) {
+      toast({
+        title: "Failed to delete account",
+        description: e?.message ?? "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+      setConfirmOpen(false);
+    }
   };
 
   return (
@@ -84,6 +123,17 @@ const UserProfileMenu = () => {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            setConfirmOpen(true);
+          }}
+          className="cursor-pointer font-semibold text-red-600 focus:text-red-700 focus:bg-red-50"
+        >
+          <Trash2 className="mr-2 h-4 w-4 text-red-600" />
+          <span>Delete Account</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
           onClick={handleLogout}
           className="text-destructive focus:text-destructive cursor-pointer"
         >
@@ -92,6 +142,31 @@ const UserProfileMenu = () => {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will permanently delete your account and all associated data. This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(e) => {
+              e.preventDefault();
+              handleDeleteAccount();
+            }}
+            disabled={deleting}
+            className="bg-red-600 hover:bg-red-700 text-white"
+          >
+            {deleting ? "Deleting..." : "Yes, delete forever"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
 
