@@ -15,6 +15,10 @@ const PRODUCTS = {
     monthly: { amount: 99, amountPaise: 9900, days: 30, label: "Mera Jeevansathi Monthly Premium" },
     yearly: { amount: 99, amountPaise: 9900, days: 365, label: "Mera Jeevansathi Yearly Premium" },
   },
+  bharat_gaurav: {
+    monthly: { amount: 10, amountPaise: 1000, days: 30, label: "Bharat Gaurav Membership Monthly ₹10" },
+    yearly: { amount: 100, amountPaise: 10000, days: 365, label: "Bharat Gaurav Membership Yearly ₹100" },
+  },
 } as const;
 
 type ModuleName = keyof typeof PRODUCTS;
