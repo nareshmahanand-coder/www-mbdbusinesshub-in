@@ -27,6 +27,8 @@ const PAYMENT_LINKS: Record<string, LinkPlan> = {
   "8PAlZmT": { module: "marriage_bureau", plan: "yearly", amount: 999, days: 365, label: "Marriage Bureau ₹999 Yearly" },
   "8ycseIj6": { module: "bharat_gaurav", plan: "monthly", amount: 10, days: 30, label: "Bharat Gaurav Monthly ₹10" },
   UY25o3q: { module: "bharat_gaurav", plan: "yearly", amount: 100, days: 365, label: "Bharat Gaurav Yearly ₹100" },
+  ac464WeK: { module: "bharat_gaurav", plan: "monthly", amount: 10, days: 30, label: "Bharat Gaurav Monthly ₹10 AutoPay" },
+  VrxgoWxx: { module: "bharat_gaurav", plan: "yearly", amount: 100, days: 365, label: "Bharat Gaurav Yearly ₹100 AutoPay" },
 };
 
 async function hmacSha256(message: string, secret: string) {
@@ -70,15 +72,26 @@ function getPaymentLinkPlan(payment: any) {
 
 function getSubscriptionPlan(subscription: any) {
   const notes = subscription?.notes || {};
-  const candidates = [subscription?.id, subscription?.plan_id, notes.subscription_id, notes.payment_link_subscription_id].filter(Boolean).map(String);
+  const candidates = [
+    subscription?.id,
+    subscription?.plan_id,
+    subscription?.short_url,
+    subscription?.short_url?.split("/").pop(),
+    notes.subscription_id,
+    notes.payment_link_subscription_id,
+    notes.payment_link_short_url,
+    notes.payment_link_short_url?.split("/").pop(),
+    notes.payment_link_url,
+    notes.payment_link_url?.split("/").pop(),
+  ].filter(Boolean).map(String);
   return candidates.map((id) => PAYMENT_LINKS[id]).find(Boolean) || null;
 }
 
 function inferPaymentLinkPlan(payment: any): LinkPlan | null {
   const amount = amountInRupees(payment);
   const description = `${payment?.description || ""} ${payment?.notes?.label || ""}`.toLowerCase();
-  if (isAmountMatch(amount, 10) || description.includes("₹10")) return PAYMENT_LINKS["0kTh9x8o"];
-  if (isAmountMatch(amount, 100) || description.includes("₹100")) return PAYMENT_LINKS["3jBvEwl"];
+  if (isAmountMatch(amount, 10) || description.includes("₹10") || description.includes("bharat gaurav monthly")) return PAYMENT_LINKS.ac464WeK;
+  if (isAmountMatch(amount, 100) || description.includes("₹100") || description.includes("bharat gaurav yearly")) return PAYMENT_LINKS.VrxgoWxx;
   if (isAmountMatch(amount, 99) || description.includes("₹99")) return description.includes("marriage") ? PAYMENT_LINKS.d6TAK5F : PAYMENT_LINKS.PKPblN5t;
   if (isAmountMatch(amount, 999) || description.includes("₹999")) return description.includes("marriage") ? PAYMENT_LINKS.WY2NejZi : PAYMENT_LINKS.CmLBI4u;
   return null;
@@ -193,6 +206,12 @@ async function findSubscriptionOrder(admin: any, subscription: any, linkPlan: Li
   }
 
   return await findOrderByUserOrEmail(admin, subscription, linkPlan);
+}
+
+async function findSubscriptionChargeOrder(admin: any, subscription: any, payment: any, linkPlan: LinkPlan) {
+  const paymentOrder = payment ? await findPaymentLinkOrder(admin, payment, linkPlan) : null;
+  if (paymentOrder) return paymentOrder;
+  return await findSubscriptionOrder(admin, subscription, linkPlan);
 }
 
 async function unlock(admin: any, order: any, paymentId: string, signature: string, source = "razorpay_webhook") {
@@ -310,6 +329,26 @@ serve(async (req) => {
 
       await unlock(admin, order, subscriptionId, receivedSignature, "razorpay_subscription_webhook");
       return new Response(JSON.stringify({ ok: true, processed: "subscription.activated" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    if (event.event === "subscription.charged") {
+      const subscription = event.payload?.subscription?.entity;
+      const payment = event.payload?.payment?.entity;
+      const subscriptionId = subscription?.id;
+      const paymentId = payment?.id || subscriptionId;
+      const linkPlan = getPaymentLinkPlan(payment) || getSubscriptionPlan(subscription) || inferPaymentLinkPlan(payment);
+      if (!paymentId || !linkPlan) {
+        return new Response(JSON.stringify({ ok: true, ignored: "unknown_subscription_charge" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const order = await findSubscriptionChargeOrder(admin, subscription, payment, linkPlan);
+      if (!order) {
+        console.warn("razorpay-webhook unknown charged subscription", { subscriptionId, paymentId, linkPlan });
+        return new Response(JSON.stringify({ ok: true, ignored: "unknown_subscription_charge_order" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      await unlock(admin, order, paymentId, receivedSignature, "razorpay_subscription_charged_webhook");
+      return new Response(JSON.stringify({ ok: true, processed: "subscription.charged" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     if (event.event === "payment.failed") {
