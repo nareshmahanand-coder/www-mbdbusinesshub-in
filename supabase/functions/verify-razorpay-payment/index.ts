@@ -239,7 +239,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, unlocked: true, module: order.module }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const payment = await findCapturedPaymentForOrder(order, userData.user, keyId, keySecret);
+    const payment = await findCapturedPaymentForOrder(admin, order, userData.user, keyId, keySecret);
     if (!payment) {
       return new Response(JSON.stringify({ ok: false, pending: true, module: order.module }), { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
