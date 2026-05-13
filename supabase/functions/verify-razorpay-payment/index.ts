@@ -95,13 +95,17 @@ async function fetchRazorpayPayment(paymentId: string, keyId: string, keySecret:
   return data;
 }
 
-async function findCapturedPaymentForOrder(order: any, user: any, keyId: string, keySecret: string) {
+async function findCapturedPaymentForOrder(admin: any, order: any, user: any, keyId: string, keySecret: string) {
   const createdAt = Math.floor(new Date(order.created_at).getTime() / 1000) - 900;
   const resp = await fetch(`https://api.razorpay.com/v1/payments?from=${Math.max(0, createdAt)}&count=100`, {
     headers: { Authorization: `Basic ${btoa(`${keyId}:${keySecret}`)}` },
   });
   const data = await resp.json();
   if (!resp.ok) throw new Error(data?.error?.description || "Unable to sync Razorpay payment");
+
+  const { data: profile } = await admin.from("profiles").select("email, phone").eq("id", user.id).maybeSingle();
+  const userEmail = String(user.email || profile?.email || "").toLowerCase();
+  const userPhone = String(profile?.phone || user.phone || "").replace(/\D/g, "").slice(-10);
 
   // SECURITY (HARDENED): never match by email / phone / amount alone. The Razorpay payment
   // link is SHARED across all users, so any non-cryptographic match would let user B
@@ -110,7 +114,11 @@ async function findCapturedPaymentForOrder(order: any, user: any, keyId: string,
   //      which is also signature-verified before this fallback ever runs).
   //   2. notes.reference_id === our payment_orders.id, which we attach to the link URL
   //      when *this* user opens it. Razorpay echoes it back on the captured payment.
-  // Anything else => treat as unpaid and force the user to actually pay.
+  // For Razorpay Subscription/AutoPay links, Razorpay sometimes does NOT echo
+  // reference_id into the payment object. In that case, allow a strict fallback:
+  // same authenticated user + Bharat Gaurav amount + matching Razorpay email/phone
+  // + captured after this pending order. This avoids the previous "Try Again"
+  // failure without unlocking by amount alone.
   const baseAmount = Number(order.amount || 0);
   const orderId = String(order.razorpay_order_id || "");
 
@@ -129,6 +137,13 @@ async function findCapturedPaymentForOrder(order: any, user: any, keyId: string,
     );
     if (noteReference && noteReference === order.id) {
       return isAmountMatch(Number(payment.amount || 0), baseAmount);
+    }
+
+    if (order.module === "bharat_gaurav") {
+      const paymentEmail = String(payment.email || payment.notes?.email || payment.notes?.customer_email || "").toLowerCase();
+      const paymentPhone = String(payment.contact || payment.notes?.contact || "").replace(/\D/g, "").slice(-10);
+      const sameUser = Boolean((userEmail && paymentEmail && userEmail === paymentEmail) || (userPhone && paymentPhone && userPhone === paymentPhone));
+      if (sameUser && isAmountMatch(Number(payment.amount || 0), baseAmount)) return true;
     }
 
     return false;
