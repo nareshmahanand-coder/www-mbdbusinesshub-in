@@ -22,6 +22,13 @@ const PAYMENT_LINKS: Record<string, LinkPlan> = {
   sub_ShLXB2CbEc64Un: { module: "merchant_premium", plan: "yearly", amount: 999, days: 365, label: "Merchant Portal ₹999 Yearly Plan" },
   d6TAK5F: { module: "marriage_bureau", plan: "monthly", amount: 99, days: 30, label: "Marriage Bureau ₹99 Monthly Plan" },
   WY2NejZi: { module: "marriage_bureau", plan: "yearly", amount: 999, days: 365, label: "Marriage Bureau ₹999 Yearly Plan" },
+  // New verified payment links (zero-GST)
+  "8ycseIj6": { module: "bharat_gaurav", plan: "monthly", amount: 10, days: 30, label: "भारत गौरव मेंबरशिप ₹10 Monthly" },
+  UY25o3q: { module: "bharat_gaurav", plan: "yearly", amount: 100, days: 365, label: "भारत गौरव मेंबरशिप ₹100 Yearly" },
+  md63vYt8: { module: "merchant_premium", plan: "monthly", amount: 99, days: 30, label: "Merchant Portal ₹99 Monthly" },
+  gdhg7YC4: { module: "merchant_premium", plan: "yearly", amount: 999, days: 365, label: "Merchant Portal ₹999 Yearly" },
+  JPhHPAU: { module: "marriage_bureau", plan: "monthly", amount: 99, days: 30, label: "Marriage Bureau ₹99 Monthly" },
+  "8PAlZmT": { module: "marriage_bureau", plan: "yearly", amount: 999, days: 365, label: "Marriage Bureau ₹999 Yearly" },
 };
 
 async function hmacSha256(message: string, secret: string) {
