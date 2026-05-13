@@ -108,22 +108,24 @@ async function findCapturedPaymentForOrder(order: any, user: any, keyId: string,
   const data = await resp.json();
   if (!resp.ok) throw new Error(data?.error?.description || "Unable to sync Razorpay payment");
 
-  // SECURITY: per-user strict match only. The payment link URL/id is SHARED across all users,
-  // so we MUST NOT match by payment link id + amount alone — that would let User B claim
-  // User A's payment. We require either the same Razorpay order_id, or the reference_id we
-  // attached when opening the link (= our payment_orders.id), as proof that *this* user paid.
-  const userEmail = String(user.email || "").toLowerCase();
-  const userPhone = String(user.phone || "").replace(/\D/g, "");
+  // SECURITY (HARDENED): never match by email / phone / amount alone. The Razorpay payment
+  // link is SHARED across all users, so any non-cryptographic match would let user B
+  // unlock user A's premium. We only accept two proofs:
+  //   1. Same Razorpay order_id (set only in the create-razorpay-order checkout flow,
+  //      which is also signature-verified before this fallback ever runs).
+  //   2. notes.reference_id === our payment_orders.id, which we attach to the link URL
+  //      when *this* user opens it. Razorpay echoes it back on the captured payment.
+  // Anything else => treat as unpaid and force the user to actually pay.
   const baseAmount = Number(order.amount || 0);
   const orderId = String(order.razorpay_order_id || "");
 
   return (data.items || []).find((payment: any) => {
     if (payment.status !== "captured") return false;
 
-    // Strict: same Razorpay order id (only set for create-razorpay-order checkout flow)
-    if (orderId && payment.order_id === orderId) return true;
+    if (orderId && payment.order_id === orderId) {
+      return isAmountMatch(Number(payment.amount || 0), baseAmount);
+    }
 
-    // Strict: reference_id we set when opening the payment link == our order.id
     const noteReference = String(
       payment.reference_id ||
       payment.notes?.reference_id ||
@@ -133,19 +135,6 @@ async function findCapturedPaymentForOrder(order: any, user: any, keyId: string,
     if (noteReference && noteReference === order.id) {
       return isAmountMatch(Number(payment.amount || 0), baseAmount);
     }
-
-    // Otherwise require an exact match against THIS authenticated user's contact details.
-    // We never fall back to "amount only" or "shared payment link id" because those are
-    // not user-specific and would cross-activate accounts.
-    if (!isAmountMatch(Number(payment.amount || 0), baseAmount)) return false;
-
-    const paymentEmail = String(
-      payment.email || payment.notes?.email || payment.notes?.customer_email || ""
-    ).toLowerCase();
-    const paymentContact = String(payment.contact || "").replace(/\D/g, "");
-
-    if (userEmail && paymentEmail && paymentEmail === userEmail) return true;
-    if (userPhone && paymentContact && paymentContact.endsWith(userPhone.slice(-10))) return true;
 
     return false;
   }) || null;
