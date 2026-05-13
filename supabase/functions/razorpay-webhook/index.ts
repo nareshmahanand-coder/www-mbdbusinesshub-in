@@ -331,6 +331,26 @@ serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, processed: "subscription.activated" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    if (event.event === "subscription.charged") {
+      const subscription = event.payload?.subscription?.entity;
+      const payment = event.payload?.payment?.entity;
+      const subscriptionId = subscription?.id;
+      const paymentId = payment?.id || subscriptionId;
+      const linkPlan = getPaymentLinkPlan(payment) || getSubscriptionPlan(subscription) || inferPaymentLinkPlan(payment);
+      if (!paymentId || !linkPlan) {
+        return new Response(JSON.stringify({ ok: true, ignored: "unknown_subscription_charge" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      const order = await findSubscriptionChargeOrder(admin, subscription, payment, linkPlan);
+      if (!order) {
+        console.warn("razorpay-webhook unknown charged subscription", { subscriptionId, paymentId, linkPlan });
+        return new Response(JSON.stringify({ ok: true, ignored: "unknown_subscription_charge_order" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
+      await unlock(admin, order, paymentId, receivedSignature, "razorpay_subscription_charged_webhook");
+      return new Response(JSON.stringify({ ok: true, processed: "subscription.charged" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (event.event === "payment.failed") {
       const payment = event.payload?.payment?.entity;
       const paymentId = payment?.id;
