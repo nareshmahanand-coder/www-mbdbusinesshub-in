@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { startBharatGauravPaymentLink } from "@/lib/razorpayPayments";
+import { startBharatGauravPaymentLink, syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
 import { useBharatGauravMembership } from "@/hooks/useBharatGauravMembership";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Hand, Briefcase, GraduationCap, ShieldCheck, Wifi, Info, Landmark, ArrowLeft, Loader2, CheckCircle2, Receipt } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
 
@@ -49,9 +50,42 @@ const BENEFITS = [
 
 const BharatGauravMembershipPage = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const { isMember, loading: memberLoading, refresh } = useBharatGauravMembership();
   const [payingPlan, setPayingPlan] = useState<"monthly" | "yearly" | null>(null);
+
+  useEffect(() => {
+    if (!user || memberLoading || isMember || payingPlan) return;
+
+    let cancelled = false;
+    const syncPendingAutopay = async () => {
+      const { data: order } = await supabase
+        .from("payment_orders")
+        .select("id, plan")
+        .eq("user_id", user.id)
+        .eq("module", "bharat_gaurav")
+        .in("status", ["created", "pending", "failed"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!order || cancelled) return;
+
+      const synced = await syncLatestRazorpayPayment({
+        module: "bharat_gaurav",
+        plan: order.plan as "monthly" | "yearly",
+        paymentOrderId: order.id,
+      });
+
+      if (cancelled || !synced.ok) return;
+      await refresh();
+      toast({ title: "भुगतान सत्यापित", description: "Auto-Debit सक्रिय। आपकी भारत गौरव मेंबरशिप चालू हो गई है।" });
+      navigate("/dashboard", { replace: true });
+    };
+
+    syncPendingAutopay();
+    return () => { cancelled = true; };
+  }, [isMember, memberLoading, navigate, payingPlan, refresh, user]);
 
   const handlePay = async (plan: "monthly" | "yearly") => {
     setPayingPlan(plan);
