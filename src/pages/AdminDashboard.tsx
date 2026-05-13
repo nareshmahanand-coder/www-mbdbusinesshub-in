@@ -315,7 +315,6 @@ const AdminDashboard = () => {
     };
 
     void loadCustomers();
-    void loadMemberships();
     void loadMatrimony();
     void loadComplaints();
     void loadMerchants();
@@ -346,30 +345,6 @@ const AdminDashboard = () => {
     // Realtime subscription for new payments & merchant submissions
     const channel = supabase
       .channel('admin-realtime')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'memberships' },
-        async (payload) => {
-          const newMembership = payload.new as any;
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("email, phone")
-            .eq("id", newMembership.user_id)
-            .maybeSingle();
-          
-          const enriched = {
-            ...newMembership,
-            profile_email: profile?.email,
-            profile_phone: profile?.phone,
-          };
-          setMemberships(prev => [enriched, ...prev]);
-          
-          toast.info(
-            `🔔 नया पेमेंट! ${profile?.email || profile?.phone || "User"} ने ${newMembership.plan === "monthly" ? "₹10 मासिक" : "₹100 वार्षिक"} मेंबरशिप ली। TXN: ${newMembership.transaction_id || "N/A"}`,
-            { duration: 10000 }
-          );
-        }
-      )
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'merchant_profiles' },
@@ -424,17 +399,6 @@ const AdminDashboard = () => {
           const newUser = payload.new as CustomerRecord;
           setCustomers(prev => [newUser, ...prev.filter(c => c.id !== newUser.id)]);
           toast.info(`👤 नया यूज़र साइनअप: ${newUser.email || newUser.phone || "Unknown"}`, { duration: 6000 });
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'memberships' },
-        (payload) => {
-          const updated = payload.new as any;
-          setMemberships(prev => prev.map(m => m.id === updated.id ? { ...m, ...updated } : m));
-          if (updated.status === "approved") {
-            toast.success(`💰 Razorpay payment confirmed — ${updated.plan} membership active`, { duration: 8000 });
-          }
         }
       )
       .on(
@@ -523,32 +487,6 @@ const AdminDashboard = () => {
       return { ...s, premiumStartDate: plan === "monthly" ? new Date(newExpiry.getTime()).toISOString().split("T")[0] : newStart.toISOString().split("T")[0] };
     }));
     toast.success("✅ Premium extended by 30 days!");
-  };
-
-  // Approve Bharat Gaurav Membership
-  const approveMembership = async (membershipId: string) => {
-    const { error } = await supabase
-      .from("memberships")
-      .update({ status: "approved" })
-      .eq("id", membershipId);
-    
-    if (error) { toast.error("Approval failed"); return; }
-    
-    setMemberships(prev => prev.map(m => m.id === membershipId ? { ...m, status: "approved" } : m));
-    toast.success("✅ भारत गौरव मेंबरशिप अप्रूव हो गई!");
-  };
-
-  // Reject Bharat Gaurav Membership
-  const rejectMembership = async (membershipId: string) => {
-    const { error } = await supabase
-      .from("memberships")
-      .update({ status: "rejected" })
-      .eq("id", membershipId);
-    
-    if (error) { toast.error("Rejection failed"); return; }
-    
-    setMemberships(prev => prev.map(m => m.id === membershipId ? { ...m, status: "rejected" } : m));
-    toast.error("❌ मेंबरशिप अस्वीकृत की गई।");
   };
 
   // Verify & Publish Matrimony Profile
@@ -658,7 +596,6 @@ const AdminDashboard = () => {
   const monthlyEarnings = payments.filter((p) => p.approved && p.plan === "monthly").reduce((sum, p) => sum + p.amount, 0);
   const yearlyEarnings = payments.filter((p) => p.approved && p.plan === "yearly").reduce((sum, p) => sum + p.amount, 0);
   const totalEarnings = monthlyEarnings + yearlyEarnings;
-  const pendingMemberships = memberships.filter(m => m.status === "pending");
   const unpublishedMatrimony = matrimonyProfiles.filter(p => !p.is_published);
   const unreadComplaints = complaints.filter(c => !c.is_read);
 
