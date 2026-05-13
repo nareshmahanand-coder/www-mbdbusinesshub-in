@@ -907,48 +907,6 @@ export type Database = {
         }
         Relationships: []
       }
-      memberships: {
-        Row: {
-          amount: number
-          created_at: string
-          ends_at: string
-          id: string
-          plan: string
-          screenshot_url: string | null
-          starts_at: string
-          status: string
-          transaction_id: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          amount?: number
-          created_at?: string
-          ends_at?: string
-          id?: string
-          plan?: string
-          screenshot_url?: string | null
-          starts_at?: string
-          status?: string
-          transaction_id?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          ends_at?: string
-          id?: string
-          plan?: string
-          screenshot_url?: string | null
-          starts_at?: string
-          status?: string
-          transaction_id?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       merchant_profiles: {
         Row: {
           aadhaar_back_url: string | null
