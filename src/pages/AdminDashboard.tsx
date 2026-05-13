@@ -202,30 +202,11 @@ const AdminDashboard = () => {
 
     const loadCustomers = async () => {
       setCustomersLoading(true);
-      // Only show users with a verified, paid membership in the admin directory
-      const today = new Date().toISOString().split("T")[0];
-      const { data: paidMemberships } = await supabase
-        .from("memberships")
-        .select("user_id, transaction_id, amount, status, ends_at")
-        .in("status", ["approved", "active"])
-        .gte("ends_at", today);
-      const paidUserIds = Array.from(
-        new Set(
-          (paidMemberships ?? [])
-            .filter((m) => typeof m.transaction_id === "string" && m.transaction_id.trim().length > 0 && Number(m.amount) >= 10)
-            .map((m) => m.user_id),
-        ),
-      );
-      if (paidUserIds.length === 0) {
-        setCustomers([]);
-        setCustomersLoading(false);
-        return;
-      }
       const { data, error } = await supabase
         .from("profiles")
         .select("id, email, phone, provider, created_at, display_name, phone_verified, phone_verified_at")
-        .in("id", paidUserIds)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(500);
       if (error) { toast.error("Customer Directory लोड नहीं हो सका"); setCustomers([]); }
       else setCustomers(data ?? []);
       setCustomersLoading(false);
