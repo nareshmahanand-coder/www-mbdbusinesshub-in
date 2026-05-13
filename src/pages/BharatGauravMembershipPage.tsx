@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { startInstantRazorpayPayment } from "@/lib/razorpayPayments";
+import { startBharatGauravPaymentLink } from "@/lib/razorpayPayments";
 import { useBharatGauravMembership } from "@/hooks/useBharatGauravMembership";
 import { useAuth } from "@/contexts/AuthContext";
 import { Hand, Briefcase, GraduationCap, ShieldCheck, Wifi, Info, Landmark, ArrowLeft, Loader2, CheckCircle2, Receipt } from "lucide-react";
@@ -56,12 +56,11 @@ const BharatGauravMembershipPage = () => {
   const handlePay = async (plan: "monthly" | "yearly") => {
     setPayingPlan(plan);
     try {
-      await startInstantRazorpayPayment({
-        module: "bharat_gaurav",
+      await startBharatGauravPaymentLink({
         plan,
         onSuccess: async () => {
           await refresh();
-          toast({ title: "धन्यवाद!", description: "आपकी भारत गौरव मेंबरशिप सक्रिय हो गई है।" });
+          toast({ title: "धन्यवाद!", description: "Auto-Debit सक्रिय। आपकी भारत गौरव मेंबरशिप चालू हो गई है।" });
           navigate("/dashboard");
         },
         onFailure: () => {
