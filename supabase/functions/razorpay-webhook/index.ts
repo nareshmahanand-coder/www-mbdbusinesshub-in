@@ -208,6 +208,12 @@ async function findSubscriptionOrder(admin: any, subscription: any, linkPlan: Li
   return await findOrderByUserOrEmail(admin, subscription, linkPlan);
 }
 
+async function findSubscriptionChargeOrder(admin: any, subscription: any, payment: any, linkPlan: LinkPlan) {
+  const paymentOrder = payment ? await findPaymentLinkOrder(admin, payment, linkPlan) : null;
+  if (paymentOrder) return paymentOrder;
+  return await findSubscriptionOrder(admin, subscription, linkPlan);
+}
+
 async function unlock(admin: any, order: any, paymentId: string, signature: string, source = "razorpay_webhook") {
   if (order.status === "paid" && order.unlocked_at) return;
   const days = Number(order.metadata?.days || (order.plan === "yearly" ? 365 : 30));
