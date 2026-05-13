@@ -11,7 +11,7 @@ import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { startMerchantPortalPaymentLink, syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
 
@@ -33,6 +33,7 @@ const MERCHANT_PLANS = [
 const MerchantPortal = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const { settings } = useSiteSettings();
   const accessMessage = (location.state as { accessMessage?: string } | null)?.accessMessage;
   const [submitted, setSubmitted] = useState(false);
