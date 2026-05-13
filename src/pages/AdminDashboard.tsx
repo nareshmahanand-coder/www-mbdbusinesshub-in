@@ -255,30 +255,6 @@ const AdminDashboard = () => {
       setSosLoading(false);
     };
 
-    const loadMemberships = async () => {
-      setMembershipsLoading(true);
-      const { data } = await supabase
-        .from("memberships")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (data) {
-        const userIds = [...new Set(data.map(m => m.user_id))];
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, email, phone")
-          .in("id", userIds);
-        
-        const profileMap = new Map(profiles?.map(p => [p.id, p]) ?? []);
-        setMemberships(data.map(m => ({
-          ...m,
-          profile_email: profileMap.get(m.user_id)?.email,
-          profile_phone: profileMap.get(m.user_id)?.phone,
-        })));
-      }
-      setMembershipsLoading(false);
-    };
-
     const loadMatrimony = async () => {
       setMatrimonyLoading(true);
       const { data } = await supabase
