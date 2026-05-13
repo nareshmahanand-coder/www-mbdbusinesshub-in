@@ -19,8 +19,8 @@ const PAYMENT_LINKS: Record<PaymentModule, Record<PaymentPlan, { url: string; am
     yearly: { url: "https://rzp.io/rzp/8PAlZmT", amount: 999, planName: "Marriage Bureau Yearly Premium ₹999", subscriptionId: "" },
   },
   bharat_gaurav: {
-    monthly: { url: "https://rzp.io/rzp/8ycseIj6", amount: 10, planName: "Bharat Gaurav Membership Monthly ₹10", subscriptionId: "" },
-    yearly: { url: "https://rzp.io/rzp/UY25o3q", amount: 100, planName: "Bharat Gaurav Membership Yearly ₹100", subscriptionId: "" },
+    monthly: { url: "https://rzp.io/rzp/ac464WeK", amount: 10, planName: "Bharat Gaurav Membership Monthly ₹10 (Auto-Debit)", subscriptionId: "" },
+    yearly: { url: "https://rzp.io/rzp/VrxgoWxx", amount: 100, planName: "Bharat Gaurav Membership Yearly ₹100 (Auto-Debit)", subscriptionId: "" },
   },
 };
 
