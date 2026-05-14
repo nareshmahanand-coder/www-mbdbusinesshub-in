@@ -42,11 +42,8 @@ export const SubscriptionButton = ({
     await supabase
       .from("profiles")
       .update({
-        // @ts-expect-error – column added at app layer; ignored if absent
         membership_status: "active",
-        // @ts-expect-error
         membership_type,
-        // @ts-expect-error
         razorpay_subscription_id: subscriptionId,
         updated_at: new Date().toISOString(),
       } as any)
