@@ -3,12 +3,6 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-declare global {
-  interface Window {
-    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
-  }
-}
-
 interface Props {
   plan_id: string;
   membership_type: "bharat_gaurav" | "merchant_premium" | "marriage_bureau";
