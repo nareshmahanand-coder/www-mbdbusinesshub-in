@@ -14,15 +14,27 @@ interface Props {
   className?: string;
 }
 
-const loadRazorpay = () =>
-  new Promise<boolean>((resolve) => {
-    if ((window as any).Razorpay) return resolve(true);
-    const s = document.createElement("script");
-    s.src = "https://checkout.razorpay.com/v1/checkout.js";
-    s.onload = () => resolve(true);
-    s.onerror = () => resolve(false);
-    document.body.appendChild(s);
+interface RazorpayResponse {
+  razorpay_payment_id: string;
+  razorpay_subscription_id: string;
+  razorpay_signature?: string;
+}
+
+const loadRazorpay = (): Promise<boolean> =>
+  new Promise((resolve) => {
+    if ((window as unknown as { Razorpay?: unknown }).Razorpay) return resolve(true);
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
   });
+
+const PLAN_AMOUNTS: Record<MembershipType, Record<PlanType, number>> = {
+  bharat_gaurav: { monthly: 10, yearly: 100 },
+  merchant_premium: { monthly: 99, yearly: 999 },
+  marriage_bureau: { monthly: 99, yearly: 999 },
+};
 
 export const SubscriptionButton = ({
   plan_id,
@@ -33,12 +45,12 @@ export const SubscriptionButton = ({
 }: Props) => {
   const [loading, setLoading] = useState(false);
 
-  const activateMembership = async (subscriptionId: string, paymentId: string) => {
-    const { data: userData } = await supabase.auth.getUser();
-    const user = userData.user;
-    if (!user) return;
-
-    // Update profile membership_status (best-effort)
+  const activateMembership = async (
+    userId: string,
+    subscriptionId: string,
+    paymentId: string,
+  ) => {
+    // Update user profile membership status
     await supabase
       .from("profiles")
       .update({
@@ -46,16 +58,16 @@ export const SubscriptionButton = ({
         membership_type,
         razorpay_subscription_id: subscriptionId,
         updated_at: new Date().toISOString(),
-      } as any)
-      .eq("id", user.id);
+      } as never)
+      .eq("id", userId);
 
-    // Module-specific records
+    // Bharat Gaurav specific record
     if (membership_type === "bharat_gaurav") {
       const days = plan_type === "yearly" ? 365 : 30;
       await supabase.from("bharat_gaurav_memberships").insert({
-        user_id: user.id,
+        user_id: userId,
         plan: plan_type,
-        amount: plan_type === "yearly" ? 100 : 10,
+        amount: PLAN_AMOUNTS.bharat_gaurav[plan_type],
         currency: "INR",
         status: "active",
         razorpay_order_id: subscriptionId,
@@ -86,26 +98,27 @@ export const SubscriptionButton = ({
         throw new Error(data?.error || "Invalid subscription response");
       }
 
-      const Razorpay = (window as any).Razorpay;
-      const rzp = new Razorpay({
+      const RazorpayCtor = (window as unknown as {
+        Razorpay: new (opts: Record<string, unknown>) => { open: () => void };
+      }).Razorpay;
+
+      const rzp = new RazorpayCtor({
         key: data.key_id,
         subscription_id: data.subscription_id,
         name: "Mera Bharat Dukaan",
         description: `${membership_type.replace("_", " ")} – ${plan_type} (Auto-Debit)`,
         prefill: { email: user.email ?? "", contact: user.phone ?? "" },
         theme: { color: "#1a237e" },
-        handler: async (response: {
-          razorpay_payment_id: string;
-          razorpay_subscription_id: string;
-        }) => {
+        handler: async (response: RazorpayResponse) => {
           try {
             await activateMembership(
+              user.id,
               response.razorpay_subscription_id,
               response.razorpay_payment_id,
             );
-            toast.success("Subscription activated!");
+            toast.success("Subscription activated! Auto-Debit enabled.");
             window.location.href = "/success";
-          } catch (e) {
+          } catch {
             toast.error("Payment received but activation failed. Please refresh.");
           }
         },
