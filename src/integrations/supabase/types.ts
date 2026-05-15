@@ -1548,6 +1548,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profiles: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          id: string
+          membership_status: string
+          membership_type: string | null
+          plan_type: string | null
+          razorpay_payment_id: string | null
+          razorpay_subscription_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          membership_status?: string
+          membership_type?: string | null
+          plan_type?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_subscription_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          membership_status?: string
+          membership_type?: string | null
+          plan_type?: string | null
+          razorpay_payment_id?: string | null
+          razorpay_subscription_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
