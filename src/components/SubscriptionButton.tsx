@@ -9,12 +9,6 @@ interface Props {
   buttonText: string;
 }
 
-declare global {
-  interface Window {
-    Razorpay?: any;
-  }
-}
-
 const RAZORPAY_KEY_ID = "rzp_live_RKpFEtBTCi8FxK";
 
 const loadRazorpayScript = (): Promise<boolean> =>
@@ -75,7 +69,7 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
         return;
       }
 
-      const rzp = new window.Razorpay({
+      const rzp = new (window as any).Razorpay({
         key: RAZORPAY_KEY_ID,
         subscription_id: data.subscription_id,
         name: "Mera Bharat Dukaan",
