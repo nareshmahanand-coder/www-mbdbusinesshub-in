@@ -55,19 +55,10 @@ export const SubscriptionButton = ({ link, membership_type, plan_type, buttonTex
 };
 
 export const SubscriptionActiveCard = () => {
-  useEffect(() => {
-    const t = setTimeout(() => {
-      window.location.href = "/dashboard";
-    }, 800);
-    return () => clearTimeout(t);
-  }, []);
-  return (
-    <div className="rounded-2xl border-2 border-green-500 bg-green-50 p-4 text-center">
-      <CheckCircle2 className="mx-auto h-10 w-10 text-green-600" />
-      <p className="mt-2 text-base font-extrabold text-green-800">Your subscription is active</p>
-      <p className="text-sm text-green-700 font-hindi">आपकी सदस्यता सक्रिय है — Redirecting to Dashboard...</p>
-    </div>
-  );
+  if (typeof window !== "undefined") {
+    window.location.href = "/dashboard";
+  }
+  return null;
 };
 
 export default SubscriptionButton;
