@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Hand, Briefcase, GraduationCap, ShieldCheck, Wifi, Info, Landmark, ArrowLeft } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
+import { SubscriptionButton, SubscriptionActiveCard } from "@/components/SubscriptionButton";
+import { useUserMembershipProfile } from "@/hooks/useUserMembershipProfile";
 
 const BENEFITS = [
   {
@@ -46,6 +48,7 @@ const BENEFITS = [
 const BharatGauravMembershipPage = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { isActive, loading } = useUserMembershipProfile();
 
   const handleSwitchAccount = async () => {
     await signOut();
@@ -110,6 +113,28 @@ const BharatGauravMembershipPage = () => {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Subscription */}
+        <div className="mt-5">
+          {loading ? null : isActive ? (
+            <SubscriptionActiveCard />
+          ) : (
+            <div className="space-y-3">
+              <SubscriptionButton
+                label="₹10 / माह — भारत गौरव"
+                paymentLink="https://rzp.io/rzp/ac464WeK"
+                membershipType="bharat_gaurav"
+                planType="monthly"
+              />
+              <SubscriptionButton
+                label="₹100 / साल — भारत गौरव"
+                paymentLink="https://rzp.io/rzp/VrxgoWxx"
+                membershipType="bharat_gaurav"
+                planType="yearly"
+              />
+            </div>
+          )}
         </div>
 
         {/* Switch account */}
