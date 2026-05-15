@@ -44,8 +44,8 @@ export const SubscriptionButton = ({ membership_type, plan_type, buttonText }: P
       }
 
       await startInstantRazorpayPayment({
-        module: membership_type,
-        plan: plan_type,
+        module: membership_type as any,
+        plan: plan_type as any,
         onSuccess: async () => {
           await supabase.from("user_profiles").upsert(
             {
