@@ -198,13 +198,13 @@ const MerchantPortal = () => {
               <CardContent className="space-y-3">
                 <SubscriptionButton
                   label="₹99 / माह — Merchant Premium"
-                  paymentLink="https://rzp.io/rzp/md63vYt8"
+                  planId="plan_Sog3FYTMTLP6pf"
                   membershipType="merchant_portal"
                   planType="monthly"
                 />
                 <SubscriptionButton
                   label="₹999 / साल — Merchant Premium"
-                  paymentLink="https://rzp.io/rzp/gdhg7YC4"
+                  planId="plan_Sog7TMDdTEJMge"
                   membershipType="merchant_portal"
                   planType="yearly"
                 />
