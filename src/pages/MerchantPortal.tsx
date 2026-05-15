@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { shopCategories } from "@/data/sampleShops";
-import { Store, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, Image, Loader2, Upload, X, BadgeCheck } from "lucide-react";
+import { Store, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, Image, Upload, X, BadgeCheck } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import SubscriptionButton from "@/components/SubscriptionButton";
 import { toast } from "sonner";
@@ -14,23 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { startMerchantPortalPaymentLink, syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
 import { useUserMembershipProfile } from "@/hooks/useUserMembershipProfile";
-
-const MERCHANT_PLANS = [
-  {
-    id: "monthly",
-    label: "Merchant Portal ₹99 Monthly Plan",
-    days: 30,
-    theme: "saffron",
-  },
-  {
-    id: "yearly",
-    label: "Merchant Portal ₹999 Yearly Plan",
-    days: 365,
-    theme: "green",
-  },
-];
 
 const MerchantPortal = () => {
   const { user } = useAuth();
@@ -39,11 +23,7 @@ const MerchantPortal = () => {
   const { settings } = useSiteSettings();
   const accessMessage = (location.state as { accessMessage?: string } | null)?.accessMessage;
   const [submitted, setSubmitted] = useState(false);
-  const [payingPlan, setPayingPlan] = useState<"monthly" | "yearly" | null>(null);
-  const [failedPlan, setFailedPlan] = useState<"monthly" | "yearly" | null>(null);
-  const [syncingPlan, setSyncingPlan] = useState<"monthly" | "yearly" | null>(null);
-  const [successRedirect, setSuccessRedirect] = useState<string | null>(null);
-  
+
   const [shopPhotos, setShopPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const shopPhotoRef = useRef<HTMLInputElement>(null);
@@ -142,43 +122,6 @@ const MerchantPortal = () => {
     setSubmitted(true);
   };
 
-  const handleSubscribe = async (plan: typeof MERCHANT_PLANS[number]) => {
-    if (!user) { toast.error("Please login first"); return; }
-    setPayingPlan(plan.id as "monthly" | "yearly");
-    setFailedPlan(null);
-
-    try {
-      await startMerchantPortalPaymentLink({
-        plan: plan.id as "monthly" | "yearly",
-        onSuccess: () => {
-          toast.success("Payment Successful — Merchant Premium अब Active है!");
-          navigate("/merchant-dashboard", { replace: true });
-        },
-        onFailure: () => setFailedPlan(plan.id as "monthly" | "yearly"),
-      });
-    } catch (error) {
-      setFailedPlan(plan.id as "monthly" | "yearly");
-      toast.error(error instanceof Error ? error.message : "Payment failed. Please retry.");
-    } finally {
-      setPayingPlan(null);
-    }
-  };
-
-  const handleManualSync = async (planId: "monthly" | "yearly") => {
-    setSyncingPlan(planId);
-    try {
-      const result = await syncLatestRazorpayPayment({ module: "merchant_premium", plan: planId });
-      if (result.ok) {
-        toast.success("Payment Successful — Merchant Premium अब Active है!");
-        navigate("/merchant-dashboard", { replace: true });
-      } else {
-        toast.info(result.error || "Payment confirmation is still pending. Please try again shortly.");
-      }
-    } finally {
-      setSyncingPlan(null);
-    }
-  };
-
   const renderSubscriptionCard = () => (
     profileActive ? (
       <Card className="mb-6 border-2 border-[#138808]/40 bg-[#138808]/5">
@@ -225,41 +168,19 @@ const MerchantPortal = () => {
         </ul>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => handleSubscribe(MERCHANT_PLANS.find(p => p.id === "monthly")!)}
-            disabled={payingPlan !== null}
-            className="rounded-xl bg-[#FF9933] px-4 py-4 text-base font-extrabold text-white shadow-md"
-          >
-            {payingPlan === "monthly" ? "Processing..." : "Merchant Portal ₹99 Monthly Plan"}
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSubscribe(MERCHANT_PLANS.find(p => p.id === "yearly")!)}
-            disabled={payingPlan !== null}
-            className="rounded-xl bg-[#138808] px-4 py-4 text-base font-extrabold text-white shadow-md"
-          >
-            {payingPlan === "yearly" ? "Processing..." : "Merchant Portal ₹999 Yearly Plan"}
-          </button>
-        </div>
-
-        <div className="mt-4 space-y-2">
-          <p className="text-center text-xs font-bold text-muted-foreground">
-            Auto-Debit (हर महीने/साल अपने आप कटेगा)
-          </p>
           <SubscriptionButton
-            plan_id="plan_Sog3FYTMTLP6pf"
             membership_type="merchant_premium"
             plan_type="monthly"
-            buttonText="₹99 / माह — Auto Debit"
-            className="w-full rounded-xl bg-[#FF9933] hover:bg-[#e68729] text-white font-bold"
+            redirectTo="/merchant-dashboard"
+            buttonText="Merchant Portal ₹99 Monthly Plan"
+            className="w-full rounded-xl bg-[#FF9933] hover:bg-[#e68729] text-white font-extrabold py-4"
           />
           <SubscriptionButton
-            plan_id="plan_Sog7TMDdTEJMge"
             membership_type="merchant_premium"
             plan_type="yearly"
-            buttonText="₹999 / साल — Auto Debit"
-            className="w-full rounded-xl bg-[#138808] hover:bg-[#0f6b06] text-white font-bold"
+            redirectTo="/merchant-dashboard"
+            buttonText="Merchant Portal ₹999 Yearly Plan"
+            className="w-full rounded-xl bg-[#138808] hover:bg-[#0f6b06] text-white font-extrabold py-4"
           />
         </div>
       </CardContent>
