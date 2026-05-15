@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface Props {
-  plan_id: string;
+  plan_id?: string;
+  link?: string;
   membership_type: string;
   plan_type: string;
   buttonText: string;
@@ -21,7 +22,7 @@ const loadRazorpayScript = (): Promise<boolean> =>
     document.body.appendChild(script);
   });
 
-export const SubscriptionButton = ({ plan_id, membership_type, plan_type, buttonText }: Props) => {
+export const SubscriptionButton = ({ plan_id, link, membership_type, plan_type, buttonText }: Props) => {
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [isActive, setIsActive] = useState(false);
@@ -45,6 +46,10 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
 
   const handleClick = async () => {
     setLoading(true);
+    if (link) {
+      window.location.href = link;
+      return;
+    }
     try {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) {
@@ -107,9 +112,12 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
   if (checking) return null;
 
   if (isActive) {
+    if (typeof window !== "undefined") {
+      setTimeout(() => { window.location.href = "/dashboard"; }, 0);
+    }
     return (
       <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-6 text-center">
-        <p className="text-base font-bold text-green-700">✓ Subscription Active</p>
+        <p className="text-base font-bold text-green-700">Your subscription is active</p>
       </div>
     );
   }
