@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { startMerchantPortalPaymentLink, syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
+import { useUserMembershipProfile } from "@/hooks/useUserMembershipProfile";
 
 const MERCHANT_PLANS = [
   {
@@ -50,6 +51,7 @@ const MerchantPortal = () => {
   // Per-user premium status check (no global query)
   const [isPremiumActive, setIsPremiumActive] = useState(false);
   const [premiumChecking, setPremiumChecking] = useState(true);
+  const { isActive: profileActive, loading: profileLoading } = useUserMembershipProfile();
 
   useEffect(() => {
     let cancelled = false;
@@ -201,7 +203,7 @@ const MerchantPortal = () => {
   };
 
   const renderSubscriptionCard = () => (
-    isPremiumActive ? (
+    isPremiumActive || profileActive ? (
       <Card className="mb-6 border-2 border-[#138808]/40 bg-[#138808]/5">
         <CardContent className="py-6 text-center">
           <BadgeCheck className="mx-auto mb-2 h-12 w-12 text-[#138808]" />
@@ -209,7 +211,7 @@ const MerchantPortal = () => {
           <p className="mt-1 font-hindi text-sm text-muted-foreground">आपकी मर्चेंट प्रीमियम मेंबरशिप सक्रिय है।</p>
         </CardContent>
       </Card>
-    ) : premiumChecking ? null : (
+    ) : premiumChecking || profileLoading ? null : (
     <Card className="mb-6 overflow-hidden border-2 border-[#FF9933]/40 shadow-lg">
       <div className="h-1.5 w-full bg-[#FF9933]" />
       <CardContent className="bg-gradient-to-b from-[#FF9933]/5 to-[#138808]/5 p-5">
