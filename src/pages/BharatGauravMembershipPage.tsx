@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Hand, Briefcase, GraduationCap, ShieldCheck, Wifi, Info, Landmark, ArrowLeft, Loader2, CheckCircle2, Receipt } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
+import SubscriptionButton from "@/components/SubscriptionButton";
 
 const BENEFITS = [
   {
@@ -282,6 +283,27 @@ const BharatGauravMembershipPage = () => {
               {payingPlan === "yearly" ? "..." : "अभी भुगतान करें"}
             </button>
           </div>
+        </div>
+
+        {/* Auto-Debit (Razorpay Subscription – Live) */}
+        <div className="mt-4 space-y-2">
+          <p className="text-center text-[12px] font-bold text-slate-700">
+            Auto-Debit सक्रिय करें (हर महीने/साल अपने आप कटेगा)
+          </p>
+          <SubscriptionButton
+            plan_id="plan_Sonz8QMSYJQ8cx"
+            membership_type="bharat_gaurav"
+            plan_type="monthly"
+            buttonText="₹10 / माह — Auto Debit चालू करें"
+            className="w-full rounded-full bg-orange-500 hover:bg-orange-600 text-white font-bold"
+          />
+          <SubscriptionButton
+            plan_id="plan_Soo38x1j9KMuTU"
+            membership_type="bharat_gaurav"
+            plan_type="yearly"
+            buttonText="₹100 / साल — Auto Debit चालू करें"
+            className="w-full rounded-full bg-blue-900 hover:bg-blue-800 text-white font-bold"
+          />
         </div>
 
         {/* Big CTA */}

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { shopCategories } from "@/data/sampleShops";
 import { Store, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, Image, Loader2, Upload, X } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
+import SubscriptionButton from "@/components/SubscriptionButton";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -227,6 +228,26 @@ const MerchantPortal = () => {
           >
             {payingPlan === "yearly" ? "Processing..." : "Merchant Portal ₹999 Yearly Plan"}
           </button>
+        </div>
+
+        <div className="mt-4 space-y-2">
+          <p className="text-center text-xs font-bold text-muted-foreground">
+            Auto-Debit (हर महीने/साल अपने आप कटेगा)
+          </p>
+          <SubscriptionButton
+            plan_id="plan_Sog3FYTMTLP6pf"
+            membership_type="merchant_premium"
+            plan_type="monthly"
+            buttonText="₹99 / माह — Auto Debit"
+            className="w-full rounded-xl bg-[#FF9933] hover:bg-[#e68729] text-white font-bold"
+          />
+          <SubscriptionButton
+            plan_id="plan_Sog7TMDdTEJMge"
+            membership_type="merchant_premium"
+            plan_type="yearly"
+            buttonText="₹999 / साल — Auto Debit"
+            className="w-full rounded-xl bg-[#138808] hover:bg-[#0f6b06] text-white font-bold"
+          />
         </div>
       </CardContent>
     </Card>
