@@ -8,6 +8,7 @@ import MatrimonyFilters from "@/components/matrimony/Filters";
 import MatrimonyMyProfile from "@/components/matrimony/MyProfile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Heart, Sparkles, Users } from "lucide-react";
+import SubscriptionButton from "@/components/SubscriptionButton";
 
 export interface MatrimonyProfile {
   id: string;
@@ -175,6 +176,29 @@ const MatrimonyPage = () => {
           </TabsContent>
 
           <TabsContent value="my-profile" className="mt-4">
+            {user && (
+              <div className="mb-4 rounded-2xl border border-[hsl(340,40%,80%)] bg-white p-4 shadow-sm">
+                <p className="text-center text-sm font-bold text-[hsl(340,60%,25%)]">
+                  Premium Marriage Bureau — Auto-Debit
+                </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <SubscriptionButton
+                    plan_id="plan_SoftV7FRW88Nyw"
+                    membership_type="marriage_bureau"
+                    plan_type="monthly"
+                    buttonText="₹99 / माह — Auto Debit"
+                    className="w-full rounded-full bg-[hsl(340,60%,25%)] hover:bg-[hsl(340,60%,20%)] text-white font-bold"
+                  />
+                  <SubscriptionButton
+                    plan_id="plan_Sofym9Nx6NwKm2"
+                    membership_type="marriage_bureau"
+                    plan_type="yearly"
+                    buttonText="₹999 / साल — Auto Debit"
+                    className="w-full rounded-full bg-[hsl(40,90%,45%)] hover:bg-[hsl(40,90%,40%)] text-white font-bold"
+                  />
+                </div>
+              </div>
+            )}
             <MatrimonyMyProfile
               user={user}
               myProfile={myProfile}
