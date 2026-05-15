@@ -57,16 +57,22 @@ export const SubscriptionButton = ({
     subscriptionId: string,
     paymentId: string,
   ) => {
-    // Update user profile membership status
-    await supabase
-      .from("profiles")
-      .update({
+    // STRICT per-user upsert into unified user_profiles table.
+    const days = plan_type === "yearly" ? 365 : 30;
+    const periodEnd = new Date(Date.now() + days * 86400000).toISOString();
+    await supabase.from("user_profiles").upsert(
+      {
+        user_id: userId,
         membership_status: "active",
         membership_type,
-        razorpay_subscription_id: subscriptionId,
+        plan_type,
+        current_period_end: periodEnd,
+        razorpay_subscription_id: subscriptionId || null,
+        razorpay_payment_id: paymentId || null,
         updated_at: new Date().toISOString(),
-      } as never)
-      .eq("id", userId);
+      },
+      { onConflict: "user_id" },
+    );
 
     // Bharat Gaurav specific record
     if (membership_type === "bharat_gaurav") {

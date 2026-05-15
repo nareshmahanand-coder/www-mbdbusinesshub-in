@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
 import { useBharatGauravMembership } from "@/hooks/useBharatGauravMembership";
+import { useUserMembershipProfile } from "@/hooks/useUserMembershipProfile";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Hand, Briefcase, GraduationCap, ShieldCheck, Wifi, Info, Landmark, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
@@ -53,6 +54,7 @@ const BharatGauravMembershipPage = () => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { isMember, loading: memberLoading, refresh } = useBharatGauravMembership();
+  const { isActive: profileActive, loading: profileLoading } = useUserMembershipProfile();
   const [payingPlan] = useState<"monthly" | "yearly" | null>(null);
 
   // Directly mark Bharat Gaurav membership active for the logged-in user
@@ -131,7 +133,7 @@ const BharatGauravMembershipPage = () => {
     navigate("/login");
   };
 
-  if (memberLoading) {
+  if (memberLoading || profileLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
         <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
@@ -139,7 +141,7 @@ const BharatGauravMembershipPage = () => {
     );
   }
 
-  if (isMember) {
+  if (isMember || profileActive) {
     return (
       <div className="min-h-screen bg-white px-4 py-12">
         <div className="mx-auto max-w-md text-center">
