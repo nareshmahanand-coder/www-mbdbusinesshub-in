@@ -2,16 +2,21 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { startBharatGauravPaymentLink, startMarriageBureauPaymentLink, startMerchantPortalPaymentLink } from "@/lib/razorpayPayments";
 
 export type MembershipType = "bharat_gaurav" | "merchant_premium" | "marriage_bureau";
 export type PlanType = "monthly" | "yearly";
 
 interface Props {
-  plan_id: string;
+  plan_id?: string;
   membership_type: MembershipType;
   plan_type: PlanType;
   buttonText: string;
   className?: string;
+  /** When true, opens the hosted Razorpay payment link flow instead of subscription checkout. */
+  usePaymentLink?: boolean;
+  /** Where to redirect after successful activation. Defaults to /success. */
+  redirectTo?: string;
 }
 
 interface RazorpayResponse {
@@ -42,6 +47,8 @@ export const SubscriptionButton = ({
   plan_type,
   buttonText,
   className,
+  usePaymentLink,
+  redirectTo = "/success",
 }: Props) => {
   const [loading, setLoading] = useState(false);
 
@@ -82,6 +89,33 @@ export const SubscriptionButton = ({
     try {
       setLoading(true);
 
+      if (usePaymentLink) {
+        const starter =
+          membership_type === "bharat_gaurav"
+            ? startBharatGauravPaymentLink
+            : membership_type === "marriage_bureau"
+              ? startMarriageBureauPaymentLink
+              : startMerchantPortalPaymentLink;
+
+        await starter({
+          plan: plan_type,
+          onSuccess: async () => {
+            const { data: userData } = await supabase.auth.getUser();
+            if (userData.user) {
+              await activateMembership(userData.user.id, "", "");
+            }
+            toast.success("मेंबरशिप सक्रिय हो गई!");
+            window.location.href = redirectTo;
+          },
+          onFailure: () => {
+            toast.error("भुगतान अधूरा है। कृपया दोबारा प्रयास करें।");
+            setLoading(false);
+          },
+        });
+        return;
+      }
+
+      if (!plan_id) throw new Error("plan_id required for subscription mode");
       const sdkReady = await loadRazorpay();
       if (!sdkReady) throw new Error("Razorpay SDK failed to load");
 
@@ -117,7 +151,7 @@ export const SubscriptionButton = ({
               response.razorpay_payment_id,
             );
             toast.success("Subscription activated! Auto-Debit enabled.");
-            window.location.href = "/success";
+            window.location.href = redirectTo;
           } catch {
             toast.error("Payment received but activation failed. Please refresh.");
           }
