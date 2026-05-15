@@ -38,7 +38,7 @@ export const SubscriptionButton = ({ plan_id, link, membership_type, plan_type, 
         .from("user_profiles")
         .select("membership_status")
         .eq("user_id", auth.user.id)
-        .single();
+        .maybeSingle();
       if (data?.membership_status === "active") setIsActive(true);
       setChecking(false);
     })();
@@ -112,9 +112,6 @@ export const SubscriptionButton = ({ plan_id, link, membership_type, plan_type, 
   if (checking) return null;
 
   if (isActive) {
-    if (typeof window !== "undefined") {
-      setTimeout(() => { window.location.href = "/dashboard"; }, 0);
-    }
     return (
       <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-6 text-center">
         <p className="text-base font-bold text-green-700">Your subscription is active</p>
