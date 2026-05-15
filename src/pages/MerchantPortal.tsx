@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useLocation } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { SubscriptionButton } from "@/components/SubscriptionButton";
 
 const MerchantPortal = () => {
   const { user } = useAuth();
@@ -335,6 +336,26 @@ const MerchantPortal = () => {
             <p className="font-hindi text-sm text-muted-foreground">मदद के लिए यहाँ संपर्क करें:</p>
             <a href="mailto:helpline.bharatdukaan@gmail.com" className="text-sm font-medium text-primary underline underline-offset-2">helpline.bharatdukaan@gmail.com</a>
             <Button variant="outline" asChild><a href="/help"><HelpCircle className="mr-2 h-4 w-4" /> Help Desk</a></Button>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-lg text-center">Merchant Premium Membership</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <SubscriptionButton
+              plan_id="plan_Sog3FYTMTLP6pf"
+              membership_type="merchant"
+              plan_type="monthly"
+              buttonText="Monthly ₹99 — Subscribe"
+            />
+            <SubscriptionButton
+              plan_id="plan_Sog7TMDdTEJMge"
+              membership_type="merchant"
+              plan_type="yearly"
+              buttonText="Yearly ₹999 — Subscribe"
+            />
           </CardContent>
         </Card>
       </div>
