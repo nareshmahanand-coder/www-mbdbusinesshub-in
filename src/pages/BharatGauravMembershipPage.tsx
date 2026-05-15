@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { startBharatGauravPaymentLink, syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
+import { syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
 import { useBharatGauravMembership } from "@/hooks/useBharatGauravMembership";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Hand, Briefcase, GraduationCap, ShieldCheck, Wifi, Info, Landmark, ArrowLeft, Loader2, CheckCircle2, Receipt } from "lucide-react";
+import { Hand, Briefcase, GraduationCap, ShieldCheck, Wifi, Info, Landmark, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import SubscriptionButton from "@/components/SubscriptionButton";
 
@@ -53,8 +53,7 @@ const BharatGauravMembershipPage = () => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { isMember, loading: memberLoading, refresh } = useBharatGauravMembership();
-  const [payingPlan, setPayingPlan] = useState<"monthly" | "yearly" | null>(null);
-  const [activating, setActivating] = useState(false);
+  const [payingPlan] = useState<"monthly" | "yearly" | null>(null);
 
   // Directly mark Bharat Gaurav membership active for the logged-in user
   // and hard-redirect to the dashboard. Used as the guaranteed unlock path
@@ -126,39 +125,6 @@ const BharatGauravMembershipPage = () => {
     syncPendingAutopay();
     return () => { cancelled = true; };
   }, [isMember, memberLoading, navigate, payingPlan, refresh, user]);
-
-  const handlePay = async (plan: "monthly" | "yearly") => {
-    setPayingPlan(plan);
-    try {
-      await startBharatGauravPaymentLink({
-        plan,
-        onSuccess: async () => {
-          await activateMembershipAndGo(plan);
-        },
-        onFailure: () => {
-          toast({ title: "Payment incomplete", description: "कृपया दोबारा प्रयास करें।", variant: "destructive" });
-        },
-      });
-    } catch (e) {
-      // Even if backend sync failed, give the user a chance to confirm payment manually below.
-      toast({
-        title: "Payment sync pending",
-        description: "अगर भुगतान हो चुका है तो नीचे 'मैंने भुगतान कर दिया है' पर क्लिक करें।",
-        variant: "destructive",
-      });
-    } finally {
-      setPayingPlan(null);
-    }
-  };
-
-  const handleManualActivate = async (plan: "monthly" | "yearly") => {
-    setActivating(true);
-    try {
-      await activateMembershipAndGo(plan);
-    } finally {
-      setActivating(false);
-    }
-  };
 
   const handleSwitchAccount = async () => {
     await signOut();
