@@ -8,9 +8,6 @@ import MatrimonyFilters from "@/components/matrimony/Filters";
 import MatrimonyMyProfile from "@/components/matrimony/MyProfile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Heart, Sparkles, Users } from "lucide-react";
-import SubscriptionButton from "@/components/SubscriptionButton";
-import { BadgeCheck } from "lucide-react";
-import { useUserMembershipProfile } from "@/hooks/useUserMembershipProfile";
 
 export interface MatrimonyProfile {
   id: string;
@@ -64,9 +61,6 @@ const MatrimonyPage = () => {
   const [filterAgeRange, setFilterAgeRange] = useState([18, 60]);
 
   useEffect(() => { loadData(); }, [user]);
-
-  // STRICT per-user check via user_profiles ONLY
-  const { isActive: profileActive, loading: profileLoading } = useUserMembershipProfile();
 
   const loadData = async () => {
     setLoading(true);
@@ -181,36 +175,6 @@ const MatrimonyPage = () => {
           </TabsContent>
 
           <TabsContent value="my-profile" className="mt-4">
-            {user && profileActive && (
-              <div className="mb-4 rounded-2xl border border-[hsl(140,40%,60%)] bg-[hsl(140,40%,95%)] p-4 text-center shadow-sm">
-                <BadgeCheck className="mx-auto h-10 w-10 text-[hsl(140,60%,30%)]" />
-                <p className="mt-2 text-sm font-bold text-[hsl(140,60%,25%)]">Your subscription is active</p>
-                <p className="mt-1 text-xs text-muted-foreground font-hindi">आपकी मैरिज ब्यूरो प्रीमियम मेंबरशिप सक्रिय है।</p>
-              </div>
-            )}
-            {user && !profileActive && !profileLoading && (
-              <div className="mb-4 rounded-2xl border border-[hsl(340,40%,80%)] bg-white p-4 shadow-sm">
-                <p className="text-center text-sm font-bold text-[hsl(340,60%,25%)]">
-                  Premium Marriage Bureau — Auto-Debit
-                </p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  <SubscriptionButton
-                    membership_type="marriage_bureau"
-                    plan_type="monthly"
-                    redirectTo="/matrimony"
-                    buttonText="₹99 / माह — Premium"
-                    className="w-full rounded-full bg-[hsl(340,60%,25%)] hover:bg-[hsl(340,60%,20%)] text-white font-bold"
-                  />
-                  <SubscriptionButton
-                    membership_type="marriage_bureau"
-                    plan_type="yearly"
-                    redirectTo="/matrimony"
-                    buttonText="₹999 / साल — Premium"
-                    className="w-full rounded-full bg-[hsl(40,90%,45%)] hover:bg-[hsl(40,90%,40%)] text-white font-bold"
-                  />
-                </div>
-              </div>
-            )}
             <MatrimonyMyProfile
               user={user}
               myProfile={myProfile}

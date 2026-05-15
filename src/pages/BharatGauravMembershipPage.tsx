@@ -1,10 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useUserMembershipProfile } from "@/hooks/useUserMembershipProfile";
 import { useAuth } from "@/contexts/AuthContext";
-import { Hand, Briefcase, GraduationCap, ShieldCheck, Wifi, Info, Landmark, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
+import { Hand, Briefcase, GraduationCap, ShieldCheck, Wifi, Info, Landmark, ArrowLeft } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import SubscriptionButton from "@/components/SubscriptionButton";
 
 const BENEFITS = [
   {
@@ -48,36 +46,11 @@ const BENEFITS = [
 const BharatGauravMembershipPage = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  // STRICT per-user check via user_profiles ONLY
-  const { isActive: profileActive, loading: profileLoading } = useUserMembershipProfile();
 
   const handleSwitchAccount = async () => {
     await signOut();
     navigate("/login");
   };
-
-  if (profileLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-      </div>
-    );
-  }
-
-  if (profileActive) {
-    return (
-      <div className="min-h-screen bg-white px-4 py-12">
-        <div className="mx-auto max-w-md text-center">
-          <CheckCircle2 className="mx-auto h-16 w-16 text-green-600" />
-          <h1 className="mt-4 font-hindi text-2xl font-bold text-blue-900">मेंबरशिप सक्रिय है</h1>
-          <p className="mt-2 font-hindi text-muted-foreground">आपकी भारत गौरव मेंबरशिप पहले से ही सक्रिय है।</p>
-          <Button onClick={() => navigate("/dashboard")} className="mt-6 bg-blue-900 hover:bg-blue-800">
-            Open Dashboard
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-white px-3 py-4 font-hindi">
@@ -137,24 +110,6 @@ const BharatGauravMembershipPage = () => {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Plans – sirf 2 buttons (direct Razorpay payment link) */}
-        <div className="mt-5 space-y-3">
-          <SubscriptionButton
-            membership_type="bharat_gaurav"
-            plan_type="monthly"
-            redirectTo="/dashboard"
-            buttonText="भारत गौरव मेंबरशिप ₹10 प्लान"
-            className="w-full rounded-full border-2 border-orange-600 bg-orange-500 px-4 py-3 text-base font-bold text-white shadow-md transition-colors hover:bg-orange-600 hover:border-orange-700 focus-visible:ring-2 focus-visible:ring-orange-300"
-          />
-          <SubscriptionButton
-            membership_type="bharat_gaurav"
-            plan_type="yearly"
-            redirectTo="/dashboard"
-            buttonText="भारत गौरव मेंबरशिप ₹100 प्लान सालाना"
-            className="w-full rounded-full border-2 border-blue-900 bg-blue-900 px-4 py-3 text-base font-bold text-white shadow-md transition-colors hover:bg-blue-800 hover:border-blue-950 focus-visible:ring-2 focus-visible:ring-blue-300"
-          />
         </div>
 
         {/* Switch account */}
