@@ -144,7 +144,6 @@ const BharatGauravMembershipPage = () => {
           <SubscriptionButton
             membership_type="bharat_gaurav"
             plan_type="monthly"
-            usePaymentLink
             redirectTo="/dashboard"
             buttonText="भारत गौरव मेंबरशिप ₹10 प्लान"
             className="w-full rounded-full border-2 border-orange-600 bg-orange-500 px-4 py-3 text-base font-bold text-white shadow-md transition-colors hover:bg-orange-600 hover:border-orange-700 focus-visible:ring-2 focus-visible:ring-orange-300"
@@ -152,7 +151,6 @@ const BharatGauravMembershipPage = () => {
           <SubscriptionButton
             membership_type="bharat_gaurav"
             plan_type="yearly"
-            usePaymentLink
             redirectTo="/dashboard"
             buttonText="भारत गौरव मेंबरशिप ₹100 प्लान सालाना"
             className="w-full rounded-full border-2 border-blue-900 bg-blue-900 px-4 py-3 text-base font-bold text-white shadow-md transition-colors hover:bg-blue-800 hover:border-blue-950 focus-visible:ring-2 focus-visible:ring-blue-300"
