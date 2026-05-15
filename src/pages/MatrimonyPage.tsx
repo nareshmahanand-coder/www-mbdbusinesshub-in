@@ -195,17 +195,17 @@ const MatrimonyPage = () => {
                 </p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <SubscriptionButton
-                    plan_id="plan_SoftV7FRW88Nyw"
                     membership_type="marriage_bureau"
                     plan_type="monthly"
-                    buttonText="₹99 / माह — Auto Debit"
+                    redirectTo="/matrimony"
+                    buttonText="₹99 / माह — Premium"
                     className="w-full rounded-full bg-[hsl(340,60%,25%)] hover:bg-[hsl(340,60%,20%)] text-white font-bold"
                   />
                   <SubscriptionButton
-                    plan_id="plan_Sofym9Nx6NwKm2"
                     membership_type="marriage_bureau"
                     plan_type="yearly"
-                    buttonText="₹999 / साल — Auto Debit"
+                    redirectTo="/matrimony"
+                    buttonText="₹999 / साल — Premium"
                     className="w-full rounded-full bg-[hsl(40,90%,45%)] hover:bg-[hsl(40,90%,40%)] text-white font-bold"
                   />
                 </div>
