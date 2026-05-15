@@ -13,7 +13,7 @@ const RAZORPAY_KEY_ID = "rzp_live_RKpFEtBTCi8FxK";
 
 const loadRazorpayScript = (): Promise<boolean> =>
   new Promise((resolve) => {
-    if (window.Razorpay) return resolve(true);
+    if ((window as any).Razorpay) return resolve(true);
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.onload = () => resolve(true);
