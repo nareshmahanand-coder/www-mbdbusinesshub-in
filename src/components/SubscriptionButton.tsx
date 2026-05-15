@@ -1,63 +1,96 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Loader2, ExternalLink } from "lucide-react";
+import { CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUserMembershipProfile } from "@/hooks/useUserMembershipProfile";
+import { useNavigate } from "react-router-dom";
 
 interface Props {
   label: string;
-  paymentLink: string;
-  membershipType: string; // e.g. "bharat_gaurav" | "marriage_bureau" | "merchant_portal"
+  planId: string;
+  membershipType: "bharat_gaurav" | "marriage_bureau" | "merchant_portal";
   planType: "monthly" | "yearly";
   className?: string;
 }
 
-export const SubscriptionButton = ({ label, paymentLink, membershipType, planType, className }: Props) => {
+const RAZORPAY_SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
+
+const loadRazorpay = (): Promise<boolean> =>
+  new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(false);
+    if ((window as any).Razorpay) return resolve(true);
+    const s = document.createElement("script");
+    s.src = RAZORPAY_SCRIPT;
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+
+export const SubscriptionButton = ({ label, planId, membershipType, planType, className }: Props) => {
   const { user } = useAuth();
-  const { refresh } = useUserMembershipProfile();
-  const [opened, setOpened] = useState(false);
-  const [activating, setActivating] = useState(false);
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
-  const handleOpen = () => {
+  const handleClick = async () => {
     if (!user) { toast.error("कृपया पहले लॉगिन करें"); return; }
-    window.open(paymentLink, "_blank", "noopener,noreferrer");
-    setOpened(true);
-  };
+    setLoading(true);
+    try {
+      const ok = await loadRazorpay();
+      if (!ok) { toast.error("Razorpay लोड नहीं हुआ"); setLoading(false); return; }
 
-  const handleActivate = async () => {
-    if (!user) { toast.error("कृपया पहले लॉगिन करें"); return; }
-    setActivating(true);
-    const periodEnd = new Date();
-    if (planType === "yearly") periodEnd.setDate(periodEnd.getDate() + 365);
-    else periodEnd.setDate(periodEnd.getDate() + 30);
-    const { error } = await supabase.from("user_profiles").upsert({
-      user_id: user.id,
-      membership_status: "active",
-      membership_type: membershipType,
-      plan_type: planType,
-      current_period_end: periodEnd.toISOString(),
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "user_id" });
-    setActivating(false);
-    if (error) { toast.error("Activation failed: " + error.message); return; }
-    toast.success("Subscription activated!");
-    await refresh();
+      const { data, error } = await supabase.functions.invoke("create-subscription", {
+        body: { plan_id: planId, membership_type: membershipType, plan_type: planType },
+      });
+      if (error || !data?.subscriptionId) {
+        toast.error(data?.error || error?.message || "Subscription start failed");
+        setLoading(false);
+        return;
+      }
+
+      const rzp = new (window as any).Razorpay({
+        key: data.keyId,
+        subscription_id: data.subscriptionId,
+        name: "Mera Bharat Dukaan",
+        description: label,
+        prefill: { email: user.email ?? "", contact: (user.phone ?? "").replace(/^\+/, "") },
+        theme: { color: "#1a237e" },
+        handler: async () => {
+          // Mark active immediately for snappy UX; webhook will reconcile authoritatively.
+          const periodEnd = new Date();
+          periodEnd.setDate(periodEnd.getDate() + (planType === "yearly" ? 365 : 30));
+          await supabase.from("user_profiles").upsert({
+            user_id: user.id,
+            membership_status: "active",
+            membership_type: membershipType,
+            plan_type: planType,
+            current_period_end: periodEnd.toISOString(),
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "user_id" });
+          toast.success("Subscription active!");
+          navigate("/dashboard");
+        },
+        modal: {
+          ondismiss: () => setLoading(false),
+        },
+      });
+      rzp.on("payment.failed", (resp: any) => {
+        toast.error(resp?.error?.description || "Payment failed");
+        setLoading(false);
+      });
+      rzp.open();
+    } catch (e: any) {
+      toast.error(e?.message || "Something went wrong");
+      setLoading(false);
+    }
   };
 
   return (
-    <div className={`space-y-2 ${className ?? ""}`}>
-      <Button onClick={handleOpen} className="w-full bg-[#FF8C00] hover:bg-[#e57d00] text-white font-bold py-3" size="lg">
-        <ExternalLink className="h-4 w-4 mr-2" /> {label}
-      </Button>
-      {opened && (
-        <Button onClick={handleActivate} disabled={activating} variant="outline" className="w-full border-green-600 text-green-700" size="sm">
-          {activating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-          भुगतान पूरा हुआ — Activate
-        </Button>
-      )}
-    </div>
+    <Button onClick={handleClick} disabled={loading}
+      className={`w-full bg-[#FF8C00] hover:bg-[#e57d00] text-white font-bold py-3 ${className ?? ""}`} size="lg">
+      {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+      {label}
+    </Button>
   );
 };
 
