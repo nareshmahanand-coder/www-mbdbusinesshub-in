@@ -116,16 +116,16 @@ const MatrimonyPage = () => {
             <div className="space-y-3 rounded-2xl border border-[hsl(340,40%,80%)] bg-white p-4">
               <p className="text-center text-sm font-bold text-[hsl(340,60%,25%)]">Premium Marriage Bureau</p>
               <SubscriptionButton
-                label="₹99 / माह — Premium"
-                planId="plan_SoftV7FRW88Nyw"
-                membershipType="marriage_bureau"
-                planType="monthly"
+                buttonText="₹99 / माह — Premium"
+                link="https://rzp.io/rzp/JPhHPAU"
+                membership_type="marriage_bureau"
+                plan_type="monthly"
               />
               <SubscriptionButton
-                label="₹999 / साल — Premium"
-                planId="plan_Sofym9Nx6NwKm2"
-                membershipType="marriage_bureau"
-                planType="yearly"
+                buttonText="₹999 / साल — Premium"
+                link="https://rzp.io/rzp/8PAlZmT"
+                membership_type="marriage_bureau"
+                plan_type="yearly"
               />
             </div>
           )}

@@ -122,16 +122,16 @@ const BharatGauravMembershipPage = () => {
           ) : (
             <div className="space-y-3">
               <SubscriptionButton
-                label="₹10 / माह — भारत गौरव"
-                planId="plan_Sonz8QMSYJQ8cx"
-                membershipType="bharat_gaurav"
-                planType="monthly"
+                buttonText="₹10 / माह — भारत गौरव"
+                link="https://rzp.io/rzp/STxnA27"
+                membership_type="bharat_gaurav"
+                plan_type="monthly"
               />
               <SubscriptionButton
-                label="₹100 / साल — भारत गौरव"
-                planId="plan_Soo38x1j9KMuTU"
-                membershipType="bharat_gaurav"
-                planType="yearly"
+                buttonText="₹100 / साल — भारत गौरव"
+                link="https://rzp.io/rzp/VrxgoWxx"
+                membership_type="bharat_gaurav"
+                plan_type="yearly"
               />
             </div>
           )}
