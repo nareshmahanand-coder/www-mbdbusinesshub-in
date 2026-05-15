@@ -1,96 +1,56 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { CheckCircle2, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { CheckCircle2 } from "lucide-react";
 
 interface Props {
-  label: string;
-  planId: string;
-  membershipType: "bharat_gaurav" | "marriage_bureau" | "merchant_portal";
-  planType: "monthly" | "yearly";
-  className?: string;
+  link: string;
+  membership_type: string;
+  plan_type: string;
+  buttonText: string;
 }
 
-const RAZORPAY_SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
-
-const loadRazorpay = (): Promise<boolean> =>
-  new Promise((resolve) => {
-    if (typeof window === "undefined") return resolve(false);
-    if ((window as any).Razorpay) return resolve(true);
-    const s = document.createElement("script");
-    s.src = RAZORPAY_SCRIPT;
-    s.onload = () => resolve(true);
-    s.onerror = () => resolve(false);
-    document.body.appendChild(s);
-  });
-
-export const SubscriptionButton = ({ label, planId, membershipType, planType, className }: Props) => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+export const SubscriptionButton = ({ link, membership_type, plan_type, buttonText }: Props) => {
   const [loading, setLoading] = useState(false);
 
   const handleClick = async () => {
-    if (!user) { toast.error("कृपया पहले लॉगिन करें"); return; }
     setLoading(true);
     try {
-      const ok = await loadRazorpay();
-      if (!ok) { toast.error("Razorpay लोड नहीं हुआ"); setLoading(false); return; }
+      // Open Razorpay payment link
+      window.location.href = link;
 
-      const { data, error } = await supabase.functions.invoke("create-subscription", {
-        body: { plan_id: planId, membership_type: membershipType, plan_type: planType },
-      });
-      if (error || !data?.subscriptionId) {
-        toast.error(data?.error || error?.message || "Subscription start failed");
-        setLoading(false);
-        return;
+      // After payment (user will return), update database
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData.user;
+      if (user) {
+        await supabase.from('user_profiles').upsert({
+          user_id: user.id,
+          membership_type,
+          plan_type,
+          membership_status: 'active',
+          current_period_end: new Date(Date.now() + (plan_type === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString(),
+          updated_at: new Date().toISOString()
+        });
+        toast.success("Payment Successful! Redirecting to Dashboard...");
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 1500);
       }
-
-      const rzp = new (window as any).Razorpay({
-        key: data.keyId,
-        subscription_id: data.subscriptionId,
-        name: "Mera Bharat Dukaan",
-        description: label,
-        prefill: { email: user.email ?? "", contact: (user.phone ?? "").replace(/^\+/, "") },
-        theme: { color: "#1a237e" },
-        handler: async () => {
-          // Mark active immediately for snappy UX; webhook will reconcile authoritatively.
-          const periodEnd = new Date();
-          periodEnd.setDate(periodEnd.getDate() + (planType === "yearly" ? 365 : 30));
-          await supabase.from("user_profiles").upsert({
-            user_id: user.id,
-            membership_status: "active",
-            membership_type: membershipType,
-            plan_type: planType,
-            current_period_end: periodEnd.toISOString(),
-            updated_at: new Date().toISOString(),
-          }, { onConflict: "user_id" });
-          toast.success("Subscription active!");
-          navigate("/dashboard");
-        },
-        modal: {
-          ondismiss: () => setLoading(false),
-        },
-      });
-      rzp.on("payment.failed", (resp: any) => {
-        toast.error(resp?.error?.description || "Payment failed");
-        setLoading(false);
-      });
-      rzp.open();
-    } catch (e: any) {
-      toast.error(e?.message || "Something went wrong");
+    } catch (error) {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Button onClick={handleClick} disabled={loading}
-      className={`w-full bg-[#FF8C00] hover:bg-[#e57d00] text-white font-bold py-3 ${className ?? ""}`} size="lg">
-      {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-      {label}
-    </Button>
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      className="w-full py-4 rounded-2xl font-semibold text-white bg-orange-600 hover:bg-orange-700 transition-all"
+    >
+      {loading ? "Processing..." : buttonText}
+    </button>
   );
 };
 
