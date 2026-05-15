@@ -248,95 +248,24 @@ const BharatGauravMembershipPage = () => {
           ))}
         </div>
 
-        {/* Plan cards */}
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          {/* Monthly */}
-          <div className="rounded-2xl border-2 border-orange-400 bg-orange-50 p-3 text-center">
-            <p className="text-[12px] font-bold leading-snug text-slate-900">
-              भारत गौरव मेंबरशिप ₹10 प्लान
-            </p>
-            <p className="mt-2 text-3xl font-extrabold text-blue-900">₹10</p>
-            <p className="mt-1 text-sm font-semibold text-slate-800">मासिक प्लान</p>
-            <p className="text-[10px] font-bold tracking-wider text-slate-500">MONTHLY PLAN</p>
-            <button
-              onClick={() => handlePay("monthly")}
-              disabled={payingPlan === "monthly"}
-              className="mt-3 w-full rounded-full bg-orange-500 px-3 py-2 text-[12px] font-bold text-white shadow hover:bg-orange-600 disabled:opacity-60"
-            >
-              {payingPlan === "monthly" ? "..." : "अभी भुगतान करें"}
-            </button>
-          </div>
-
-          {/* Yearly */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-3 text-center">
-            <p className="text-[12px] font-bold leading-snug text-slate-900">
-              भारत गौरव मेंबरशिप ₹100 प्लान
-            </p>
-            <p className="mt-2 text-3xl font-extrabold text-blue-900">₹100</p>
-            <p className="mt-1 text-sm font-semibold text-slate-800">सालाना प्लान</p>
-            <p className="text-[10px] font-bold tracking-wider text-slate-500">YEARLY PLAN</p>
-            <button
-              onClick={() => handlePay("yearly")}
-              disabled={payingPlan === "yearly"}
-              className="mt-3 w-full rounded-full bg-indigo-100 px-3 py-2 text-[12px] font-bold text-blue-900 hover:bg-indigo-200 disabled:opacity-60"
-            >
-              {payingPlan === "yearly" ? "..." : "अभी भुगतान करें"}
-            </button>
-          </div>
-        </div>
-
-        {/* Auto-Debit (Razorpay Subscription – Live) */}
-        <div className="mt-4 space-y-2">
-          <p className="text-center text-[12px] font-bold text-slate-700">
-            Auto-Debit सक्रिय करें (हर महीने/साल अपने आप कटेगा)
-          </p>
+        {/* Plans – sirf 2 buttons (direct Razorpay payment link) */}
+        <div className="mt-5 space-y-3">
           <SubscriptionButton
-            plan_id="plan_Sonz8QMSYJQ8cx"
             membership_type="bharat_gaurav"
             plan_type="monthly"
-            buttonText="₹10 / माह — Auto Debit चालू करें"
-            className="w-full rounded-full bg-orange-500 hover:bg-orange-600 text-white font-bold"
+            usePaymentLink
+            redirectTo="/dashboard"
+            buttonText="भारत गौरव मेंबरशिप ₹10 प्लान"
+            className="w-full rounded-full border-2 border-orange-600 bg-orange-500 px-4 py-3 text-base font-bold text-white shadow-md transition-colors hover:bg-orange-600 hover:border-orange-700 focus-visible:ring-2 focus-visible:ring-orange-300"
           />
           <SubscriptionButton
-            plan_id="plan_Soo38x1j9KMuTU"
             membership_type="bharat_gaurav"
             plan_type="yearly"
-            buttonText="₹100 / साल — Auto Debit चालू करें"
-            className="w-full rounded-full bg-blue-900 hover:bg-blue-800 text-white font-bold"
+            usePaymentLink
+            redirectTo="/dashboard"
+            buttonText="भारत गौरव मेंबरशिप ₹100 प्लान सालाना"
+            className="w-full rounded-full border-2 border-blue-900 bg-blue-900 px-4 py-3 text-base font-bold text-white shadow-md transition-colors hover:bg-blue-800 hover:border-blue-950 focus-visible:ring-2 focus-visible:ring-blue-300"
           />
-        </div>
-
-        {/* Big CTA */}
-        <button
-          onClick={() => handlePay("monthly")}
-          disabled={payingPlan === "monthly"}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-orange-500 px-4 py-3 text-base font-bold text-white shadow-md hover:bg-orange-600 disabled:opacity-60"
-        >
-          <Receipt className="h-5 w-5" />
-          भारत गौरव मेंबरशिप ₹10 प्लान
-        </button>
-
-        {/* Manual activation – use after payment if dashboard didn't unlock */}
-        <div className="mt-3 rounded-xl border border-green-300 bg-green-50 p-3 text-center">
-          <p className="text-[12px] font-semibold text-slate-800">
-            अगर आपका भुगतान सफल हो चुका है लेकिन Dashboard नहीं खुला:
-          </p>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <button
-              onClick={() => handleManualActivate("monthly")}
-              disabled={activating}
-              className="rounded-full bg-green-600 px-3 py-2 text-[12px] font-bold text-white hover:bg-green-700 disabled:opacity-60"
-            >
-              ₹10 मेंबरशिप चालू करें
-            </button>
-            <button
-              onClick={() => handleManualActivate("yearly")}
-              disabled={activating}
-              className="rounded-full bg-green-600 px-3 py-2 text-[12px] font-bold text-white hover:bg-green-700 disabled:opacity-60"
-            >
-              ₹100 मेंबरशिप चालू करें
-            </button>
-          </div>
         </div>
 
         {/* Switch account */}
