@@ -1,12 +1,7 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/hooks/use-toast";
-import { syncLatestRazorpayPayment } from "@/lib/razorpayPayments";
-import { useBharatGauravMembership } from "@/hooks/useBharatGauravMembership";
+import { useNavigate } from "react-router-dom";
 import { useUserMembershipProfile } from "@/hooks/useUserMembershipProfile";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Hand, Briefcase, GraduationCap, ShieldCheck, Wifi, Info, Landmark, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import SubscriptionButton from "@/components/SubscriptionButton";
@@ -52,88 +47,16 @@ const BENEFITS = [
 
 const BharatGauravMembershipPage = () => {
   const navigate = useNavigate();
-  const { signOut, user } = useAuth();
-  const { isMember, loading: memberLoading, refresh } = useBharatGauravMembership();
+  const { signOut } = useAuth();
+  // STRICT per-user check via user_profiles ONLY
   const { isActive: profileActive, loading: profileLoading } = useUserMembershipProfile();
-  const [payingPlan] = useState<"monthly" | "yearly" | null>(null);
-
-  // Directly mark Bharat Gaurav membership active for the logged-in user
-  // and hard-redirect to the dashboard. Used as the guaranteed unlock path
-  // after a successful Razorpay subscription/auto-pay payment.
-  const activateMembershipAndGo = async (
-    plan: "monthly" | "yearly",
-    refs?: { subscriptionId?: string; paymentId?: string; orderId?: string }
-  ) => {
-    if (!user) return;
-    const now = new Date();
-    const expires = new Date(now);
-    if (plan === "yearly") expires.setDate(expires.getDate() + 365);
-    else expires.setDate(expires.getDate() + 30);
-
-    const { error } = await supabase.from("bharat_gaurav_memberships").insert({
-      user_id: user.id,
-      plan,
-      amount: plan === "yearly" ? 100 : 10,
-      currency: "INR",
-      status: "active",
-      started_at: now.toISOString(),
-      expires_at: expires.toISOString(),
-      razorpay_order_id: refs?.orderId ?? refs?.subscriptionId ?? null,
-      razorpay_payment_id: refs?.paymentId ?? null,
-    });
-
-    if (error) {
-      console.error("Bharat Gaurav activation failed:", error);
-      toast({
-        title: "Activation failed",
-        description: "Payment received but activation failed. Please refresh.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    await refresh();
-    toast({ title: "धन्यवाद!", description: "Auto-Debit सक्रिय। मेंबरशिप चालू हो गई है।" });
-    window.location.href = "/dashboard";
-  };
-
-  useEffect(() => {
-    if (!user || memberLoading || isMember || payingPlan) return;
-
-    let cancelled = false;
-    const syncPendingAutopay = async () => {
-      const { data: order } = await supabase
-        .from("payment_orders")
-        .select("id, plan")
-        .eq("user_id", user.id)
-        .eq("module", "bharat_gaurav")
-        .in("status", ["created", "pending", "failed"])
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!order || cancelled) return;
-
-      const synced = await syncLatestRazorpayPayment({
-        module: "bharat_gaurav",
-        plan: order.plan as "monthly" | "yearly",
-        paymentOrderId: order.id,
-      });
-
-      if (cancelled || !synced.ok) return;
-      await activateMembershipAndGo(order.plan as "monthly" | "yearly", { orderId: order.id });
-    };
-
-    syncPendingAutopay();
-    return () => { cancelled = true; };
-  }, [isMember, memberLoading, navigate, payingPlan, refresh, user]);
 
   const handleSwitchAccount = async () => {
     await signOut();
     navigate("/login");
   };
 
-  if (memberLoading || profileLoading) {
+  if (profileLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white">
         <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
@@ -141,7 +64,7 @@ const BharatGauravMembershipPage = () => {
     );
   }
 
-  if (isMember || profileActive) {
+  if (profileActive) {
     return (
       <div className="min-h-screen bg-white px-4 py-12">
         <div className="mx-auto max-w-md text-center">
