@@ -65,24 +65,8 @@ const MatrimonyPage = () => {
 
   useEffect(() => { loadData(); }, [user]);
 
-  // Per-user marriage bureau subscription check (no global query)
-  const [marriageActive, setMarriageActive] = useState(false);
-  const { isActive: profileActive } = useUserMembershipProfile();
-  useEffect(() => {
-    let cancelled = false;
-    if (!user) { setMarriageActive(false); return; }
-    (async () => {
-      const { data } = await supabase
-        .from("matrimony_profiles")
-        .select("subscription_plan, subscription_end")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (cancelled) return;
-      const active = !!data?.subscription_plan && (!data.subscription_end || new Date(data.subscription_end) > new Date());
-      setMarriageActive(active);
-    })();
-    return () => { cancelled = true; };
-  }, [user]);
+  // STRICT per-user check via user_profiles ONLY
+  const { isActive: profileActive, loading: profileLoading } = useUserMembershipProfile();
 
   const loadData = async () => {
     setLoading(true);
@@ -197,14 +181,14 @@ const MatrimonyPage = () => {
           </TabsContent>
 
           <TabsContent value="my-profile" className="mt-4">
-            {user && (marriageActive || profileActive) && (
+            {user && profileActive && (
               <div className="mb-4 rounded-2xl border border-[hsl(140,40%,60%)] bg-[hsl(140,40%,95%)] p-4 text-center shadow-sm">
                 <BadgeCheck className="mx-auto h-10 w-10 text-[hsl(140,60%,30%)]" />
                 <p className="mt-2 text-sm font-bold text-[hsl(140,60%,25%)]">Your subscription is active</p>
                 <p className="mt-1 text-xs text-muted-foreground font-hindi">आपकी मैरिज ब्यूरो प्रीमियम मेंबरशिप सक्रिय है।</p>
               </div>
             )}
-            {user && !marriageActive && !profileActive && (
+            {user && !profileActive && !profileLoading && (
               <div className="mb-4 rounded-2xl border border-[hsl(340,40%,80%)] bg-white p-4 shadow-sm">
                 <p className="text-center text-sm font-bold text-[hsl(340,60%,25%)]">
                   Premium Marriage Bureau — Auto-Debit
