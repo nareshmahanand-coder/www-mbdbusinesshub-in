@@ -1,7 +1,5 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { CheckCircle2 } from "lucide-react";
 
 interface Props {
   link: string;
@@ -12,42 +10,42 @@ interface Props {
 
 export const SubscriptionButton = ({ link, membership_type, plan_type, buttonText }: Props) => {
   const [loading, setLoading] = useState(false);
+  const [isActive, setIsActive] = useState(false);
 
-  const handleClick = async () => {
-    setLoading(true);
-    try {
-      // Open Razorpay payment link
-      window.location.href = link;
+  useEffect(() => {
+    const checkStatus = async () => {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
 
-      // After payment (user will return), update database
-      const { data: userData } = await supabase.auth.getUser();
-      const user = userData.user;
-      if (user) {
-        await supabase.from('user_profiles').upsert({
-          user_id: user.id,
-          membership_type,
-          plan_type,
-          membership_status: 'active',
-          current_period_end: new Date(Date.now() + (plan_type === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at: new Date().toISOString()
-        });
-        toast.success("Payment Successful! Redirecting to Dashboard...");
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 1500);
+      const { data } = await supabase
+        .from('user_profiles')
+        .select('membership_status')
+        .eq('user_id', user.user.id)
+        .single();
+
+      if (data?.membership_status === 'active') {
+        setIsActive(true);
+        window.location.href = "/dashboard";
       }
-    } catch (error) {
-      toast.error("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    checkStatus();
+  }, []);
+
+  const handleClick = () => {
+    setLoading(true);
+    window.location.href = link;
   };
+
+  if (isActive) {
+    return <div className="text-center py-8 text-green-600">Your subscription is active. Redirecting...</div>;
+  }
 
   return (
     <button
       onClick={handleClick}
       disabled={loading}
-      className="w-full py-4 rounded-2xl font-semibold text-white bg-orange-600 hover:bg-orange-700 transition-all"
+      className="w-full py-4 rounded-2xl font-semibold text-white bg-orange-600 hover:bg-orange-700"
     >
       {loading ? "Processing..." : buttonText}
     </button>
