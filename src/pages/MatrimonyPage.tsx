@@ -8,8 +8,6 @@ import MatrimonyFilters from "@/components/matrimony/Filters";
 import MatrimonyMyProfile from "@/components/matrimony/MyProfile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Heart, Sparkles, Users } from "lucide-react";
-import { SubscriptionButton, SubscriptionActiveCard } from "@/components/SubscriptionButton";
-import { useUserMembershipProfile } from "@/hooks/useUserMembershipProfile";
 
 export interface MatrimonyProfile {
   id: string;
@@ -51,7 +49,6 @@ const matchesLocation = (profileCity = "", selectedLocation = "All") => {
 
 const MatrimonyPage = () => {
   const { user } = useAuth();
-  const { isActive: membershipActive, loading: membershipLoading } = useUserMembershipProfile();
   const [tab, setTab] = useState(() => new URLSearchParams(window.location.search).get("tab") === "my-profile" ? "my-profile" : "browse");
   const [profiles, setProfiles] = useState<MatrimonyProfile[]>([]);
   const [myProfile, setMyProfile] = useState<MatrimonyProfile | null>(null);
@@ -109,28 +106,6 @@ const MatrimonyPage = () => {
       </div>
 
       <div className="container mx-auto px-3 py-4">
-        <div className="mx-auto mb-4 max-w-md">
-          {membershipLoading ? null : membershipActive ? (
-            <SubscriptionActiveCard />
-          ) : (
-            <div className="space-y-3 rounded-2xl border border-[hsl(340,40%,80%)] bg-white p-4">
-              <p className="text-center text-sm font-bold text-[hsl(340,60%,25%)]">Premium Marriage Bureau</p>
-              <SubscriptionButton
-                buttonText="₹99 / माह — Premium"
-                link="https://rzp.io/rzp/JPhHPAU"
-                membership_type="marriage_bureau"
-                plan_type="monthly"
-              />
-              <SubscriptionButton
-                buttonText="₹999 / साल — Premium"
-                link="https://rzp.io/rzp/8PAlZmT"
-                membership_type="marriage_bureau"
-                plan_type="yearly"
-              />
-            </div>
-          )}
-        </div>
-
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="w-full max-w-sm mx-auto bg-white/80 border border-border">
             <TabsTrigger value="browse" className="flex-1 gap-1.5 data-[state=active]:bg-[hsl(340,60%,25%)] data-[state=active]:text-white">
