@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Hand, Briefcase, GraduationCap, ShieldCheck, Wifi, Info, Landmark, ArrowLeft } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
+import { SubscriptionButton } from "@/components/SubscriptionButton";
 
 const BENEFITS = [
   {
@@ -120,6 +121,23 @@ const BharatGauravMembershipPage = () => {
           <ArrowLeft className="h-4 w-4" />
           दूसरे अकाउंट से लॉगिन करें
         </button>
+
+        {/* Subscription */}
+        <div className="mt-5 space-y-3">
+          <h2 className="text-center text-lg font-extrabold text-blue-900">सदस्यता चुनें</h2>
+          <SubscriptionButton
+            plan_id="plan_Sonz8QMSYJQ8cx"
+            membership_type="bharat_gaurav"
+            plan_type="monthly"
+            buttonText="मासिक ₹10 — Subscribe"
+          />
+          <SubscriptionButton
+            plan_id="plan_Soo38x1j9KMuTU"
+            membership_type="bharat_gaurav"
+            plan_type="yearly"
+            buttonText="वार्षिक ₹100 — Subscribe"
+          />
+        </div>
       </div>
     </div>
   );
