@@ -112,6 +112,9 @@ export const SubscriptionButton = ({ plan_id, link, membership_type, plan_type, 
   if (checking) return null;
 
   if (isActive) {
+    if (typeof window !== "undefined") {
+      window.location.href = "/dashboard";
+    }
     return (
       <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-6 text-center">
         <p className="text-base font-bold text-green-700">Your subscription is active</p>
