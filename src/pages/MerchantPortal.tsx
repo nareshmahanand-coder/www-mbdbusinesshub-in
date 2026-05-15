@@ -13,11 +13,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useLocation } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { SubscriptionButton, SubscriptionActiveCard } from "@/components/SubscriptionButton";
+import { useUserMembershipProfile } from "@/hooks/useUserMembershipProfile";
 
 const MerchantPortal = () => {
   const { user } = useAuth();
   const location = useLocation();
   const { settings } = useSiteSettings();
+  const { isActive: membershipActive, loading: membershipLoading } = useUserMembershipProfile();
   const accessMessage = (location.state as { accessMessage?: string } | null)?.accessMessage;
   const [submitted, setSubmitted] = useState(false);
 
@@ -184,6 +187,31 @@ const MerchantPortal = () => {
             <CardContent className="py-4 text-sm font-medium text-destructive">{accessMessage}</CardContent>
           </Card>
         )}
+        <div className="mb-6">
+          {membershipLoading ? null : membershipActive ? (
+            <SubscriptionActiveCard />
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Premium Plans • <span className="font-hindi font-normal">प्रीमियम योजनाएँ</span></CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <SubscriptionButton
+                  label="₹99 / माह — Merchant Premium"
+                  paymentLink="https://rzp.io/rzp/md63vYt8"
+                  membershipType="merchant_portal"
+                  planType="monthly"
+                />
+                <SubscriptionButton
+                  label="₹999 / साल — Merchant Premium"
+                  paymentLink="https://rzp.io/rzp/gdhg7YC4"
+                  membershipType="merchant_portal"
+                  planType="yearly"
+                />
+              </CardContent>
+            </Card>
+          )}
+        </div>
         <div className="mb-6 text-center">
           <Store className="mx-auto mb-2 h-10 w-10 text-saffron" />
           <h1 className="font-hindi text-2xl font-extrabold leading-snug text-foreground sm:text-3xl">
