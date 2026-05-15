@@ -123,13 +123,13 @@ const BharatGauravMembershipPage = () => {
             <div className="space-y-3">
               <SubscriptionButton
                 label="₹10 / माह — भारत गौरव"
-                paymentLink="https://rzp.io/rzp/STxnA27"
+                planId="plan_Sonz8QMSYJQ8cx"
                 membershipType="bharat_gaurav"
                 planType="monthly"
               />
               <SubscriptionButton
                 label="₹100 / साल — भारत गौरव"
-                paymentLink="https://rzp.io/rzp/VrxgoWxx"
+                planId="plan_Soo38x1j9KMuTU"
                 membershipType="bharat_gaurav"
                 planType="yearly"
               />
