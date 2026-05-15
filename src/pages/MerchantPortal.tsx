@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { shopCategories } from "@/data/sampleShops";
-import { Store, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, Image, Loader2, Upload, X } from "lucide-react";
+import { Store, CheckCircle, Crown, ShieldCheck, Eye, HelpCircle, Image, Loader2, Upload, X, BadgeCheck } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import SubscriptionButton from "@/components/SubscriptionButton";
 import { toast } from "sonner";
@@ -46,6 +46,31 @@ const MerchantPortal = () => {
   const [shopPhotos, setShopPhotos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const shopPhotoRef = useRef<HTMLInputElement>(null);
+
+  // Per-user premium status check (no global query)
+  const [isPremiumActive, setIsPremiumActive] = useState(false);
+  const [premiumChecking, setPremiumChecking] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) {
+      setIsPremiumActive(false);
+      setPremiumChecking(false);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from("merchant_profiles")
+        .select("is_premium, plan_ends_at")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      const active = !!data?.is_premium && (!data.plan_ends_at || new Date(data.plan_ends_at) > new Date());
+      setIsPremiumActive(active);
+      setPremiumChecking(false);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
 
   // KYC documents
   const [aadhaarFrontUrl, setAadhaarFrontUrl] = useState<string>("");
@@ -176,6 +201,15 @@ const MerchantPortal = () => {
   };
 
   const renderSubscriptionCard = () => (
+    isPremiumActive ? (
+      <Card className="mb-6 border-2 border-[#138808]/40 bg-[#138808]/5">
+        <CardContent className="py-6 text-center">
+          <BadgeCheck className="mx-auto mb-2 h-12 w-12 text-[#138808]" />
+          <h2 className="text-lg font-extrabold text-[#1a237e]">Your subscription is active</h2>
+          <p className="mt-1 font-hindi text-sm text-muted-foreground">आपकी मर्चेंट प्रीमियम मेंबरशिप सक्रिय है।</p>
+        </CardContent>
+      </Card>
+    ) : premiumChecking ? null : (
     <Card className="mb-6 overflow-hidden border-2 border-[#FF9933]/40 shadow-lg">
       <div className="h-1.5 w-full bg-[#FF9933]" />
       <CardContent className="bg-gradient-to-b from-[#FF9933]/5 to-[#138808]/5 p-5">
@@ -251,6 +285,7 @@ const MerchantPortal = () => {
         </div>
       </CardContent>
     </Card>
+    )
   );
 
   const KycUploadTile = ({
