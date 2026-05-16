@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Users, Store, Heart, CreditCard, ShieldCheck,
   MessageSquareWarning, Send, Receipt, BarChart3, Settings as SettingsIcon,
   LogOut, Search, CheckCircle2, XCircle, Eye, RefreshCw, Moon, Sun,
+  MapPin, Phone, Calendar, FileCheck2, Mail,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, SUPERUSER_FLAG } from "@/contexts/AuthContext";
