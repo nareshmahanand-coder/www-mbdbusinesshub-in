@@ -84,7 +84,14 @@ const getMissingKycPhotos = (k: any) =>
   ].filter(Boolean) as string[];
 
 const formatKycMissingPhotos = (missing: string[]) =>
-  missing.map((m) => ({ selfie_url: "Selfie", aadhaar_front_url: "Aadhaar Front", aadhaar_back_url: "Aadhaar Back" }[m] || m));
+  missing.map((m) => {
+    const labels: Record<string, string> = {
+      selfie_url: "Selfie",
+      aadhaar_front_url: "Aadhaar Front",
+      aadhaar_back_url: "Aadhaar Back",
+    };
+    return labels[m] || m;
+  });
 
 const StatCard = ({ label, value, hint, accent = "bg-primary/10 text-primary" }: any) => (
   <Card className="overflow-hidden">
