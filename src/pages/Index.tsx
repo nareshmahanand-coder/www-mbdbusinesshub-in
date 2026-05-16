@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from "react";
-import { Search, MapPin, Store, Mail, HelpCircle, ChevronDown, ChevronUp, Shield, Mic } from "lucide-react";
+import { Search, MapPin, Store, Mail, HelpCircle, ChevronDown, ChevronUp, Mic } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { sampleShops, shopCategories, categoryIcons, categorySections } from "@/data/sampleShops";
@@ -387,13 +387,6 @@ const Index = () => {
                 <span className="text-[10px] font-semibold text-primary-foreground/70">{t("digital_india_badge")}</span>
               </div>
             </div>
-            <Link
-              to="/admin"
-              className="inline-flex items-center gap-1.5 rounded border border-primary-foreground/15 px-3 py-1 text-[10px] text-primary-foreground/40 transition-colors hover:text-primary-foreground/60"
-            >
-              <Shield className="h-3 w-3" />
-              {t("staff_access")}
-            </Link>
           </div>
           
           <p className="mt-3 text-center text-sm text-primary-foreground/50">

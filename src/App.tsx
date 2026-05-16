@@ -9,7 +9,6 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 import Index from "./pages/Index";
 import MerchantPortal from "./pages/MerchantPortal";
-import AdminDashboard from "./pages/AdminDashboard";
 import HelpPage from "./pages/HelpPage";
 import TermsPage from "./pages/TermsPage";
 import LegalPage from "./pages/LegalPage";
@@ -129,7 +128,6 @@ const AppShell = () => {
         <Route path="/refund-policy" element={<LegalPage section="refund" />} />
         <Route path="/" element={<PublicHomeRoute />} />
         <Route path="/merchant" element={<KycRequiredRoute><MerchantPortal /></KycRequiredRoute>} />
-        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
         <Route path="/settings" element={<KycRequiredRoute><Navigate to="/dashboard?tab=settings" replace /></KycRequiredRoute>} />
         <Route path="/kisan" element={<KycRequiredRoute><KisanRegistration /></KycRequiredRoute>} />
