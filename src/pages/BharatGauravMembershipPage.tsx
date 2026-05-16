@@ -1,5 +1,5 @@
-import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Hand, Briefcase, GraduationCap, ShieldCheck, Wifi, Info, Landmark, ArrowLeft } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
@@ -47,6 +47,21 @@ const BENEFITS = [
 const BharatGauravMembershipPage = () => {
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("monthly");
+
+  const planConfig = {
+    monthly: {
+      plan_id: "plan_Sonz8QMSYJQ8cx",
+      plan_type: "monthly",
+      buttonText: "भारत गौरव मेंबरशिप ₹10 प्लान",
+    },
+    yearly: {
+      plan_id: "plan_Soo38x1j9KMuTU",
+      plan_type: "yearly",
+      buttonText: "भारत गौरव मेंबरशिप ₹100 प्लान",
+    },
+  } as const;
+  const current = planConfig[selectedPlan];
 
   const handleSwitchAccount = async () => {
     await signOut();
@@ -113,31 +128,65 @@ const BharatGauravMembershipPage = () => {
           ))}
         </div>
 
+        {/* Plan cards */}
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          {(["monthly", "yearly"] as const).map((p) => {
+            const isSel = selectedPlan === p;
+            const isMonthly = p === "monthly";
+            return (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setSelectedPlan(p)}
+                className={`rounded-2xl border-2 p-3 text-center transition-all ${
+                  isSel
+                    ? "border-orange-400 bg-orange-50 shadow-sm"
+                    : "border-slate-200 bg-white"
+                }`}
+              >
+                <p className="text-[11px] font-semibold text-slate-600">
+                  भारत गौरव मेंबरशिप {isMonthly ? "₹10" : "₹100"} प्लान
+                </p>
+                <p className={`mt-1 text-3xl font-extrabold ${isSel ? "text-orange-600" : "text-slate-900"}`}>
+                  {isMonthly ? "₹10" : "₹100"}
+                </p>
+                <p className="mt-0.5 text-[13px] font-bold text-slate-800">
+                  {isMonthly ? "मासिक प्लान" : "सालाना प्लान"}
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  {isMonthly ? "Monthly Plan" : "Yearly Plan"}
+                </p>
+                <div
+                  className={`mt-2 rounded-md px-2 py-1 text-[11px] font-semibold ${
+                    isSel ? "bg-orange-100 text-orange-700" : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {isMonthly ? "मासिक किराया" : "सालाना किराया"}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Subscribe button */}
+        <div className="mt-4">
+          <SubscriptionButton
+            key={selectedPlan}
+            plan_id={current.plan_id}
+            membership_type="bharat_gaurav"
+            plan_type={current.plan_type}
+            buttonText={current.buttonText}
+          />
+        </div>
+
         {/* Switch account */}
         <button
           onClick={handleSwitchAccount}
-          className="mx-auto mt-3 flex items-center gap-1 text-sm text-slate-600 hover:text-blue-900"
+          className="mx-auto mt-4 flex items-center gap-1 text-sm text-slate-600 hover:text-blue-900"
         >
           <ArrowLeft className="h-4 w-4" />
           दूसरे अकाउंट से लॉगिन करें
         </button>
-
-        {/* Subscription */}
-        <div className="mt-5 space-y-3">
-          <h2 className="text-center text-lg font-extrabold text-blue-900">सदस्यता चुनें</h2>
-          <SubscriptionButton
-            plan_id="plan_Sonz8QMSYJQ8cx"
-            membership_type="bharat_gaurav"
-            plan_type="monthly"
-            buttonText="मासिक ₹10 — Subscribe"
-          />
-          <SubscriptionButton
-            plan_id="plan_Soo38x1j9KMuTU"
-            membership_type="bharat_gaurav"
-            plan_type="yearly"
-            buttonText="वार्षिक ₹100 — Subscribe"
-          />
-        </div>
       </div>
     </div>
   );
