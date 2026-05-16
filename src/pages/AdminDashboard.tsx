@@ -236,12 +236,11 @@ const UsersSection = () => {
   const [q, setQ] = useState("");
   const [view, setView] = useState<any>(null);
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(500);
-      setRows(data || []);
-    })();
-  }, []);
+  const load = async () => {
+    const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(500);
+    setRows(data || []);
+  };
+  useAutoRefresh(load, 8000);
 
   const filtered = useMemo(() => {
     const s = q.toLowerCase();
@@ -255,9 +254,12 @@ const UsersSection = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle>All Users ({filtered.length})</CardTitle>
-        <div className="relative w-72 max-w-full">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, phone..." className="pl-8" />
+        <div className="flex items-center gap-2">
+          <div className="relative w-72 max-w-full">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, phone..." className="pl-8" />
+          </div>
+          <Button size="sm" variant="outline" onClick={load}><RefreshCw className="h-3.5 w-3.5" /></Button>
         </div>
       </CardHeader>
       <CardContent className="overflow-x-auto">
