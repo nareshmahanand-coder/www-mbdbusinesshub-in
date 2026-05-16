@@ -1,17 +1,27 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { startInstantRazorpayPayment } from "@/lib/razorpayPayments";
 
 interface Props {
-  plan_id?: string;
-  link?: string;
+  plan_id: string;
   membership_type: string;
   plan_type: string;
   buttonText: string;
 }
 
-export const SubscriptionButton = ({ membership_type, plan_type, buttonText }: Props) => {
+const RAZORPAY_SCRIPT = "https://checkout.razorpay.com/v1/checkout.js";
+
+const loadRazorpay = (): Promise<boolean> =>
+  new Promise((resolve) => {
+    if ((window as any).Razorpay) return resolve(true);
+    const s = document.createElement("script");
+    s.src = RAZORPAY_SCRIPT;
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+
+export const SubscriptionButton = ({ plan_id, membership_type, plan_type, buttonText }: Props) => {
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [isActive, setIsActive] = useState(false);
@@ -43,27 +53,55 @@ export const SubscriptionButton = ({ membership_type, plan_type, buttonText }: P
         return;
       }
 
-      await startInstantRazorpayPayment({
-        module: membership_type as any,
-        plan: plan_type as any,
-        onSuccess: async () => {
+      const ok = await loadRazorpay();
+      if (!ok) {
+        toast.error("Could not load Razorpay. Check your internet.");
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("create-subscription", {
+        body: { plan_id },
+      });
+      if (error || !data?.subscriptionId) {
+        toast.error(data?.error || error?.message || "Could not create subscription");
+        setLoading(false);
+        return;
+      }
+
+      const rzp = new (window as any).Razorpay({
+        key: data.keyId,
+        subscription_id: data.subscriptionId,
+        name: "Mera Bharat Dukaan",
+        description: `${membership_type} ${plan_type} subscription`,
+        prefill: {
+          email: auth.user.email || "",
+          contact: auth.user.phone || "",
+        },
+        theme: { color: "#1a237e" },
+        handler: async (resp: any) => {
           await supabase.from("user_profiles").upsert(
             {
               user_id: auth.user!.id,
               membership_status: "active",
               membership_type,
               plan_type,
+              razorpay_subscription_id: resp.razorpay_subscription_id || data.subscriptionId,
+              razorpay_payment_id: resp.razorpay_payment_id,
             },
             { onConflict: "user_id" },
           );
           toast.success("Subscription active!");
           window.location.href = "/dashboard";
         },
-        onFailure: () => {
-          toast.error("Payment was not completed");
-          setLoading(false);
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+            toast.error("Payment was not completed");
+          },
         },
       });
+      rzp.open();
     } catch (e: any) {
       toast.error(e?.message || "Something went wrong");
       setLoading(false);
