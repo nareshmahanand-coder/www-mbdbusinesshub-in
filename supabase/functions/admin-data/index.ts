@@ -78,7 +78,11 @@ Deno.serve(async (req) => {
       case "kyc": {
         const filter = body.filter || "pending";
         let q = sb.from("kyc_verifications").select("*").order("created_at", { ascending: false }).limit(500);
-        if (filter !== "all") q = q.eq("status", filter);
+        if (filter === "expired") {
+          q = q.lt("kyc_expires_at", new Date().toISOString());
+        } else if (filter !== "all") {
+          q = q.eq("status", filter);
+        }
         const { data } = await q;
         return json({ rows: data || [] });
       }
@@ -113,6 +117,27 @@ Deno.serve(async (req) => {
         if (!allowed.includes(table)) return json({ error: "table not allowed" }, 400);
         const { error } = await sb.from(table).update(patch).eq("id", id);
         if (error) return json({ error: error.message }, 400);
+        return json({ ok: true });
+      }
+      case "resend_kyc": {
+        // body: { user_id }
+        const { user_id } = body;
+        if (!user_id) return json({ error: "user_id required" }, 400);
+        const now = new Date().toISOString();
+        await sb.from("kyc_verifications")
+          .update({ status: "pending", re_kyc_requested_at: now, kyc_expires_at: now })
+          .eq("user_id", user_id);
+        // Use the first admin as sender_id (admin_messages requires non-null sender)
+        const { data: anyAdmin } = await sb.from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
+        const senderId = anyAdmin?.user_id || user_id;
+        await sb.from("admin_messages").insert({
+          sender_id: senderId,
+          recipient_user_id: user_id,
+          recipient_group: "user",
+          title: "Monthly e-KYC Required / मासिक e-KYC आवश्यक",
+          message: "कृपया अपना e-KYC पुनः पूरा करें। जब तक KYC पूरा नहीं होगा, ऐप के अधिकांश features बंद रहेंगे। / Please complete your e-KYC again. Most app features will remain locked until KYC is complete.",
+          severity: "warning",
+        });
         return json({ ok: true });
       }
       default:
