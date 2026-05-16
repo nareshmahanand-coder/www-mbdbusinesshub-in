@@ -83,6 +83,9 @@ const getMissingKycPhotos = (k: any) =>
     !k?.aadhaar_back_url && "Aadhaar Back",
   ].filter(Boolean) as string[];
 
+const formatKycMissingPhotos = (missing: string[]) =>
+  missing.map((m) => ({ selfie_url: "Selfie", aadhaar_front_url: "Aadhaar Front", aadhaar_back_url: "Aadhaar Back" }[m] || m));
+
 const StatCard = ({ label, value, hint, accent = "bg-primary/10 text-primary" }: any) => (
   <Card className="overflow-hidden">
     <CardContent className="p-5">
@@ -613,7 +616,7 @@ const KycSection = () => {
           <Card key={k.id} className="border">
             <CardContent className="p-4 space-y-2 text-sm">
               {(() => {
-                const missingPhotos = k.missing_photos?.length ? k.missing_photos : getMissingKycPhotos(k);
+                const missingPhotos = formatKycMissingPhotos(k.missing_photos?.length ? k.missing_photos : getMissingKycPhotos(k));
                 return missingPhotos.length > 0 ? (
                   <div className="rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1 text-xs font-semibold text-destructive">
                     Missing photos: {missingPhotos.join(", ")} — Resend e-KYC required
