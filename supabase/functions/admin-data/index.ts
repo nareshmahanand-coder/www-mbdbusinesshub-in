@@ -142,8 +142,7 @@ Deno.serve(async (req) => {
         let q = sb.from("payment_orders").select("*").order("created_at", { ascending: false }).limit(500);
         if (filter !== "all") q = q.eq("status", filter);
         const { data } = await q;
-        const rows = await enrichKycRows(sb, data || []);
-        return json({ rows });
+        return json({ rows: data || [] });
       }
       case "analytics": {
         const since = new Date(); since.setDate(since.getDate() - 30);
