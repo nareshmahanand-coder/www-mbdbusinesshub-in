@@ -653,8 +653,9 @@ const KycCertificateDialog = ({ data, onClose }: { data: any | null; onClose: ()
         <div className="bg-gradient-to-b from-[#0a1547] via-[#1a237e] to-[#0a1547] text-white p-6 rounded-t-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-wider opacity-80">Bharat Dukan</p>
-              <h2 className="text-2xl font-extrabold">e-KYC Certificate</h2>
+              <p className="text-xs uppercase tracking-wider opacity-80">मेरा भारत दुकान</p>
+              <h2 className="text-2xl font-extrabold">E-KYC प्रमाण-पत्र</h2>
+              <p className="text-[11px] opacity-70 mt-0.5">Official Electronic KYC Certificate</p>
             </div>
             {verified && (
               <div className="rounded-full border-4 border-green-400 px-3 py-2 text-center rotate-[-8deg]">
@@ -678,7 +679,7 @@ const KycCertificateDialog = ({ data, onClose }: { data: any | null; onClose: ()
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-            <InfoRow icon={<ShieldCheck className="h-4 w-4" />} label="Aadhaar" value={data.aadhaar_full ? `XXXX-XXXX-${data.aadhaar_last4}` : `•••• ${data.aadhaar_last4 || "—"}`} />
+            <InfoRow icon={<ShieldCheck className="h-4 w-4" />} label="Aadhaar" value={data.aadhaar_full ? String(data.aadhaar_full).replace(/(\d{4})(?=\d)/g, "$1 ") : (data.aadhaar_last4 ? `•••• •••• ${data.aadhaar_last4}` : "—")} />
             <InfoRow icon={<Phone className="h-4 w-4" />} label="Mobile" value={data.mobile || "—"} />
             <InfoRow icon={<MapPin className="h-4 w-4" />} label="GPS" value={data.latitude && data.longitude ? `${Number(data.latitude).toFixed(5)}, ${Number(data.longitude).toFixed(5)}` : "—"} />
             <InfoRow icon={<Calendar className="h-4 w-4" />} label="Verified At" value={data.verified_at ? new Date(data.verified_at).toLocaleString() : "—"} />
