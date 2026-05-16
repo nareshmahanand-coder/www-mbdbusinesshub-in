@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Store, Heart, CreditCard, ShieldCheck,
   MessageSquareWarning, Send, Receipt, BarChart3, Settings as SettingsIcon,
   LogOut, Search, CheckCircle2, XCircle, Eye, RefreshCw, Moon, Sun,
-  MapPin, Phone, Calendar, FileCheck2, Mail, Ban, ShieldOff,
+  MapPin, Phone, Calendar, FileCheck2, Mail, Ban, ShieldOff, Trash2, UserX,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, SUPERUSER_FLAG } from "@/contexts/AuthContext";
@@ -20,7 +20,7 @@ import { toast } from "sonner";
 
 type Section =
   | "overview" | "users" | "merchants" | "matrimony" | "subscriptions"
-  | "kyc" | "complaints" | "messaging" | "audit" | "analytics" | "settings";
+  | "kyc" | "complaints" | "delete_requests" | "messaging" | "audit" | "analytics" | "settings";
 
 const NAV: { id: Section; label: string; icon: any }[] = [
   { id: "overview", label: "Dashboard", icon: LayoutDashboard },
@@ -30,6 +30,7 @@ const NAV: { id: Section; label: string; icon: any }[] = [
   { id: "subscriptions", label: "Subscriptions & Plans", icon: CreditCard },
   { id: "kyc", label: "KYC Verification", icon: ShieldCheck },
   { id: "complaints", label: "Complaints & Reports", icon: MessageSquareWarning },
+  { id: "delete_requests", label: "Delete Account Requests", icon: UserX },
   { id: "messaging", label: "Messaging Center", icon: Send },
   { id: "audit", label: "Audit & Payments", icon: Receipt },
   { id: "analytics", label: "Analytics", icon: BarChart3 },
@@ -193,6 +194,7 @@ const AdminDashboard = () => {
           {section === "subscriptions" && <SubscriptionsSection />}
           {section === "kyc" && <KycSection />}
           {section === "complaints" && <ComplaintsSection />}
+          {section === "delete_requests" && <DeleteRequestsSection />}
           {section === "messaging" && <MessagingSection />}
           {section === "audit" && <AuditSection />}
           {section === "analytics" && <AnalyticsSection />}
