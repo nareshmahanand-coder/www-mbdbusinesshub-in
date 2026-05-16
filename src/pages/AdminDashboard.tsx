@@ -599,6 +599,12 @@ const KycSection = () => {
     load();
   };
 
+  const openCertificate = async (k: any) => {
+    setViewing(k);
+    const data = await adminFetch("kyc_certificate", { id: k.id, user_id: k.user_id });
+    if (data?.row) setViewing(data.row);
+  };
+
   const isExpired = (k: any) =>
     k.kyc_expires_at && new Date(k.kyc_expires_at).getTime() < Date.now();
 
@@ -648,7 +654,7 @@ const KycSection = () => {
                 {k.selfie_url && <a href={k.selfie_url} target="_blank" rel="noreferrer"><img src={k.selfie_url} className="h-20 w-full object-cover rounded border" alt="selfie" /></a>}
               </div>
               <div className="flex flex-wrap gap-2 pt-1">
-                <Button size="sm" variant="outline" onClick={() => setViewing(k)}><Eye className="h-4 w-4 mr-1" />View Certificate</Button>
+                <Button size="sm" variant="outline" onClick={() => openCertificate(k)}><Eye className="h-4 w-4 mr-1" />View Certificate</Button>
                 <Button
                   size="sm"
                   variant={getMissingKycPhotos(k).length ? "destructive" : "outline"}
