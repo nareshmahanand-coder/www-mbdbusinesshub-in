@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { SUPERUSER_FLAG } from "@/contexts/AuthContext";
 
 const ADMIN_PIN = "02032026";
 
@@ -18,6 +19,8 @@ const AdminPinAccess = ({ className }: Props) => {
 
   const submit = () => {
     if (pin === ADMIN_PIN) {
+      localStorage.setItem(SUPERUSER_FLAG, "true");
+      window.dispatchEvent(new Event("mbd-superuser-changed"));
       setOpen(false);
       setPin("");
       navigate("/admin");
