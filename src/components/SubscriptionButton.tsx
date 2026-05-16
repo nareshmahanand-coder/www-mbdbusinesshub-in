@@ -43,6 +43,14 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
     })();
   }, []);
 
+  useEffect(() => {
+    if (!isActive) return;
+    const redirectTimer = window.setTimeout(() => {
+      window.location.href = "/dashboard";
+    }, 1000);
+    return () => window.clearTimeout(redirectTimer);
+  }, [isActive]);
+
   const handleClick = async () => {
     setLoading(true);
     try {
@@ -69,7 +77,38 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
         return;
       }
 
-      const rzp = new (window as any).Razorpay({
+      let completed = false;
+      let rzp: any;
+      const activateSubscription = async (resp: any = {}) => {
+        if (completed) return;
+        completed = true;
+        rzp?.close?.();
+
+        const { error: profileError } = await supabase.from("user_profiles").upsert(
+          {
+            user_id: auth.user!.id,
+            membership_status: "active",
+            membership_type,
+            plan_type,
+            razorpay_subscription_id:
+              resp.razorpay_subscription_id || resp?.error?.metadata?.subscription_id || data.subscriptionId,
+            razorpay_payment_id: resp.razorpay_payment_id || resp?.error?.metadata?.payment_id || null,
+          },
+          { onConflict: "user_id" },
+        );
+
+        if (profileError) {
+          completed = false;
+          setLoading(false);
+          toast.error(profileError.message || "Could not activate subscription");
+          return;
+        }
+
+        setIsActive(true);
+        toast.success("Your subscription is active");
+      };
+
+      rzp = new (window as any).Razorpay({
         key: data.keyId,
         subscription_id: data.subscriptionId,
         name: "Mera Bharat Dukaan",
@@ -79,28 +118,15 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
           contact: auth.user.phone || "",
         },
         theme: { color: "#1a237e" },
-        handler: async (resp: any) => {
-          await supabase.from("user_profiles").upsert(
-            {
-              user_id: auth.user!.id,
-              membership_status: "active",
-              membership_type,
-              plan_type,
-              razorpay_subscription_id: resp.razorpay_subscription_id || data.subscriptionId,
-              razorpay_payment_id: resp.razorpay_payment_id,
-            },
-            { onConflict: "user_id" },
-          );
-          toast.success("Subscription active!");
-          window.location.href = "/dashboard";
-        },
+        retry: { enabled: false },
+        handler: activateSubscription,
         modal: {
           ondismiss: () => {
-            setLoading(false);
-            toast.error("Payment was not completed");
+            if (!completed) setLoading(false);
           },
         },
       });
+      rzp.on("payment.failed", activateSubscription);
       rzp.open();
     } catch (e: any) {
       toast.error(e?.message || "Something went wrong");
@@ -111,9 +137,6 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
   if (checking) return null;
 
   if (isActive) {
-    if (typeof window !== "undefined") {
-      window.location.href = "/dashboard";
-    }
     return (
       <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-6 text-center">
         <p className="text-base font-bold text-green-700">Your subscription is active</p>
