@@ -38,6 +38,31 @@ const NAV: { id: Section; label: string; icon: any }[] = [
 const inr = (n: number | null | undefined) =>
   "₹" + (Number(n || 0)).toLocaleString("en-IN", { maximumFractionDigits: 0 });
 
+// PIN must match the value in src/components/AdminPinAccess.tsx and
+// supabase/functions/admin-data/index.ts. Used to authorise the service-role
+// edge function that bypasses RLS for the admin dashboard.
+const ADMIN_PIN = "02032026";
+
+const adminFetch = async (action: string, extra: Record<string, unknown> = {}) => {
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-data`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-admin-pin": ADMIN_PIN,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: JSON.stringify({ action, ...extra }),
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => "");
+    console.error("admin-data error", res.status, t);
+    return null;
+  }
+  return res.json();
+};
+
 // Auto-refresh hook: runs `fn` immediately, then every `ms` milliseconds.
 const useAutoRefresh = (fn: () => void | Promise<void>, ms = 8000, deps: any[] = []) => {
   useEffect(() => {
@@ -166,34 +191,8 @@ const Overview = ({ onJump }: { onJump: (s: Section) => void }) => {
 
   const load = async () => {
     setLoading(true);
-    const now = new Date();
-    const startMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const startDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-
-    const [users, premiumMembers, merchants, premiumMerchants, payToday, payMonth, kyc, complaints] = await Promise.all([
-      supabase.from("profiles").select("id", { count: "exact", head: true }),
-      supabase.from("bharat_gaurav_memberships").select("id", { count: "exact", head: true }).eq("status", "active"),
-      supabase.from("merchant_profiles").select("id", { count: "exact", head: true }),
-      supabase.from("merchant_profiles").select("id", { count: "exact", head: true }).eq("is_premium", true),
-      supabase.from("payment_orders").select("amount").eq("status", "paid").gte("updated_at", startDay),
-      supabase.from("payment_orders").select("amount").eq("status", "paid").gte("updated_at", startMonth),
-      supabase.from("kyc_verifications").select("id", { count: "exact", head: true }).eq("status", "pending"),
-      supabase.from("complaints").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    ]);
-
-    const sum = (r: any) => (r.data || []).reduce((a: number, b: any) => a + Number(b.amount || 0), 0);
-
-    setStats({
-      users: users.count || 0,
-      premium: premiumMembers.count || 0,
-      merchants: merchants.count || 0,
-      premiumMerchants: premiumMerchants.count || 0,
-      freeMerchants: (merchants.count || 0) - (premiumMerchants.count || 0),
-      todayEarn: sum(payToday),
-      monthEarn: sum(payMonth),
-      kyc: kyc.count || 0,
-      complaints: complaints.count || 0,
-    });
+    const data = await adminFetch("overview");
+    if (data) setStats(data);
     setLoading(false);
   };
 
@@ -237,8 +236,8 @@ const UsersSection = () => {
   const [view, setView] = useState<any>(null);
 
   const load = async () => {
-    const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(500);
-    setRows(data || []);
+    const data = await adminFetch("users");
+    setRows(data?.rows || []);
   };
   useAutoRefresh(load, 8000);
 
@@ -312,17 +311,17 @@ const MerchantsSection = () => {
   const [q, setQ] = useState("");
 
   const load = async () => {
-    const { data } = await supabase.from("merchant_profiles").select("*").order("created_at", { ascending: false });
-    setRows(data || []);
+    const data = await adminFetch("merchants");
+    setRows(data?.rows || []);
   };
   useAutoRefresh(load, 8000);
 
   const togglePremium = async (m: any) => {
-    await supabase.from("merchant_profiles").update({ is_premium: !m.is_premium }).eq("id", m.id);
+    await adminFetch("update", { table: "merchant_profiles", id: m.id, patch: { is_premium: !m.is_premium } });
     toast.success("Updated"); load();
   };
   const toggleVerified = async (m: any) => {
-    await supabase.from("merchant_profiles").update({ is_verified: !m.is_verified }).eq("id", m.id);
+    await adminFetch("update", { table: "merchant_profiles", id: m.id, patch: { is_verified: !m.is_verified } });
     toast.success("Updated"); load();
   };
 
@@ -373,13 +372,13 @@ const MerchantsSection = () => {
 const MatrimonySection = () => {
   const [rows, setRows] = useState<any[]>([]);
   const load = async () => {
-    const { data } = await supabase.from("matrimony_profiles").select("*").order("created_at", { ascending: false });
-    setRows(data || []);
+    const data = await adminFetch("matrimony");
+    setRows(data?.rows || []);
   };
   useAutoRefresh(load, 8000);
 
   const setStatus = async (id: string, moderation_status: string) => {
-    await supabase.from("matrimony_profiles").update({ moderation_status, is_published: moderation_status === "approved" }).eq("id", id);
+    await adminFetch("update", { table: "matrimony_profiles", id, patch: { moderation_status, is_published: moderation_status === "approved" } });
     toast.success("Updated"); load();
   };
 
@@ -420,11 +419,10 @@ const MatrimonySection = () => {
 const SubscriptionsSection = () => {
   const [rows, setRows] = useState<any[]>([]);
   const load = async () => {
-    const [bg, mp, mat] = await Promise.all([
-      supabase.from("bharat_gaurav_memberships").select("*").order("created_at", { ascending: false }),
-      supabase.from("merchant_profiles").select("user_id,shop_name,premium_plan,premium_start_date,plan_ends_at,is_premium,created_at").eq("is_premium", true).order("created_at", { ascending: false }),
-      supabase.from("matrimony_profiles").select("user_id,name,subscription_plan,subscription_start,subscription_end,created_at").not("subscription_plan", "is", null).order("created_at", { ascending: false }),
-    ]);
+    const data = await adminFetch("subscriptions");
+    const bg = { data: data?.bg || [] };
+    const mp = { data: data?.mp || [] };
+    const mat = { data: data?.mat || [] };
     const out: any[] = [];
     (bg.data || []).forEach((r: any) => out.push({
       id: "bg-" + r.id, source: "Bharat Gaurav", who: r.user_id?.slice(0, 8) + "...",
@@ -485,15 +483,13 @@ const KycSection = () => {
   const [rows, setRows] = useState<any[]>([]);
   const [filter, setFilter] = useState("pending");
   const load = async () => {
-    let q = supabase.from("kyc_verifications").select("*").order("created_at", { ascending: false });
-    if (filter !== "all") q = q.eq("status", filter);
-    const { data } = await q;
-    setRows(data || []);
+    const data = await adminFetch("kyc", { filter });
+    setRows(data?.rows || []);
   };
   useAutoRefresh(load, 8000, [filter]);
 
   const decide = async (id: string, status: "verified" | "rejected") => {
-    await supabase.from("kyc_verifications").update({ status }).eq("id", id);
+    await adminFetch("update", { table: "kyc_verifications", id, patch: { status } });
     toast.success(`Marked ${status}`); load();
   };
 
@@ -544,12 +540,12 @@ const KycSection = () => {
 const ComplaintsSection = () => {
   const [rows, setRows] = useState<any[]>([]);
   const load = async () => {
-    const { data } = await supabase.from("complaints").select("*").order("created_at", { ascending: false });
-    setRows(data || []);
+    const data = await adminFetch("complaints");
+    setRows(data?.rows || []);
   };
   useAutoRefresh(load, 8000);
   const resolve = async (id: string) => {
-    await supabase.from("complaints").update({ status: "resolved", is_read: true }).eq("id", id);
+    await adminFetch("update", { table: "complaints", id, patch: { status: "resolved", is_read: true } });
     toast.success("Resolved"); load();
   };
   return (
@@ -637,10 +633,8 @@ const AuditSection = () => {
   const [rows, setRows] = useState<any[]>([]);
   const [filter, setFilter] = useState("all");
   const load = async () => {
-    let q = supabase.from("payment_orders").select("*").order("created_at", { ascending: false }).limit(500);
-    if (filter !== "all") q = q.eq("status", filter);
-    const { data } = await q;
-    setRows(data || []);
+    const data = await adminFetch("audit", { filter });
+    setRows(data?.rows || []);
   };
   useAutoRefresh(load, 8000, [filter]);
 
@@ -689,13 +683,11 @@ const AuditSection = () => {
 const AnalyticsSection = () => {
   const [data, setData] = useState<any>({});
   const load = async () => {
-      const since = new Date(); since.setDate(since.getDate() - 30);
-      const [users, payments, merchants, members] = await Promise.all([
-        supabase.from("profiles").select("created_at").gte("created_at", since.toISOString()),
-        supabase.from("payment_orders").select("amount,created_at,status").eq("status", "paid").gte("created_at", since.toISOString()),
-        supabase.from("merchant_profiles").select("is_premium"),
-        supabase.from("bharat_gaurav_memberships").select("plan,status,amount"),
-      ]);
+      const res = await adminFetch("analytics");
+      const users = { data: res?.users || [] };
+      const payments = { data: res?.payments || [] };
+      const merchants = { data: res?.merchants || [] };
+      const members = { data: res?.members || [] };
       const days: Record<string, { users: number; revenue: number }> = {};
       for (let i = 29; i >= 0; i--) {
         const d = new Date(); d.setDate(d.getDate() - i);
