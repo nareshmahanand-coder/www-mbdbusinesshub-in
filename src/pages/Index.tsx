@@ -10,6 +10,7 @@ import NandaFarmSection from "@/components/NandaFarmSection";
 import ShopMap from "@/components/ShopMap";
 
 import SuperAppNav from "@/components/SuperAppNav";
+import AdminPinAccess from "@/components/AdminPinAccess";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -389,9 +390,10 @@ const Index = () => {
             </div>
           </div>
           
-          <p className="mt-3 text-center text-sm text-primary-foreground/50">
-            {t("copyright")}
-          </p>
+          <div className="mt-3 flex items-center justify-between gap-2 text-sm text-primary-foreground/50">
+            <span className="flex-1 text-center">{t("copyright")}</span>
+            <AdminPinAccess className="text-[9px] text-primary-foreground/20 hover:text-primary-foreground/50 underline-offset-2 hover:underline" />
+          </div>
         </div>
       </footer>
     </div>
