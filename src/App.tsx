@@ -29,6 +29,7 @@ import FamilySafetyPage from "./pages/FamilySafetyPage";
 import FamilyInvitePage from "./pages/FamilyInvitePage";
 import EkycPage from "./pages/EkycPage";
 import BharatGauravMembershipPage from "./pages/BharatGauravMembershipPage";
+import AdminDashboard from "./pages/AdminDashboard";
 import { useKycStatus } from "@/hooks/useKycStatus";
 import { useBharatGauravMembership } from "@/hooks/useBharatGauravMembership";
 import { useLastKnownLocation } from "@/hooks/useLastKnownLocation";
@@ -143,6 +144,7 @@ const AppShell = () => {
         <Route path="/skills" element={<KycRequiredRoute><SkillDevelopmentPage /></KycRequiredRoute>} />
         <Route path="/family-safety" element={<KycRequiredRoute><FamilySafetyPage /></KycRequiredRoute>} />
         <Route path="/family-invite/:token" element={<FamilyInvitePage />} />
+        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       <AdminMessageListener />
