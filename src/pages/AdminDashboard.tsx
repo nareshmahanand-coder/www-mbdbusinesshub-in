@@ -197,7 +197,7 @@ const Overview = ({ onJump }: { onJump: (s: Section) => void }) => {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useAutoRefresh(load, 8000);
 
   return (
     <div className="space-y-6">
