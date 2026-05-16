@@ -38,6 +38,18 @@ const NAV: { id: Section; label: string; icon: any }[] = [
 const inr = (n: number | null | undefined) =>
   "₹" + (Number(n || 0)).toLocaleString("en-IN", { maximumFractionDigits: 0 });
 
+// Auto-refresh hook: runs `fn` immediately, then every `ms` milliseconds.
+const useAutoRefresh = (fn: () => void | Promise<void>, ms = 8000, deps: any[] = []) => {
+  useEffect(() => {
+    let active = true;
+    const tick = async () => { if (active) await fn(); };
+    tick();
+    const id = window.setInterval(tick, ms);
+    return () => { active = false; window.clearInterval(id); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+};
+
 const StatCard = ({ label, value, hint, accent = "bg-primary/10 text-primary" }: any) => (
   <Card className="overflow-hidden">
     <CardContent className="p-5">
