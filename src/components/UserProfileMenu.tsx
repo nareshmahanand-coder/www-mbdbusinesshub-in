@@ -11,15 +11,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { User, LogOut, LayoutDashboard, Store, Settings, Trash2 } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +31,9 @@ const UserProfileMenu = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [reason, setReason] = useState("App पसंद नहीं आया");
+  const [message, setMessage] = useState("");
 
   if (!user) return null;
 
@@ -48,27 +51,33 @@ const UserProfileMenu = () => {
     await signOut();
   };
 
-  const handleDeleteAccount = async () => {
-    setDeleting(true);
+  const handleSubmitRequest = async () => {
+    setSubmitting(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData.session?.access_token;
-      const { error } = await supabase.functions.invoke("delete-account", {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      const { error } = await supabase.from("account_delete_requests").insert({
+        user_id: user.id,
+        user_name: displayName,
+        user_email: user.email || "",
+        user_phone: user.phone || "",
+        reason,
+        message,
       });
       if (error) throw error;
-      toast({ title: "Account deleted", description: "Your account has been permanently removed." });
-      await supabase.auth.signOut();
-      navigate("/login", { replace: true });
+      toast({
+        title: "Request submitted / अनुरोध भेजा गया",
+        description: "Admin आपके अनुरोध की समीक्षा करेंगे।",
+      });
+      setConfirmOpen(false);
+      setReason("App पसंद नहीं आया");
+      setMessage("");
     } catch (e: any) {
       toast({
-        title: "Failed to delete account",
+        title: "Failed to submit",
         description: e?.message ?? "Please try again.",
         variant: "destructive",
       });
     } finally {
-      setDeleting(false);
-      setConfirmOpen(false);
+      setSubmitting(false);
     }
   };
 
@@ -144,29 +153,50 @@ const UserProfileMenu = () => {
       </DropdownMenuContent>
     </DropdownMenu>
 
-    <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete your account?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This will permanently delete your account and all associated data. This action cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={(e) => {
-              e.preventDefault();
-              handleDeleteAccount();
-            }}
-            disabled={deleting}
+    <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete Account Request</DialogTitle>
+          <DialogDescription>
+            कृपया अकाउंट डिलीट करने का कारण बताएं। Admin आपका अनुरोध जल्द ही देखेंगे।
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label className="text-xs">कारण चुनें / Choose a reason</Label>
+            <Select value={reason} onValueChange={setReason}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="App पसंद नहीं आया">App पसंद नहीं आया</SelectItem>
+                <SelectItem value="ज्यादा charges लग रहे हैं">ज्यादा charges लग रहे हैं</SelectItem>
+                <SelectItem value="Technical problem है">Technical problem है</SelectItem>
+                <SelectItem value="Privacy concern">Privacy concern</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label className="text-xs">अपना message लिखें (optional)</Label>
+            <Textarea
+              rows={4}
+              placeholder="मुझे यह परेशानी है इसलिए डिलीट कर रहा हूँ..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={submitting}>Cancel</Button>
+          <Button
+            onClick={handleSubmitRequest}
+            disabled={submitting}
             className="bg-red-600 hover:bg-red-700 text-white"
           >
-            {deleting ? "Deleting..." : "Yes, delete forever"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+            {submitting ? "Submitting..." : "Submit Request"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     </>
   );
 };
