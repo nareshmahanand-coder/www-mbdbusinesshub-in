@@ -38,6 +38,18 @@ const NAV: { id: Section; label: string; icon: any }[] = [
 const inr = (n: number | null | undefined) =>
   "₹" + (Number(n || 0)).toLocaleString("en-IN", { maximumFractionDigits: 0 });
 
+// Auto-refresh hook: runs `fn` immediately, then every `ms` milliseconds.
+const useAutoRefresh = (fn: () => void | Promise<void>, ms = 8000, deps: any[] = []) => {
+  useEffect(() => {
+    let active = true;
+    const tick = async () => { if (active) await fn(); };
+    tick();
+    const id = window.setInterval(tick, ms);
+    return () => { active = false; window.clearInterval(id); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, deps);
+};
+
 const StatCard = ({ label, value, hint, accent = "bg-primary/10 text-primary" }: any) => (
   <Card className="overflow-hidden">
     <CardContent className="p-5">
@@ -185,12 +197,12 @@ const Overview = ({ onJump }: { onJump: (s: Section) => void }) => {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, []);
+  useAutoRefresh(load, 8000);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">Real-time platform overview</p>
+        <p className="text-sm text-muted-foreground">Real-time overview • auto-refresh every 8s</p>
         <Button size="sm" variant="outline" onClick={load} disabled={loading}>
           <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`} /> Refresh
         </Button>
@@ -224,12 +236,11 @@ const UsersSection = () => {
   const [q, setQ] = useState("");
   const [view, setView] = useState<any>(null);
 
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(500);
-      setRows(data || []);
-    })();
-  }, []);
+  const load = async () => {
+    const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(500);
+    setRows(data || []);
+  };
+  useAutoRefresh(load, 8000);
 
   const filtered = useMemo(() => {
     const s = q.toLowerCase();
@@ -243,9 +254,12 @@ const UsersSection = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle>All Users ({filtered.length})</CardTitle>
-        <div className="relative w-72 max-w-full">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, phone..." className="pl-8" />
+        <div className="flex items-center gap-2">
+          <div className="relative w-72 max-w-full">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, phone..." className="pl-8" />
+          </div>
+          <Button size="sm" variant="outline" onClick={load}><RefreshCw className="h-3.5 w-3.5" /></Button>
         </div>
       </CardHeader>
       <CardContent className="overflow-x-auto">
@@ -301,7 +315,7 @@ const MerchantsSection = () => {
     const { data } = await supabase.from("merchant_profiles").select("*").order("created_at", { ascending: false });
     setRows(data || []);
   };
-  useEffect(() => { load(); }, []);
+  useAutoRefresh(load, 8000);
 
   const togglePremium = async (m: any) => {
     await supabase.from("merchant_profiles").update({ is_premium: !m.is_premium }).eq("id", m.id);
@@ -320,7 +334,10 @@ const MerchantsSection = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle>Merchants / Shops ({filtered.length})</CardTitle>
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search..." className="w-64" />
+        <div className="flex items-center gap-2">
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search..." className="w-64" />
+          <Button size="sm" variant="outline" onClick={load}><RefreshCw className="h-3.5 w-3.5" /></Button>
+        </div>
       </CardHeader>
       <CardContent className="overflow-x-auto">
         <Table>
@@ -359,7 +376,7 @@ const MatrimonySection = () => {
     const { data } = await supabase.from("matrimony_profiles").select("*").order("created_at", { ascending: false });
     setRows(data || []);
   };
-  useEffect(() => { load(); }, []);
+  useAutoRefresh(load, 8000);
 
   const setStatus = async (id: string, moderation_status: string) => {
     await supabase.from("matrimony_profiles").update({ moderation_status, is_published: moderation_status === "approved" }).eq("id", id);
@@ -368,7 +385,10 @@ const MatrimonySection = () => {
 
   return (
     <Card>
-      <CardHeader><CardTitle>Matrimony Profiles ({rows.length})</CardTitle></CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <CardTitle>Matrimony Profiles ({rows.length})</CardTitle>
+        <Button size="sm" variant="outline" onClick={load}><RefreshCw className="h-3.5 w-3.5" /></Button>
+      </CardHeader>
       <CardContent className="overflow-x-auto">
         <Table>
           <TableHeader><TableRow>
@@ -399,31 +419,58 @@ const MatrimonySection = () => {
 
 const SubscriptionsSection = () => {
   const [rows, setRows] = useState<any[]>([]);
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from("bharat_gaurav_memberships").select("*").order("created_at", { ascending: false });
-      setRows(data || []);
-    })();
-  }, []);
+  const load = async () => {
+    const [bg, mp, mat] = await Promise.all([
+      supabase.from("bharat_gaurav_memberships").select("*").order("created_at", { ascending: false }),
+      supabase.from("merchant_profiles").select("user_id,shop_name,premium_plan,premium_start_date,plan_ends_at,is_premium,created_at").eq("is_premium", true).order("created_at", { ascending: false }),
+      supabase.from("matrimony_profiles").select("user_id,name,subscription_plan,subscription_start,subscription_end,created_at").not("subscription_plan", "is", null).order("created_at", { ascending: false }),
+    ]);
+    const out: any[] = [];
+    (bg.data || []).forEach((r: any) => out.push({
+      id: "bg-" + r.id, source: "Bharat Gaurav", who: r.user_id?.slice(0, 8) + "...",
+      plan: r.plan, amount: r.amount, status: r.status,
+      started: r.started_at, ends: r.expires_at, ref: r.razorpay_payment_id,
+      created_at: r.created_at,
+    }));
+    (mp.data || []).forEach((r: any) => out.push({
+      id: "mp-" + r.user_id, source: "Merchant Premium", who: r.shop_name || r.user_id?.slice(0, 8) + "...",
+      plan: r.premium_plan, amount: null, status: "active",
+      started: r.premium_start_date, ends: r.plan_ends_at, ref: "—",
+      created_at: r.created_at,
+    }));
+    (mat.data || []).forEach((r: any) => out.push({
+      id: "mat-" + r.user_id, source: "Marriage Bureau", who: r.name || r.user_id?.slice(0, 8) + "...",
+      plan: r.subscription_plan, amount: null, status: "active",
+      started: r.subscription_start, ends: r.subscription_end, ref: "—",
+      created_at: r.created_at,
+    }));
+    out.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    setRows(out);
+  };
+  useAutoRefresh(load, 8000);
   return (
     <Card>
-      <CardHeader><CardTitle>Subscriptions & Plans ({rows.length})</CardTitle></CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <CardTitle>Subscriptions & Plans ({rows.length})</CardTitle>
+        <Button size="sm" variant="outline" onClick={load}><RefreshCw className="h-3.5 w-3.5 mr-1" />Refresh</Button>
+      </CardHeader>
       <CardContent className="overflow-x-auto">
         <Table>
           <TableHeader><TableRow>
-            <TableHead>User</TableHead><TableHead>Plan</TableHead><TableHead>Amount</TableHead>
-            <TableHead>Status</TableHead><TableHead>Started</TableHead><TableHead>Expires</TableHead><TableHead>Payment ID</TableHead>
+            <TableHead>Source</TableHead><TableHead>User / Shop</TableHead><TableHead>Plan</TableHead><TableHead>Amount</TableHead>
+            <TableHead>Status</TableHead><TableHead>Started</TableHead><TableHead>Expires</TableHead><TableHead>Ref</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {rows.map((r) => (
               <TableRow key={r.id}>
-                <TableCell className="text-xs">{r.user_id.slice(0, 8)}...</TableCell>
+                <TableCell><Badge variant="outline">{r.source}</Badge></TableCell>
+                <TableCell className="text-xs">{r.who}</TableCell>
                 <TableCell><Badge>{r.plan}</Badge></TableCell>
-                <TableCell>{inr(r.amount)}</TableCell>
+                <TableCell>{r.amount != null ? inr(r.amount) : "—"}</TableCell>
                 <TableCell>{r.status}</TableCell>
-                <TableCell className="text-xs">{r.started_at ? new Date(r.started_at).toLocaleDateString() : "—"}</TableCell>
-                <TableCell className="text-xs">{r.expires_at ? new Date(r.expires_at).toLocaleDateString() : "—"}</TableCell>
-                <TableCell className="text-xs">{r.razorpay_payment_id || "—"}</TableCell>
+                <TableCell className="text-xs">{r.started ? new Date(r.started).toLocaleDateString() : "—"}</TableCell>
+                <TableCell className="text-xs">{r.ends ? new Date(r.ends).toLocaleDateString() : "—"}</TableCell>
+                <TableCell className="text-xs">{r.ref || "—"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -443,7 +490,7 @@ const KycSection = () => {
     const { data } = await q;
     setRows(data || []);
   };
-  useEffect(() => { load(); }, [filter]);
+  useAutoRefresh(load, 8000, [filter]);
 
   const decide = async (id: string, status: "verified" | "rejected") => {
     await supabase.from("kyc_verifications").update({ status }).eq("id", id);
@@ -500,7 +547,7 @@ const ComplaintsSection = () => {
     const { data } = await supabase.from("complaints").select("*").order("created_at", { ascending: false });
     setRows(data || []);
   };
-  useEffect(() => { load(); }, []);
+  useAutoRefresh(load, 8000);
   const resolve = async (id: string) => {
     await supabase.from("complaints").update({ status: "resolved", is_read: true }).eq("id", id);
     toast.success("Resolved"); load();
@@ -589,14 +636,13 @@ const MessagingSection = () => {
 const AuditSection = () => {
   const [rows, setRows] = useState<any[]>([]);
   const [filter, setFilter] = useState("all");
-  useEffect(() => {
-    (async () => {
-      let q = supabase.from("payment_orders").select("*").order("created_at", { ascending: false }).limit(500);
-      if (filter !== "all") q = q.eq("status", filter);
-      const { data } = await q;
-      setRows(data || []);
-    })();
-  }, [filter]);
+  const load = async () => {
+    let q = supabase.from("payment_orders").select("*").order("created_at", { ascending: false }).limit(500);
+    if (filter !== "all") q = q.eq("status", filter);
+    const { data } = await q;
+    setRows(data || []);
+  };
+  useAutoRefresh(load, 8000, [filter]);
 
   const total = rows.filter((r) => r.status === "paid").reduce((a, b) => a + Number(b.amount || 0), 0);
 
@@ -642,8 +688,7 @@ const AuditSection = () => {
 
 const AnalyticsSection = () => {
   const [data, setData] = useState<any>({});
-  useEffect(() => {
-    (async () => {
+  const load = async () => {
       const since = new Date(); since.setDate(since.getDate() - 30);
       const [users, payments, merchants, members] = await Promise.all([
         supabase.from("profiles").select("created_at").gte("created_at", since.toISOString()),
@@ -671,8 +716,8 @@ const AnalyticsSection = () => {
         premiumPct: m.length ? Math.round((m.filter((x: any) => x.is_premium).length / m.length) * 100) : 0,
         activeMembers: mem.filter((x: any) => x.status === "active").length,
       });
-    })();
-  }, []);
+  };
+  useAutoRefresh(load, 15000);
 
   const series: [string, { users: number; revenue: number }][] = data.series || [];
   const maxRev = Math.max(1, ...series.map(([, v]) => v.revenue));
