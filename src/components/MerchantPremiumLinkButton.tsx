@@ -6,9 +6,10 @@ interface Props {
   paymentUrl: string;
   plan: "monthly" | "yearly";
   buttonText: string;
+  buttonClassName?: string;
 }
 
-export const MerchantPremiumLinkButton = ({ paymentUrl, plan, buttonText }: Props) => {
+export const MerchantPremiumLinkButton = ({ paymentUrl, plan, buttonText, buttonClassName }: Props) => {
   const [checking, setChecking] = useState(true);
   const [isActive, setIsActive] = useState(false);
   const [opened, setOpened] = useState(false);
@@ -111,7 +112,7 @@ export const MerchantPremiumLinkButton = ({ paymentUrl, plan, buttonText }: Prop
   return (
     <button
       onClick={handleOpen}
-      className="w-full rounded-2xl bg-orange-600 py-4 font-semibold text-white transition-all hover:bg-orange-700"
+      className={buttonClassName ?? "w-full rounded-2xl bg-orange-600 py-4 font-semibold text-white transition-all hover:bg-orange-700"}
     >
       {buttonText}
     </button>
