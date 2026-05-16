@@ -25,11 +25,6 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [isActive, setIsActive] = useState(false);
-  const redirectToDashboard = () => {
-    window.setTimeout(() => {
-      window.location.href = "/dashboard";
-    }, 1000);
-  };
 
   useEffect(() => {
     (async () => {
@@ -47,6 +42,14 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
       setChecking(false);
     })();
   }, []);
+
+  useEffect(() => {
+    if (!isActive) return;
+    const redirectTimer = window.setTimeout(() => {
+      window.location.href = "/dashboard";
+    }, 1000);
+    return () => window.clearTimeout(redirectTimer);
+  }, [isActive]);
 
   const handleClick = async () => {
     setLoading(true);
@@ -75,11 +78,13 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
       }
 
       let completed = false;
+      let rzp: any;
       const activateSubscription = async (resp: any = {}) => {
         if (completed) return;
         completed = true;
+        rzp?.close?.();
 
-        await supabase.from("user_profiles").upsert(
+        const { error: profileError } = await supabase.from("user_profiles").upsert(
           {
             user_id: auth.user!.id,
             membership_status: "active",
@@ -92,12 +97,18 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
           { onConflict: "user_id" },
         );
 
+        if (profileError) {
+          completed = false;
+          setLoading(false);
+          toast.error(profileError.message || "Could not activate subscription");
+          return;
+        }
+
         setIsActive(true);
         toast.success("Your subscription is active");
-        redirectToDashboard();
       };
 
-      const rzp = new (window as any).Razorpay({
+      rzp = new (window as any).Razorpay({
         key: data.keyId,
         subscription_id: data.subscriptionId,
         name: "Mera Bharat Dukaan",
@@ -126,9 +137,6 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
   if (checking) return null;
 
   if (isActive) {
-    if (typeof window !== "undefined") {
-      window.location.href = "/dashboard";
-    }
     return (
       <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-6 text-center">
         <p className="text-base font-bold text-green-700">Your subscription is active</p>
