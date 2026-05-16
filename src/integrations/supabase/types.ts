@@ -1230,6 +1230,10 @@ export type Database = {
         Row: {
           address: string | null
           avatar_url: string | null
+          block_reason: string
+          blocked: boolean
+          blocked_at: string | null
+          blocked_by: string | null
           city: string | null
           created_at: string
           display_name: string | null
@@ -1244,6 +1248,10 @@ export type Database = {
         Insert: {
           address?: string | null
           avatar_url?: string | null
+          block_reason?: string
+          blocked?: boolean
+          blocked_at?: string | null
+          blocked_by?: string | null
           city?: string | null
           created_at?: string
           display_name?: string | null
@@ -1258,6 +1266,10 @@ export type Database = {
         Update: {
           address?: string | null
           avatar_url?: string | null
+          block_reason?: string
+          blocked?: boolean
+          blocked_at?: string | null
+          blocked_by?: string | null
           city?: string | null
           created_at?: string
           display_name?: string | null

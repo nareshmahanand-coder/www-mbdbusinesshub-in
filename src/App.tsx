@@ -34,6 +34,8 @@ import { useKycStatus } from "@/hooks/useKycStatus";
 import { useBharatGauravMembership } from "@/hooks/useBharatGauravMembership";
 import { useLastKnownLocation } from "@/hooks/useLastKnownLocation";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
+import { useBlockedStatus } from "@/hooks/useBlockedStatus";
+import BlockedScreen from "@/components/BlockedScreen";
 
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
@@ -108,11 +110,15 @@ const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
 
 const AppShell = () => {
   useLastKnownLocation();
-  const { isSuperUser } = useAuth();
+  const { isSuperUser, user } = useAuth();
   const { settings, loading: settingsLoading } = useSiteSettings();
+  const { blocked, reason, loading: blockedLoading } = useBlockedStatus();
 
   if (settingsLoading) return <FullScreenLoader />;
   if (settings.maintenance_mode && !isSuperUser) return <MaintenanceScreen />;
+  if (user && !isSuperUser && !blockedLoading && blocked) {
+    return <BlockedScreen reason={reason} />;
+  }
 
   return (
     <>
