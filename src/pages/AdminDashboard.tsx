@@ -38,6 +38,31 @@ const NAV: { id: Section; label: string; icon: any }[] = [
 const inr = (n: number | null | undefined) =>
   "₹" + (Number(n || 0)).toLocaleString("en-IN", { maximumFractionDigits: 0 });
 
+// PIN must match the value in src/components/AdminPinAccess.tsx and
+// supabase/functions/admin-data/index.ts. Used to authorise the service-role
+// edge function that bypasses RLS for the admin dashboard.
+const ADMIN_PIN = "02032026";
+
+const adminFetch = async (action: string, extra: Record<string, unknown> = {}) => {
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-data`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-admin-pin": ADMIN_PIN,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: JSON.stringify({ action, ...extra }),
+  });
+  if (!res.ok) {
+    const t = await res.text().catch(() => "");
+    console.error("admin-data error", res.status, t);
+    return null;
+  }
+  return res.json();
+};
+
 // Auto-refresh hook: runs `fn` immediately, then every `ms` milliseconds.
 const useAutoRefresh = (fn: () => void | Promise<void>, ms = 8000, deps: any[] = []) => {
   useEffect(() => {
