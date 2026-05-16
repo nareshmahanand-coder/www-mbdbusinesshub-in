@@ -8,9 +8,6 @@ import MatrimonyFilters from "@/components/matrimony/Filters";
 import MatrimonyMyProfile from "@/components/matrimony/MyProfile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Heart, Sparkles, Users } from "lucide-react";
-import { SubscriptionButton } from "@/components/SubscriptionButton";
-import { MatrimonyPremiumLinkButton } from "@/components/MatrimonyPremiumLinkButton";
-import { Crown } from "lucide-react";
 
 export interface MatrimonyProfile {
   id: string;
@@ -183,45 +180,6 @@ const MatrimonyPage = () => {
               myProfile={myProfile}
               onReload={loadData}
             />
-            <div className="mx-auto mt-6 max-w-md rounded-2xl border-t-4 border-b-4 border-t-orange-400 border-b-green-500 bg-gradient-to-b from-orange-50 via-white to-green-50 p-5 shadow-sm">
-              <div className="flex flex-col items-center text-center">
-                <Crown className="h-10 w-10 text-orange-500" strokeWidth={2.2} />
-                <h2 className="mt-2 text-xl font-extrabold text-[hsl(340,60%,25%)]">मैरिज ब्यूरो प्रीमियम</h2>
-                <p className="mt-1 text-sm font-semibold text-foreground">
-                  🇮🇳 Verified Profiles • Unlimited Contacts 🇮🇳
-                </p>
-              </div>
-
-              <div className="mt-4 rounded-xl border border-orange-100 bg-white/70 p-4">
-                <p className="text-sm font-bold text-[hsl(340,60%,25%)]">मैरिज ब्यूरो प्रीमियम क्यों चुनें?</p>
-                <p className="mt-2 text-sm leading-relaxed text-foreground">
-                  प्रोफेशनल मेंबरशिप में आपको{" "}
-                  <span className="font-semibold text-orange-600">सत्यापित प्रोफाइल्स (Verified Profiles)</span>{" "}
-                  तक सीधी पहुँच,{" "}
-                  <span className="font-semibold text-orange-600">असीमित संपर्क विवरण</span>{" "}
-                  और प्राथमिकता के आधार पर मैचमेकिंग सहायता मिलती है। Yearly: ₹999 प्लान चुनें।
-                </p>
-              </div>
-
-              <div className="mt-4 space-y-3">
-                <MatrimonyPremiumLinkButton
-                  paymentUrl="https://rzp.io/rzp/JPhHPAU"
-                  plan="monthly"
-                  buttonText="Marriage Bureau ₹99 Monthly Plan"
-                  buttonClassName="w-full rounded-2xl bg-orange-500 py-4 text-base font-bold text-white shadow-md transition-all hover:bg-orange-600"
-                />
-                <MatrimonyPremiumLinkButton
-                  paymentUrl="https://rzp.io/rzp/8PAlZmT"
-                  plan="yearly"
-                  buttonText="Marriage Bureau ₹999 Yearly Plan"
-                  buttonClassName="w-full rounded-2xl bg-green-600 py-4 text-base font-bold text-white shadow-md transition-all hover:bg-green-700"
-                />
-              </div>
-
-              <p className="mt-4 text-center text-xs text-muted-foreground">
-                सुरक्षित Razorpay पेमेंट के बाद आपकी verified profile publish हो जाएगी और unlimited contacts unlock होंगे।
-              </p>
-            </div>
           </TabsContent>
         </Tabs>
       </div>
