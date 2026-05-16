@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useLocation } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
-import { SubscriptionButton } from "@/components/SubscriptionButton";
+import { MerchantPremiumLinkButton } from "@/components/MerchantPremiumLinkButton";
 
 const MerchantPortal = () => {
   const { user } = useAuth();
@@ -344,16 +344,14 @@ const MerchantPortal = () => {
             <CardTitle className="text-lg text-center">Merchant Premium Membership</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <SubscriptionButton
-              plan_id="plan_Sog3FYTMTLP6pf"
-              membership_type="merchant"
-              plan_type="monthly"
+            <MerchantPremiumLinkButton
+              paymentUrl="https://rzp.io/rzp/md63vYt8"
+              plan="monthly"
               buttonText="Monthly ₹99 — Subscribe"
             />
-            <SubscriptionButton
-              plan_id="plan_Sog7TMDdTEJMge"
-              membership_type="merchant"
-              plan_type="yearly"
+            <MerchantPremiumLinkButton
+              paymentUrl="https://rzp.io/rzp/gdhg7YC4"
+              plan="yearly"
               buttonText="Yearly ₹999 — Subscribe"
             />
           </CardContent>
