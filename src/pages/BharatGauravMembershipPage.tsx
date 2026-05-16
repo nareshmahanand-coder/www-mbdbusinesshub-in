@@ -126,13 +126,13 @@ const BharatGauravMembershipPage = () => {
         <div className="mt-5 space-y-3">
           <h2 className="text-center text-lg font-extrabold text-blue-900">सदस्यता चुनें</h2>
           <SubscriptionButton
-            link="https://rzp.io/rzp/STxnA27"
+            plan_id="plan_Sonz8QMSYJQ8cx"
             membership_type="bharat_gaurav"
             plan_type="monthly"
             buttonText="मासिक ₹10 — Subscribe"
           />
           <SubscriptionButton
-            link="https://rzp.io/rzp/VrxgoWxx"
+            plan_id="plan_Soo38x1j9KMuTU"
             membership_type="bharat_gaurav"
             plan_type="yearly"
             buttonText="वार्षिक ₹100 — Subscribe"
