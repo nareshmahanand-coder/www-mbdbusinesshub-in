@@ -76,6 +76,23 @@ const useAutoRefresh = (fn: () => void | Promise<void>, ms = 8000, deps: any[] =
   }, deps);
 };
 
+const getMissingKycPhotos = (k: any) =>
+  [
+    !k?.selfie_url && "Selfie",
+    !k?.aadhaar_front_url && "Aadhaar Front",
+    !k?.aadhaar_back_url && "Aadhaar Back",
+  ].filter(Boolean) as string[];
+
+const formatKycMissingPhotos = (missing: string[]) =>
+  missing.map((m) => {
+    const labels: Record<string, string> = {
+      selfie_url: "Selfie",
+      aadhaar_front_url: "Aadhaar Front",
+      aadhaar_back_url: "Aadhaar Back",
+    };
+    return labels[m] || m;
+  });
+
 const StatCard = ({ label, value, hint, accent = "bg-primary/10 text-primary" }: any) => (
   <Card className="overflow-hidden">
     <CardContent className="p-5">
@@ -582,6 +599,12 @@ const KycSection = () => {
     load();
   };
 
+  const openCertificate = async (k: any) => {
+    setViewing(k);
+    const data = await adminFetch("kyc_certificate", { id: k.id, user_id: k.user_id });
+    if (data?.row) setViewing(data.row);
+  };
+
   const isExpired = (k: any) =>
     k.kyc_expires_at && new Date(k.kyc_expires_at).getTime() < Date.now();
 
@@ -605,6 +628,14 @@ const KycSection = () => {
         {rows.map((k) => (
           <Card key={k.id} className="border">
             <CardContent className="p-4 space-y-2 text-sm">
+              {(() => {
+                const missingPhotos = formatKycMissingPhotos(k.missing_photos?.length ? k.missing_photos : getMissingKycPhotos(k));
+                return missingPhotos.length > 0 ? (
+                  <div className="rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1 text-xs font-semibold text-destructive">
+                    Missing photos: {missingPhotos.join(", ")} — Resend e-KYC required
+                  </div>
+                ) : null;
+              })()}
               <div className="flex items-center justify-between">
                 <p className="font-semibold">{k.full_name}</p>
                 <div className="flex gap-1">
@@ -623,8 +654,15 @@ const KycSection = () => {
                 {k.selfie_url && <a href={k.selfie_url} target="_blank" rel="noreferrer"><img src={k.selfie_url} className="h-20 w-full object-cover rounded border" alt="selfie" /></a>}
               </div>
               <div className="flex flex-wrap gap-2 pt-1">
-                <Button size="sm" variant="outline" onClick={() => setViewing(k)}><Eye className="h-4 w-4 mr-1" />View Certificate</Button>
-                <Button size="sm" variant="outline" onClick={() => resend(k.user_id)}><Send className="h-4 w-4 mr-1" />Resend e-KYC</Button>
+                <Button size="sm" variant="outline" onClick={() => openCertificate(k)}><Eye className="h-4 w-4 mr-1" />View Certificate</Button>
+                <Button
+                  size="sm"
+                  variant={getMissingKycPhotos(k).length ? "destructive" : "outline"}
+                  className={getMissingKycPhotos(k).length ? "font-bold shadow-sm" : ""}
+                  onClick={() => resend(k.user_id)}
+                >
+                  <Send className="h-4 w-4 mr-1" />Resend e-KYC
+                </Button>
                 {k.status === "pending" && (
                   <>
                     <Button size="sm" onClick={() => decide(k.id, "verified")}><CheckCircle2 className="h-4 w-4 mr-1" />Approve</Button>
@@ -638,13 +676,14 @@ const KycSection = () => {
         {!rows.length && <p className="col-span-full py-8 text-center text-sm text-muted-foreground">Nothing here</p>}
       </CardContent>
     </Card>
-    <KycCertificateDialog data={viewing} onClose={() => setViewing(null)} />
+    <KycCertificateDialog data={viewing} onClose={() => setViewing(null)} onResend={(userId) => resend(userId)} />
     </>
   );
 };
 
-const KycCertificateDialog = ({ data, onClose }: { data: any | null; onClose: () => void }) => {
+const KycCertificateDialog = ({ data, onClose, onResend }: { data: any | null; onClose: () => void; onResend: (userId: string) => void | Promise<void> }) => {
   if (!data) return null;
+  const missingPhotos = formatKycMissingPhotos(data.missing_photos?.length ? data.missing_photos : getMissingKycPhotos(data));
   const aadhaarDigits = String(data.aadhaar_full || "").replace(/\D/g, "");
   const aadhaarFormatted =
     aadhaarDigits.length === 12
@@ -661,6 +700,15 @@ const KycCertificateDialog = ({ data, onClose }: { data: any | null; onClose: ()
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 bg-white">
         <DialogHeader className="sr-only"><DialogTitle>e-KYC Certificate</DialogTitle></DialogHeader>
         <div className="relative overflow-hidden border-4 border-[#FF8C00] bg-white p-6 text-black">
+          {missingPhotos.length > 0 && (
+            <div className="mb-4 rounded-lg border-2 border-destructive bg-destructive/10 p-3 text-destructive">
+              <p className="text-sm font-extrabold">Photos missing: {missingPhotos.join(", ")}</p>
+              <p className="mt-1 text-xs">पुराने record में photo URL नहीं मिला। Fresh KYC के लिए Resend e-KYC भेजें।</p>
+              <Button size="sm" variant="destructive" className="mt-2" onClick={() => onResend(data.user_id)}>
+                <Send className="h-4 w-4 mr-1" />Resend e-KYC
+              </Button>
+            </div>
+          )}
           {/* Verified stamp */}
           <div className="pointer-events-none absolute -right-6 -top-2 rotate-12 z-10">
             <div className="flex items-center gap-1 rounded-lg border-4 border-green-600 bg-green-600/10 px-3 py-1">

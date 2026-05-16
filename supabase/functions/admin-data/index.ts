@@ -10,6 +10,52 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "content-type": "application/json" } });
 
+const KYC_BUCKET = "kyc-photos";
+
+const isMissing = (v: unknown) => !v || String(v).trim() === "";
+
+const kycPhotoKind = (name: string): "selfie_url" | "aadhaar_front_url" | "aadhaar_back_url" | null => {
+  const n = name.toLowerCase().replace(/_/g, "-");
+  if (n.includes("selfie")) return "selfie_url";
+  if (n.includes("aadhaar-front") || n.includes("aadhar-front") || n.includes("front")) return "aadhaar_front_url";
+  if (n.includes("aadhaar-back") || n.includes("aadhar-back") || n.includes("back")) return "aadhaar_back_url";
+  return null;
+};
+
+const enrichKycRows = async (sb: any, rows: any[]) => {
+  return Promise.all((rows || []).map(async (row) => {
+    const next = { ...row };
+    const missingBefore = ["selfie_url", "aadhaar_front_url", "aadhaar_back_url"].filter((key) => isMissing(next[key]));
+    if (!next.user_id || missingBefore.length === 0) {
+      next.missing_photos = missingBefore;
+      return next;
+    }
+
+    const { data: files } = await sb.storage.from(KYC_BUCKET).list(String(next.user_id), {
+      limit: 100,
+      sortBy: { column: "created_at", order: "desc" },
+    });
+    const patch: Record<string, string> = {};
+    for (const file of files || []) {
+      if (!file?.name) continue;
+      const kind = kycPhotoKind(file.name);
+      if (!kind || !isMissing(next[kind])) continue;
+      const path = `${next.user_id}/${file.name}`;
+      const { data: pub } = sb.storage.from(KYC_BUCKET).getPublicUrl(path);
+      if (pub?.publicUrl) {
+        next[kind] = pub.publicUrl;
+        patch[kind] = pub.publicUrl;
+      }
+    }
+
+    if (Object.keys(patch).length > 0) {
+      await sb.from("kyc_verifications").update(patch).eq("id", next.id);
+    }
+    next.missing_photos = ["selfie_url", "aadhaar_front_url", "aadhaar_back_url"].filter((key) => isMissing(next[key]));
+    return next;
+  }));
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
@@ -84,7 +130,18 @@ Deno.serve(async (req) => {
           q = q.eq("status", filter);
         }
         const { data } = await q;
-        return json({ rows: data || [] });
+        const rows = await enrichKycRows(sb, data || []);
+        return json({ rows });
+      }
+      case "kyc_certificate": {
+        const { id, user_id } = body;
+        if (!id && !user_id) return json({ error: "id or user_id required" }, 400);
+        let q = sb.from("kyc_verifications").select("*").order("created_at", { ascending: false }).limit(1);
+        q = id ? q.eq("id", id) : q.eq("user_id", user_id);
+        const { data, error } = await q;
+        if (error) return json({ error: error.message }, 400);
+        const rows = await enrichKycRows(sb, data || []);
+        return json({ row: rows[0] || null });
       }
       case "complaints": {
         const { data } = await sb.from("complaints").select("*").order("created_at", { ascending: false }).limit(500);
