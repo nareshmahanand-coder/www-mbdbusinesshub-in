@@ -701,7 +701,7 @@ const KycCertificateDialog = ({ data, onClose, onResend }: { data: any | null; o
         <DialogHeader className="sr-only"><DialogTitle>e-KYC Certificate</DialogTitle></DialogHeader>
         <div className="relative overflow-hidden border-4 border-[#FF8C00] bg-white p-6 text-black">
           {missingPhotos.length > 0 && (
-            <div className="mb-4 rounded-lg border-2 border-red-500 bg-red-50 p-3 text-red-700">
+            <div className="mb-4 rounded-lg border-2 border-destructive bg-destructive/10 p-3 text-destructive">
               <p className="text-sm font-extrabold">Photos missing: {missingPhotos.join(", ")}</p>
               <p className="mt-1 text-xs">पुराने record में photo URL नहीं मिला। Fresh KYC के लिए Resend e-KYC भेजें।</p>
               <Button size="sm" variant="destructive" className="mt-2" onClick={() => onResend(data.user_id)}>
