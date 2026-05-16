@@ -202,7 +202,7 @@ const Overview = ({ onJump }: { onJump: (s: Section) => void }) => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">Real-time platform overview</p>
+        <p className="text-sm text-muted-foreground">Real-time overview • auto-refresh every 8s</p>
         <Button size="sm" variant="outline" onClick={load} disabled={loading}>
           <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`} /> Refresh
         </Button>
