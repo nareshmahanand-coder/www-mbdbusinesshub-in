@@ -490,7 +490,7 @@ const KycSection = () => {
     const { data } = await q;
     setRows(data || []);
   };
-  useEffect(() => { load(); }, [filter]);
+  useAutoRefresh(load, 8000, [filter]);
 
   const decide = async (id: string, status: "verified" | "rejected") => {
     await supabase.from("kyc_verifications").update({ status }).eq("id", id);
@@ -547,7 +547,7 @@ const ComplaintsSection = () => {
     const { data } = await supabase.from("complaints").select("*").order("created_at", { ascending: false });
     setRows(data || []);
   };
-  useEffect(() => { load(); }, []);
+  useAutoRefresh(load, 8000);
   const resolve = async (id: string) => {
     await supabase.from("complaints").update({ status: "resolved", is_read: true }).eq("id", id);
     toast.success("Resolved"); load();
@@ -636,14 +636,13 @@ const MessagingSection = () => {
 const AuditSection = () => {
   const [rows, setRows] = useState<any[]>([]);
   const [filter, setFilter] = useState("all");
-  useEffect(() => {
-    (async () => {
-      let q = supabase.from("payment_orders").select("*").order("created_at", { ascending: false }).limit(500);
-      if (filter !== "all") q = q.eq("status", filter);
-      const { data } = await q;
-      setRows(data || []);
-    })();
-  }, [filter]);
+  const load = async () => {
+    let q = supabase.from("payment_orders").select("*").order("created_at", { ascending: false }).limit(500);
+    if (filter !== "all") q = q.eq("status", filter);
+    const { data } = await q;
+    setRows(data || []);
+  };
+  useAutoRefresh(load, 8000, [filter]);
 
   const total = rows.filter((r) => r.status === "paid").reduce((a, b) => a + Number(b.amount || 0), 0);
 
@@ -689,8 +688,7 @@ const AuditSection = () => {
 
 const AnalyticsSection = () => {
   const [data, setData] = useState<any>({});
-  useEffect(() => {
-    (async () => {
+  const load = async () => {
       const since = new Date(); since.setDate(since.getDate() - 30);
       const [users, payments, merchants, members] = await Promise.all([
         supabase.from("profiles").select("created_at").gte("created_at", since.toISOString()),
@@ -718,8 +716,8 @@ const AnalyticsSection = () => {
         premiumPct: m.length ? Math.round((m.filter((x: any) => x.is_premium).length / m.length) * 100) : 0,
         activeMembers: mem.filter((x: any) => x.status === "active").length,
       });
-    })();
-  }, []);
+  };
+  useAutoRefresh(load, 15000);
 
   const series: [string, { users: number; revenue: number }][] = data.series || [];
   const maxRev = Math.max(1, ...series.map(([, v]) => v.revenue));
