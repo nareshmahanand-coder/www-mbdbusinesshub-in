@@ -46,7 +46,7 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
   useEffect(() => {
     if (!isActive) return;
     const redirectTimer = window.setTimeout(() => {
-      window.location.href = "/dashboard";
+      window.location.href = "/";
     }, 1000);
     return () => window.clearTimeout(redirectTimer);
   }, [isActive]);
