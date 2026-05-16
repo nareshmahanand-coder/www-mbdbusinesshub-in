@@ -17,6 +17,7 @@ import { SUPERUSER_FLAG, useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { Loader2, Lock, Mail, ShieldCheck, UserPlus } from "lucide-react";
+import AdminPinAccess from "@/components/AdminPinAccess";
 
 type AuthMode = "login" | "signup";
 
@@ -247,9 +248,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
           </p>
 
           <div className="mt-3 text-center">
-            <button type="button" onClick={() => setPinDialogOpen(true)} className="text-[10px] text-muted-foreground/40 underline-offset-2 hover:text-muted-foreground hover:underline">
-              Official Authorized System
-            </button>
+            <AdminPinAccess />
           </div>
         </div>
       </section>
