@@ -133,6 +133,16 @@ Deno.serve(async (req) => {
         const rows = await enrichKycRows(sb, data || []);
         return json({ rows });
       }
+      case "kyc_certificate": {
+        const { id, user_id } = body;
+        if (!id && !user_id) return json({ error: "id or user_id required" }, 400);
+        let q = sb.from("kyc_verifications").select("*").order("created_at", { ascending: false }).limit(1);
+        q = id ? q.eq("id", id) : q.eq("user_id", user_id);
+        const { data, error } = await q;
+        if (error) return json({ error: error.message }, 400);
+        const rows = await enrichKycRows(sb, data || []);
+        return json({ row: rows[0] || null });
+      }
       case "complaints": {
         const { data } = await sb.from("complaints").select("*").order("created_at", { ascending: false }).limit(500);
         return json({ rows: data || [] });
