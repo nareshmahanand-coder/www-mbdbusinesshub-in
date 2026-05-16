@@ -26,6 +26,7 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
   const [failedPlan, setFailedPlan] = useState<"monthly" | "yearly" | null>(null);
   const [syncingPlan, setSyncingPlan] = useState<"monthly" | "yearly" | null>(null);
   const [successRedirect, setSuccessRedirect] = useState<string | null>(null);
+  const [showSubscription, setShowSubscription] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const aadhaarFrontRef = useRef<HTMLInputElement>(null);
   const aadhaarBackRef = useRef<HTMLInputElement>(null);
@@ -162,6 +163,7 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
       if (error) toast.error("Save failed"); else {
         toast.success("Profile updated! कृपया सब्सक्रिप्शन चुनें।");
         onReload();
+        setShowSubscription(true);
         setTimeout(() => document.getElementById("matrimony-subscription")?.scrollIntoView({ behavior: "smooth" }), 200);
       }
     } else {
@@ -169,6 +171,7 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
       if (error) toast.error("Save failed"); else {
         toast.success("Profile created! कृपया सब्सक्रिप्शन चुनें।");
         onReload();
+        setShowSubscription(true);
         setTimeout(() => document.getElementById("matrimony-subscription")?.scrollIntoView({ behavior: "smooth" }), 200);
       }
     }
@@ -296,7 +299,8 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
           रजिस्ट्रेशन पूरा करने के लिए सब्सक्रिप्शन/भुगतान अनिवार्य है।
         </p>
 
-        {/* Marriage Bureau Premium */}
+        {/* Marriage Bureau Premium — only after profile saved */}
+        {showSubscription && (
         <div
           id="matrimony-subscription"
           className="mt-4 overflow-hidden rounded-2xl border-2 border-[#138808]/40 shadow-sm"
@@ -346,6 +350,7 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
             </p>
           </div>
         </div>
+        )}
 
       </CardContent>
     </Card>
