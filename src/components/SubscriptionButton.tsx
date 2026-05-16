@@ -34,11 +34,16 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
         return;
       }
       const { data } = await supabase
-        .from("user_profiles")
-        .select("membership_status")
+        .from("bharat_gaurav_memberships")
+        .select("status, expires_at")
         .eq("user_id", auth.user.id)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
-      if (data?.membership_status === "active") setIsActive(true);
+      if (data && (!data.expires_at || new Date(data.expires_at) > new Date())) {
+        setIsActive(true);
+      }
       setChecking(false);
     })();
   }, []);
@@ -84,6 +89,12 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
         completed = true;
         rzp?.close?.();
 
+        const now = new Date();
+        const expires = new Date(now);
+        if (plan_type === "yearly") expires.setFullYear(expires.getFullYear() + 1);
+        else expires.setMonth(expires.getMonth() + 1);
+        const amount = plan_type === "yearly" ? 100 : 10;
+
         const { error: profileError } = await supabase.from("user_profiles").upsert(
           {
             user_id: auth.user!.id,
@@ -101,6 +112,25 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
           completed = false;
           setLoading(false);
           toast.error(profileError.message || "Could not activate subscription");
+          return;
+        }
+
+        const { error: memError } = await supabase.from("bharat_gaurav_memberships").insert({
+          user_id: auth.user!.id,
+          plan: plan_type === "yearly" ? "yearly" : "monthly",
+          amount,
+          currency: "INR",
+          status: "active",
+          started_at: now.toISOString(),
+          expires_at: expires.toISOString(),
+          razorpay_payment_id:
+            resp.razorpay_payment_id || resp?.error?.metadata?.payment_id || null,
+        });
+
+        if (memError) {
+          completed = false;
+          setLoading(false);
+          toast.error(memError.message || "Could not activate membership");
           return;
         }
 
