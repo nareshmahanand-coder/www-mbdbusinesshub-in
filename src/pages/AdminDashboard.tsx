@@ -668,8 +668,9 @@ const KycSection = () => {
   );
 };
 
-const KycCertificateDialog = ({ data, onClose }: { data: any | null; onClose: () => void }) => {
+const KycCertificateDialog = ({ data, onClose, onResend }: { data: any | null; onClose: () => void; onResend: (userId: string) => void | Promise<void> }) => {
   if (!data) return null;
+  const missingPhotos = formatKycMissingPhotos(data.missing_photos?.length ? data.missing_photos : getMissingKycPhotos(data));
   const aadhaarDigits = String(data.aadhaar_full || "").replace(/\D/g, "");
   const aadhaarFormatted =
     aadhaarDigits.length === 12
@@ -686,6 +687,15 @@ const KycCertificateDialog = ({ data, onClose }: { data: any | null; onClose: ()
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 bg-white">
         <DialogHeader className="sr-only"><DialogTitle>e-KYC Certificate</DialogTitle></DialogHeader>
         <div className="relative overflow-hidden border-4 border-[#FF8C00] bg-white p-6 text-black">
+          {missingPhotos.length > 0 && (
+            <div className="mb-4 rounded-lg border-2 border-red-500 bg-red-50 p-3 text-red-700">
+              <p className="text-sm font-extrabold">Photos missing: {missingPhotos.join(", ")}</p>
+              <p className="mt-1 text-xs">पुराने record में photo URL नहीं मिला। Fresh KYC के लिए Resend e-KYC भेजें।</p>
+              <Button size="sm" variant="destructive" className="mt-2" onClick={() => onResend(data.user_id)}>
+                <Send className="h-4 w-4 mr-1" />Resend e-KYC
+              </Button>
+            </div>
+          )}
           {/* Verified stamp */}
           <div className="pointer-events-none absolute -right-6 -top-2 rotate-12 z-10">
             <div className="flex items-center gap-1 rounded-lg border-4 border-green-600 bg-green-600/10 px-3 py-1">
