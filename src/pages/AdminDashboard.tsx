@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Users, Store, Heart, CreditCard, ShieldCheck,
   MessageSquareWarning, Send, Receipt, BarChart3, Settings as SettingsIcon,
   LogOut, Search, CheckCircle2, XCircle, Eye, RefreshCw, Moon, Sun,
-  MapPin, Phone, Calendar, FileCheck2, Mail,
+  MapPin, Phone, Calendar, FileCheck2, Mail, Ban, ShieldOff,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, SUPERUSER_FLAG } from "@/contexts/AuthContext";
@@ -235,6 +235,9 @@ const UsersSection = () => {
   const [rows, setRows] = useState<any[]>([]);
   const [q, setQ] = useState("");
   const [view, setView] = useState<any>(null);
+  const [blockTarget, setBlockTarget] = useState<any>(null);
+  const [reason, setReason] = useState("Spam");
+  const [customReason, setCustomReason] = useState("");
 
   const load = async () => {
     const data = await adminFetch("users");
@@ -249,6 +252,23 @@ const UsersSection = () => {
       (r.email || "").toLowerCase().includes(s) || (r.phone || "").includes(s)
     );
   }, [rows, q]);
+
+  const doBlock = async () => {
+    if (!blockTarget) return;
+    const finalReason = reason === "Other" ? (customReason || "Other") : reason;
+    const res = await adminFetch("block_user", { user_id: blockTarget.id, reason: finalReason });
+    if (res?.ok) {
+      toast.success("User blocked");
+      setBlockTarget(null); setCustomReason(""); setReason("Spam");
+      load();
+    } else toast.error("Failed to block");
+  };
+
+  const doUnblock = async (u: any) => {
+    const res = await adminFetch("unblock_user", { user_id: u.id });
+    if (res?.ok) { toast.success("User unblocked"); load(); }
+    else toast.error("Failed to unblock");
+  };
 
   return (
     <Card>
@@ -266,7 +286,7 @@ const UsersSection = () => {
         <Table>
           <TableHeader><TableRow>
             <TableHead>Name</TableHead><TableHead>Phone</TableHead><TableHead>Email</TableHead>
-            <TableHead>City</TableHead><TableHead>Joined</TableHead><TableHead>Actions</TableHead>
+            <TableHead>City</TableHead><TableHead>Joined</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {filtered.map((u) => (
@@ -276,7 +296,25 @@ const UsersSection = () => {
                 <TableCell className="text-xs">{u.email || "—"}</TableCell>
                 <TableCell>{u.city || "—"}</TableCell>
                 <TableCell className="text-xs">{new Date(u.created_at).toLocaleDateString()}</TableCell>
-                <TableCell><Button size="sm" variant="ghost" onClick={() => setView(u)}><Eye className="h-3.5 w-3.5" /></Button></TableCell>
+                <TableCell>
+                  {u.blocked
+                    ? <Badge variant="destructive" title={u.block_reason}>Blocked</Badge>
+                    : <Badge variant="secondary">Active</Badge>}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <Button size="sm" variant="ghost" onClick={() => setView(u)}><Eye className="h-3.5 w-3.5" /></Button>
+                    {u.blocked ? (
+                      <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white h-7 px-2" onClick={() => doUnblock(u)}>
+                        <ShieldOff className="h-3.5 w-3.5 mr-1" />Unblock
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="destructive" className="h-7 px-2" onClick={() => setBlockTarget(u)}>
+                        <Ban className="h-3.5 w-3.5 mr-1" />Block
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -297,8 +335,45 @@ const UsersSection = () => {
               <p><b>Address:</b> {view.address || "—"}</p>
               <p><b>Provider:</b> {view.provider || "—"}</p>
               <p><b>Phone Verified:</b> {view.phone_verified ? "Yes" : "No"}</p>
+              {view.blocked && (
+                <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2">
+                  <p className="font-semibold text-destructive">Blocked</p>
+                  <p className="text-xs"><b>Reason:</b> {view.block_reason || "—"}</p>
+                  {view.blocked_at && <p className="text-xs"><b>At:</b> {new Date(view.blocked_at).toLocaleString()}</p>}
+                </div>
+              )}
               <p><b>Joined:</b> {new Date(view.created_at).toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">ID: {view.id}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!blockTarget} onOpenChange={(o) => !o && setBlockTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Block User</DialogTitle></DialogHeader>
+          {blockTarget && (
+            <div className="space-y-3 text-sm">
+              <p><b>{blockTarget.display_name || blockTarget.phone || blockTarget.email}</b> को ब्लॉक करने का कारण चुनें:</p>
+              <Select value={reason} onValueChange={setReason}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Spam">Spam</SelectItem>
+                  <SelectItem value="Fake Profile">Fake Profile</SelectItem>
+                  <SelectItem value="Illegal Activity">Illegal Activity</SelectItem>
+                  <SelectItem value="Abusive Behavior">Abusive Behavior</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              {reason === "Other" && (
+                <Textarea placeholder="कारण लिखें..." value={customReason} onChange={(e) => setCustomReason(e.target.value)} />
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" onClick={() => setBlockTarget(null)}>Cancel</Button>
+                <Button variant="destructive" onClick={doBlock}>
+                  <Ban className="h-4 w-4 mr-1" />Block User
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
