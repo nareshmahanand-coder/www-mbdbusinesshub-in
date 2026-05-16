@@ -315,7 +315,7 @@ const MerchantsSection = () => {
     const { data } = await supabase.from("merchant_profiles").select("*").order("created_at", { ascending: false });
     setRows(data || []);
   };
-  useEffect(() => { load(); }, []);
+  useAutoRefresh(load, 8000);
 
   const togglePremium = async (m: any) => {
     await supabase.from("merchant_profiles").update({ is_premium: !m.is_premium }).eq("id", m.id);
@@ -334,7 +334,10 @@ const MerchantsSection = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle>Merchants / Shops ({filtered.length})</CardTitle>
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search..." className="w-64" />
+        <div className="flex items-center gap-2">
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search..." className="w-64" />
+          <Button size="sm" variant="outline" onClick={load}><RefreshCw className="h-3.5 w-3.5" /></Button>
+        </div>
       </CardHeader>
       <CardContent className="overflow-x-auto">
         <Table>
@@ -373,7 +376,7 @@ const MatrimonySection = () => {
     const { data } = await supabase.from("matrimony_profiles").select("*").order("created_at", { ascending: false });
     setRows(data || []);
   };
-  useEffect(() => { load(); }, []);
+  useAutoRefresh(load, 8000);
 
   const setStatus = async (id: string, moderation_status: string) => {
     await supabase.from("matrimony_profiles").update({ moderation_status, is_published: moderation_status === "approved" }).eq("id", id);
@@ -382,7 +385,10 @@ const MatrimonySection = () => {
 
   return (
     <Card>
-      <CardHeader><CardTitle>Matrimony Profiles ({rows.length})</CardTitle></CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <CardTitle>Matrimony Profiles ({rows.length})</CardTitle>
+        <Button size="sm" variant="outline" onClick={load}><RefreshCw className="h-3.5 w-3.5" /></Button>
+      </CardHeader>
       <CardContent className="overflow-x-auto">
         <Table>
           <TableHeader><TableRow>
