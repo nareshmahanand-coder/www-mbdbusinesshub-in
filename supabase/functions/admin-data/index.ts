@@ -220,6 +220,107 @@ Deno.serve(async (req) => {
         });
         return json({ ok: true });
       }
+      case "delete_kyc": {
+        const { id } = body;
+        if (!id) return json({ error: "id required" }, 400);
+        const { error } = await sb.from("kyc_verifications").delete().eq("id", id);
+        if (error) return json({ error: error.message }, 400);
+        return json({ ok: true });
+      }
+      case "delete_subscription": {
+        // body: { kind: "bg"|"mp"|"mat", id (bg=membership id, mp/mat=user_id) }
+        const { kind, id } = body;
+        if (!kind || !id) return json({ error: "kind and id required" }, 400);
+        if (kind === "bg") {
+          // Best-effort: cancel Razorpay subscription if a subscription_id was stored.
+          const { data: row } = await sb.from("bharat_gaurav_memberships").select("*").eq("id", id).maybeSingle();
+          let payOrder: any = null;
+          if (row?.payment_order_id) {
+            const { data } = await sb.from("payment_orders").select("metadata").eq("id", row.payment_order_id).maybeSingle();
+            payOrder = data;
+          }
+          const subId = payOrder?.metadata?.razorpay_subscription_id || payOrder?.metadata?.subscription_id || null;
+          if (subId) {
+            const keyId = Deno.env.get("RAZORPAY_KEY_ID");
+            const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
+            if (keyId && keySecret) {
+              try {
+                await fetch(`https://api.razorpay.com/v1/subscriptions/${subId}/cancel`, {
+                  method: "POST",
+                  headers: {
+                    "content-type": "application/json",
+                    authorization: "Basic " + btoa(`${keyId}:${keySecret}`),
+                  },
+                  body: JSON.stringify({ cancel_at_cycle_end: 0 }),
+                });
+              } catch (_) { /* ignore */ }
+            }
+          }
+          const { error } = await sb.from("bharat_gaurav_memberships")
+            .update({ status: "cancelled", expires_at: new Date().toISOString() })
+            .eq("id", id);
+          if (error) return json({ error: error.message }, 400);
+          return json({ ok: true });
+        }
+        if (kind === "mp") {
+          const { error } = await sb.from("merchant_profiles").update({
+            is_premium: false,
+            premium_plan: null,
+            premium_start_date: null,
+            plan_ends_at: null,
+          }).eq("user_id", id);
+          if (error) return json({ error: error.message }, 400);
+          return json({ ok: true });
+        }
+        if (kind === "mat") {
+          const { error } = await sb.from("matrimony_profiles").update({
+            subscription_plan: null,
+            subscription_start: null,
+            subscription_end: null,
+          }).eq("user_id", id);
+          if (error) return json({ error: error.message }, 400);
+          return json({ ok: true });
+        }
+        return json({ error: "unknown kind" }, 400);
+      }
+      case "delete_requests": {
+        const filter = body.filter || "pending";
+        let q = sb.from("account_delete_requests").select("*").order("created_at", { ascending: false }).limit(500);
+        if (filter !== "all") q = q.eq("status", filter);
+        const { data } = await q;
+        return json({ rows: data || [] });
+      }
+      case "reject_delete_request": {
+        const { id, notes } = body;
+        if (!id) return json({ error: "id required" }, 400);
+        const { error } = await sb.from("account_delete_requests")
+          .update({ status: "rejected", reviewer_notes: notes || "", reviewed_at: new Date().toISOString() })
+          .eq("id", id);
+        if (error) return json({ error: error.message }, 400);
+        return json({ ok: true });
+      }
+      case "approve_delete_request": {
+        const { id } = body;
+        if (!id) return json({ error: "id required" }, 400);
+        const { data: reqRow, error: rErr } = await sb.from("account_delete_requests").select("*").eq("id", id).maybeSingle();
+        if (rErr || !reqRow) return json({ error: rErr?.message || "request not found" }, 404);
+        const userId = reqRow.user_id;
+        const tables = [
+          "payment_orders","merchant_profiles","matrimony_profiles","kyc_verifications",
+          "blood_donors","blood_donations","blood_requests","classifieds","jobs","job_applications",
+          "complaints","saved_shops","shop_ratings","service_providers","family_members",
+          "last_known_locations","user_roles","bharat_gaurav_memberships","profiles",
+        ];
+        for (const t of tables) {
+          try { await sb.from(t).delete().eq("user_id", userId); } catch (_) {}
+        }
+        try { await sb.from("profiles").delete().eq("id", userId); } catch (_) {}
+        try { await sb.auth.admin.deleteUser(userId); } catch (_) {}
+        await sb.from("account_delete_requests")
+          .update({ status: "approved", reviewed_at: new Date().toISOString() })
+          .eq("id", id);
+        return json({ ok: true });
+      }
       default:
         return json({ error: "unknown action" }, 400);
     }
