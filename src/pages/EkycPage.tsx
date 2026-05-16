@@ -305,6 +305,25 @@ const EkycPage = () => {
         if (fromPromise) resolvedOcr = fromPromise;
       }
       const relType = resolvedOcr?.relation_type === "husband" ? "husband" : "father";
+      // Upload selfie + aadhaar front/back to storage so admin certificate can show real images.
+      const uploadDataUrl = async (dataUrl: string | null, name: string): Promise<string | null> => {
+        if (!dataUrl) return null;
+        try {
+          const blob = dataUrlToBlob(dataUrl);
+          const path = `${user.id}/${Date.now()}-${name}.jpg`;
+          const { error: upErr } = await supabase.storage
+            .from("kyc-photos")
+            .upload(path, blob, { contentType: "image/jpeg", upsert: true });
+          if (upErr) { console.error("kyc upload", name, upErr); return null; }
+          const { data: pub } = supabase.storage.from("kyc-photos").getPublicUrl(path);
+          return pub?.publicUrl ?? null;
+        } catch (e) { console.error("kyc upload exception", e); return null; }
+      };
+      const [selfieUrl, frontUrl, backUrl] = await Promise.all([
+        uploadDataUrl(selfieDataUrl, "selfie"),
+        uploadDataUrl(frontImg, "aadhaar-front"),
+        uploadDataUrl(backImg, "aadhaar-back"),
+      ]);
       const payload = {
         user_id: user.id,
         mobile,
@@ -316,9 +335,9 @@ const EkycPage = () => {
         address: resolvedOcr?.address ?? "",
         latitude: gps?.lat ?? null,
         longitude: gps?.lng ?? null,
-        aadhaar_front_url: null,
-        aadhaar_back_url: null,
-        selfie_url: null,
+        aadhaar_front_url: frontUrl,
+        aadhaar_back_url: backUrl,
+        selfie_url: selfieUrl,
         status: "verified",
         verified_at: new Date().toISOString(),
         kyc_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
