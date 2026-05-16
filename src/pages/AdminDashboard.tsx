@@ -76,6 +76,13 @@ const useAutoRefresh = (fn: () => void | Promise<void>, ms = 8000, deps: any[] =
   }, deps);
 };
 
+const getMissingKycPhotos = (k: any) =>
+  [
+    !k?.selfie_url && "Selfie",
+    !k?.aadhaar_front_url && "Aadhaar Front",
+    !k?.aadhaar_back_url && "Aadhaar Back",
+  ].filter(Boolean) as string[];
+
 const StatCard = ({ label, value, hint, accent = "bg-primary/10 text-primary" }: any) => (
   <Card className="overflow-hidden">
     <CardContent className="p-5">
@@ -605,6 +612,14 @@ const KycSection = () => {
         {rows.map((k) => (
           <Card key={k.id} className="border">
             <CardContent className="p-4 space-y-2 text-sm">
+              {(() => {
+                const missingPhotos = k.missing_photos?.length ? k.missing_photos : getMissingKycPhotos(k);
+                return missingPhotos.length > 0 ? (
+                  <div className="rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1 text-xs font-semibold text-destructive">
+                    Missing photos: {missingPhotos.join(", ")} — Resend e-KYC required
+                  </div>
+                ) : null;
+              })()}
               <div className="flex items-center justify-between">
                 <p className="font-semibold">{k.full_name}</p>
                 <div className="flex gap-1">
@@ -624,7 +639,14 @@ const KycSection = () => {
               </div>
               <div className="flex flex-wrap gap-2 pt-1">
                 <Button size="sm" variant="outline" onClick={() => setViewing(k)}><Eye className="h-4 w-4 mr-1" />View Certificate</Button>
-                <Button size="sm" variant="outline" onClick={() => resend(k.user_id)}><Send className="h-4 w-4 mr-1" />Resend e-KYC</Button>
+                <Button
+                  size="sm"
+                  variant={getMissingKycPhotos(k).length ? "destructive" : "outline"}
+                  className={getMissingKycPhotos(k).length ? "font-bold shadow-sm" : ""}
+                  onClick={() => resend(k.user_id)}
+                >
+                  <Send className="h-4 w-4 mr-1" />Resend e-KYC
+                </Button>
                 {k.status === "pending" && (
                   <>
                     <Button size="sm" onClick={() => decide(k.id, "verified")}><CheckCircle2 className="h-4 w-4 mr-1" />Approve</Button>
@@ -638,7 +660,7 @@ const KycSection = () => {
         {!rows.length && <p className="col-span-full py-8 text-center text-sm text-muted-foreground">Nothing here</p>}
       </CardContent>
     </Card>
-    <KycCertificateDialog data={viewing} onClose={() => setViewing(null)} />
+    <KycCertificateDialog data={viewing} onClose={() => setViewing(null)} onResend={(userId) => resend(userId)} />
     </>
   );
 };
