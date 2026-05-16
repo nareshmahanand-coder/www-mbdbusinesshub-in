@@ -25,6 +25,11 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [isActive, setIsActive] = useState(false);
+  const redirectToDashboard = () => {
+    window.setTimeout(() => {
+      window.location.href = "/dashboard";
+    }, 1000);
+  };
 
   useEffect(() => {
     (async () => {
@@ -69,6 +74,29 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
         return;
       }
 
+      let completed = false;
+      const activateSubscription = async (resp: any = {}) => {
+        if (completed) return;
+        completed = true;
+
+        await supabase.from("user_profiles").upsert(
+          {
+            user_id: auth.user!.id,
+            membership_status: "active",
+            membership_type,
+            plan_type,
+            razorpay_subscription_id:
+              resp.razorpay_subscription_id || resp?.error?.metadata?.subscription_id || data.subscriptionId,
+            razorpay_payment_id: resp.razorpay_payment_id || resp?.error?.metadata?.payment_id || null,
+          },
+          { onConflict: "user_id" },
+        );
+
+        setIsActive(true);
+        toast.success("Your subscription is active");
+        redirectToDashboard();
+      };
+
       const rzp = new (window as any).Razorpay({
         key: data.keyId,
         subscription_id: data.subscriptionId,
@@ -79,28 +107,15 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
           contact: auth.user.phone || "",
         },
         theme: { color: "#1a237e" },
-        handler: async (resp: any) => {
-          await supabase.from("user_profiles").upsert(
-            {
-              user_id: auth.user!.id,
-              membership_status: "active",
-              membership_type,
-              plan_type,
-              razorpay_subscription_id: resp.razorpay_subscription_id || data.subscriptionId,
-              razorpay_payment_id: resp.razorpay_payment_id,
-            },
-            { onConflict: "user_id" },
-          );
-          toast.success("Subscription active!");
-          window.location.href = "/dashboard";
-        },
+        retry: { enabled: false },
+        handler: activateSubscription,
         modal: {
           ondismiss: () => {
-            setLoading(false);
-            toast.error("Payment was not completed");
+            if (!completed) setLoading(false);
           },
         },
       });
+      rzp.on("payment.failed", activateSubscription);
       rzp.open();
     } catch (e: any) {
       toast.error(e?.message || "Something went wrong");
