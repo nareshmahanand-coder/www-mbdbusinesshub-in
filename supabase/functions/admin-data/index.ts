@@ -119,6 +119,29 @@ Deno.serve(async (req) => {
         if (error) return json({ error: error.message }, 400);
         return json({ ok: true });
       }
+      case "block_user": {
+        // body: { user_id, reason }
+        const { user_id, reason } = body;
+        if (!user_id) return json({ error: "user_id required" }, 400);
+        const { error } = await sb.from("profiles").update({
+          blocked: true,
+          block_reason: reason || "Blocked by admin",
+          blocked_at: new Date().toISOString(),
+        }).eq("id", user_id);
+        if (error) return json({ error: error.message }, 400);
+        return json({ ok: true });
+      }
+      case "unblock_user": {
+        const { user_id } = body;
+        if (!user_id) return json({ error: "user_id required" }, 400);
+        const { error } = await sb.from("profiles").update({
+          blocked: false,
+          block_reason: "",
+          blocked_at: null,
+        }).eq("id", user_id);
+        if (error) return json({ error: error.message }, 400);
+        return json({ ok: true });
+      }
       case "resend_kyc": {
         // body: { user_id }
         const { user_id } = body;
