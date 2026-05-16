@@ -1099,4 +1099,93 @@ const SettingsSection = () => {
   );
 };
 
+const DeleteRequestsSection = () => {
+  const [rows, setRows] = useState<any[]>([]);
+  const [filter, setFilter] = useState("pending");
+  const [reject, setReject] = useState<any>(null);
+  const [notes, setNotes] = useState("");
+
+  const load = async () => {
+    const data = await adminFetch("delete_requests", { filter });
+    setRows(data?.rows || []);
+  };
+  useAutoRefresh(load, 8000, [filter]);
+
+  const approve = async (id: string) => {
+    if (!window.confirm("Approve & permanently delete this account? Cannot be undone.")) return;
+    const res = await adminFetch("approve_delete_request", { id });
+    if (res?.ok) { toast.success("Account deleted"); load(); }
+    else toast.error(res?.error || "Failed");
+  };
+
+  const doReject = async () => {
+    if (!reject) return;
+    const res = await adminFetch("reject_delete_request", { id: reject.id, notes });
+    if (res?.ok) { toast.success("Request rejected"); setReject(null); setNotes(""); load(); }
+    else toast.error(res?.error || "Failed");
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <CardTitle>Delete Account Requests ({rows.length})</CardTitle>
+        <Select value={filter} onValueChange={setFilter}>
+          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="pending">Pending</SelectItem>
+            <SelectItem value="approved">Approved</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="all">All</SelectItem>
+          </SelectContent>
+        </Select>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {rows.map((r) => (
+          <div key={r.id} className="rounded-lg border p-3 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="font-semibold text-sm">{r.user_name || "—"}</p>
+                <p className="text-xs text-muted-foreground">
+                  {r.user_email || "—"} • {r.user_phone || "—"}
+                </p>
+                <p className="text-[11px] text-muted-foreground">{new Date(r.created_at).toLocaleString()}</p>
+              </div>
+              <Badge variant={r.status === "pending" ? "secondary" : r.status === "approved" ? "destructive" : "default"}>
+                {r.status}
+              </Badge>
+            </div>
+            <div className="text-sm">
+              <p><b>Reason:</b> {r.reason || "—"}</p>
+              {r.message && <p className="mt-1 whitespace-pre-wrap"><b>Message:</b> {r.message}</p>}
+              {r.reviewer_notes && <p className="mt-1 text-xs text-muted-foreground"><b>Admin notes:</b> {r.reviewer_notes}</p>}
+            </div>
+            {r.status === "pending" && (
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="destructive" onClick={() => approve(r.id)}>
+                  <Trash2 className="h-4 w-4 mr-1" />Approve Delete
+                </Button>
+                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => { setReject(r); setNotes(""); }}>
+                  <XCircle className="h-4 w-4 mr-1" />Reject Request
+                </Button>
+              </div>
+            )}
+          </div>
+        ))}
+        {!rows.length && <p className="py-8 text-center text-sm text-muted-foreground">No requests</p>}
+      </CardContent>
+
+      <Dialog open={!!reject} onOpenChange={(o) => !o && setReject(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Reject delete request</DialogTitle></DialogHeader>
+          <Textarea placeholder="Optional note for record" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setReject(null)}>Cancel</Button>
+            <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={doReject}>Reject</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+};
+
 export default AdminDashboard;
