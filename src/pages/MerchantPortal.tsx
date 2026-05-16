@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { shopCategories } from "@/data/sampleShops";
-import { Store, CheckCircle, HelpCircle, Image, Upload, X } from "lucide-react";
+import { Store, CheckCircle, HelpCircle, Image, Upload, X, Crown, ShieldCheck, Eye } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -339,23 +339,58 @@ const MerchantPortal = () => {
           </CardContent>
         </Card>
 
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-lg text-center">Merchant Premium Membership</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <MerchantPremiumLinkButton
-              paymentUrl="https://rzp.io/rzp/md63vYt8"
-              plan="monthly"
-              buttonText="Monthly ₹99 — Subscribe"
-            />
-            <MerchantPremiumLinkButton
-              paymentUrl="https://rzp.io/rzp/gdhg7YC4"
-              plan="yearly"
-              buttonText="Yearly ₹999 — Subscribe"
-            />
-          </CardContent>
-        </Card>
+        <div className="mb-8 overflow-hidden rounded-3xl border border-orange-200 bg-gradient-to-b from-orange-50/60 via-white to-green-50/60 shadow-sm">
+          <div className="h-1.5 w-full bg-orange-400" />
+          <div className="px-5 py-6 sm:px-8 sm:py-8">
+            <div className="flex flex-col items-center text-center">
+              <Crown className="h-8 w-8 text-orange-500" strokeWidth={2.25} />
+              <h2 className="mt-3 font-hindi text-2xl font-bold leading-snug text-gray-900 sm:text-3xl">
+                मर्चेंट पोर्टल प्रीमियम • Merchant Premium
+              </h2>
+              <p className="mt-2 text-xs font-bold tracking-wide text-green-700 sm:text-sm">
+                OPTIONAL UPGRADE • <span className="font-hindi">वैकल्पिक अपग्रेड</span>
+              </p>
+            </div>
+
+            <div className="mt-5 rounded-xl border border-orange-200 bg-white px-4 py-4">
+              <p className="font-hindi text-sm leading-relaxed text-gray-800 sm:text-base">
+                <span className="font-bold">रजिस्ट्रेशन पूरी तरह मुफ्त है।</span>{" "}
+                प्रीमियम लेना ज़रूरी नहीं है — लेकिन प्रीमियम मर्चेंट बनने पर आपको ज़ीरो कमीशन बिक्री, एडवांस वेंडर डैशबोर्ड और अपनी दुकान को प्राथमिकता के साथ लिस्ट करने की सुविधा मिलती है।
+              </p>
+            </div>
+
+            <ul className="mt-5 space-y-3">
+              <li className="flex items-start gap-3 font-hindi text-sm text-gray-800 sm:text-base">
+                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+                <span>0% कमीशन — पूरी कमाई आपकी।</span>
+              </li>
+              <li className="flex items-start gap-3 font-hindi text-sm text-gray-800 sm:text-base">
+                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+                <span>दुकान के नाम के साथ <strong>'Verified'</strong> का निशान।</span>
+              </li>
+              <li className="flex items-start gap-3 font-hindi text-sm text-gray-800 sm:text-base">
+                <Eye className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+                <span>प्राथमिकता लिस्टिंग — सबसे ऊपर दिखेंगे।</span>
+              </li>
+            </ul>
+
+            <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <MerchantPremiumLinkButton
+                paymentUrl="https://rzp.io/rzp/md63vYt8"
+                plan="monthly"
+                buttonText="Merchant Portal ₹99 Monthly Plan"
+                buttonClassName="w-full rounded-2xl bg-orange-500 px-4 py-5 text-base font-bold leading-tight text-white shadow-sm transition-all hover:bg-orange-600"
+              />
+              <MerchantPremiumLinkButton
+                paymentUrl="https://rzp.io/rzp/gdhg7YC4"
+                plan="yearly"
+                buttonText="Merchant Portal ₹999 Yearly Plan"
+                buttonClassName="w-full rounded-2xl bg-green-600 px-4 py-5 text-base font-bold leading-tight text-white shadow-sm transition-all hover:bg-green-700"
+              />
+            </div>
+          </div>
+          <div className="h-1.5 w-full bg-green-500" />
+        </div>
       </div>
     </div>
   );
