@@ -513,6 +513,7 @@ const MatrimonySection = () => {
 
 const SubscriptionsSection = () => {
   const [rows, setRows] = useState<any[]>([]);
+  const [confirm, setConfirm] = useState<any>(null);
   const load = async () => {
     const data = await adminFetch("subscriptions");
     const bg = { data: data?.bg || [] };
@@ -520,19 +521,22 @@ const SubscriptionsSection = () => {
     const mat = { data: data?.mat || [] };
     const out: any[] = [];
     (bg.data || []).forEach((r: any) => out.push({
-      id: "bg-" + r.id, source: "Bharat Gaurav", who: r.user_id?.slice(0, 8) + "...",
+      id: "bg-" + r.id, kind: "bg", refId: r.id,
+      source: "Bharat Gaurav", who: r.user_id?.slice(0, 8) + "...",
       plan: r.plan, amount: r.amount, status: r.status,
       started: r.started_at, ends: r.expires_at, ref: r.razorpay_payment_id,
       created_at: r.created_at,
     }));
     (mp.data || []).forEach((r: any) => out.push({
-      id: "mp-" + r.user_id, source: "Merchant Premium", who: r.shop_name || r.user_id?.slice(0, 8) + "...",
+      id: "mp-" + r.user_id, kind: "mp", refId: r.user_id,
+      source: "Merchant Premium", who: r.shop_name || r.user_id?.slice(0, 8) + "...",
       plan: r.premium_plan, amount: null, status: "active",
       started: r.premium_start_date, ends: r.plan_ends_at, ref: "—",
       created_at: r.created_at,
     }));
     (mat.data || []).forEach((r: any) => out.push({
-      id: "mat-" + r.user_id, source: "Marriage Bureau", who: r.name || r.user_id?.slice(0, 8) + "...",
+      id: "mat-" + r.user_id, kind: "mat", refId: r.user_id,
+      source: "Marriage Bureau", who: r.name || r.user_id?.slice(0, 8) + "...",
       plan: r.subscription_plan, amount: null, status: "active",
       started: r.subscription_start, ends: r.subscription_end, ref: "—",
       created_at: r.created_at,
@@ -541,6 +545,12 @@ const SubscriptionsSection = () => {
     setRows(out);
   };
   useAutoRefresh(load, 8000);
+  const doDelete = async () => {
+    if (!confirm) return;
+    const res = await adminFetch("delete_subscription", { kind: confirm.kind, id: confirm.refId });
+    if (res?.ok) { toast.success("Subscription cancelled"); setConfirm(null); load(); }
+    else toast.error(res?.error || "Failed");
+  };
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
@@ -551,7 +561,7 @@ const SubscriptionsSection = () => {
         <Table>
           <TableHeader><TableRow>
             <TableHead>Source</TableHead><TableHead>User / Shop</TableHead><TableHead>Plan</TableHead><TableHead>Amount</TableHead>
-            <TableHead>Status</TableHead><TableHead>Started</TableHead><TableHead>Expires</TableHead><TableHead>Ref</TableHead>
+            <TableHead>Status</TableHead><TableHead>Started</TableHead><TableHead>Expires</TableHead><TableHead>Ref</TableHead><TableHead className="text-right">Action</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {rows.map((r) => (
@@ -564,12 +574,32 @@ const SubscriptionsSection = () => {
                 <TableCell className="text-xs">{r.started ? new Date(r.started).toLocaleDateString() : "—"}</TableCell>
                 <TableCell className="text-xs">{r.ends ? new Date(r.ends).toLocaleDateString() : "—"}</TableCell>
                 <TableCell className="text-xs">{r.ref || "—"}</TableCell>
+                <TableCell className="text-right">
+                  <Button size="sm" variant="destructive" className="h-7 px-2" onClick={() => setConfirm(r)}>
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />Delete
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
         {!rows.length && <p className="py-8 text-center text-sm text-muted-foreground">No subscriptions</p>}
       </CardContent>
+      <Dialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Cancel Subscription?</DialogTitle></DialogHeader>
+          {confirm && (
+            <div className="space-y-3 text-sm">
+              <p><b>{confirm.source}</b> — {confirm.who}</p>
+              <p className="text-muted-foreground">Razorpay auto-debit बंद हो जाएगा (अगर subscription ID stored है) और status 'cancelled' हो जाएगा।</p>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setConfirm(null)}>Cancel</Button>
+                <Button variant="destructive" onClick={doDelete}><Trash2 className="h-4 w-4 mr-1" />Delete Subscription</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
@@ -599,6 +629,13 @@ const KycSection = () => {
     await adminFetch("resend_kyc", { user_id });
     toast.success("Re-KYC link sent / पुनः KYC link भेजा गया");
     load();
+  };
+
+  const removeKyc = async (id: string) => {
+    if (!confirm("Delete KYC record? यह action undo नहीं हो सकता।")) return;
+    const res = await adminFetch("delete_kyc", { id });
+    if (res?.ok) { toast.success("KYC deleted"); load(); }
+    else toast.error(res?.error || "Failed");
   };
 
   const openCertificate = async (k: any) => {
@@ -671,6 +708,9 @@ const KycSection = () => {
                     <Button size="sm" variant="destructive" onClick={() => decide(k.id, "rejected")}><XCircle className="h-4 w-4 mr-1" />Reject</Button>
                   </>
                 )}
+                <Button size="sm" variant="destructive" onClick={() => removeKyc(k.id)}>
+                  <Trash2 className="h-4 w-4 mr-1" />Delete KYC
+                </Button>
               </div>
             </CardContent>
           </Card>
