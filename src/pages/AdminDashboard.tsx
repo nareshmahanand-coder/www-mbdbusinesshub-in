@@ -645,70 +645,90 @@ const KycSection = () => {
 
 const KycCertificateDialog = ({ data, onClose }: { data: any | null; onClose: () => void }) => {
   if (!data) return null;
-  const verified = data.status === "verified";
+  const aadhaarDigits = String(data.aadhaar_full || "").replace(/\D/g, "");
+  const aadhaarFormatted =
+    aadhaarDigits.length === 12
+      ? `${aadhaarDigits.slice(0, 4)} ${aadhaarDigits.slice(4, 8)} ${aadhaarDigits.slice(8, 12)}`
+      : data.aadhaar_last4 ? `XXXX XXXX ${data.aadhaar_last4}` : "—";
+  const CertRow = ({ label, value, multiline }: { label: string; value: string; multiline?: boolean }) => (
+    <div>
+      <p className="text-[10px] uppercase tracking-wider text-gray-500">{label}</p>
+      <p className={`font-semibold text-[#1a237e] ${multiline ? "" : "truncate"}`}>{value}</p>
+    </div>
+  );
   return (
     <Dialog open={!!data} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 bg-white">
         <DialogHeader className="sr-only"><DialogTitle>e-KYC Certificate</DialogTitle></DialogHeader>
-        <div className="bg-gradient-to-b from-[#0a1547] via-[#1a237e] to-[#0a1547] text-white p-6 rounded-t-lg">
-          <div className="flex items-center justify-between">
+        <div className="relative overflow-hidden border-4 border-[#FF8C00] bg-white p-6 text-black">
+          {/* Verified stamp */}
+          <div className="pointer-events-none absolute -right-6 -top-2 rotate-12 z-10">
+            <div className="flex items-center gap-1 rounded-lg border-4 border-green-600 bg-green-600/10 px-3 py-1">
+              <CheckCircle2 className="h-8 w-8 text-green-600" />
+              <span className="text-xl font-extrabold tracking-widest text-green-700">VERIFIED</span>
+            </div>
+          </div>
+
+          <div className="mb-3 border-b-2 border-[#1a237e] pb-2">
+            <h2 className="text-center text-lg font-extrabold text-[#1a237e]">मेरा भारत दुकान — E-KYC प्रमाण-पत्र</h2>
+            <p className="text-center text-[10px] uppercase tracking-wider text-gray-500">Identity Verification Certificate</p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="col-span-2 space-y-2 text-sm">
+              <CertRow label="Name / नाम" value={data.full_name || "—"} />
+              <CertRow
+                label={data.relation_type === "husband" ? "Husband Name / पति का नाम" : "Father Name / पिता का नाम"}
+                value={data.relation_name || "—"}
+              />
+              <div className="rounded-md border-2 border-[#1a237e] bg-[#1a237e]/5 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-gray-500">Aadhaar No. / आधार संख्या</p>
+                <p className="text-lg font-extrabold tracking-[0.2em] text-[#1a237e]">{aadhaarFormatted}</p>
+              </div>
+              <CertRow label="Mobile / मोबाइल" value={data.mobile || "—"} />
+              <CertRow label="Address / पता" value={data.address || "—"} multiline />
+              <CertRow
+                label="GPS"
+                value={data.latitude && data.longitude ? `${Number(data.latitude).toFixed(5)}, ${Number(data.longitude).toFixed(5)}` : "—"}
+              />
+              <CertRow label="Verified At" value={data.verified_at ? new Date(data.verified_at).toLocaleString("en-IN") : "—"} />
+            </div>
+            <div className="flex flex-col items-center justify-start gap-1">
+              {data.selfie_url ? (
+                <img src={data.selfie_url} alt="Selfie" className="h-32 w-32 rounded-lg border-2 border-[#1a237e] object-cover" />
+              ) : (
+                <div className="flex h-32 w-32 items-center justify-center rounded-lg border-2 border-dashed border-gray-400 text-[10px] text-gray-400">No Selfie</div>
+              )}
+              <p className="text-[10px] text-gray-500">Live Selfie</p>
+            </div>
+          </div>
+
+          {/* Aadhaar Front/Back previews */}
+          <div className="mt-4 grid grid-cols-2 gap-3 border-t-2 border-dashed border-gray-300 pt-3">
             <div>
-              <p className="text-xs uppercase tracking-wider opacity-80">मेरा भारत दुकान</p>
-              <h2 className="text-2xl font-extrabold">E-KYC प्रमाण-पत्र</h2>
-              <p className="text-[11px] opacity-70 mt-0.5">Official Electronic KYC Certificate</p>
+              <p className="mb-1 text-[10px] uppercase tracking-wider text-gray-500">Aadhaar Front / सामने</p>
+              {data.aadhaar_front_url ? (
+                <a href={data.aadhaar_front_url} target="_blank" rel="noreferrer">
+                  <img src={data.aadhaar_front_url} alt="Aadhaar Front" className="h-32 w-full rounded-md border-2 border-gray-300 object-cover" />
+                </a>
+              ) : (
+                <div className="flex h-32 w-full items-center justify-center rounded-md border-2 border-dashed border-gray-300 text-[10px] text-gray-400">No image</div>
+              )}
             </div>
-            {verified && (
-              <div className="rounded-full border-4 border-green-400 px-3 py-2 text-center rotate-[-8deg]">
-                <FileCheck2 className="h-6 w-6 mx-auto text-green-400" />
-                <p className="text-[10px] font-extrabold text-green-300">VERIFIED</p>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="p-6 space-y-4">
-          <div className="flex gap-4 items-start">
-            {data.selfie_url ? (
-              <img src={data.selfie_url} alt="user" className="h-28 w-28 rounded-lg object-cover border-2 border-primary" />
-            ) : (
-              <div className="h-28 w-28 rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground">No Photo</div>
-            )}
-            <div className="flex-1 space-y-1">
-              <p className="text-xl font-bold">{data.full_name || "—"}</p>
-              <p className="text-xs text-muted-foreground">{data.relation_type === "husband" ? "W/o" : "S/D o"}: {data.relation_name || "—"}</p>
-              <Badge variant={verified ? "default" : "secondary"}>{data.status}</Badge>
+            <div>
+              <p className="mb-1 text-[10px] uppercase tracking-wider text-gray-500">Aadhaar Back / पीछे</p>
+              {data.aadhaar_back_url ? (
+                <a href={data.aadhaar_back_url} target="_blank" rel="noreferrer">
+                  <img src={data.aadhaar_back_url} alt="Aadhaar Back" className="h-32 w-full rounded-md border-2 border-gray-300 object-cover" />
+                </a>
+              ) : (
+                <div className="flex h-32 w-full items-center justify-center rounded-md border-2 border-dashed border-gray-300 text-[10px] text-gray-400">No image</div>
+              )}
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-            <InfoRow icon={<ShieldCheck className="h-4 w-4" />} label="Aadhaar" value={data.aadhaar_full ? String(data.aadhaar_full).replace(/(\d{4})(?=\d)/g, "$1 ") : (data.aadhaar_last4 ? `•••• •••• ${data.aadhaar_last4}` : "—")} />
-            <InfoRow icon={<Phone className="h-4 w-4" />} label="Mobile" value={data.mobile || "—"} />
-            <InfoRow icon={<MapPin className="h-4 w-4" />} label="GPS" value={data.latitude && data.longitude ? `${Number(data.latitude).toFixed(5)}, ${Number(data.longitude).toFixed(5)}` : "—"} />
-            <InfoRow icon={<Calendar className="h-4 w-4" />} label="Verified At" value={data.verified_at ? new Date(data.verified_at).toLocaleString() : "—"} />
-            <InfoRow icon={<Calendar className="h-4 w-4" />} label="Valid Till" value={data.kyc_expires_at ? new Date(data.kyc_expires_at).toLocaleString() : "—"} />
-            <InfoRow icon={<Mail className="h-4 w-4" />} label="Re-KYC Requested" value={data.re_kyc_requested_at ? new Date(data.re_kyc_requested_at).toLocaleString() : "—"} />
-          </div>
-          <div className="rounded-lg border bg-muted/30 p-3">
-            <p className="text-xs font-semibold uppercase text-muted-foreground mb-1">Full Address</p>
-            <p className="text-sm">{data.address || "—"}</p>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Aadhaar Documents</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <p className="text-[11px] text-muted-foreground">Front</p>
-                {data.aadhaar_front_url
-                  ? <a href={data.aadhaar_front_url} target="_blank" rel="noreferrer"><img src={data.aadhaar_front_url} className="w-full h-40 object-cover rounded border" alt="aadhaar front" /></a>
-                  : <div className="h-40 rounded border bg-muted flex items-center justify-center text-xs text-muted-foreground">Not uploaded</div>}
-              </div>
-              <div className="space-y-1">
-                <p className="text-[11px] text-muted-foreground">Back</p>
-                {data.aadhaar_back_url
-                  ? <a href={data.aadhaar_back_url} target="_blank" rel="noreferrer"><img src={data.aadhaar_back_url} className="w-full h-40 object-cover rounded border" alt="aadhaar back" /></a>
-                  : <div className="h-40 rounded border bg-muted flex items-center justify-center text-xs text-muted-foreground">Not uploaded</div>}
-              </div>
-            </div>
-          </div>
-          <div className="border-t pt-3 text-center text-[11px] text-muted-foreground">
-            Certificate ID: {data.id} • Generated by Bharat Dukan Admin
+
+          <div className="mt-4 border-t pt-2 text-center text-[10px] text-gray-500">
+            Certificate ID: {data.id} • Valid Till: {data.kyc_expires_at ? new Date(data.kyc_expires_at).toLocaleDateString("en-IN") : "—"} • Generated by Bharat Dukan Admin
           </div>
         </div>
       </DialogContent>
