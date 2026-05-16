@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_delete_requests: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_notes: string
+          status: string
+          updated_at: string
+          user_email: string
+          user_id: string
+          user_name: string
+          user_phone: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string
+          status?: string
+          updated_at?: string
+          user_email?: string
+          user_id: string
+          user_name?: string
+          user_phone?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string
+          status?: string
+          updated_at?: string
+          user_email?: string
+          user_id?: string
+          user_name?: string
+          user_phone?: string
+        }
+        Relationships: []
+      }
       admin_messages: {
         Row: {
           created_at: string
