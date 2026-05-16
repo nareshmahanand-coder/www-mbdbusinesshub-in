@@ -782,9 +782,11 @@ export type Database = {
           created_at: string
           full_name: string
           id: string
+          kyc_expires_at: string | null
           latitude: number | null
           longitude: number | null
           mobile: string
+          re_kyc_requested_at: string | null
           relation_name: string
           relation_type: string
           selfie_url: string | null
@@ -802,9 +804,11 @@ export type Database = {
           created_at?: string
           full_name: string
           id?: string
+          kyc_expires_at?: string | null
           latitude?: number | null
           longitude?: number | null
           mobile: string
+          re_kyc_requested_at?: string | null
           relation_name?: string
           relation_type?: string
           selfie_url?: string | null
@@ -822,9 +826,11 @@ export type Database = {
           created_at?: string
           full_name?: string
           id?: string
+          kyc_expires_at?: string | null
           latitude?: number | null
           longitude?: number | null
           mobile?: string
+          re_kyc_requested_at?: string | null
           relation_name?: string
           relation_type?: string
           selfie_url?: string | null

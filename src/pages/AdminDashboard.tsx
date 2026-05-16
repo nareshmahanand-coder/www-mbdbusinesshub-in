@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Users, Store, Heart, CreditCard, ShieldCheck,
   MessageSquareWarning, Send, Receipt, BarChart3, Settings as SettingsIcon,
   LogOut, Search, CheckCircle2, XCircle, Eye, RefreshCw, Moon, Sun,
+  MapPin, Phone, Calendar, FileCheck2, Mail,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, SUPERUSER_FLAG } from "@/contexts/AuthContext";
@@ -482,6 +483,7 @@ const SubscriptionsSection = () => {
 const KycSection = () => {
   const [rows, setRows] = useState<any[]>([]);
   const [filter, setFilter] = useState("pending");
+  const [viewing, setViewing] = useState<any | null>(null);
   const load = async () => {
     const data = await adminFetch("kyc", { filter });
     setRows(data?.rows || []);
@@ -489,11 +491,27 @@ const KycSection = () => {
   useAutoRefresh(load, 8000, [filter]);
 
   const decide = async (id: string, status: "verified" | "rejected") => {
-    await adminFetch("update", { table: "kyc_verifications", id, patch: { status } });
+    const patch: any = { status };
+    if (status === "verified") {
+      patch.kyc_expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      patch.verified_at = new Date().toISOString();
+      patch.re_kyc_requested_at = null;
+    }
+    await adminFetch("update", { table: "kyc_verifications", id, patch });
     toast.success(`Marked ${status}`); load();
   };
 
+  const resend = async (user_id: string) => {
+    await adminFetch("resend_kyc", { user_id });
+    toast.success("Re-KYC link sent / पुनः KYC link भेजा गया");
+    load();
+  };
+
+  const isExpired = (k: any) =>
+    k.kyc_expires_at && new Date(k.kyc_expires_at).getTime() < Date.now();
+
   return (
+    <>
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle>KYC Verification ({rows.length})</CardTitle>
@@ -503,6 +521,7 @@ const KycSection = () => {
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="verified">Verified</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="expired">Monthly Re-KYC Pending</SelectItem>
             <SelectItem value="all">All</SelectItem>
           </SelectContent>
         </Select>
@@ -513,29 +532,123 @@ const KycSection = () => {
             <CardContent className="p-4 space-y-2 text-sm">
               <div className="flex items-center justify-between">
                 <p className="font-semibold">{k.full_name}</p>
-                <Badge variant={k.status === "verified" ? "default" : k.status === "rejected" ? "destructive" : "secondary"}>{k.status}</Badge>
+                <div className="flex gap-1">
+                  {isExpired(k) && <Badge variant="destructive">Expired</Badge>}
+                  <Badge variant={k.status === "verified" ? "default" : k.status === "rejected" ? "destructive" : "secondary"}>{k.status}</Badge>
+                </div>
               </div>
               <p className="text-xs text-muted-foreground">Aadhaar: •••• {k.aadhaar_last4} • {k.mobile}</p>
               <p className="text-xs">{k.address}</p>
+              {k.kyc_expires_at && (
+                <p className="text-[11px] text-muted-foreground">Expires: {new Date(k.kyc_expires_at).toLocaleString()}</p>
+              )}
               <div className="grid grid-cols-3 gap-2">
                 {k.aadhaar_front_url && <a href={k.aadhaar_front_url} target="_blank" rel="noreferrer"><img src={k.aadhaar_front_url} className="h-20 w-full object-cover rounded border" alt="front" /></a>}
                 {k.aadhaar_back_url && <a href={k.aadhaar_back_url} target="_blank" rel="noreferrer"><img src={k.aadhaar_back_url} className="h-20 w-full object-cover rounded border" alt="back" /></a>}
                 {k.selfie_url && <a href={k.selfie_url} target="_blank" rel="noreferrer"><img src={k.selfie_url} className="h-20 w-full object-cover rounded border" alt="selfie" /></a>}
               </div>
-              {k.status === "pending" && (
-                <div className="flex gap-2 pt-1">
-                  <Button size="sm" className="flex-1" onClick={() => decide(k.id, "verified")}><CheckCircle2 className="h-4 w-4 mr-1" />Approve</Button>
-                  <Button size="sm" variant="destructive" className="flex-1" onClick={() => decide(k.id, "rejected")}><XCircle className="h-4 w-4 mr-1" />Reject</Button>
-                </div>
-              )}
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button size="sm" variant="outline" onClick={() => setViewing(k)}><Eye className="h-4 w-4 mr-1" />View Certificate</Button>
+                <Button size="sm" variant="outline" onClick={() => resend(k.user_id)}><Send className="h-4 w-4 mr-1" />Resend e-KYC</Button>
+                {k.status === "pending" && (
+                  <>
+                    <Button size="sm" onClick={() => decide(k.id, "verified")}><CheckCircle2 className="h-4 w-4 mr-1" />Approve</Button>
+                    <Button size="sm" variant="destructive" onClick={() => decide(k.id, "rejected")}><XCircle className="h-4 w-4 mr-1" />Reject</Button>
+                  </>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}
         {!rows.length && <p className="col-span-full py-8 text-center text-sm text-muted-foreground">Nothing here</p>}
       </CardContent>
     </Card>
+    <KycCertificateDialog data={viewing} onClose={() => setViewing(null)} />
+    </>
   );
 };
+
+const KycCertificateDialog = ({ data, onClose }: { data: any | null; onClose: () => void }) => {
+  if (!data) return null;
+  const verified = data.status === "verified";
+  return (
+    <Dialog open={!!data} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogHeader className="sr-only"><DialogTitle>e-KYC Certificate</DialogTitle></DialogHeader>
+        <div className="bg-gradient-to-b from-[#0a1547] via-[#1a237e] to-[#0a1547] text-white p-6 rounded-t-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wider opacity-80">Bharat Dukan</p>
+              <h2 className="text-2xl font-extrabold">e-KYC Certificate</h2>
+            </div>
+            {verified && (
+              <div className="rounded-full border-4 border-green-400 px-3 py-2 text-center rotate-[-8deg]">
+                <FileCheck2 className="h-6 w-6 mx-auto text-green-400" />
+                <p className="text-[10px] font-extrabold text-green-300">VERIFIED</p>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="flex gap-4 items-start">
+            {data.selfie_url ? (
+              <img src={data.selfie_url} alt="user" className="h-28 w-28 rounded-lg object-cover border-2 border-primary" />
+            ) : (
+              <div className="h-28 w-28 rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground">No Photo</div>
+            )}
+            <div className="flex-1 space-y-1">
+              <p className="text-xl font-bold">{data.full_name || "—"}</p>
+              <p className="text-xs text-muted-foreground">{data.relation_type === "husband" ? "W/o" : "S/D o"}: {data.relation_name || "—"}</p>
+              <Badge variant={verified ? "default" : "secondary"}>{data.status}</Badge>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+            <InfoRow icon={<ShieldCheck className="h-4 w-4" />} label="Aadhaar" value={data.aadhaar_full ? `XXXX-XXXX-${data.aadhaar_last4}` : `•••• ${data.aadhaar_last4 || "—"}`} />
+            <InfoRow icon={<Phone className="h-4 w-4" />} label="Mobile" value={data.mobile || "—"} />
+            <InfoRow icon={<MapPin className="h-4 w-4" />} label="GPS" value={data.latitude && data.longitude ? `${Number(data.latitude).toFixed(5)}, ${Number(data.longitude).toFixed(5)}` : "—"} />
+            <InfoRow icon={<Calendar className="h-4 w-4" />} label="Verified At" value={data.verified_at ? new Date(data.verified_at).toLocaleString() : "—"} />
+            <InfoRow icon={<Calendar className="h-4 w-4" />} label="Valid Till" value={data.kyc_expires_at ? new Date(data.kyc_expires_at).toLocaleString() : "—"} />
+            <InfoRow icon={<Mail className="h-4 w-4" />} label="Re-KYC Requested" value={data.re_kyc_requested_at ? new Date(data.re_kyc_requested_at).toLocaleString() : "—"} />
+          </div>
+          <div className="rounded-lg border bg-muted/30 p-3">
+            <p className="text-xs font-semibold uppercase text-muted-foreground mb-1">Full Address</p>
+            <p className="text-sm">{data.address || "—"}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Aadhaar Documents</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <p className="text-[11px] text-muted-foreground">Front</p>
+                {data.aadhaar_front_url
+                  ? <a href={data.aadhaar_front_url} target="_blank" rel="noreferrer"><img src={data.aadhaar_front_url} className="w-full h-40 object-cover rounded border" alt="aadhaar front" /></a>
+                  : <div className="h-40 rounded border bg-muted flex items-center justify-center text-xs text-muted-foreground">Not uploaded</div>}
+              </div>
+              <div className="space-y-1">
+                <p className="text-[11px] text-muted-foreground">Back</p>
+                {data.aadhaar_back_url
+                  ? <a href={data.aadhaar_back_url} target="_blank" rel="noreferrer"><img src={data.aadhaar_back_url} className="w-full h-40 object-cover rounded border" alt="aadhaar back" /></a>
+                  : <div className="h-40 rounded border bg-muted flex items-center justify-center text-xs text-muted-foreground">Not uploaded</div>}
+              </div>
+            </div>
+          </div>
+          <div className="border-t pt-3 text-center text-[11px] text-muted-foreground">
+            Certificate ID: {data.id} • Generated by Bharat Dukan Admin
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const InfoRow = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
+  <div className="flex items-start gap-2 rounded-md border p-2">
+    <div className="text-primary mt-0.5">{icon}</div>
+    <div className="min-w-0 flex-1">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-sm font-medium break-words">{value}</p>
+    </div>
+  </div>
+);
 
 const ComplaintsSection = () => {
   const [rows, setRows] = useState<any[]>([]);

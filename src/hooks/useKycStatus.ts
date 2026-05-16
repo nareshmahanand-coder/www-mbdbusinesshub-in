@@ -14,11 +14,15 @@ export const useKycStatus = () => {
     (async () => {
       const { data } = await supabase
         .from("kyc_verifications")
-        .select("id")
+        .select("id,status,kyc_expires_at")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
-      setHasKyc(!!data);
+      const valid =
+        !!data &&
+        data.status === "verified" &&
+        (!data.kyc_expires_at || new Date(data.kyc_expires_at).getTime() > Date.now());
+      setHasKyc(valid);
       setLoading(false);
     })();
     return () => { cancelled = true; };
