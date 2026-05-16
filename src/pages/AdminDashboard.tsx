@@ -419,31 +419,58 @@ const MatrimonySection = () => {
 
 const SubscriptionsSection = () => {
   const [rows, setRows] = useState<any[]>([]);
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from("bharat_gaurav_memberships").select("*").order("created_at", { ascending: false });
-      setRows(data || []);
-    })();
-  }, []);
+  const load = async () => {
+    const [bg, mp, mat] = await Promise.all([
+      supabase.from("bharat_gaurav_memberships").select("*").order("created_at", { ascending: false }),
+      supabase.from("merchant_profiles").select("user_id,shop_name,premium_plan,premium_start_date,plan_ends_at,is_premium,created_at").eq("is_premium", true).order("created_at", { ascending: false }),
+      supabase.from("matrimony_profiles").select("user_id,name,subscription_plan,subscription_start,subscription_end,created_at").not("subscription_plan", "is", null).order("created_at", { ascending: false }),
+    ]);
+    const out: any[] = [];
+    (bg.data || []).forEach((r: any) => out.push({
+      id: "bg-" + r.id, source: "Bharat Gaurav", who: r.user_id?.slice(0, 8) + "...",
+      plan: r.plan, amount: r.amount, status: r.status,
+      started: r.started_at, ends: r.expires_at, ref: r.razorpay_payment_id,
+      created_at: r.created_at,
+    }));
+    (mp.data || []).forEach((r: any) => out.push({
+      id: "mp-" + r.user_id, source: "Merchant Premium", who: r.shop_name || r.user_id?.slice(0, 8) + "...",
+      plan: r.premium_plan, amount: null, status: "active",
+      started: r.premium_start_date, ends: r.plan_ends_at, ref: "—",
+      created_at: r.created_at,
+    }));
+    (mat.data || []).forEach((r: any) => out.push({
+      id: "mat-" + r.user_id, source: "Marriage Bureau", who: r.name || r.user_id?.slice(0, 8) + "...",
+      plan: r.subscription_plan, amount: null, status: "active",
+      started: r.subscription_start, ends: r.subscription_end, ref: "—",
+      created_at: r.created_at,
+    }));
+    out.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    setRows(out);
+  };
+  useAutoRefresh(load, 8000);
   return (
     <Card>
-      <CardHeader><CardTitle>Subscriptions & Plans ({rows.length})</CardTitle></CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <CardTitle>Subscriptions & Plans ({rows.length})</CardTitle>
+        <Button size="sm" variant="outline" onClick={load}><RefreshCw className="h-3.5 w-3.5 mr-1" />Refresh</Button>
+      </CardHeader>
       <CardContent className="overflow-x-auto">
         <Table>
           <TableHeader><TableRow>
-            <TableHead>User</TableHead><TableHead>Plan</TableHead><TableHead>Amount</TableHead>
-            <TableHead>Status</TableHead><TableHead>Started</TableHead><TableHead>Expires</TableHead><TableHead>Payment ID</TableHead>
+            <TableHead>Source</TableHead><TableHead>User / Shop</TableHead><TableHead>Plan</TableHead><TableHead>Amount</TableHead>
+            <TableHead>Status</TableHead><TableHead>Started</TableHead><TableHead>Expires</TableHead><TableHead>Ref</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {rows.map((r) => (
               <TableRow key={r.id}>
-                <TableCell className="text-xs">{r.user_id.slice(0, 8)}...</TableCell>
+                <TableCell><Badge variant="outline">{r.source}</Badge></TableCell>
+                <TableCell className="text-xs">{r.who}</TableCell>
                 <TableCell><Badge>{r.plan}</Badge></TableCell>
-                <TableCell>{inr(r.amount)}</TableCell>
+                <TableCell>{r.amount != null ? inr(r.amount) : "—"}</TableCell>
                 <TableCell>{r.status}</TableCell>
-                <TableCell className="text-xs">{r.started_at ? new Date(r.started_at).toLocaleDateString() : "—"}</TableCell>
-                <TableCell className="text-xs">{r.expires_at ? new Date(r.expires_at).toLocaleDateString() : "—"}</TableCell>
-                <TableCell className="text-xs">{r.razorpay_payment_id || "—"}</TableCell>
+                <TableCell className="text-xs">{r.started ? new Date(r.started).toLocaleDateString() : "—"}</TableCell>
+                <TableCell className="text-xs">{r.ends ? new Date(r.ends).toLocaleDateString() : "—"}</TableCell>
+                <TableCell className="text-xs">{r.ref || "—"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
