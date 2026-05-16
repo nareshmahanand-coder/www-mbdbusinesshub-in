@@ -318,7 +318,7 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
               <p className="mt-1 font-hindi">
                 प्रोफेशनल मेंबरशिप में आपको{" "}
                 <strong className="text-[#FF9933]">सत्यापित प्रोफाइल्स (Verified Profiles)</strong> तक सीधी पहुँच,{" "}
-                <strong className="text-[#FF9933]">असीमित संपर्क विवरण</strong> और प्राथमिकता के आधार पर मैचमेकिंग सहायता मिलती है। Yearly: ₹99 प्लान चुनें।
+                <strong className="text-[#FF9933]">असीमित संपर्क विवरण</strong> और प्राथमिकता के आधार पर मैचमेकिंग सहायता मिलती है। Yearly: ₹999 Plan चुने।
               </p>
             </div>
 
