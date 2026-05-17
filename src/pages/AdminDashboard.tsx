@@ -905,6 +905,7 @@ const MessagingSection = () => {
   };
 
   return (
+    <div className="grid gap-6 lg:grid-cols-2">
     <Card className="max-w-2xl">
       <CardHeader><CardTitle>Messaging Center — Broadcast</CardTitle></CardHeader>
       <CardContent className="space-y-3">
@@ -933,6 +934,94 @@ const MessagingSection = () => {
         </Button>
         <p className="text-xs text-muted-foreground">
           In-app notifications delivered instantly via AdminMessageListener. WhatsApp / Email delivery requires gateway setup.
+        </p>
+      </CardContent>
+    </Card>
+    <DirectMessageCard />
+    </div>
+  );
+};
+
+const DirectMessageCard = () => {
+  const [q, setQ] = useState("");
+  const [results, setResults] = useState<any[]>([]);
+  const [target, setTarget] = useState<any | null>(null);
+  const [title, setTitle] = useState("");
+  const [message, setMessage] = useState("");
+  const [severity, setSeverity] = useState("info");
+  const [sending, setSending] = useState(false);
+
+  const search = async () => {
+    const data = await adminFetch("search_users", { q });
+    setResults(data?.rows || []);
+  };
+
+  const sendInApp = async () => {
+    if (!target) return toast.error("Select user");
+    if (!title.trim() || !message.trim()) return toast.error("Title & message required");
+    setSending(true);
+    const res = await adminFetch("send_direct_message", {
+      user_id: target.id, title, message, severity,
+    });
+    setSending(false);
+    if (res?.ok) { toast.success("Direct message sent"); setMessage(""); setTitle(""); }
+    else toast.error(res?.error || "Failed");
+  };
+
+  const sendWhatsApp = () => {
+    if (!target) return toast.error("Select user");
+    if (!target.phone) return toast.error("User has no phone number");
+    const text = encodeURIComponent(`${title ? title + "\n\n" : ""}${message}`);
+    const phone = String(target.phone).replace(/\D/g, "");
+    window.open(`https://wa.me/${phone}?text=${text}`, "_blank");
+  };
+
+  return (
+    <Card className="max-w-2xl">
+      <CardHeader>
+        <CardTitle>Direct Message / WhatsApp</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex gap-2">
+          <Input placeholder="Search name / phone / email" value={q} onChange={(e) => setQ(e.target.value)}
+                 onKeyDown={(e) => e.key === "Enter" && search()} />
+          <Button variant="outline" onClick={search}><Search className="h-4 w-4" /></Button>
+        </div>
+        {!!results.length && (
+          <div className="max-h-48 overflow-y-auto rounded border divide-y">
+            {results.map((u) => (
+              <button key={u.id} type="button" onClick={() => { setTarget(u); setResults([]); setQ(u.display_name || u.phone || u.email || ""); }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted">
+                <div className="font-medium">{u.display_name || "—"}</div>
+                <div className="text-xs text-muted-foreground">{u.phone || u.email || "—"}</div>
+              </button>
+            ))}
+          </div>
+        )}
+        {target && (
+          <div className="rounded border bg-muted/40 p-2 text-xs">
+            <b>To:</b> {target.display_name || "—"} • {target.phone || target.email || "—"}
+            <Button variant="ghost" size="sm" className="ml-2 h-6 px-2" onClick={() => setTarget(null)}>Clear</Button>
+          </div>
+        )}
+        <Select value={severity} onValueChange={setSeverity}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="info">Info</SelectItem>
+            <SelectItem value="warning">Warning</SelectItem>
+            <SelectItem value="critical">Critical</SelectItem>
+          </SelectContent>
+        </Select>
+        <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <Textarea placeholder="Message to user..." rows={4} value={message} onChange={(e) => setMessage(e.target.value)} />
+        <div className="grid grid-cols-2 gap-2">
+          <Button onClick={sendInApp} disabled={sending}><Send className="h-4 w-4 mr-2" />Send In-App</Button>
+          <Button onClick={sendWhatsApp} variant="outline" className="border-green-600 text-green-700 hover:bg-green-50">
+            <Send className="h-4 w-4 mr-2" />Send via WhatsApp
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          In-App message user को Notification Bell में दिखेगा। WhatsApp option आपके WhatsApp में chat खोलेगा।
         </p>
       </CardContent>
     </Card>
