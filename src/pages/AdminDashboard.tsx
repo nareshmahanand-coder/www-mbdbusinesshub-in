@@ -289,6 +289,14 @@ const UsersSection = () => {
     else toast.error("Failed to unblock");
   };
 
+  const doDeleteUser = async (u: any) => {
+    const label = u.display_name || u.phone || u.email || "user";
+    if (!confirm(`Permanently delete ${label}? यह action undo नहीं हो सकता।`)) return;
+    const res = await adminFetch("delete_user", { user_id: u.id });
+    if (res?.ok) { toast.success("User deleted"); load(); }
+    else toast.error(res?.error || "Failed to delete");
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
@@ -332,6 +340,9 @@ const UsersSection = () => {
                         <Ban className="h-3.5 w-3.5 mr-1" />Block
                       </Button>
                     )}
+                    <Button size="sm" variant="destructive" className="h-7 px-2 bg-red-700 hover:bg-red-800" onClick={() => doDeleteUser(u)}>
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />Delete
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
