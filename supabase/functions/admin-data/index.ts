@@ -227,6 +227,47 @@ Deno.serve(async (req) => {
         if (error) return json({ error: error.message }, 400);
         return json({ ok: true });
       }
+      case "delete_user": {
+        const { user_id } = body;
+        if (!user_id) return json({ error: "user_id required" }, 400);
+        const tables = [
+          "payment_orders","merchant_profiles","matrimony_profiles","kyc_verifications",
+          "blood_donors","blood_donations","blood_requests","classifieds","jobs","job_applications",
+          "complaints","saved_shops","service_providers","family_members",
+          "last_known_locations","user_roles","bharat_gaurav_memberships","admin_messages",
+          "account_delete_requests",
+        ];
+        for (const t of tables) {
+          try { await sb.from(t).delete().eq("user_id", user_id); } catch (_) {}
+        }
+        try { await sb.from("admin_messages").delete().eq("recipient_user_id", user_id); } catch (_) {}
+        try { await sb.from("profiles").delete().eq("id", user_id); } catch (_) {}
+        try { await sb.auth.admin.deleteUser(user_id); } catch (_) {}
+        return json({ ok: true });
+      }
+      case "send_direct_message": {
+        const { user_id, title, message, severity } = body;
+        if (!user_id || !title || !message) return json({ error: "user_id, title, message required" }, 400);
+        const { data: anyAdmin } = await sb.from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
+        const senderId = anyAdmin?.user_id || user_id;
+        const { error } = await sb.from("admin_messages").insert({
+          sender_id: senderId,
+          recipient_user_id: user_id,
+          recipient_group: "user",
+          title,
+          message,
+          severity: severity || "info",
+        });
+        if (error) return json({ error: error.message }, 400);
+        return json({ ok: true });
+      }
+      case "search_users": {
+        const q = String(body.q || "").trim();
+        let query = sb.from("profiles").select("id,display_name,phone,email").order("created_at", { ascending: false }).limit(30);
+        if (q) query = query.or(`display_name.ilike.%${q}%,phone.ilike.%${q}%,email.ilike.%${q}%`);
+        const { data } = await query;
+        return json({ rows: data || [] });
+      }
       case "delete_subscription": {
         // body: { kind: "bg"|"mp"|"mat", id (bg=membership id, mp/mat=user_id) }
         const { kind, id } = body;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,7 +21,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { User, LogOut, LayoutDashboard, Store, Settings, Trash2 } from "lucide-react";
+import { User, LogOut, LayoutDashboard, Store, Settings, Trash2, Bell } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -34,6 +34,43 @@ const UserProfileMenu = () => {
   const [submitting, setSubmitting] = useState(false);
   const [reason, setReason] = useState("App पसंद नहीं आया");
   const [message, setMessage] = useState("");
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifs, setNotifs] = useState<any[]>([]);
+  const [unread, setUnread] = useState(0);
+
+  const READ_KEY = user ? `mbd-notif-read-${user.id}` : "";
+
+  useEffect(() => {
+    if (!user) { setNotifs([]); setUnread(0); return; }
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await supabase
+        .from("admin_messages")
+        .select("id,title,message,severity,created_at,recipient_user_id,recipient_group")
+        .or(`recipient_user_id.eq.${user.id},recipient_group.eq.all,recipient_group.eq.customers`)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (cancelled) return;
+      const list = data || [];
+      setNotifs(list);
+      const lastRead = Number(localStorage.getItem(READ_KEY) || 0);
+      setUnread(list.filter((m: any) => new Date(m.created_at).getTime() > lastRead).length);
+    };
+    load();
+    const ch = supabase
+      .channel(`user-notifs-${user.id}`)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "admin_messages" }, () => load())
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(ch); };
+  }, [user, READ_KEY]);
+
+  const openNotifs = (open: boolean) => {
+    setNotifOpen(open);
+    if (open && user) {
+      localStorage.setItem(READ_KEY, String(Date.now()));
+      setUnread(0);
+    }
+  };
 
   if (!user) return null;
 
@@ -83,6 +120,40 @@ const UserProfileMenu = () => {
 
   return (
     <>
+    <DropdownMenu open={notifOpen} onOpenChange={openNotifs}>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0 mr-1" aria-label="Notifications">
+          <Bell className="h-5 w-5 text-primary-foreground" />
+          {unread > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+              {unread > 9 ? "9+" : unread}
+            </span>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
+        <div className="px-3 py-2 border-b">
+          <p className="text-sm font-semibold">Notifications</p>
+          <p className="text-xs text-muted-foreground">Admin / Company messages</p>
+        </div>
+        {!notifs.length && (
+          <p className="px-3 py-6 text-center text-xs text-muted-foreground">No messages yet</p>
+        )}
+        {notifs.map((n) => (
+          <div key={n.id} className="px-3 py-2 border-b last:border-b-0">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-semibold">{n.title}</p>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded ${n.severity === "critical" ? "bg-red-100 text-red-700" : n.severity === "warning" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}>
+                {n.severity}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground whitespace-pre-wrap">{n.message}</p>
+            <p className="mt-1 text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleString()}</p>
+          </div>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
