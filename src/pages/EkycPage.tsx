@@ -244,7 +244,10 @@ const EkycPage = () => {
   // records must reopen the real upload form, not the certificate page.
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { navigate("/login?next=/ekyc", { replace: true }); return; }
+    if (!user) {
+      navigate(`/login?next=${encodeURIComponent(`/ekyc${location.search}`)}`, { replace: true });
+      return;
+    }
     (async () => {
       const { data } = await supabase.from("kyc_verifications").select("*").eq("user_id", user.id).maybeSingle();
       if (data) {
