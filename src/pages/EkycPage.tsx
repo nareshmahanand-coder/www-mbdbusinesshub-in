@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,23 @@ const dataUrlToBlob = (dataUrl: string): Blob => {
   for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
   return new Blob([arr], { type: mime });
 };
+
+const dataUrlToJpegBlob = (dataUrl: string, maxSide = 1800, quality = 0.88): Promise<Blob> =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("Image processing failed"));
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Image compression failed")), "image/jpeg", quality);
+    };
+    img.onerror = () => reject(new Error("Invalid captured image"));
+    img.src = dataUrl;
+  });
 
 const Scanner = ({
   facing,
@@ -200,6 +217,7 @@ const maskAadhaar = (full: string) => {
 
 const EkycPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading: authLoading } = useAuth();
   const [step, setStep] = useState<Step>("details");
   const [mobile, setMobile] = useState("");
@@ -222,19 +240,36 @@ const EkycPage = () => {
   // so the certificate is never saved with empty Name/Father/Address fields.
   const ocrPromiseRef = useRef<Promise<any | null> | null>(null);
 
-  // Redirect away if KYC already exists
+  // Show the saved certificate only for a currently-valid KYC. Re-KYC/expired/pending
+  // records must reopen the real upload form, not the certificate page.
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { navigate("/login?next=/ekyc", { replace: true }); return; }
+    if (!user) {
+      navigate(`/login?next=${encodeURIComponent(`/ekyc${location.search}`)}`, { replace: true });
+      return;
+    }
     (async () => {
       const { data } = await supabase.from("kyc_verifications").select("*").eq("user_id", user.id).maybeSingle();
       if (data) {
-        setExisting(data);
-        setStep("verified");
+        const forceUpload = new URLSearchParams(location.search).get("mode") === "upload";
+        const valid =
+          data.status === "verified" &&
+          !data.re_kyc_requested_at &&
+          (!data.kyc_expires_at || new Date(data.kyc_expires_at).getTime() > Date.now());
+        if (valid && !forceUpload) {
+          setExisting(data);
+          setStep("verified");
+        } else {
+          setExisting(null);
+          setMobile(data.mobile || "");
+          const savedAadhaar = String(data.aadhaar_full || "").replace(/\D/g, "").slice(0, 12);
+          if (savedAadhaar) setAadhaar(savedAadhaar.replace(/(\d{4})(?=\d)/g, "$1 ").trim());
+          setStep("details");
+        }
       }
       setChecking(false);
     })();
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, location.search]);
 
   const mobileValid = /^\d{10}$/.test(mobile);
   const aadhaarValid = /^\d{12}$/.test(aadhaar.replace(/\s/g, ""));
@@ -306,23 +341,28 @@ const EkycPage = () => {
       }
       const relType = resolvedOcr?.relation_type === "husband" ? "husband" : "father";
       // Upload selfie + aadhaar front/back to storage so admin certificate can show real images.
-      const uploadDataUrl = async (dataUrl: string | null, name: string): Promise<string | null> => {
-        if (!dataUrl) return null;
+      const uploadDataUrl = async (dataUrl: string | null, name: string, capturedAt: number): Promise<string> => {
+        if (!dataUrl) throw new Error(`${name} photo is missing`);
         try {
-          const blob = dataUrlToBlob(dataUrl);
-          const path = `${user.id}/${Date.now()}-${name}.jpg`;
+          const blob = await dataUrlToJpegBlob(dataUrl).catch(() => dataUrlToBlob(dataUrl));
+          const path = `${user.id}/${capturedAt}-${name}.jpg`;
           const { error: upErr } = await supabase.storage
             .from("kyc-photos")
-            .upload(path, blob, { contentType: "image/jpeg", upsert: true });
-          if (upErr) { console.error("kyc upload", name, upErr); return null; }
+            .upload(path, blob, { contentType: "image/jpeg", cacheControl: "3600", upsert: true });
+          if (upErr) throw upErr;
           const { data: pub } = supabase.storage.from("kyc-photos").getPublicUrl(path);
-          return pub?.publicUrl ?? null;
-        } catch (e) { console.error("kyc upload exception", e); return null; }
+          if (!pub?.publicUrl) throw new Error(`${name} public URL missing`);
+          return pub.publicUrl;
+        } catch (e: any) {
+          console.error("kyc upload exception", name, e);
+          throw new Error(`${name} photo upload failed: ${e?.message || "storage error"}`);
+        }
       };
+      const capturedAt = Date.now();
       const [selfieUrl, frontUrl, backUrl] = await Promise.all([
-        uploadDataUrl(selfieDataUrl, "selfie"),
-        uploadDataUrl(frontImg, "aadhaar-front"),
-        uploadDataUrl(backImg, "aadhaar-back"),
+        uploadDataUrl(selfieDataUrl, "selfie", capturedAt),
+        uploadDataUrl(frontImg, "aadhaar-front", capturedAt),
+        uploadDataUrl(backImg, "aadhaar-back", capturedAt),
       ]);
       const payload = {
         user_id: user.id,

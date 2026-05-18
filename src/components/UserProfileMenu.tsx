@@ -39,6 +39,7 @@ const UserProfileMenu = () => {
   const [unread, setUnread] = useState(0);
 
   const READ_KEY = user ? `mbd-notif-read-${user.id}` : "";
+  const getActionLink = (text: string) => text.match(/\/ekyc\?mode=upload[^\s]*/)?.[0] || "";
 
   useEffect(() => {
     if (!user) { setNotifs([]); setUnread(0); return; }
@@ -148,6 +149,11 @@ const UserProfileMenu = () => {
               </span>
             </div>
             <p className="mt-1 text-xs text-muted-foreground whitespace-pre-wrap">{n.message}</p>
+            {getActionLink(n.message) && (
+              <Button size="sm" className="mt-2 h-7 px-2 text-xs" onClick={() => navigate(getActionLink(n.message))}>
+                e-KYC upload form खोलें
+              </Button>
+            )}
             <p className="mt-1 text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleString()}</p>
           </div>
         ))}
