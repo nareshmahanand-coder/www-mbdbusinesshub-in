@@ -339,7 +339,7 @@ const EkycPage = () => {
       const relType = resolvedOcr?.relation_type === "husband" ? "husband" : "father";
       // Upload selfie + aadhaar front/back to storage so admin certificate can show real images.
       const uploadDataUrl = async (dataUrl: string | null, name: string, capturedAt: number): Promise<string> => {
-        if (!dataUrl) return null;
+        if (!dataUrl) throw new Error(`${name} photo is missing`);
         try {
           const blob = await dataUrlToJpegBlob(dataUrl).catch(() => dataUrlToBlob(dataUrl));
           const path = `${user.id}/${capturedAt}-${name}.jpg`;
