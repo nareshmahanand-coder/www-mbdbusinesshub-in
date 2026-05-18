@@ -25,6 +25,7 @@ type AdminMessageQueryClient = {
 const AdminMessageListener = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<AdminMessage[]>([]);
+  const getActionLink = (text: string) => text.match(/\/ekyc\?mode=upload[^\s]*/)?.[0] || "";
 
   useEffect(() => {
     if (!user) {
@@ -59,6 +60,11 @@ const AdminMessageListener = () => {
           <Bell className="h-4 w-4" />
           <AlertTitle className="pr-8">{message.title}</AlertTitle>
           <AlertDescription className="text-xs">{message.message}</AlertDescription>
+          {getActionLink(message.message) && (
+            <Button size="sm" className="mt-2 h-7 px-2 text-xs" onClick={() => { window.location.href = getActionLink(message.message); }}>
+              e-KYC upload form खोलें
+            </Button>
+          )}
           <Button size="sm" variant="ghost" className="mt-2 h-7 px-2 text-xs" onClick={() => setMessages((prev) => prev.filter((m) => m.id !== message.id))}>Dismiss</Button>
         </Alert>
       ))}
