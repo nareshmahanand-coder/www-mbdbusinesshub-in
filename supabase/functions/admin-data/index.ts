@@ -12,6 +12,8 @@ const json = (body: unknown, status = 200) =>
 
 const KYC_BUCKET = "kyc-photos";
 
+const EKYC_UPLOAD_PATH = "/ekyc?mode=upload&source=resend";
+
 const isMissing = (v: unknown) => !v || String(v).trim() === "";
 
 const kycPhotoKind = (name: string): "selfie_url" | "aadhaar_front_url" | "aadhaar_back_url" | null => {
@@ -214,11 +216,11 @@ Deno.serve(async (req) => {
           sender_id: senderId,
           recipient_user_id: user_id,
           recipient_group: "user",
-          title: "Monthly e-KYC Required / मासिक e-KYC आवश्यक",
-          message: "कृपया अपना e-KYC पुनः पूरा करें। जब तक KYC पूरा नहीं होगा, ऐप के अधिकांश features बंद रहेंगे। / Please complete your e-KYC again. Most app features will remain locked until KYC is complete.",
+          title: "e-KYC Resend / पुनः e-KYC करें",
+          message: `कृपया अपना e-KYC upload form दोबारा पूरा करें: ${EKYC_UPLOAD_PATH}\nMobile OTP → Aadhaar Number → Aadhaar Front/Back Photo → Selfie`,
           severity: "warning",
         });
-        return json({ ok: true });
+        return json({ ok: true, link: EKYC_UPLOAD_PATH });
       }
       case "delete_kyc": {
         const { id } = body;
