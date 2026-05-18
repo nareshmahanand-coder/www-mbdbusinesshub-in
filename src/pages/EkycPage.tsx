@@ -338,23 +338,28 @@ const EkycPage = () => {
       }
       const relType = resolvedOcr?.relation_type === "husband" ? "husband" : "father";
       // Upload selfie + aadhaar front/back to storage so admin certificate can show real images.
-      const uploadDataUrl = async (dataUrl: string | null, name: string): Promise<string | null> => {
+      const uploadDataUrl = async (dataUrl: string | null, name: string, capturedAt: number): Promise<string> => {
         if (!dataUrl) return null;
         try {
-          const blob = dataUrlToBlob(dataUrl);
-          const path = `${user.id}/${Date.now()}-${name}.jpg`;
+          const blob = await dataUrlToJpegBlob(dataUrl).catch(() => dataUrlToBlob(dataUrl));
+          const path = `${user.id}/${capturedAt}-${name}.jpg`;
           const { error: upErr } = await supabase.storage
             .from("kyc-photos")
-            .upload(path, blob, { contentType: "image/jpeg", upsert: true });
-          if (upErr) { console.error("kyc upload", name, upErr); return null; }
+            .upload(path, blob, { contentType: "image/jpeg", cacheControl: "3600", upsert: true });
+          if (upErr) throw upErr;
           const { data: pub } = supabase.storage.from("kyc-photos").getPublicUrl(path);
-          return pub?.publicUrl ?? null;
-        } catch (e) { console.error("kyc upload exception", e); return null; }
+          if (!pub?.publicUrl) throw new Error(`${name} public URL missing`);
+          return pub.publicUrl;
+        } catch (e: any) {
+          console.error("kyc upload exception", name, e);
+          throw new Error(`${name} photo upload failed: ${e?.message || "storage error"}`);
+        }
       };
+      const capturedAt = Date.now();
       const [selfieUrl, frontUrl, backUrl] = await Promise.all([
-        uploadDataUrl(selfieDataUrl, "selfie"),
-        uploadDataUrl(frontImg, "aadhaar-front"),
-        uploadDataUrl(backImg, "aadhaar-back"),
+        uploadDataUrl(selfieDataUrl, "selfie", capturedAt),
+        uploadDataUrl(frontImg, "aadhaar-front", capturedAt),
+        uploadDataUrl(backImg, "aadhaar-back", capturedAt),
       ]);
       const payload = {
         user_id: user.id,
