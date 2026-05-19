@@ -1062,6 +1062,27 @@ const DirectMessageCard = () => {
     setResults(data?.rows || []);
   };
 
+  const fetchMembership = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_profiles")
+      .select("membership_status, membership_type, plan_type, current_period_end")
+      .eq("user_id", userId)
+      .maybeSingle();
+    return data;
+  };
+
+  const buildPersonalizedText = async () => {
+    if (!target) return "";
+    const name = target.display_name || "ग्राहक";
+    const m = await fetchMembership(target.id);
+    const memLine = m && m.membership_status === "active"
+      ? `सदस्यता / Membership: ${m.membership_type || "—"}${m.plan_type ? ` (${m.plan_type})` : ""} — Active`
+      : `सदस्यता / Membership: Inactive`;
+    const header = `नमस्ते ${name} जी,\n${memLine}\n\n`;
+    const body = `${title ? title + "\n\n" : ""}${message}\n\n— मेरा भारत दुकान (Mera Bharat Dukaan)`;
+    return header + body;
+  };
+
   const sendInApp = async () => {
     if (!target) return toast.error("Select user");
     if (!title.trim() || !message.trim()) return toast.error("Title & message required");
@@ -1074,12 +1095,37 @@ const DirectMessageCard = () => {
     else toast.error(res?.error || "Failed");
   };
 
-  const sendWhatsApp = () => {
+  const sendWhatsApp = async () => {
     if (!target) return toast.error("Select user");
     if (!target.phone) return toast.error("User has no phone number");
-    const text = encodeURIComponent(`${title ? title + "\n\n" : ""}${message}`);
+    if (!message.trim()) return toast.error("Message required");
+    const text = encodeURIComponent(await buildPersonalizedText());
     const phone = String(target.phone).replace(/\D/g, "");
     window.open(`https://wa.me/${phone}?text=${text}`, "_blank");
+  };
+
+  const sendBoth = async () => {
+    if (!target) return toast.error("Select user");
+    if (!title.trim() || !message.trim()) return toast.error("Title & message required");
+    if (!target.phone) {
+      toast.warning("User has no phone — sending In-App only");
+      await sendInApp();
+      return;
+    }
+    setSending(true);
+    const text = encodeURIComponent(await buildPersonalizedText());
+    const phone = String(target.phone).replace(/\D/g, "");
+    const res = await adminFetch("send_direct_message", {
+      user_id: target.id, title, message, severity,
+    });
+    setSending(false);
+    if (res?.ok) {
+      toast.success("In-App sent — WhatsApp खोल रहे हैं");
+      window.open(`https://wa.me/${phone}?text=${text}`, "_blank");
+      setMessage(""); setTitle("");
+    } else {
+      toast.error(res?.error || "Failed");
+    }
   };
 
   return (
@@ -1120,6 +1166,9 @@ const DirectMessageCard = () => {
         </Select>
         <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
         <Textarea placeholder="Message to user..." rows={4} value={message} onChange={(e) => setMessage(e.target.value)} />
+        <Button onClick={sendBoth} disabled={sending} className="w-full bg-green-600 hover:bg-green-700 text-white">
+          <Send className="h-4 w-4 mr-2" />Send In-App + WhatsApp (Auto)
+        </Button>
         <div className="grid grid-cols-2 gap-2">
           <Button onClick={sendInApp} disabled={sending}><Send className="h-4 w-4 mr-2" />Send In-App</Button>
           <Button onClick={sendWhatsApp} variant="outline" className="border-green-600 text-green-700 hover:bg-green-50">
@@ -1127,7 +1176,7 @@ const DirectMessageCard = () => {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          In-App message user को Notification Bell में दिखेगा। WhatsApp option आपके WhatsApp में chat खोलेगा।
+          "Send In-App + WhatsApp" से user को Notification Bell में message मिलेगा और साथ ही WhatsApp chat (नाम + membership detail के साथ) auto-prefill होकर खुलेगा — आप सिर्फ Send दबाएँ।
         </p>
       </CardContent>
     </Card>
