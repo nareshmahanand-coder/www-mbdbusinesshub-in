@@ -42,10 +42,59 @@ const NAV: { id: Section; label: string; icon: any }[] = [
 const inr = (n: number | null | undefined) =>
   "₹" + (Number(n || 0)).toLocaleString("en-IN", { maximumFractionDigits: 0 });
 
-// PIN must match the value in src/components/AdminPinAccess.tsx and
-// supabase/functions/admin-data/index.ts. Used to authorise the service-role
-// edge function that bypasses RLS for the admin dashboard.
 const ADMIN_PIN = "02032026";
+
+const HELPLINE_WA = "919203645007";
+const HELPLINE_WA_DISPLAY = "+91 9203645007";
+const HELPLINE_EMAIL = "helpline.bharatdukaan@gmail.com";
+
+const fetchMembership = async (userId: string) => {
+  const nowIso = new Date().toISOString();
+  const { data: bg } = await supabase
+    .from("bharat_gaurav_memberships")
+    .select("plan, status, expires_at")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .gt("expires_at", nowIso)
+    .order("expires_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (bg) {
+    return {
+      membership_status: "active",
+      membership_type: "Bharat Gaurav",
+      plan_type: bg.plan,
+      current_period_end: bg.expires_at,
+    };
+  }
+  const { data: mp } = await supabase
+    .from("merchant_profiles")
+    .select("is_premium, premium_plan, plan_ends_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (mp?.is_premium) {
+    return {
+      membership_status: "active",
+      membership_type: "Merchant Premium",
+      plan_type: mp.premium_plan,
+      current_period_end: mp.plan_ends_at,
+    };
+  }
+  return null;
+};
+
+const buildPersonalizedText = async (target: any, title: string, message: string) => {
+  if (!target) return "";
+  const name = target.display_name || "\u0917\u094d\u0930\u093e\u0939\u0915";
+  const m = await fetchMembership(target.id);
+  const memLine = m && m.membership_status === "active"
+    ? `\u0938\u0926\u0938\u094d\u092f\u0924\u093e / Membership: ${m.membership_type || "\u2014"}${m.plan_type ? ` (${m.plan_type})` : ""} \u2014 Active`
+    : `\u0938\u0926\u0938\u094d\u092f\u0924\u093e / Membership: Inactive`;
+  const header = `\u0928\u092e\u0938\u094d\u0924\u0947 ${name} \u091c\u0940,\n${memLine}\n\n`;
+  const footer = `\n\n\u2014 \u092e\u0947\u0930\u093e \u092d\u093e\u0930\u0924 \u0926\u0941\u0915\u093e\u0928 (Mera Bharat Dukaan)\nHelpline WhatsApp: ${HELPLINE_WA_DISPLAY}\nHelpline Email: ${HELPLINE_EMAIL}`;
+  const body = `${title ? title + "\n\n" : ""}${message}${footer}`;
+  return header + body;
+};
 
 const adminFetch = async (action: string, extra: Record<string, unknown> = {}) => {
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-data`;
