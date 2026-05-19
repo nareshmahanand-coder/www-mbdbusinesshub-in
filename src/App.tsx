@@ -39,7 +39,7 @@ import BlockedScreen from "@/components/BlockedScreen";
 
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
-import AdminMessageListener from "./components/AdminMessageListener";
+// AdminMessageListener removed — all notifications shown only in top Notification Bell
 
 const queryClient = new QueryClient();
 
@@ -153,7 +153,6 @@ const AppShell = () => {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <AdminMessageListener />
       <BharatMitraChatbot />
     </>
   );
