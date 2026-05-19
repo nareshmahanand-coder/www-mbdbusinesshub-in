@@ -580,6 +580,36 @@ export type Database = {
           },
         ]
       }
+      duplicate_attempts: {
+        Row: {
+          attempted_user_id: string | null
+          context: Json
+          created_at: string
+          existing_user_id: string | null
+          id: string
+          kind: string
+          value: string
+        }
+        Insert: {
+          attempted_user_id?: string | null
+          context?: Json
+          created_at?: string
+          existing_user_id?: string | null
+          id?: string
+          kind: string
+          value: string
+        }
+        Update: {
+          attempted_user_id?: string | null
+          context?: Json
+          created_at?: string
+          existing_user_id?: string | null
+          id?: string
+          kind?: string
+          value?: string
+        }
+        Relationships: []
+      }
       family_members: {
         Row: {
           accepted_at: string | null
@@ -1687,6 +1717,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_kyc_duplicate: {
+        Args: { p_aadhaar: string; p_mobile: string }
+        Returns: Json
+      }
+      check_signup_duplicate: {
+        Args: { p_email: string; p_phone: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
