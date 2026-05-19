@@ -415,6 +415,109 @@ const UsersSection = () => {
   );
 };
 
+const DuplicateAttemptsSection = () => {
+  const [rows, setRows] = useState<any[]>([]);
+  const [kind, setKind] = useState<string>("all");
+  const load = async () => {
+    const data = await adminFetch("duplicate_attempts");
+    setRows(data?.rows || []);
+  };
+  useAutoRefresh(load, 10000);
+
+  const remove = async (id: string) => {
+    if (!confirm("Delete this log entry?")) return;
+    const res = await adminFetch("delete_duplicate_attempt", { id });
+    if (res?.ok) { toast.success("Removed"); load(); }
+    else toast.error(res?.error || "Failed");
+  };
+
+  const kindLabel: Record<string, string> = {
+    signup_email: "Signup • Email",
+    signup_phone: "Signup • Phone",
+    kyc_aadhaar: "e-KYC • Aadhaar",
+    kyc_mobile: "e-KYC • Mobile",
+  };
+  const kindVariant: Record<string, "destructive" | "secondary" | "default" | "outline"> = {
+    signup_email: "secondary",
+    signup_phone: "secondary",
+    kyc_aadhaar: "destructive",
+    kyc_mobile: "destructive",
+  };
+  const maskAadhaar = (v: string) => v.length === 12 ? `XXXX XXXX ${v.slice(-4)}` : v;
+  const display = (r: any) => r.kind === "kyc_aadhaar" ? maskAadhaar(r.value) : r.value;
+
+  const filtered = kind === "all" ? rows : rows.filter((r) => r.kind === kind);
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <CardTitle className="flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5 text-orange-500" />
+          Duplicate Attempts ({filtered.length})
+        </CardTitle>
+        <Select value={kind} onValueChange={setKind}>
+          <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Kinds</SelectItem>
+            <SelectItem value="signup_email">Signup • Email</SelectItem>
+            <SelectItem value="signup_phone">Signup • Phone</SelectItem>
+            <SelectItem value="kyc_aadhaar">e-KYC • Aadhaar</SelectItem>
+            <SelectItem value="kyc_mobile">e-KYC • Mobile</SelectItem>
+          </SelectContent>
+        </Select>
+      </CardHeader>
+      <CardContent>
+        {filtered.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4 text-center">कोई duplicate attempt नहीं / No duplicate attempts.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>When</TableHead>
+                <TableHead>Kind</TableHead>
+                <TableHead>Value</TableHead>
+                <TableHead>Attempted By</TableHead>
+                <TableHead>Conflicts With</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="text-xs">{new Date(r.created_at).toLocaleString()}</TableCell>
+                  <TableCell><Badge variant={kindVariant[r.kind] || "outline"}>{kindLabel[r.kind] || r.kind}</Badge></TableCell>
+                  <TableCell className="font-mono text-xs">{display(r)}</TableCell>
+                  <TableCell className="text-xs">
+                    {r.attempted_profile ? (
+                      <>
+                        <div className="font-medium">{r.attempted_profile.display_name || "—"}</div>
+                        <div className="text-muted-foreground">{r.attempted_profile.email || r.attempted_profile.phone || ""}</div>
+                      </>
+                    ) : <span className="text-muted-foreground">Anonymous</span>}
+                  </TableCell>
+                  <TableCell className="text-xs">
+                    {r.existing_profile ? (
+                      <>
+                        <div className="font-medium">{r.existing_profile.display_name || "—"}</div>
+                        <div className="text-muted-foreground">{r.existing_profile.email || r.existing_profile.phone || ""}</div>
+                      </>
+                    ) : <span className="text-muted-foreground">{r.existing_user_id?.slice(0, 8) || "—"}</span>}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="ghost" onClick={() => remove(r.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 const MerchantsSection = () => {
   const [rows, setRows] = useState<any[]>([]);
   const [q, setQ] = useState("");
