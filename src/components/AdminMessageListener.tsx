@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell } from "lucide-react";
+import { Bell, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -56,7 +56,15 @@ const AdminMessageListener = () => {
   return (
     <div className="fixed bottom-4 left-4 z-50 w-[calc(100vw-2rem)] max-w-sm space-y-2">
       {messages.map((message) => (
-        <Alert key={message.id} className="border-primary/30 bg-background shadow-lg">
+        <Alert key={message.id} className="border-primary/30 bg-background shadow-lg relative pr-8">
+          <button
+            onClick={() => setMessages((prev) => prev.filter((m) => m.id !== message.id))}
+            className="absolute top-2 right-2 p-1 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Dismiss notification"
+            title="Dismiss"
+          >
+            <X className="h-4 w-4" />
+          </button>
           <Bell className="h-4 w-4" />
           <AlertTitle className="pr-8">{message.title}</AlertTitle>
           <AlertDescription className="text-xs">{message.message}</AlertDescription>
@@ -65,7 +73,6 @@ const AdminMessageListener = () => {
               e-KYC upload form खोलें
             </Button>
           )}
-          <Button size="sm" variant="ghost" className="mt-2 h-7 px-2 text-xs" onClick={() => setMessages((prev) => prev.filter((m) => m.id !== message.id))}>Dismiss</Button>
         </Alert>
       ))}
     </div>
