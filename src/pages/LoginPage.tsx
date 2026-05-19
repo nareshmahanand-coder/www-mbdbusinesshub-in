@@ -242,6 +242,21 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
                 <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Enter your full name" autoComplete="name" />
               </div>
             )}
+            {mode === "signup" && (
+              <div className="space-y-2">
+                <Label htmlFor="mobile">Mobile Number / मोबाइल नंबर</Label>
+                <Input
+                  id="mobile"
+                  type="tel"
+                  inputMode="numeric"
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  placeholder="10-digit mobile number"
+                  autoComplete="tel"
+                  maxLength={10}
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
