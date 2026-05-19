@@ -433,15 +433,8 @@ const UsersSection = () => {
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-1 flex-wrap">
                     <Button size="sm" variant="ghost" onClick={() => setView(u)} title="View"><Eye className="h-3.5 w-3.5" /></Button>
-                    {/* Three new message buttons */}
-                    <Button size="sm" className="h-7 px-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => openMsgDialog(u)} title="Send In-App">
-                      <Send className="h-3.5 w-3.5 mr-1" />Notify
-                    </Button>
-                    <Button size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => { openMsgDialog(u); }} title="Send WhatsApp">
-                      <MessageCircle className="h-3.5 w-3.5 mr-1" />WhatsApp
-                    </Button>
-                    <Button size="sm" className="h-7 px-2 bg-orange-600 hover:bg-orange-700 text-white" onClick={() => { openMsgDialog(u); }} title="Send Email">
-                      <Mail className="h-3.5 w-3.5 mr-1" />Email
+                    <Button size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => openMsgDialog(u)} title="Send Message">
+                      <Send className="h-3.5 w-3.5 mr-1" />Send Message
                     </Button>
                     {u.blocked ? (
                       <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white h-7 px-2" onClick={() => doUnblock(u)}>
