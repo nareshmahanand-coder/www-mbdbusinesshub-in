@@ -112,6 +112,15 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
     sessionStorage.setItem("mbd-auth-next", POST_LOGIN_MEMBERSHIP_PATH);
     try {
       if (mode === "signup") {
+        const { data: dupRes } = await (supabase as any).rpc("check_signup_duplicate", {
+          p_email: email.trim(),
+          p_phone: "",
+        });
+        if (dupRes?.duplicate) {
+          toast.error(dupRes.message || "Already registered");
+          setLoading(false);
+          return;
+        }
         const { error } = await supabase.auth.signUp({
           email: email.trim(),
           password,

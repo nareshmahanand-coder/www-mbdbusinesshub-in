@@ -333,6 +333,34 @@ Deno.serve(async (req) => {
         const { data } = await q;
         return json({ rows: data || [] });
       }
+      case "duplicate_attempts": {
+        const { data } = await sb
+          .from("duplicate_attempts")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(500);
+        const ids = Array.from(new Set(
+          (data || []).flatMap((r: any) => [r.attempted_user_id, r.existing_user_id]).filter(Boolean),
+        ));
+        let profileMap: Record<string, any> = {};
+        if (ids.length > 0) {
+          const { data: profs } = await sb
+            .from("profiles").select("id, display_name, email, phone").in("id", ids);
+          (profs || []).forEach((p: any) => { profileMap[p.id] = p; });
+        }
+        return json({ rows: (data || []).map((r: any) => ({
+          ...r,
+          attempted_profile: r.attempted_user_id ? profileMap[r.attempted_user_id] || null : null,
+          existing_profile: r.existing_user_id ? profileMap[r.existing_user_id] || null : null,
+        })) });
+      }
+      case "delete_duplicate_attempt": {
+        const { id } = body;
+        if (!id) return json({ error: "id required" }, 400);
+        const { error } = await sb.from("duplicate_attempts").delete().eq("id", id);
+        if (error) return json({ error: error.message }, 400);
+        return json({ ok: true });
+      }
       case "reject_delete_request": {
         const { id, notes } = body;
         if (!id) return json({ error: "id required" }, 400);
