@@ -360,7 +360,7 @@ const EkycPage = () => {
           const path = `${user.id}/${capturedAt}-${name}.jpg`;
           const { error: upErr } = await supabase.storage
             .from("kyc-photos")
-            .upload(path, blob, { contentType: "image/jpeg", cacheControl: "3600", upsert: true });
+            .upload(path, blob, { contentType: "image/jpeg", cacheControl: "3600", upsert: false });
           if (upErr) throw upErr;
           const { data: pub } = supabase.storage.from("kyc-photos").getPublicUrl(path);
           if (!pub?.publicUrl) throw new Error(`${name} public URL missing`);
