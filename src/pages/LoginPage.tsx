@@ -45,6 +45,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const { user, loading: authLoading } = useAuth();
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [fullName, setFullName] = useState("");
+  const [mobile, setMobile] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -103,6 +104,11 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
       toast.error("Please enter your full name.");
       return;
     }
+    const mobileDigits = mobile.replace(/\D/g, "");
+    if (mode === "signup" && mobileDigits.length !== 10) {
+      toast.error("कृपया 10-digit मोबाइल नंबर दर्ज करें / Enter a valid 10-digit mobile number.");
+      return;
+    }
     if (password.length < 6) {
       toast.error("Password must be at least 6 characters.");
       return;
@@ -114,22 +120,35 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
       if (mode === "signup") {
         const { data: dupRes } = await (supabase as any).rpc("check_signup_duplicate", {
           p_email: email.trim(),
-          p_phone: "",
+          p_phone: mobileDigits,
         });
         if (dupRes?.duplicate) {
           toast.error(dupRes.message || "Already registered");
           setLoading(false);
           return;
         }
-        const { error } = await supabase.auth.signUp({
+        const { data: signUpData, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
-            data: { full_name: fullName.trim() },
+            data: { full_name: fullName.trim(), phone: mobileDigits },
             emailRedirectTo: `${getStandaloneAuthOrigin()}/login?next=${encodeURIComponent(POST_LOGIN_MEMBERSHIP_PATH)}`,
           },
         });
         if (error) throw error;
+        const newUserId = signUpData?.user?.id;
+        if (newUserId) {
+          await supabase.from("profiles").upsert(
+            {
+              id: newUserId,
+              email: email.trim(),
+              phone: mobileDigits,
+              display_name: fullName.trim(),
+              provider: "email",
+            },
+            { onConflict: "id" },
+          );
+        }
         toast.success("Account created. Please check your email if verification is required.");
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
