@@ -39,7 +39,16 @@ const UserProfileMenu = () => {
   const [unread, setUnread] = useState(0);
 
   const READ_KEY = user ? `mbd-notif-read-${user.id}` : "";
+  const DISMISSED_KEY = user ? `mbd-notif-dismissed-${user.id}` : "";
   const getActionLink = (text: string) => text.match(/\/ekyc\?mode=upload[^\s]*/)?.[0] || "";
+
+  const getDismissedIds = () => {
+    try {
+      return new Set<string>(JSON.parse(localStorage.getItem(DISMISSED_KEY) || "[]"));
+    } catch {
+      return new Set<string>();
+    }
+  };
 
   useEffect(() => {
     if (!user) { setNotifs([]); setUnread(0); return; }
@@ -52,7 +61,8 @@ const UserProfileMenu = () => {
         .order("created_at", { ascending: false })
         .limit(20);
       if (cancelled) return;
-      const list = data || [];
+      const dismissed = getDismissedIds();
+      const list = (data || []).filter((m: any) => !dismissed.has(m.id));
       setNotifs(list);
       const lastRead = Number(localStorage.getItem(READ_KEY) || 0);
       setUnread(list.filter((m: any) => new Date(m.created_at).getTime() > lastRead).length);
@@ -63,7 +73,19 @@ const UserProfileMenu = () => {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "admin_messages" }, () => load())
       .subscribe();
     return () => { cancelled = true; supabase.removeChannel(ch); };
-  }, [user, READ_KEY]);
+  }, [user, READ_KEY, DISMISSED_KEY]);
+
+  const dismissNotif = (id: string) => {
+    const dismissed = getDismissedIds();
+    dismissed.add(id);
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify(Array.from(dismissed)));
+    setNotifs((prev) => {
+      const next = prev.filter((n) => n.id !== id);
+      const lastRead = Number(localStorage.getItem(READ_KEY) || 0);
+      setUnread(next.filter((m: any) => new Date(m.created_at).getTime() > lastRead).length);
+      return next;
+    });
+  };
 
   const openNotifs = (open: boolean) => {
     setNotifOpen(open);
