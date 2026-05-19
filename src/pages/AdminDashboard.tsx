@@ -1225,7 +1225,7 @@ const DirectMessageCard = () => {
   const sendWhatsApp = async () => {
     if (!target) return toast.error("Select user");
     if (!message.trim()) return toast.error("Message required");
-    const text = encodeURIComponent(await buildPersonalizedText());
+    const text = encodeURIComponent(await buildPersonalizedText(target, title, message));
     const userPhone = target.phone ? String(target.phone).replace(/\D/g, "") : "";
     // Open via helpline WhatsApp number; if user has a phone, deep-link to user chat,
     // otherwise open helpline chat with the prefilled text so admin can forward.
@@ -1239,7 +1239,7 @@ const DirectMessageCard = () => {
     if (!target.email) return toast.error("User has no email on file");
     if (!message.trim()) return toast.error("Message required");
     const subject = encodeURIComponent(title || "मेरा भारत दुकान — Update");
-    const body = encodeURIComponent(await buildPersonalizedText());
+    const body = encodeURIComponent(await buildPersonalizedText(target, title, message));
     // Gmail compose pre-filled, authuser set to helpline mailbox so admin sends "from" helpline
     const url = `https://mail.google.com/mail/?view=cm&fs=1&authuser=${encodeURIComponent(HELPLINE_EMAIL)}&to=${encodeURIComponent(target.email)}&su=${subject}&body=${body}`;
     window.open(url, "_blank");
@@ -1259,7 +1259,7 @@ const DirectMessageCard = () => {
       return;
     }
     toast.success("In-App sent — WhatsApp + Email खोल रहे हैं");
-    const text = encodeURIComponent(await buildPersonalizedText());
+    const text = encodeURIComponent(await buildPersonalizedText(target, title, message));
     if (target.phone) {
       const phone = String(target.phone).replace(/\D/g, "");
       window.open(`https://wa.me/${phone}?text=${text}`, "_blank");
