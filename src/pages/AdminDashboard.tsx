@@ -1067,12 +1067,38 @@ const DirectMessageCard = () => {
   };
 
   const fetchMembership = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_profiles")
-      .select("membership_status, membership_type, plan_type, current_period_end")
+    const nowIso = new Date().toISOString();
+    const { data: bg } = await supabase
+      .from("bharat_gaurav_memberships")
+      .select("plan, status, expires_at")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .gt("expires_at", nowIso)
+      .order("expires_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (bg) {
+      return {
+        membership_status: "active",
+        membership_type: "Bharat Gaurav",
+        plan_type: bg.plan,
+        current_period_end: bg.expires_at,
+      };
+    }
+    const { data: mp } = await supabase
+      .from("merchant_profiles")
+      .select("is_premium, premium_plan, plan_ends_at")
       .eq("user_id", userId)
       .maybeSingle();
-    return data;
+    if (mp?.is_premium) {
+      return {
+        membership_status: "active",
+        membership_type: "Merchant Premium",
+        plan_type: mp.premium_plan,
+        current_period_end: mp.plan_ends_at,
+      };
+    }
+    return null;
   };
 
   const buildPersonalizedText = async () => {
