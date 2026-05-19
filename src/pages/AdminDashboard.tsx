@@ -5,7 +5,7 @@ import {
   MessageSquareWarning, Send, Receipt, BarChart3, Settings as SettingsIcon,
   LogOut, Search, CheckCircle2, XCircle, Eye, RefreshCw, Moon, Sun,
   MapPin, Phone, Calendar, FileCheck2, Mail, Ban, ShieldOff, Trash2, UserX,
-  AlertTriangle,
+  AlertTriangle, MessageCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, SUPERUSER_FLAG } from "@/contexts/AuthContext";
@@ -42,10 +42,59 @@ const NAV: { id: Section; label: string; icon: any }[] = [
 const inr = (n: number | null | undefined) =>
   "₹" + (Number(n || 0)).toLocaleString("en-IN", { maximumFractionDigits: 0 });
 
-// PIN must match the value in src/components/AdminPinAccess.tsx and
-// supabase/functions/admin-data/index.ts. Used to authorise the service-role
-// edge function that bypasses RLS for the admin dashboard.
 const ADMIN_PIN = "02032026";
+
+const HELPLINE_WA = "919203645007";
+const HELPLINE_WA_DISPLAY = "+91 9203645007";
+const HELPLINE_EMAIL = "helpline.bharatdukaan@gmail.com";
+
+const fetchMembership = async (userId: string) => {
+  const nowIso = new Date().toISOString();
+  const { data: bg } = await supabase
+    .from("bharat_gaurav_memberships")
+    .select("plan, status, expires_at")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .gt("expires_at", nowIso)
+    .order("expires_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (bg) {
+    return {
+      membership_status: "active",
+      membership_type: "Bharat Gaurav",
+      plan_type: bg.plan,
+      current_period_end: bg.expires_at,
+    };
+  }
+  const { data: mp } = await supabase
+    .from("merchant_profiles")
+    .select("is_premium, premium_plan, plan_ends_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (mp?.is_premium) {
+    return {
+      membership_status: "active",
+      membership_type: "Merchant Premium",
+      plan_type: mp.premium_plan,
+      current_period_end: mp.plan_ends_at,
+    };
+  }
+  return null;
+};
+
+const buildPersonalizedText = async (target: any, title: string, message: string) => {
+  if (!target) return "";
+  const name = target.display_name || "\u0917\u094d\u0930\u093e\u0939\u0915";
+  const m = await fetchMembership(target.id);
+  const memLine = m && m.membership_status === "active"
+    ? `\u0938\u0926\u0938\u094d\u092f\u0924\u093e / Membership: ${m.membership_type || "\u2014"}${m.plan_type ? ` (${m.plan_type})` : ""} \u2014 Active`
+    : `\u0938\u0926\u0938\u094d\u092f\u0924\u093e / Membership: Inactive`;
+  const header = `\u0928\u092e\u0938\u094d\u0924\u0947 ${name} \u091c\u0940,\n${memLine}\n\n`;
+  const footer = `\n\n\u2014 \u092e\u0947\u0930\u093e \u092d\u093e\u0930\u0924 \u0926\u0941\u0915\u093e\u0928 (Mera Bharat Dukaan)\nHelpline WhatsApp: ${HELPLINE_WA_DISPLAY}\nHelpline Email: ${HELPLINE_EMAIL}`;
+  const body = `${title ? title + "\n\n" : ""}${message}${footer}`;
+  return header + body;
+};
 
 const adminFetch = async (action: string, extra: Record<string, unknown> = {}) => {
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-data`;
@@ -261,6 +310,13 @@ const UsersSection = () => {
   const [reason, setReason] = useState("Spam");
   const [customReason, setCustomReason] = useState("");
 
+  // Quick-message dialog state
+  const [msgTarget, setMsgTarget] = useState<any>(null);
+  const [msgTitle, setMsgTitle] = useState("");
+  const [msgBody, setMsgBody] = useState("");
+  const [msgSeverity, setMsgSeverity] = useState("info");
+  const [msgSending, setMsgSending] = useState(false);
+
   const load = async () => {
     const data = await adminFetch("users");
     setRows(data?.rows || []);
@@ -300,6 +356,49 @@ const UsersSection = () => {
     else toast.error(res?.error || "Failed to delete");
   };
 
+  // Quick-send helpers per user row
+  const openMsgDialog = (u: any) => {
+    setMsgTarget(u);
+    setMsgTitle("");
+    setMsgBody("");
+    setMsgSeverity("info");
+  };
+
+  const sendRowInApp = async () => {
+    if (!msgTarget) return;
+    if (!msgTitle.trim() || !msgBody.trim()) return toast.error("Title & message required");
+    setMsgSending(true);
+    const res = await adminFetch("send_direct_message", {
+      user_id: msgTarget.id, title: msgTitle, message: msgBody, severity: msgSeverity,
+    });
+    setMsgSending(false);
+    if (res?.ok) { toast.success("In-App notification sent"); setMsgTarget(null); setMsgTitle(""); setMsgBody(""); }
+    else toast.error(res?.error || "Failed");
+  };
+
+  const sendRowWhatsApp = async () => {
+    if (!msgTarget) return;
+    if (!msgBody.trim()) return toast.error("Message required");
+    const text = encodeURIComponent(await buildPersonalizedText(msgTarget, msgTitle, msgBody));
+    const userPhone = msgTarget.phone ? String(msgTarget.phone).replace(/\D/g, "") : "";
+    const to = userPhone || HELPLINE_WA;
+    window.open(`https://wa.me/${to}?text=${text}`, "_blank");
+    toast.success(`WhatsApp opened (Helpline ${HELPLINE_WA_DISPLAY})`);
+    setMsgTarget(null); setMsgTitle(""); setMsgBody("");
+  };
+
+  const sendRowEmail = async () => {
+    if (!msgTarget) return;
+    if (!msgTarget.email) return toast.error("User has no email on file");
+    if (!msgBody.trim()) return toast.error("Message required");
+    const subject = encodeURIComponent(msgTitle || "मेरा भारत दुकान — Update");
+    const body = encodeURIComponent(await buildPersonalizedText(msgTarget, msgTitle, msgBody));
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&authuser=${encodeURIComponent(HELPLINE_EMAIL)}&to=${encodeURIComponent(msgTarget.email)}&su=${subject}&body=${body}`;
+    window.open(url, "_blank");
+    toast.success(`Gmail opened (from ${HELPLINE_EMAIL})`);
+    setMsgTarget(null); setMsgTitle(""); setMsgBody("");
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
@@ -332,8 +431,18 @@ const UsersSection = () => {
                     : <Badge variant="secondary">Active</Badge>}
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => setView(u)}><Eye className="h-3.5 w-3.5" /></Button>
+                  <div className="flex items-center justify-end gap-1 flex-wrap">
+                    <Button size="sm" variant="ghost" onClick={() => setView(u)} title="View"><Eye className="h-3.5 w-3.5" /></Button>
+                    {/* Three new message buttons */}
+                    <Button size="sm" className="h-7 px-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => openMsgDialog(u)} title="Send In-App">
+                      <Send className="h-3.5 w-3.5 mr-1" />Notify
+                    </Button>
+                    <Button size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => { openMsgDialog(u); }} title="Send WhatsApp">
+                      <MessageCircle className="h-3.5 w-3.5 mr-1" />WhatsApp
+                    </Button>
+                    <Button size="sm" className="h-7 px-2 bg-orange-600 hover:bg-orange-700 text-white" onClick={() => { openMsgDialog(u); }} title="Send Email">
+                      <Mail className="h-3.5 w-3.5 mr-1" />Email
+                    </Button>
                     {u.blocked ? (
                       <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white h-7 px-2" onClick={() => doUnblock(u)}>
                         <ShieldOff className="h-3.5 w-3.5 mr-1" />Unblock
@@ -354,6 +463,45 @@ const UsersSection = () => {
         </Table>
         {!filtered.length && <p className="py-8 text-center text-sm text-muted-foreground">No users</p>}
       </CardContent>
+
+      {/* Quick Message Dialog */}
+      <Dialog open={!!msgTarget} onOpenChange={(o) => !o && setMsgTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Send Message — {msgTarget?.display_name || "User"}</DialogTitle></DialogHeader>
+          {msgTarget && (
+            <div className="space-y-3 text-sm">
+              <div className="rounded border bg-muted/40 p-2 text-xs space-y-1">
+                <div><b>Mobile:</b> {msgTarget.phone || <span className="text-muted-foreground">— not on file</span>}</div>
+                <div><b>Email:</b> {msgTarget.email || <span className="text-muted-foreground">— not on file</span>}</div>
+              </div>
+              <Select value={msgSeverity} onValueChange={setMsgSeverity}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="info">Info</SelectItem>
+                  <SelectItem value="warning">Warning</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input placeholder="Title" value={msgTitle} onChange={(e) => setMsgTitle(e.target.value)} />
+              <Textarea placeholder="Message to user..." rows={3} value={msgBody} onChange={(e) => setMsgBody(e.target.value)} />
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                <Button onClick={sendRowInApp} disabled={msgSending} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Send className="h-4 w-4 mr-1" />In-App
+                </Button>
+                <Button onClick={sendRowWhatsApp} variant="outline" className="border-green-600 text-green-700 hover:bg-green-50">
+                  <MessageCircle className="h-4 w-4 mr-1" />WhatsApp
+                </Button>
+                <Button onClick={sendRowEmail} variant="outline" className="border-orange-600 text-orange-700 hover:bg-orange-50">
+                  <Mail className="h-4 w-4 mr-1" />Email
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                WhatsApp <b>{HELPLINE_WA_DISPLAY}</b> से और Email <b>{HELPLINE_EMAIL}</b> से auto-prefill होकर खुलेगा।
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!view} onOpenChange={(o) => !o && setView(null)}>
         <DialogContent className="max-w-lg">
@@ -1057,61 +1205,9 @@ const DirectMessageCard = () => {
   const [severity, setSeverity] = useState("info");
   const [sending, setSending] = useState(false);
 
-  const HELPLINE_WA = "919203645007";
-  const HELPLINE_WA_DISPLAY = "+91 9203645007";
-  const HELPLINE_EMAIL = "helpline.bharatdukaan@gmail.com";
-
   const search = async () => {
     const data = await adminFetch("search_users", { q });
     setResults(data?.rows || []);
-  };
-
-  const fetchMembership = async (userId: string) => {
-    const nowIso = new Date().toISOString();
-    const { data: bg } = await supabase
-      .from("bharat_gaurav_memberships")
-      .select("plan, status, expires_at")
-      .eq("user_id", userId)
-      .eq("status", "active")
-      .gt("expires_at", nowIso)
-      .order("expires_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (bg) {
-      return {
-        membership_status: "active",
-        membership_type: "Bharat Gaurav",
-        plan_type: bg.plan,
-        current_period_end: bg.expires_at,
-      };
-    }
-    const { data: mp } = await supabase
-      .from("merchant_profiles")
-      .select("is_premium, premium_plan, plan_ends_at")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (mp?.is_premium) {
-      return {
-        membership_status: "active",
-        membership_type: "Merchant Premium",
-        plan_type: mp.premium_plan,
-        current_period_end: mp.plan_ends_at,
-      };
-    }
-    return null;
-  };
-
-  const buildPersonalizedText = async () => {
-    if (!target) return "";
-    const name = target.display_name || "ग्राहक";
-    const m = await fetchMembership(target.id);
-    const memLine = m && m.membership_status === "active"
-      ? `सदस्यता / Membership: ${m.membership_type || "—"}${m.plan_type ? ` (${m.plan_type})` : ""} — Active`
-      : `सदस्यता / Membership: Inactive`;
-    const header = `नमस्ते ${name} जी,\n${memLine}\n\n`;
-    const footer = `\n\n— मेरा भारत दुकान (Mera Bharat Dukaan)\nHelpline WhatsApp: ${HELPLINE_WA_DISPLAY}\nHelpline Email: ${HELPLINE_EMAIL}`;
-    const body = `${title ? title + "\n\n" : ""}${message}${footer}`;
-    return header + body;
   };
 
   const sendInApp = async () => {
@@ -1129,7 +1225,7 @@ const DirectMessageCard = () => {
   const sendWhatsApp = async () => {
     if (!target) return toast.error("Select user");
     if (!message.trim()) return toast.error("Message required");
-    const text = encodeURIComponent(await buildPersonalizedText());
+    const text = encodeURIComponent(await buildPersonalizedText(target, title, message));
     const userPhone = target.phone ? String(target.phone).replace(/\D/g, "") : "";
     // Open via helpline WhatsApp number; if user has a phone, deep-link to user chat,
     // otherwise open helpline chat with the prefilled text so admin can forward.
@@ -1143,7 +1239,7 @@ const DirectMessageCard = () => {
     if (!target.email) return toast.error("User has no email on file");
     if (!message.trim()) return toast.error("Message required");
     const subject = encodeURIComponent(title || "मेरा भारत दुकान — Update");
-    const body = encodeURIComponent(await buildPersonalizedText());
+    const body = encodeURIComponent(await buildPersonalizedText(target, title, message));
     // Gmail compose pre-filled, authuser set to helpline mailbox so admin sends "from" helpline
     const url = `https://mail.google.com/mail/?view=cm&fs=1&authuser=${encodeURIComponent(HELPLINE_EMAIL)}&to=${encodeURIComponent(target.email)}&su=${subject}&body=${body}`;
     window.open(url, "_blank");
@@ -1163,7 +1259,7 @@ const DirectMessageCard = () => {
       return;
     }
     toast.success("In-App sent — WhatsApp + Email खोल रहे हैं");
-    const text = encodeURIComponent(await buildPersonalizedText());
+    const text = encodeURIComponent(await buildPersonalizedText(target, title, message));
     if (target.phone) {
       const phone = String(target.phone).replace(/\D/g, "");
       window.open(`https://wa.me/${phone}?text=${text}`, "_blank");
