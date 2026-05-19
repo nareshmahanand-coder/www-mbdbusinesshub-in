@@ -340,6 +340,18 @@ const EkycPage = () => {
         if (fromPromise) resolvedOcr = fromPromise;
       }
       const relType = resolvedOcr?.relation_type === "husband" ? "husband" : "father";
+      // Strict duplicate check: same aadhaar / mobile cannot belong to another user
+      const { data: dupRes, error: dupErr } = await (supabase as any).rpc("check_kyc_duplicate", {
+        p_aadhaar: aadhaarDigits,
+        p_mobile: mobile,
+      });
+      if (dupErr) {
+        console.error("[ekyc] duplicate check failed", dupErr);
+      } else if (dupRes?.duplicate) {
+        toast.error(dupRes.message || "Duplicate entry detected");
+        setStep("details");
+        return;
+      }
       // Upload selfie + aadhaar front/back to storage so admin certificate can show real images.
       const uploadDataUrl = async (dataUrl: string | null, name: string, capturedAt: number): Promise<string> => {
         if (!dataUrl) throw new Error(`${name} photo is missing`);
