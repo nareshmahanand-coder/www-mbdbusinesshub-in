@@ -401,6 +401,16 @@ const EkycPage = () => {
         .select()
         .single();
       if (insErr) throw insErr;
+      // Mirror mobile into profiles.phone so Admin Messaging Center
+      // (WhatsApp / Email auto-fill) can use the saved number.
+      try {
+        await supabase
+          .from("profiles")
+          .update({ phone: mobile, phone_verified: true, phone_verified_at: new Date().toISOString() })
+          .eq("id", user.id);
+      } catch (e) {
+        console.warn("[ekyc] profile phone sync failed", e);
+      }
       setExisting({
         ...inserted,
         selfie_preview: selfieDataUrl,
