@@ -1205,61 +1205,9 @@ const DirectMessageCard = () => {
   const [severity, setSeverity] = useState("info");
   const [sending, setSending] = useState(false);
 
-  const HELPLINE_WA = "919203645007";
-  const HELPLINE_WA_DISPLAY = "+91 9203645007";
-  const HELPLINE_EMAIL = "helpline.bharatdukaan@gmail.com";
-
   const search = async () => {
     const data = await adminFetch("search_users", { q });
     setResults(data?.rows || []);
-  };
-
-  const fetchMembership = async (userId: string) => {
-    const nowIso = new Date().toISOString();
-    const { data: bg } = await supabase
-      .from("bharat_gaurav_memberships")
-      .select("plan, status, expires_at")
-      .eq("user_id", userId)
-      .eq("status", "active")
-      .gt("expires_at", nowIso)
-      .order("expires_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (bg) {
-      return {
-        membership_status: "active",
-        membership_type: "Bharat Gaurav",
-        plan_type: bg.plan,
-        current_period_end: bg.expires_at,
-      };
-    }
-    const { data: mp } = await supabase
-      .from("merchant_profiles")
-      .select("is_premium, premium_plan, plan_ends_at")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (mp?.is_premium) {
-      return {
-        membership_status: "active",
-        membership_type: "Merchant Premium",
-        plan_type: mp.premium_plan,
-        current_period_end: mp.plan_ends_at,
-      };
-    }
-    return null;
-  };
-
-  const buildPersonalizedText = async () => {
-    if (!target) return "";
-    const name = target.display_name || "ग्राहक";
-    const m = await fetchMembership(target.id);
-    const memLine = m && m.membership_status === "active"
-      ? `सदस्यता / Membership: ${m.membership_type || "—"}${m.plan_type ? ` (${m.plan_type})` : ""} — Active`
-      : `सदस्यता / Membership: Inactive`;
-    const header = `नमस्ते ${name} जी,\n${memLine}\n\n`;
-    const footer = `\n\n— मेरा भारत दुकान (Mera Bharat Dukaan)\nHelpline WhatsApp: ${HELPLINE_WA_DISPLAY}\nHelpline Email: ${HELPLINE_EMAIL}`;
-    const body = `${title ? title + "\n\n" : ""}${message}${footer}`;
-    return header + body;
   };
 
   const sendInApp = async () => {
