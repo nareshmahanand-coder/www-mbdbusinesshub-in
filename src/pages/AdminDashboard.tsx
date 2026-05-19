@@ -1057,6 +1057,10 @@ const DirectMessageCard = () => {
   const [severity, setSeverity] = useState("info");
   const [sending, setSending] = useState(false);
 
+  const HELPLINE_WA = "919203645007";
+  const HELPLINE_WA_DISPLAY = "+91 9203645007";
+  const HELPLINE_EMAIL = "helpline.bharatdukaan@gmail.com";
+
   const search = async () => {
     const data = await adminFetch("search_users", { q });
     setResults(data?.rows || []);
@@ -1079,7 +1083,8 @@ const DirectMessageCard = () => {
       ? `सदस्यता / Membership: ${m.membership_type || "—"}${m.plan_type ? ` (${m.plan_type})` : ""} — Active`
       : `सदस्यता / Membership: Inactive`;
     const header = `नमस्ते ${name} जी,\n${memLine}\n\n`;
-    const body = `${title ? title + "\n\n" : ""}${message}\n\n— मेरा भारत दुकान (Mera Bharat Dukaan)`;
+    const footer = `\n\n— मेरा भारत दुकान (Mera Bharat Dukaan)\nHelpline WhatsApp: ${HELPLINE_WA_DISPLAY}\nHelpline Email: ${HELPLINE_EMAIL}`;
+    const body = `${title ? title + "\n\n" : ""}${message}${footer}`;
     return header + body;
   };
 
@@ -1097,41 +1102,60 @@ const DirectMessageCard = () => {
 
   const sendWhatsApp = async () => {
     if (!target) return toast.error("Select user");
-    if (!target.phone) return toast.error("User has no phone number");
     if (!message.trim()) return toast.error("Message required");
     const text = encodeURIComponent(await buildPersonalizedText());
-    const phone = String(target.phone).replace(/\D/g, "");
-    window.open(`https://wa.me/${phone}?text=${text}`, "_blank");
+    const userPhone = target.phone ? String(target.phone).replace(/\D/g, "") : "";
+    // Open via helpline WhatsApp number; if user has a phone, deep-link to user chat,
+    // otherwise open helpline chat with the prefilled text so admin can forward.
+    const to = userPhone || HELPLINE_WA;
+    window.open(`https://wa.me/${to}?text=${text}`, "_blank");
+    toast.success(`WhatsApp opened (Helpline ${HELPLINE_WA_DISPLAY})`);
   };
 
-  const sendBoth = async () => {
+  const sendEmail = async () => {
+    if (!target) return toast.error("Select user");
+    if (!target.email) return toast.error("User has no email on file");
+    if (!message.trim()) return toast.error("Message required");
+    const subject = encodeURIComponent(title || "मेरा भारत दुकान — Update");
+    const body = encodeURIComponent(await buildPersonalizedText());
+    // Gmail compose pre-filled, authuser set to helpline mailbox so admin sends "from" helpline
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&authuser=${encodeURIComponent(HELPLINE_EMAIL)}&to=${encodeURIComponent(target.email)}&su=${subject}&body=${body}`;
+    window.open(url, "_blank");
+    toast.success(`Gmail opened (from ${HELPLINE_EMAIL})`);
+  };
+
+  const sendAll = async () => {
     if (!target) return toast.error("Select user");
     if (!title.trim() || !message.trim()) return toast.error("Title & message required");
-    if (!target.phone) {
-      toast.warning("User has no phone — sending In-App only");
-      await sendInApp();
-      return;
-    }
     setSending(true);
-    const text = encodeURIComponent(await buildPersonalizedText());
-    const phone = String(target.phone).replace(/\D/g, "");
     const res = await adminFetch("send_direct_message", {
       user_id: target.id, title, message, severity,
     });
     setSending(false);
-    if (res?.ok) {
-      toast.success("In-App sent — WhatsApp खोल रहे हैं");
-      window.open(`https://wa.me/${phone}?text=${text}`, "_blank");
-      setMessage(""); setTitle("");
-    } else {
-      toast.error(res?.error || "Failed");
+    if (!res?.ok) {
+      toast.error(res?.error || "In-App failed");
+      return;
     }
+    toast.success("In-App sent — WhatsApp + Email खोल रहे हैं");
+    const text = encodeURIComponent(await buildPersonalizedText());
+    if (target.phone) {
+      const phone = String(target.phone).replace(/\D/g, "");
+      window.open(`https://wa.me/${phone}?text=${text}`, "_blank");
+    } else {
+      window.open(`https://wa.me/${HELPLINE_WA}?text=${text}`, "_blank");
+    }
+    if (target.email) {
+      const subject = encodeURIComponent(title || "मेरा भारत दुकान — Update");
+      const url = `https://mail.google.com/mail/?view=cm&fs=1&authuser=${encodeURIComponent(HELPLINE_EMAIL)}&to=${encodeURIComponent(target.email)}&su=${subject}&body=${text}`;
+      window.open(url, "_blank");
+    }
+    setMessage(""); setTitle("");
   };
 
   return (
     <Card className="max-w-2xl">
       <CardHeader>
-        <CardTitle>Direct Message / WhatsApp</CardTitle>
+        <CardTitle>Messaging Center — Direct (In-App / WhatsApp / Email)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex gap-2">
@@ -1151,9 +1175,13 @@ const DirectMessageCard = () => {
           </div>
         )}
         {target && (
-          <div className="rounded border bg-muted/40 p-2 text-xs">
-            <b>To:</b> {target.display_name || "—"} • {target.phone || target.email || "—"}
-            <Button variant="ghost" size="sm" className="ml-2 h-6 px-2" onClick={() => setTarget(null)}>Clear</Button>
+          <div className="rounded border bg-muted/40 p-3 text-xs space-y-1">
+            <div className="flex items-center justify-between">
+              <div className="font-semibold text-sm">{target.display_name || "—"}</div>
+              <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => setTarget(null)}>Clear</Button>
+            </div>
+            <div><b>Mobile:</b> {target.phone || <span className="text-muted-foreground">— not on file</span>}</div>
+            <div><b>Email:</b> {target.email || <span className="text-muted-foreground">— not on file</span>}</div>
           </div>
         )}
         <Select value={severity} onValueChange={setSeverity}>
@@ -1166,17 +1194,22 @@ const DirectMessageCard = () => {
         </Select>
         <Input placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
         <Textarea placeholder="Message to user..." rows={4} value={message} onChange={(e) => setMessage(e.target.value)} />
-        <Button onClick={sendBoth} disabled={sending} className="w-full bg-green-600 hover:bg-green-700 text-white">
-          <Send className="h-4 w-4 mr-2" />Send In-App + WhatsApp (Auto)
-        </Button>
-        <div className="grid grid-cols-2 gap-2">
-          <Button onClick={sendInApp} disabled={sending}><Send className="h-4 w-4 mr-2" />Send In-App</Button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <Button onClick={sendInApp} disabled={sending}>
+            <Send className="h-4 w-4 mr-2" />1. Send In-App Notification
+          </Button>
           <Button onClick={sendWhatsApp} variant="outline" className="border-green-600 text-green-700 hover:bg-green-50">
-            <Send className="h-4 w-4 mr-2" />Send via WhatsApp
+            <Send className="h-4 w-4 mr-2" />2. Send via WhatsApp
+          </Button>
+          <Button onClick={sendEmail} variant="outline" className="border-blue-600 text-blue-700 hover:bg-blue-50">
+            <Send className="h-4 w-4 mr-2" />3. Send via Email
+          </Button>
+          <Button onClick={sendAll} disabled={sending} className="bg-orange-600 hover:bg-orange-700 text-white">
+            <Send className="h-4 w-4 mr-2" />4. Send to All (तीनों)
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          "Send In-App + WhatsApp" से user को Notification Bell में message मिलेगा और साथ ही WhatsApp chat (नाम + membership detail के साथ) auto-prefill होकर खुलेगा — आप सिर्फ Send दबाएँ।
+          WhatsApp हमारे हेल्पलाइन नंबर <b>{HELPLINE_WA_DISPLAY}</b> से और Email <b>{HELPLINE_EMAIL}</b> से auto-prefill होकर खुलेगा। Mobile / Email user के Supabase profile से उठाए जाते हैं।
         </p>
       </CardContent>
     </Card>
