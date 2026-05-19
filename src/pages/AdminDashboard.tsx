@@ -310,6 +310,13 @@ const UsersSection = () => {
   const [reason, setReason] = useState("Spam");
   const [customReason, setCustomReason] = useState("");
 
+  // Quick-message dialog state
+  const [msgTarget, setMsgTarget] = useState<any>(null);
+  const [msgTitle, setMsgTitle] = useState("");
+  const [msgBody, setMsgBody] = useState("");
+  const [msgSeverity, setMsgSeverity] = useState("info");
+  const [msgSending, setMsgSending] = useState(false);
+
   const load = async () => {
     const data = await adminFetch("users");
     setRows(data?.rows || []);
@@ -349,6 +356,49 @@ const UsersSection = () => {
     else toast.error(res?.error || "Failed to delete");
   };
 
+  // Quick-send helpers per user row
+  const openMsgDialog = (u: any) => {
+    setMsgTarget(u);
+    setMsgTitle("");
+    setMsgBody("");
+    setMsgSeverity("info");
+  };
+
+  const sendRowInApp = async () => {
+    if (!msgTarget) return;
+    if (!msgTitle.trim() || !msgBody.trim()) return toast.error("Title & message required");
+    setMsgSending(true);
+    const res = await adminFetch("send_direct_message", {
+      user_id: msgTarget.id, title: msgTitle, message: msgBody, severity: msgSeverity,
+    });
+    setMsgSending(false);
+    if (res?.ok) { toast.success("In-App notification sent"); setMsgTarget(null); setMsgTitle(""); setMsgBody(""); }
+    else toast.error(res?.error || "Failed");
+  };
+
+  const sendRowWhatsApp = async () => {
+    if (!msgTarget) return;
+    if (!msgBody.trim()) return toast.error("Message required");
+    const text = encodeURIComponent(await buildPersonalizedText(msgTarget, msgTitle, msgBody));
+    const userPhone = msgTarget.phone ? String(msgTarget.phone).replace(/\D/g, "") : "";
+    const to = userPhone || HELPLINE_WA;
+    window.open(`https://wa.me/${to}?text=${text}`, "_blank");
+    toast.success(`WhatsApp opened (Helpline ${HELPLINE_WA_DISPLAY})`);
+    setMsgTarget(null); setMsgTitle(""); setMsgBody("");
+  };
+
+  const sendRowEmail = async () => {
+    if (!msgTarget) return;
+    if (!msgTarget.email) return toast.error("User has no email on file");
+    if (!msgBody.trim()) return toast.error("Message required");
+    const subject = encodeURIComponent(msgTitle || "मेरा भारत दुकान — Update");
+    const body = encodeURIComponent(await buildPersonalizedText(msgTarget, msgTitle, msgBody));
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&authuser=${encodeURIComponent(HELPLINE_EMAIL)}&to=${encodeURIComponent(msgTarget.email)}&su=${subject}&body=${body}`;
+    window.open(url, "_blank");
+    toast.success(`Gmail opened (from ${HELPLINE_EMAIL})`);
+    setMsgTarget(null); setMsgTitle(""); setMsgBody("");
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
@@ -381,8 +431,18 @@ const UsersSection = () => {
                     : <Badge variant="secondary">Active</Badge>}
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => setView(u)}><Eye className="h-3.5 w-3.5" /></Button>
+                  <div className="flex items-center justify-end gap-1 flex-wrap">
+                    <Button size="sm" variant="ghost" onClick={() => setView(u)} title="View"><Eye className="h-3.5 w-3.5" /></Button>
+                    {/* Three new message buttons */}
+                    <Button size="sm" className="h-7 px-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => openMsgDialog(u)} title="Send In-App">
+                      <Send className="h-3.5 w-3.5 mr-1" />Notify
+                    </Button>
+                    <Button size="sm" className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white" onClick={() => { openMsgDialog(u); }} title="Send WhatsApp">
+                      <MessageCircle className="h-3.5 w-3.5 mr-1" />WhatsApp
+                    </Button>
+                    <Button size="sm" className="h-7 px-2 bg-orange-600 hover:bg-orange-700 text-white" onClick={() => { openMsgDialog(u); }} title="Send Email">
+                      <Mail className="h-3.5 w-3.5 mr-1" />Email
+                    </Button>
                     {u.blocked ? (
                       <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white h-7 px-2" onClick={() => doUnblock(u)}>
                         <ShieldOff className="h-3.5 w-3.5 mr-1" />Unblock
@@ -403,6 +463,45 @@ const UsersSection = () => {
         </Table>
         {!filtered.length && <p className="py-8 text-center text-sm text-muted-foreground">No users</p>}
       </CardContent>
+
+      {/* Quick Message Dialog */}
+      <Dialog open={!!msgTarget} onOpenChange={(o) => !o && setMsgTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Send Message — {msgTarget?.display_name || "User"}</DialogTitle></DialogHeader>
+          {msgTarget && (
+            <div className="space-y-3 text-sm">
+              <div className="rounded border bg-muted/40 p-2 text-xs space-y-1">
+                <div><b>Mobile:</b> {msgTarget.phone || <span className="text-muted-foreground">— not on file</span>}</div>
+                <div><b>Email:</b> {msgTarget.email || <span className="text-muted-foreground">— not on file</span>}</div>
+              </div>
+              <Select value={msgSeverity} onValueChange={setMsgSeverity}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="info">Info</SelectItem>
+                  <SelectItem value="warning">Warning</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input placeholder="Title" value={msgTitle} onChange={(e) => setMsgTitle(e.target.value)} />
+              <Textarea placeholder="Message to user..." rows={3} value={msgBody} onChange={(e) => setMsgBody(e.target.value)} />
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                <Button onClick={sendRowInApp} disabled={msgSending} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Send className="h-4 w-4 mr-1" />In-App
+                </Button>
+                <Button onClick={sendRowWhatsApp} variant="outline" className="border-green-600 text-green-700 hover:bg-green-50">
+                  <MessageCircle className="h-4 w-4 mr-1" />WhatsApp
+                </Button>
+                <Button onClick={sendRowEmail} variant="outline" className="border-orange-600 text-orange-700 hover:bg-orange-50">
+                  <Mail className="h-4 w-4 mr-1" />Email
+                </Button>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                WhatsApp <b>{HELPLINE_WA_DISPLAY}</b> से और Email <b>{HELPLINE_EMAIL}</b> से auto-prefill होकर खुलेगा।
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!view} onOpenChange={(o) => !o && setView(null)}>
         <DialogContent className="max-w-lg">
