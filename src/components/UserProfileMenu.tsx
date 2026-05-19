@@ -163,8 +163,16 @@ const UserProfileMenu = () => {
           <p className="px-3 py-6 text-center text-xs text-muted-foreground">No messages yet</p>
         )}
         {notifs.map((n) => (
-          <div key={n.id} className="px-3 py-2 border-b last:border-b-0">
-            <div className="flex items-start justify-between gap-2">
+          <div key={n.id} className="px-3 py-2 border-b last:border-b-0 relative">
+            <button
+              onClick={(e) => { e.stopPropagation(); dismissNotif(n.id); }}
+              className="absolute top-1.5 right-1.5 p-0.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Dismiss notification"
+              title="Dismiss"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+            <div className="flex items-start justify-between gap-2 pr-5">
               <p className="text-sm font-semibold">{n.title}</p>
               <span className={`text-[9px] px-1.5 py-0.5 rounded ${n.severity === "critical" ? "bg-red-100 text-red-700" : n.severity === "warning" ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}>
                 {n.severity}
