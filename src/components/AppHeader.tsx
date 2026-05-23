@@ -17,6 +17,7 @@ const AppHeader = () => {
     { to: "/", label: t("home") },
     { to: "/merchant", label: t("merchant_portal") },
     { to: "/help", label: t("help_desk") },
+    { to: "https://billing.mbdbusinesshub.in/", label: "Business Billing", external: true },
     { to: "/contact", label: "Contact" },
   ];
 
@@ -57,17 +58,29 @@ const AppHeader = () => {
           <div className="hidden items-center gap-1 md:flex">
             <nav className="flex gap-1">
               {links.map((l) => (
-                <Link
-                  key={l.to}
-                  to={l.to}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                    location.pathname === l.to
-                      ? "bg-primary-foreground/20 text-primary-foreground"
-                      : "text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground"
-                  }`}
-                >
-                  {l.label}
-                </Link>
+                l.external ? (
+                  <a
+                    key={l.to}
+                    href={l.to}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg px-4 py-2 text-sm font-medium text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground transition-colors"
+                  >
+                    {l.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={l.to}
+                    to={l.to}
+                    className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                      location.pathname === l.to
+                        ? "bg-primary-foreground/20 text-primary-foreground"
+                        : "text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                    }`}
+                  >
+                    {l.label}
+                  </Link>
+                )
               ))}
             </nav>
 
@@ -132,18 +145,31 @@ const AppHeader = () => {
         {menuOpen && (
           <nav className="border-t border-primary-foreground/10 bg-primary px-4 pb-4 md:hidden">
             {links.map((l) => (
-              <Link
-                key={l.to}
-                to={l.to}
-                onClick={() => setMenuOpen(false)}
-                className={`block rounded-lg px-3 py-2 text-sm font-medium ${
-                  location.pathname === l.to
-                    ? "bg-primary-foreground/20 text-primary-foreground"
-                    : "text-primary-foreground/70"
-                }`}
-              >
-                {l.label}
-              </Link>
+              l.external ? (
+                <a
+                  key={l.to}
+                  href={l.to}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMenuOpen(false)}
+                  className="block rounded-lg px-3 py-2 text-sm font-medium text-primary-foreground/70"
+                >
+                  {l.label}
+                </a>
+              ) : (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  onClick={() => setMenuOpen(false)}
+                  className={`block rounded-lg px-3 py-2 text-sm font-medium ${
+                    location.pathname === l.to
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : "text-primary-foreground/70"
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              )
             ))}
           </nav>
         )}
