@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Store, BarChart3, Package, ShoppingBag, HelpCircle, Plus, Trash2,
-  Save, Eye, Phone, MapPin, Edit, Mail
+  Save, Eye, Phone, MapPin, Edit, Mail, Receipt, ExternalLink, Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
 
