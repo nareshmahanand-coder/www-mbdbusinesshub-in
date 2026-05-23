@@ -947,9 +947,9 @@ const KycSection = () => {
                 <p className="text-[11px] text-muted-foreground">Expires: {new Date(k.kyc_expires_at).toLocaleString()}</p>
               )}
               <div className="grid grid-cols-3 gap-2">
-                {k.aadhaar_front_url && <a href={k.aadhaar_front_url} target="_blank" rel="noreferrer"><img src={k.aadhaar_front_url} className="h-20 w-full object-cover rounded border" alt="front" /></a>}
-                {k.aadhaar_back_url && <a href={k.aadhaar_back_url} target="_blank" rel="noreferrer"><img src={k.aadhaar_back_url} className="h-20 w-full object-cover rounded border" alt="back" /></a>}
-                {k.selfie_url && <a href={k.selfie_url} target="_blank" rel="noreferrer"><img src={k.selfie_url} className="h-20 w-full object-cover rounded border" alt="selfie" /></a>}
+                <KycThumb rawUrl={k.aadhaar_front_url} alt="front" />
+                <KycThumb rawUrl={k.aadhaar_back_url} alt="back" />
+                <KycThumb rawUrl={k.selfie_url} alt="selfie" />
               </div>
               <div className="flex flex-wrap gap-2 pt-1">
                 <Button size="sm" variant="outline" onClick={() => openCertificate(k)}><Eye className="h-4 w-4 mr-1" />View Certificate</Button>
