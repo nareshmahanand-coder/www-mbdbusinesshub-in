@@ -74,9 +74,10 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
     setKycUploading(true);
     const ext = file.name.split(".").pop();
     const path = `${user.id}/matrimony-${folder}-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("uploads").upload(path, file);
+    // KYC documents (Aadhaar/PAN) → private `kyc-photos` bucket; admin-only via signed URLs.
+    const { error } = await supabase.storage.from("kyc-photos").upload(path, file);
     if (error) { toast.error("Upload failed"); setKycUploading(false); return; }
-    const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
+    const { data: urlData } = supabase.storage.from("kyc-photos").getPublicUrl(path);
     setter(urlData.publicUrl);
     toast.success("Document uploaded!");
     setKycUploading(false);
