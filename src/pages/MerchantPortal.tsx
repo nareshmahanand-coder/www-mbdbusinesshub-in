@@ -46,14 +46,21 @@ const MerchantPortal = () => {
     aadhaarNumber: "", panNumber: "",
   });
 
-  const handleFileUpload = async (file: File, folder: string): Promise<string | null> => {
+  const handleFileUpload = async (
+    file: File,
+    folder: string,
+    opts: { private?: boolean } = {},
+  ): Promise<string | null> => {
     if (!user) { toast.error("Please login first"); return null; }
     setUploading(true);
     const ext = file.name.split(".").pop();
     const path = `${user.id}/${folder}-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("uploads").upload(path, file);
+    // Sensitive merchant documents go to the private `kyc-photos` bucket
+    // (admin-only access via signed URLs). Shop/product photos stay public.
+    const bucket = opts.private ? "kyc-photos" : "uploads";
+    const { error } = await supabase.storage.from(bucket).upload(path, file);
     if (error) { toast.error("Upload failed"); setUploading(false); return null; }
-    const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
+    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
     setUploading(false);
     return urlData.publicUrl;
   };
@@ -72,7 +79,7 @@ const MerchantPortal = () => {
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = await handleFileUpload(file, folder);
+    const url = await handleFileUpload(file, folder, { private: true });
     if (url) { setter(url); toast.success("Document uploaded!"); }
   };
 
