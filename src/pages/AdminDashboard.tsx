@@ -1057,7 +1057,7 @@ const KycCertificateDialog = ({ data, onClose, onResend }: { data: any | null; o
             </div>
             <div className="flex flex-col items-center justify-start gap-1">
               {data.selfie_url ? (
-                <img src={data.selfie_url} alt="Selfie" className="h-32 w-32 rounded-lg border-2 border-[#1a237e] object-cover" />
+                <KycThumb rawUrl={data.selfie_url} alt="Selfie" className="h-32 w-32 rounded-lg border-2 border-[#1a237e] object-cover" />
               ) : (
                 <div className="flex h-32 w-32 items-center justify-center rounded-lg border-2 border-dashed border-gray-400 text-[10px] text-gray-400">No Selfie</div>
               )}
@@ -1070,9 +1070,7 @@ const KycCertificateDialog = ({ data, onClose, onResend }: { data: any | null; o
             <div>
               <p className="mb-1 text-[10px] uppercase tracking-wider text-gray-500">Aadhaar Front / सामने</p>
               {data.aadhaar_front_url ? (
-                <a href={data.aadhaar_front_url} target="_blank" rel="noreferrer">
-                  <img src={data.aadhaar_front_url} alt="Aadhaar Front" className="h-32 w-full rounded-md border-2 border-gray-300 object-cover" />
-                </a>
+                <KycThumb rawUrl={data.aadhaar_front_url} alt="Aadhaar Front" className="h-32 w-full rounded-md border-2 border-gray-300 object-cover" />
               ) : (
                 <div className="flex h-32 w-full items-center justify-center rounded-md border-2 border-dashed border-gray-300 text-[10px] text-gray-400">No image</div>
               )}
@@ -1080,9 +1078,7 @@ const KycCertificateDialog = ({ data, onClose, onResend }: { data: any | null; o
             <div>
               <p className="mb-1 text-[10px] uppercase tracking-wider text-gray-500">Aadhaar Back / पीछे</p>
               {data.aadhaar_back_url ? (
-                <a href={data.aadhaar_back_url} target="_blank" rel="noreferrer">
-                  <img src={data.aadhaar_back_url} alt="Aadhaar Back" className="h-32 w-full rounded-md border-2 border-gray-300 object-cover" />
-                </a>
+                <KycThumb rawUrl={data.aadhaar_back_url} alt="Aadhaar Back" className="h-32 w-full rounded-md border-2 border-gray-300 object-cover" />
               ) : (
                 <div className="flex h-32 w-full items-center justify-center rounded-md border-2 border-dashed border-gray-300 text-[10px] text-gray-400">No image</div>
               )}
