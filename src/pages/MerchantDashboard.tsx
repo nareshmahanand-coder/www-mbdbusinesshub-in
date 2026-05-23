@@ -245,6 +245,36 @@ const MerchantDashboard = () => {
           </Card>
         </div>
 
+        {/* MBD Business Billing Hub */}
+        <a
+          href="https://billing.mbdbusinesshub.in/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-6 block group"
+        >
+          <Card className="relative overflow-hidden border-2 border-accent/40 bg-gradient-to-r from-primary via-primary to-accent text-primary-foreground shadow-lg transition-transform hover:scale-[1.01] active:scale-[0.99]">
+            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-accent/20 blur-2xl" />
+            <CardContent className="relative flex items-center justify-between gap-4 p-5">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary-foreground/15 ring-2 ring-primary-foreground/30 backdrop-blur">
+                  <Receipt className="h-7 w-7" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5 text-accent-foreground" />
+                    <Badge className="bg-accent text-accent-foreground text-[10px] px-1.5 py-0">PREMIUM</Badge>
+                  </div>
+                  <h3 className="mt-1 text-lg font-bold leading-tight">MBD Business Billing Hub</h3>
+                  <p className="font-hindi text-xs opacity-90">GST बिल, इन्वेंटरी और रिपोर्ट्स — एक ही जगह</p>
+                </div>
+              </div>
+              <div className="hidden sm:flex items-center gap-1 rounded-full bg-primary-foreground/15 px-3 py-1.5 text-xs font-semibold ring-1 ring-primary-foreground/30">
+                Open <ExternalLink className="h-3.5 w-3.5" />
+              </div>
+            </CardContent>
+          </Card>
+        </a>
+
         <Tabs defaultValue="profile">
           <TabsList className="w-full max-w-2xl flex-wrap">
             <TabsTrigger value="profile" className="flex-1 text-xs">
