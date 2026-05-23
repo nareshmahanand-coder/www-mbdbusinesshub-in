@@ -10,6 +10,19 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, SUPERUSER_FLAG } from "@/contexts/AuthContext";
 import { useSignedUrl } from "@/lib/signedStorageUrl";
+
+const KycThumb = ({ rawUrl, alt, className }: { rawUrl: string | null | undefined; alt: string; className?: string }) => {
+  const signed = useSignedUrl(rawUrl, "kyc-photos");
+  if (!rawUrl) return null;
+  if (!signed) {
+    return <div className={`flex items-center justify-center rounded border bg-muted text-[10px] text-muted-foreground ${className || "h-20 w-full"}`}>…</div>;
+  }
+  return (
+    <a href={signed} target="_blank" rel="noreferrer">
+      <img src={signed} className={className || "h-20 w-full object-cover rounded border"} alt={alt} />
+    </a>
+  );
+};
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
