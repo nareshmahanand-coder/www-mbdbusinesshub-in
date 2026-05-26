@@ -65,7 +65,7 @@ const MatrimonyPage = () => {
   const loadData = async () => {
     setLoading(true);
     const [profilesRes, myRes] = await Promise.all([
-      supabase.from("matrimony_profiles").select("*").eq("is_published", true).order("created_at", { ascending: false }),
+      supabase.rpc("list_published_matrimony_profiles"),
       user ? supabase.from("matrimony_profiles").select("*").eq("user_id", user.id).maybeSingle() : Promise.resolve({ data: null }),
     ]);
     if (profilesRes.data) setProfiles(profilesRes.data as unknown as MatrimonyProfile[]);
