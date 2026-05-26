@@ -25,7 +25,16 @@ type AdminMessageQueryClient = {
 const AdminMessageListener = () => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<AdminMessage[]>([]);
-  const getActionLink = (text: string) => text.match(/\/ekyc\?mode=upload[^\s]*/)?.[0] || "";
+  const getActionLink = (text: string) => {
+    const m = text.match(/\/(ekyc\?mode=upload[^\s]*|membership|merchant|matrimony)(\?[^\s]*)?/);
+    return m ? m[0] : "";
+  };
+  const getActionLabel = (link: string) => {
+    if (link.startsWith("/membership")) return "Open Bharat Gaurav Payment";
+    if (link.startsWith("/merchant")) return "Open Merchant Premium Payment";
+    if (link.startsWith("/matrimony")) return "Open Matrimony Premium Payment";
+    return "e-KYC upload form खोलें";
+  };
 
   useEffect(() => {
     if (!user) {
@@ -70,7 +79,7 @@ const AdminMessageListener = () => {
           <AlertDescription className="text-xs">{message.message}</AlertDescription>
           {getActionLink(message.message) && (
             <Button size="sm" className="mt-2 h-7 px-2 text-xs" onClick={() => { window.location.href = getActionLink(message.message); }}>
-              e-KYC upload form खोलें
+              {getActionLabel(getActionLink(message.message))}
             </Button>
           )}
         </Alert>
