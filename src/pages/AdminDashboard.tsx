@@ -786,30 +786,63 @@ const MatrimonySection = () => {
 const SubscriptionsSection = () => {
   const [rows, setRows] = useState<any[]>([]);
   const [confirm, setConfirm] = useState<any>(null);
+  const [details, setDetails] = useState<any | null>(null);
   const load = async () => {
     const data = await adminFetch("subscriptions");
     const bg = { data: data?.bg || [] };
     const mp = { data: data?.mp || [] };
     const mat = { data: data?.mat || [] };
+    const profiles: Record<string, any> = data?.profiles || {};
+    const payments: Record<string, any> = data?.payments || {};
+    const nameFor = (uid: string) => {
+      const p = profiles[uid];
+      return p?.display_name || p?.email || p?.phone || (uid ? uid.slice(0, 8) + "…" : "—");
+    };
+    const phoneFor = (uid: string) => profiles[uid]?.phone || "";
+    const emailFor = (uid: string) => profiles[uid]?.email || "";
+    const mapPayStatus = (s: string | undefined, fallback = "pending") => {
+      const v = (s || fallback).toLowerCase();
+      if (v === "active" || v === "paid" || v === "verified") return "Active";
+      if (v === "failed" || v === "cancelled" || v === "error") return "Failed";
+      return "Pending";
+    };
     const out: any[] = [];
     (bg.data || []).forEach((r: any) => out.push({
       id: "bg-" + r.id, kind: "bg", refId: r.id,
-      source: "Bharat Gaurav", who: r.user_id?.slice(0, 8) + "...",
+      source: "Bharat Gaurav",
+      user_id: r.user_id,
+      who: nameFor(r.user_id),
+      phone: phoneFor(r.user_id),
+      email: emailFor(r.user_id),
       plan: r.plan, amount: r.amount, status: r.status,
+      payStatus: mapPayStatus(r.status, "pending"),
+      latestPayment: payments[`${r.user_id}|bharat_gaurav`] || null,
       started: r.started_at, ends: r.expires_at, ref: r.razorpay_payment_id,
       created_at: r.created_at,
     }));
     (mp.data || []).forEach((r: any) => out.push({
       id: "mp-" + r.user_id, kind: "mp", refId: r.user_id,
-      source: "Merchant Premium", who: r.shop_name || r.user_id?.slice(0, 8) + "...",
+      source: "Merchant Premium",
+      user_id: r.user_id,
+      who: r.shop_name || nameFor(r.user_id),
+      phone: phoneFor(r.user_id),
+      email: emailFor(r.user_id),
       plan: r.premium_plan, amount: null, status: "active",
+      payStatus: "Active",
+      latestPayment: payments[`${r.user_id}|merchant_premium`] || null,
       started: r.premium_start_date, ends: r.plan_ends_at, ref: "—",
       created_at: r.created_at,
     }));
     (mat.data || []).forEach((r: any) => out.push({
       id: "mat-" + r.user_id, kind: "mat", refId: r.user_id,
-      source: "Marriage Bureau", who: r.name || r.user_id?.slice(0, 8) + "...",
+      source: "Marriage Bureau",
+      user_id: r.user_id,
+      who: r.name || nameFor(r.user_id),
+      phone: phoneFor(r.user_id),
+      email: emailFor(r.user_id),
       plan: r.subscription_plan, amount: null, status: "active",
+      payStatus: "Active",
+      latestPayment: payments[`${r.user_id}|marriage_bureau`] || null,
       started: r.subscription_start, ends: r.subscription_end, ref: "—",
       created_at: r.created_at,
     }));
@@ -832,21 +865,26 @@ const SubscriptionsSection = () => {
       <CardContent className="overflow-x-auto">
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Source</TableHead><TableHead>User / Shop</TableHead><TableHead>Plan</TableHead><TableHead>Amount</TableHead>
+            <TableHead>Source</TableHead><TableHead>Full Name</TableHead><TableHead>Phone</TableHead><TableHead>Plan</TableHead><TableHead>Amount</TableHead>
             <TableHead>Status</TableHead><TableHead>Started</TableHead><TableHead>Expires</TableHead><TableHead>Ref</TableHead><TableHead className="text-right">Action</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {rows.map((r) => (
-              <TableRow key={r.id}>
+              <TableRow key={r.id} className="cursor-pointer hover:bg-muted/40" onClick={() => setDetails(r)}>
                 <TableCell><Badge variant="outline">{r.source}</Badge></TableCell>
-                <TableCell className="text-xs">{r.who}</TableCell>
+                <TableCell className="text-xs font-medium">{r.who}</TableCell>
+                <TableCell className="text-xs">{r.phone || "—"}</TableCell>
                 <TableCell><Badge>{r.plan}</Badge></TableCell>
                 <TableCell>{r.amount != null ? inr(r.amount) : "—"}</TableCell>
-                <TableCell>{r.status}</TableCell>
+                <TableCell>
+                  <Badge variant={r.payStatus === "Active" ? "default" : r.payStatus === "Failed" ? "destructive" : "secondary"}>
+                    {r.payStatus}
+                  </Badge>
+                </TableCell>
                 <TableCell className="text-xs">{r.started ? new Date(r.started).toLocaleDateString() : "—"}</TableCell>
                 <TableCell className="text-xs">{r.ends ? new Date(r.ends).toLocaleDateString() : "—"}</TableCell>
                 <TableCell className="text-xs">{r.ref || "—"}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <Button size="sm" variant="destructive" className="h-7 px-2" onClick={() => setConfirm(r)}>
                     <Trash2 className="h-3.5 w-3.5 mr-1" />Delete
                   </Button>
@@ -857,6 +895,28 @@ const SubscriptionsSection = () => {
         </Table>
         {!rows.length && <p className="py-8 text-center text-sm text-muted-foreground">No subscriptions</p>}
       </CardContent>
+      <Dialog open={!!details} onOpenChange={(o) => !o && setDetails(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Subscription Details</DialogTitle></DialogHeader>
+          {details && (
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Source</span><b>{details.source}</b></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Full Name</span><b>{details.who}</b></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Phone</span><span>{details.phone || "—"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Email</span><span className="truncate max-w-[60%]">{details.email || "—"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Plan</span><Badge>{details.plan || "—"}</Badge></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Amount</span><span>{details.amount != null ? inr(details.amount) : "—"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Payment Status</span>
+                <Badge variant={details.payStatus === "Active" ? "default" : details.payStatus === "Failed" ? "destructive" : "secondary"}>{details.payStatus}</Badge>
+              </div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Started</span><span>{details.started ? new Date(details.started).toLocaleString() : "—"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Expires</span><span>{details.ends ? new Date(details.ends).toLocaleString() : "—"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Payment Ref</span><span className="text-xs">{details.ref || details.latestPayment?.razorpay_payment_id || "—"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">User ID</span><span className="text-[10px] font-mono">{details.user_id}</span></div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Cancel Subscription?</DialogTitle></DialogHeader>
@@ -880,6 +940,7 @@ const KycSection = () => {
   const [rows, setRows] = useState<any[]>([]);
   const [filter, setFilter] = useState("pending");
   const [viewing, setViewing] = useState<any | null>(null);
+  const [payLinkFor, setPayLinkFor] = useState<any | null>(null);
   const load = async () => {
     const data = await adminFetch("kyc", { filter });
     setRows(data?.rows || []);
@@ -901,6 +962,23 @@ const KycSection = () => {
     await adminFetch("resend_kyc", { user_id });
     toast.success("Re-KYC link sent / पुनः KYC link भेजा गया");
     load();
+  };
+
+  const sendPaymentLink = async (user_id: string, mod: string, plan: string) => {
+    const res = await adminFetch("resend_payment_link", { user_id, module: mod, plan });
+    if (res?.ok) {
+      toast.success("Payment link sent / Payment link भेजा गया");
+      setPayLinkFor(null);
+    } else {
+      toast.error(res?.error || "Failed to send link");
+    }
+  };
+
+  const manualVerify = async (user_id: string) => {
+    if (!confirm("Manual Verify? यूजर का KYC + Payment verified mark होगा।")) return;
+    const res = await adminFetch("manual_verify", { user_id });
+    if (res?.ok) { toast.success("User manually verified"); load(); }
+    else toast.error(res?.error || "Failed");
   };
 
   const removeKyc = async (id: string) => {
@@ -980,6 +1058,12 @@ const KycSection = () => {
                     <Button size="sm" variant="destructive" onClick={() => decide(k.id, "rejected")}><XCircle className="h-4 w-4 mr-1" />Reject</Button>
                   </>
                 )}
+                <Button size="sm" variant="outline" onClick={() => setPayLinkFor(k)}>
+                  <Send className="h-4 w-4 mr-1" />Resend Payment Link
+                </Button>
+                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => manualVerify(k.user_id)}>
+                  <ShieldCheck className="h-4 w-4 mr-1" />Manual Verify (Payment + KYC)
+                </Button>
                 <Button size="sm" variant="destructive" onClick={() => removeKyc(k.id)}>
                   <Trash2 className="h-4 w-4 mr-1" />Delete KYC
                 </Button>
@@ -991,6 +1075,37 @@ const KycSection = () => {
       </CardContent>
     </Card>
     <KycCertificateDialog data={viewing} onClose={() => setViewing(null)} onResend={(userId) => resend(userId)} />
+    <Dialog open={!!payLinkFor} onOpenChange={(o) => !o && setPayLinkFor(null)}>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>Send Payment Link</DialogTitle></DialogHeader>
+        {payLinkFor && (
+          <div className="space-y-3 text-sm">
+            <p className="text-muted-foreground">User: <b className="text-foreground">{payLinkFor.full_name}</b> ({payLinkFor.mobile})</p>
+            <p className="text-xs text-muted-foreground">कौन सा प्लान भेजना है? Notification भेजा जाएगा जिसे छूते ही payment page खुलेगा।</p>
+            <div className="grid gap-2">
+              <Button variant="outline" className="justify-start" onClick={() => sendPaymentLink(payLinkFor.user_id, "bharat_gaurav", "monthly")}>
+                Bharat Gaurav Monthly — ₹10
+              </Button>
+              <Button variant="outline" className="justify-start" onClick={() => sendPaymentLink(payLinkFor.user_id, "bharat_gaurav", "yearly")}>
+                Bharat Gaurav Yearly — ₹100
+              </Button>
+              <Button variant="outline" className="justify-start" onClick={() => sendPaymentLink(payLinkFor.user_id, "merchant_premium", "monthly")}>
+                Merchant Portal Premium Monthly — ₹99
+              </Button>
+              <Button variant="outline" className="justify-start" onClick={() => sendPaymentLink(payLinkFor.user_id, "merchant_premium", "yearly")}>
+                Merchant Portal Premium Yearly — ₹999
+              </Button>
+              <Button variant="outline" className="justify-start" onClick={() => sendPaymentLink(payLinkFor.user_id, "marriage_bureau", "monthly")}>
+                Marriage Bureau Premium Monthly — ₹99
+              </Button>
+              <Button variant="outline" className="justify-start" onClick={() => sendPaymentLink(payLinkFor.user_id, "marriage_bureau", "yearly")}>
+                Marriage Bureau Premium Yearly — ₹999
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
     </>
   );
 };

@@ -121,7 +121,25 @@ Deno.serve(async (req) => {
           sb.from("merchant_profiles").select("user_id,shop_name,premium_plan,premium_start_date,plan_ends_at,is_premium,created_at").eq("is_premium", true).order("created_at", { ascending: false }),
           sb.from("matrimony_profiles").select("user_id,name,subscription_plan,subscription_start,subscription_end,created_at").not("subscription_plan", "is", null).order("created_at", { ascending: false }),
         ]);
-        return json({ bg: bg.data || [], mp: mp.data || [], mat: mat.data || [] });
+        const userIds = Array.from(new Set([
+          ...(bg.data || []).map((r: any) => r.user_id),
+          ...(mp.data || []).map((r: any) => r.user_id),
+          ...(mat.data || []).map((r: any) => r.user_id),
+        ].filter(Boolean)));
+        let profileMap: Record<string, any> = {};
+        let payMap: Record<string, any> = {};
+        if (userIds.length) {
+          const [{ data: profs }, { data: pays }] = await Promise.all([
+            sb.from("profiles").select("id,display_name,email,phone").in("id", userIds),
+            sb.from("payment_orders").select("user_id,module,status,amount,created_at,razorpay_payment_id").in("user_id", userIds).order("created_at", { ascending: false }),
+          ]);
+          (profs || []).forEach((p: any) => { profileMap[p.id] = p; });
+          (pays || []).forEach((p: any) => {
+            const k = `${p.user_id}|${p.module}`;
+            if (!payMap[k]) payMap[k] = p;
+          });
+        }
+        return json({ bg: bg.data || [], mp: mp.data || [], mat: mat.data || [], profiles: profileMap, payments: payMap });
       }
       case "kyc": {
         const filter = body.filter || "pending";
@@ -227,6 +245,68 @@ Deno.serve(async (req) => {
         if (!id) return json({ error: "id required" }, 400);
         const { error } = await sb.from("kyc_verifications").delete().eq("id", id);
         if (error) return json({ error: error.message }, 400);
+        return json({ ok: true });
+      }
+      case "resend_payment_link": {
+        // body: { user_id, module: "bharat_gaurav"|"merchant_premium"|"marriage_bureau", plan: "monthly"|"yearly" }
+        const { user_id, module: mod, plan } = body;
+        if (!user_id || !mod) return json({ error: "user_id and module required" }, 400);
+        const planLabel = plan === "yearly" ? "Yearly" : "Monthly";
+        const map: Record<string, { path: string; title: string; amount: string }> = {
+          bharat_gaurav: {
+            path: "/membership",
+            title: `Bharat Gaurav ${planLabel} Plan`,
+            amount: plan === "yearly" ? "₹100/year" : "₹10/month",
+          },
+          merchant_premium: {
+            path: "/merchant",
+            title: `Merchant Portal Premium (${planLabel})`,
+            amount: plan === "yearly" ? "₹999/year" : "₹99/month",
+          },
+          marriage_bureau: {
+            path: "/matrimony",
+            title: `Marriage Bureau Premium (${planLabel})`,
+            amount: plan === "yearly" ? "₹999/year" : "₹99/month",
+          },
+        };
+        const info = map[mod];
+        if (!info) return json({ error: "unknown module" }, 400);
+        const { data: anyAdmin } = await sb.from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
+        const senderId = anyAdmin?.user_id || user_id;
+        const { error } = await sb.from("admin_messages").insert({
+          sender_id: senderId,
+          recipient_user_id: user_id,
+          recipient_group: "user",
+          title: `Payment Link: ${info.title}`,
+          message: `${info.amount}\nPayment page खोलने के लिए नीचे बटन दबाएँ: ${info.path}`,
+          severity: "info",
+        });
+        if (error) return json({ error: error.message }, 400);
+        return json({ ok: true, path: info.path });
+      }
+      case "manual_verify": {
+        // body: { user_id }
+        const { user_id } = body;
+        if (!user_id) return json({ error: "user_id required" }, 400);
+        const now = new Date().toISOString();
+        const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        await sb.from("kyc_verifications").update({
+          status: "verified",
+          verified_at: now,
+          kyc_expires_at: expires,
+          re_kyc_requested_at: null,
+        }).eq("user_id", user_id);
+        try { await sb.from("merchant_profiles").update({ is_verified: true }).eq("user_id", user_id); } catch (_) {}
+        const { data: anyAdmin } = await sb.from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
+        const senderId = anyAdmin?.user_id || user_id;
+        await sb.from("admin_messages").insert({
+          sender_id: senderId,
+          recipient_user_id: user_id,
+          recipient_group: "user",
+          title: "Account Verified ✅",
+          message: "आपका KYC + Payment Admin द्वारा सत्यापित (verified) कर दिया गया है।",
+          severity: "info",
+        });
         return json({ ok: true });
       }
       case "delete_user": {
