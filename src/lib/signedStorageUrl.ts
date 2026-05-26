@@ -1,41 +1,66 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const PRIVATE_BUCKETS = ["kyc-photos", "blood-proof"] as const;
-type PrivateBucket = (typeof PRIVATE_BUCKETS)[number];
+const PRIVATE_BUCKETS = new Set(["kyc-photos", "blood-proof"]);
+const KNOWN_BUCKETS = ["kyc-photos", "blood-proof", "uploads", "skill-pdfs"];
 
 /**
- * Extracts the object path from a stored Supabase storage URL.
- * Works for both `/object/public/<bucket>/...` and `/object/sign/<bucket>/...` styles,
- * and also tolerates the bare path being stored.
+ * Detect which bucket a stored URL/path refers to. Returns null if it can't tell.
+ */
+function detectBucket(rawUrl: string, fallbackBucket?: string): string | null {
+  for (const b of KNOWN_BUCKETS) {
+    if (
+      rawUrl.includes(`/object/public/${b}/`) ||
+      rawUrl.includes(`/object/sign/${b}/`) ||
+      rawUrl.includes(`/object/authenticated/${b}/`) ||
+      rawUrl.startsWith(`${b}/`)
+    ) {
+      return b;
+    }
+  }
+  return fallbackBucket ?? null;
+}
+
+/**
+ * Extract the object path inside a given bucket from a Supabase storage URL.
  */
 export function extractStoragePath(rawUrl: string | null | undefined, bucket: string): string | null {
   if (!rawUrl) return null;
-  const publicMarker = `/object/public/${bucket}/`;
-  const signMarker = `/object/sign/${bucket}/`;
-  let path = rawUrl;
-  if (rawUrl.includes(publicMarker)) {
-    path = rawUrl.split(publicMarker)[1] ?? "";
-  } else if (rawUrl.includes(signMarker)) {
-    path = rawUrl.split(signMarker)[1] ?? "";
-  } else if (rawUrl.startsWith(`${bucket}/`)) {
+  const markers = [
+    `/object/public/${bucket}/`,
+    `/object/sign/${bucket}/`,
+    `/object/authenticated/${bucket}/`,
+  ];
+  let path: string | null = null;
+  for (const m of markers) {
+    if (rawUrl.includes(m)) {
+      path = rawUrl.split(m)[1] ?? "";
+      break;
+    }
+  }
+  if (path === null && rawUrl.startsWith(`${bucket}/`)) {
     path = rawUrl.slice(bucket.length + 1);
   }
+  if (path === null) return null;
   path = path.split("?")[0];
   return path || null;
 }
 
 /**
- * Convert a stored URL/path for a private bucket into a fresh signed URL.
- * Returns the original URL if the bucket isn't private (no signing needed).
+ * Convert a stored URL/path into a viewable URL.
+ * - If it's in a public bucket, returns the original URL untouched.
+ * - If it's in a private bucket, signs it (auto-detects the bucket from the URL).
+ * - The `bucketHint` is used only when the URL is just a bare path with no bucket info.
  */
 export async function toViewableUrl(
   rawUrl: string | null | undefined,
-  bucket: string,
+  bucketHint?: string,
   expiresInSeconds = 3600,
 ): Promise<string | null> {
   if (!rawUrl) return null;
-  if (!PRIVATE_BUCKETS.includes(bucket as PrivateBucket)) return rawUrl;
+  const bucket = detectBucket(rawUrl, bucketHint);
+  if (!bucket) return rawUrl; // unknown — best effort, return as-is
+  if (!PRIVATE_BUCKETS.has(bucket)) return rawUrl;
   const path = extractStoragePath(rawUrl, bucket);
   if (!path) return null;
   const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresInSeconds);
@@ -44,7 +69,7 @@ export async function toViewableUrl(
 }
 
 /** React hook: resolves a stored URL into a viewable (signed if private) URL. */
-export function useSignedUrl(rawUrl: string | null | undefined, bucket: string, expiresInSeconds = 3600) {
+export function useSignedUrl(rawUrl: string | null | undefined, bucketHint?: string, expiresInSeconds = 3600) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -52,12 +77,12 @@ export function useSignedUrl(rawUrl: string | null | undefined, bucket: string, 
       setUrl(null);
       return;
     }
-    toViewableUrl(rawUrl, bucket, expiresInSeconds).then((u) => {
+    toViewableUrl(rawUrl, bucketHint, expiresInSeconds).then((u) => {
       if (!cancelled) setUrl(u);
     });
     return () => {
       cancelled = true;
     };
-  }, [rawUrl, bucket, expiresInSeconds]);
+  }, [rawUrl, bucketHint, expiresInSeconds]);
   return url;
 }
