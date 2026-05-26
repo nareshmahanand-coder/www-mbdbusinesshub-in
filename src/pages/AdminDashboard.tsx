@@ -940,6 +940,7 @@ const KycSection = () => {
   const [rows, setRows] = useState<any[]>([]);
   const [filter, setFilter] = useState("pending");
   const [viewing, setViewing] = useState<any | null>(null);
+  const [payLinkFor, setPayLinkFor] = useState<any | null>(null);
   const load = async () => {
     const data = await adminFetch("kyc", { filter });
     setRows(data?.rows || []);
@@ -961,6 +962,23 @@ const KycSection = () => {
     await adminFetch("resend_kyc", { user_id });
     toast.success("Re-KYC link sent / पुनः KYC link भेजा गया");
     load();
+  };
+
+  const sendPaymentLink = async (user_id: string, mod: string, plan: string) => {
+    const res = await adminFetch("resend_payment_link", { user_id, module: mod, plan });
+    if (res?.ok) {
+      toast.success("Payment link sent / Payment link भेजा गया");
+      setPayLinkFor(null);
+    } else {
+      toast.error(res?.error || "Failed to send link");
+    }
+  };
+
+  const manualVerify = async (user_id: string) => {
+    if (!confirm("Manual Verify? यूजर का KYC + Payment verified mark होगा।")) return;
+    const res = await adminFetch("manual_verify", { user_id });
+    if (res?.ok) { toast.success("User manually verified"); load(); }
+    else toast.error(res?.error || "Failed");
   };
 
   const removeKyc = async (id: string) => {
@@ -1040,6 +1058,12 @@ const KycSection = () => {
                     <Button size="sm" variant="destructive" onClick={() => decide(k.id, "rejected")}><XCircle className="h-4 w-4 mr-1" />Reject</Button>
                   </>
                 )}
+                <Button size="sm" variant="outline" onClick={() => setPayLinkFor(k)}>
+                  <Send className="h-4 w-4 mr-1" />Resend Payment Link
+                </Button>
+                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => manualVerify(k.user_id)}>
+                  <ShieldCheck className="h-4 w-4 mr-1" />Manual Verify (Payment + KYC)
+                </Button>
                 <Button size="sm" variant="destructive" onClick={() => removeKyc(k.id)}>
                   <Trash2 className="h-4 w-4 mr-1" />Delete KYC
                 </Button>
@@ -1051,6 +1075,37 @@ const KycSection = () => {
       </CardContent>
     </Card>
     <KycCertificateDialog data={viewing} onClose={() => setViewing(null)} onResend={(userId) => resend(userId)} />
+    <Dialog open={!!payLinkFor} onOpenChange={(o) => !o && setPayLinkFor(null)}>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>Send Payment Link</DialogTitle></DialogHeader>
+        {payLinkFor && (
+          <div className="space-y-3 text-sm">
+            <p className="text-muted-foreground">User: <b className="text-foreground">{payLinkFor.full_name}</b> ({payLinkFor.mobile})</p>
+            <p className="text-xs text-muted-foreground">कौन सा प्लान भेजना है? Notification भेजा जाएगा जिसे छूते ही payment page खुलेगा।</p>
+            <div className="grid gap-2">
+              <Button variant="outline" className="justify-start" onClick={() => sendPaymentLink(payLinkFor.user_id, "bharat_gaurav", "monthly")}>
+                Bharat Gaurav Monthly — ₹10
+              </Button>
+              <Button variant="outline" className="justify-start" onClick={() => sendPaymentLink(payLinkFor.user_id, "bharat_gaurav", "yearly")}>
+                Bharat Gaurav Yearly — ₹100
+              </Button>
+              <Button variant="outline" className="justify-start" onClick={() => sendPaymentLink(payLinkFor.user_id, "merchant_premium", "monthly")}>
+                Merchant Portal Premium Monthly — ₹99
+              </Button>
+              <Button variant="outline" className="justify-start" onClick={() => sendPaymentLink(payLinkFor.user_id, "merchant_premium", "yearly")}>
+                Merchant Portal Premium Yearly — ₹999
+              </Button>
+              <Button variant="outline" className="justify-start" onClick={() => sendPaymentLink(payLinkFor.user_id, "marriage_bureau", "monthly")}>
+                Marriage Bureau Premium Monthly — ₹99
+              </Button>
+              <Button variant="outline" className="justify-start" onClick={() => sendPaymentLink(payLinkFor.user_id, "marriage_bureau", "yearly")}>
+                Marriage Bureau Premium Yearly — ₹999
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
     </>
   );
 };
