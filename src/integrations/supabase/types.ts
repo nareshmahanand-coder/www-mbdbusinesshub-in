@@ -578,6 +578,13 @@ export type Database = {
             referencedRelation: "matrimony_profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contact_requests_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "matrimony_profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       duplicate_attempts: {
@@ -1714,7 +1721,75 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      matrimony_profiles_public: {
+        Row: {
+          about_me: string | null
+          city: string | null
+          created_at: string | null
+          dob: string | null
+          education: string | null
+          family_background: string | null
+          gender: string | null
+          height: string | null
+          hobbies: string | null
+          id: string | null
+          is_published: boolean | null
+          job_details: string | null
+          moderation_status: string | null
+          name: string | null
+          photos: string[] | null
+          profession: string | null
+          subscription_end: string | null
+          subscription_plan: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          about_me?: string | null
+          city?: string | null
+          created_at?: string | null
+          dob?: string | null
+          education?: string | null
+          family_background?: string | null
+          gender?: string | null
+          height?: string | null
+          hobbies?: string | null
+          id?: string | null
+          is_published?: boolean | null
+          job_details?: string | null
+          moderation_status?: string | null
+          name?: string | null
+          photos?: string[] | null
+          profession?: string | null
+          subscription_end?: string | null
+          subscription_plan?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          about_me?: string | null
+          city?: string | null
+          created_at?: string | null
+          dob?: string | null
+          education?: string | null
+          family_background?: string | null
+          gender?: string | null
+          height?: string | null
+          hobbies?: string | null
+          id?: string | null
+          is_published?: boolean | null
+          job_details?: string | null
+          moderation_status?: string | null
+          name?: string | null
+          photos?: string[] | null
+          profession?: string | null
+          subscription_end?: string | null
+          subscription_plan?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_kyc_duplicate: {
