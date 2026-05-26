@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const PRIVATE_BUCKETS = new Set(["kyc-photos", "blood-proof"]);
+// All buckets are public per project decision — nothing is treated as private.
+const PRIVATE_BUCKETS = new Set<string>();
 const KNOWN_BUCKETS = ["kyc-photos", "blood-proof", "uploads", "skill-pdfs"];
 
 /**
