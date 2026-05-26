@@ -1732,6 +1732,31 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_published_matrimony_profiles: {
+        Args: never
+        Returns: {
+          about_me: string
+          city: string
+          created_at: string
+          dob: string
+          education: string
+          family_background: string
+          gender: string
+          height: string
+          hobbies: string
+          id: string
+          is_published: boolean
+          job_details: string
+          moderation_status: string
+          name: string
+          photos: string[]
+          profession: string
+          subscription_end: string
+          subscription_plan: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
