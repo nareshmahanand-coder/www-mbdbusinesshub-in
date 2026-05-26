@@ -578,13 +578,6 @@ export type Database = {
             referencedRelation: "matrimony_profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "contact_requests_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "matrimony_profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       duplicate_attempts: {
@@ -1721,75 +1714,7 @@ export type Database = {
       }
     }
     Views: {
-      matrimony_profiles_public: {
-        Row: {
-          about_me: string | null
-          city: string | null
-          created_at: string | null
-          dob: string | null
-          education: string | null
-          family_background: string | null
-          gender: string | null
-          height: string | null
-          hobbies: string | null
-          id: string | null
-          is_published: boolean | null
-          job_details: string | null
-          moderation_status: string | null
-          name: string | null
-          photos: string[] | null
-          profession: string | null
-          subscription_end: string | null
-          subscription_plan: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          about_me?: string | null
-          city?: string | null
-          created_at?: string | null
-          dob?: string | null
-          education?: string | null
-          family_background?: string | null
-          gender?: string | null
-          height?: string | null
-          hobbies?: string | null
-          id?: string | null
-          is_published?: boolean | null
-          job_details?: string | null
-          moderation_status?: string | null
-          name?: string | null
-          photos?: string[] | null
-          profession?: string | null
-          subscription_end?: string | null
-          subscription_plan?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          about_me?: string | null
-          city?: string | null
-          created_at?: string | null
-          dob?: string | null
-          education?: string | null
-          family_background?: string | null
-          gender?: string | null
-          height?: string | null
-          hobbies?: string | null
-          id?: string | null
-          is_published?: boolean | null
-          job_details?: string | null
-          moderation_status?: string | null
-          name?: string | null
-          photos?: string[] | null
-          profession?: string | null
-          subscription_end?: string | null
-          subscription_plan?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       check_kyc_duplicate: {
@@ -1806,6 +1731,31 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      list_published_matrimony_profiles: {
+        Args: never
+        Returns: {
+          about_me: string
+          city: string
+          created_at: string
+          dob: string
+          education: string
+          family_background: string
+          gender: string
+          height: string
+          hobbies: string
+          id: string
+          is_published: boolean
+          job_details: string
+          moderation_status: string
+          name: string
+          photos: string[]
+          profession: string
+          subscription_end: string
+          subscription_plan: string
+          updated_at: string
+          user_id: string
+        }[]
       }
     }
     Enums: {
