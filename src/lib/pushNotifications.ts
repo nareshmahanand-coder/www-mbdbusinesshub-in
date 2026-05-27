@@ -4,6 +4,23 @@ import { App as CapacitorApp } from "@capacitor/app";
 import { supabase } from "@/integrations/supabase/client";
 
 let initialized = false;
+let lastToken: string | null = null;
+
+async function saveToken(token: string) {
+  lastToken = token;
+  const { data } = await supabase.auth.getUser();
+  const userId = data?.user?.id;
+  if (!userId) return;
+  await supabase.from("device_push_tokens").upsert(
+    {
+      user_id: userId,
+      token,
+      platform: Capacitor.getPlatform(),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "token" },
+  );
+}
 
 export async function initPushNotifications() {
   if (initialized) return;
@@ -38,18 +55,7 @@ export async function initPushNotifications() {
 
     PushNotifications.addListener("registration", async (token) => {
       try {
-        const { data } = await supabase.auth.getUser();
-        const userId = data?.user?.id;
-        if (!userId) return;
-        await supabase.from("device_push_tokens").upsert(
-          {
-            user_id: userId,
-            token: token.value,
-            platform: Capacitor.getPlatform(),
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "token" },
-        );
+        await saveToken(token.value);
       } catch (e) {
         console.error("Failed to save push token", e);
       }
@@ -78,6 +84,13 @@ export async function initPushNotifications() {
     CapacitorApp.addListener("appStateChange", async (state) => {
       if (state.isActive) {
         try { await PushNotifications.register(); } catch {/* ignore */}
+      }
+    });
+
+    // When user signs in later, persist the cached token
+    supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" && lastToken) {
+        void saveToken(lastToken);
       }
     });
   } catch (e) {
