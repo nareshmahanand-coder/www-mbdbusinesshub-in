@@ -100,8 +100,8 @@ Deno.serve(async (req) => {
           android: {
             priority: "HIGH",
             notification: {
-              channel_id: "mbd_high_priority",
-              sound: "national_anthem",
+              channel_id: "mbd_default",
+              sound: "default",
               click_action: "FLUTTER_NOTIFICATION_CLICK",
             },
           },
