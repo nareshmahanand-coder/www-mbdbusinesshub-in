@@ -37,7 +37,7 @@
         <!-- Default Firebase Messaging channel (used as fallback when FCM payload omits channel_id) -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="mbd_high_priority" />
+            android:value="mbd_default" />
     </application>
 
     <!-- Permissions -->

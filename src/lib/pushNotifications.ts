@@ -31,12 +31,11 @@ export async function initPushNotifications() {
     // Create Android channel with custom sound
     if (Capacitor.getPlatform() === "android") {
       await PushNotifications.createChannel({
-        id: "mbd_high_priority",
+        id: "mbd_default",
         name: "Mera Bharat Dukaan Alerts",
         description: "Important admin notifications",
         importance: 5, // IMPORTANCE_HIGH (heads-up + sound)
         visibility: 1,
-        sound: "national_anthem", // file: android/app/src/main/res/raw/national_anthem.mp3
         lights: true,
         vibration: true,
       });
