@@ -3,8 +3,8 @@ import { Button, type ButtonProps } from "@/components/ui/button";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
 import { toast } from "@/hooks/use-toast";
 
-const SHARE_URL = "https://shop.mbdbusinesshub.in";
-const SHARE_TEXT = `Mera Bharat Dukaan — आपका पड़ोस, आपकी दुकान, ज़ीरो कमीशन। अभी खोलें: ${SHARE_URL}`;
+const SHARE_URL = "https://shop.mbdbusinesshub.in/?install=1";
+const SHARE_TEXT = `Mera Bharat Dukaan — आपका पड़ोस, आपकी दुकान, ज़ीरो कमीशन।\nलिंक खोलें और तुरंत ऐप इंस्टॉल करें: ${SHARE_URL}`;
 
 type Props = Omit<ButtonProps, "onClick"> & {
   label?: string;
