@@ -39,6 +39,7 @@ import BlockedScreen from "@/components/BlockedScreen";
 
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
+import InstallPromptAutoTrigger from "./components/InstallPromptAutoTrigger";
 // AdminMessageListener removed — all notifications shown only in top Notification Bell
 
 const queryClient = new QueryClient();
@@ -154,6 +155,7 @@ const AppShell = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <BharatMitraChatbot />
+      <InstallPromptAutoTrigger />
     </>
   );
 };
