@@ -21,10 +21,12 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { User, LogOut, LayoutDashboard, Store, Settings, Trash2, Bell, X, Share2 } from "lucide-react";
+import { User, LogOut, LayoutDashboard, Store, Settings, Trash2, Bell, X, Share2, Download } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { usePwaInstall } from "@/hooks/usePwaInstall";
+import { shareApp } from "@/components/ShareAppButton";
 
 const UserProfileMenu = () => {
   const { user, signOut } = useAuth();
@@ -37,6 +39,7 @@ const UserProfileMenu = () => {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifs, setNotifs] = useState<any[]>([]);
   const [unread, setUnread] = useState(0);
+  const { canInstall, promptInstall } = usePwaInstall();
 
   const READ_KEY = user ? `mbd-notif-read-${user.id}` : "";
   const DISMISSED_KEY = user ? `mbd-notif-dismissed-${user.id}` : "";
@@ -241,30 +244,16 @@ const UserProfileMenu = () => {
         <DropdownMenuItem
           onSelect={async (e) => {
             e.preventDefault();
-            const shareUrl = "https://shop.mbdbusinesshub.in";
-            const shareText = `Mera Bharat Dukaan — आपका पड़ोस, आपकी दुकान, ज़ीरो कमीशन। अभी खोलें: ${shareUrl}`;
-            try {
-              if (typeof navigator !== "undefined" && (navigator as any).share) {
-                await (navigator as any).share({
-                  title: "Mera Bharat Dukaan",
-                  text: shareText,
-                  url: shareUrl,
-                });
-              } else {
-                window.open(
-                  `https://wa.me/?text=${encodeURIComponent(shareText)}`,
-                  "_blank",
-                  "noopener,noreferrer"
-                );
-              }
-            } catch {
-              // user cancelled share — no-op
+            if (canInstall) {
+              const outcome = await promptInstall();
+              if (outcome === "accepted") return;
             }
+            await shareApp();
           }}
           className="cursor-pointer"
         >
-          <Share2 className="mr-2 h-4 w-4" />
-          <span>Share App</span>
+          {canInstall ? <Download className="mr-2 h-4 w-4" /> : <Share2 className="mr-2 h-4 w-4" />}
+          <span>{canInstall ? "Install App" : "Share App"}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
