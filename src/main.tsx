@@ -4,7 +4,12 @@ import "./index.css";
 import { restoreSessionFromNativeStorage } from "./lib/capacitorSessionBridge";
 import { initPushNotifications } from "./lib/pushNotifications";
 
-restoreSessionFromNativeStorage().finally(() => {
+function mount() {
   createRoot(document.getElementById("root")!).render(<App />);
-  void initPushNotifications();
-});
+  // Never let native plugin init crash the app
+  try { void initPushNotifications().catch(() => {}); } catch {}
+}
+
+restoreSessionFromNativeStorage()
+  .catch(() => {})
+  .finally(mount);
