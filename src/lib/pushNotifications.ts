@@ -25,6 +25,10 @@ async function saveToken(token: string) {
 export async function initPushNotifications() {
   if (initialized) return;
   if (!Capacitor.isNativePlatform()) return;
+  if (!Capacitor.isPluginAvailable("PushNotifications")) {
+    console.info("Push notifications plugin is not bundled for this native build");
+    return;
+  }
   initialized = true;
 
   try {

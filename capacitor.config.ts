@@ -1,4 +1,7 @@
+import { existsSync } from 'node:fs';
 import type { CapacitorConfig } from '@capacitor/cli';
+
+const hasAndroidFirebaseConfig = existsSync('android/app/google-services.json');
 
 const config: CapacitorConfig = {
   appId: 'com.merabharatdukaan.app',
@@ -24,6 +27,13 @@ const config: CapacitorConfig = {
     allowMixedContent: true,
     backgroundColor: '#1a237e',
     webContentsDebuggingEnabled: false,
+    minWebViewVersion: 80,
+    initialFocus: true,
+    includePlugins: [
+      '@capacitor/app',
+      '@capacitor/preferences',
+      ...(hasAndroidFirebaseConfig ? ['@capacitor/push-notifications'] : []),
+    ],
     overrideUserAgent:
       'Mozilla/5.0 (Linux; Android 13; MeraBharatDukaan) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 MBDApp/1.0',
   },
