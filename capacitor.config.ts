@@ -29,7 +29,6 @@ const config: CapacitorConfig = {
     includePlugins: [
       '@capacitor/app',
       '@capacitor/preferences',
-      '@capacitor/browser',
     ],
     // Plain Chrome UA (no "wv" / no app tag) so Google Sign-In does not
     // detect an embedded WebView and refuse the OAuth screen.
