@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { Capacitor } from "@capacitor/core";
+import { signInWithGoogleNative } from "@/lib/nativeGoogleAuth";
 import { SUPERUSER_FLAG, useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
@@ -76,6 +78,18 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
     sessionStorage.setItem("mbd-auth-next", POST_LOGIN_MEMBERSHIP_PATH);
     sessionStorage.setItem("bharat-mitra-pending-greet", "true");
     try {
+      // Native Android/iOS: open Google OAuth in Chrome Custom Tabs.
+      // Google blocks OAuth inside an in-app WebView ("disallowed_useragent"),
+      // so we MUST hand off to the system browser and catch the deep-link back.
+      if (Capacitor.isNativePlatform()) {
+        const ok = await signInWithGoogleNative();
+        if (!ok) {
+          toast.error("Google login failed. Please try again.");
+          setGoogleLoading(false);
+        }
+        return;
+      }
+
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: `${getStandaloneAuthOrigin()}/login?next=${encodeURIComponent(POST_LOGIN_MEMBERSHIP_PATH)}`,
         extraParams: { prompt: "select_account" },
