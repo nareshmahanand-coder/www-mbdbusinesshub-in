@@ -29,11 +29,12 @@ const config: CapacitorConfig = {
     includePlugins: [
       '@capacitor/app',
       '@capacitor/preferences',
+      '@capacitor/browser',
     ],
-    // Plain Chrome UA (no "wv" / no app tag) so Google Sign-In does not
-    // detect an embedded WebView and refuse the OAuth screen.
-    overrideUserAgent:
-      'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+    // Append a tag to the default Chrome UA so we stay recognized as Chrome
+    // for analytics, while Google OAuth is handled in Chrome Custom Tabs
+    // (via @capacitor/browser) — never inside the WebView.
+    appendUserAgent: 'MeraBharatDukaanApp',
   },
   plugins: {
     SplashScreen: {
