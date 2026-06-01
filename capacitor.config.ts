@@ -1,7 +1,4 @@
-import { existsSync } from 'node:fs';
 import type { CapacitorConfig } from '@capacitor/cli';
-
-const hasAndroidFirebaseConfig = existsSync('android/app/google-services.json');
 
 const config: CapacitorConfig = {
   appId: 'com.merabharatdukaan.app',
@@ -32,10 +29,12 @@ const config: CapacitorConfig = {
     includePlugins: [
       '@capacitor/app',
       '@capacitor/preferences',
-      ...(hasAndroidFirebaseConfig ? ['@capacitor/push-notifications'] : []),
+      '@capacitor/browser',
     ],
+    // Plain Chrome UA (no "wv" / no app tag) so Google Sign-In does not
+    // detect an embedded WebView and refuse the OAuth screen.
     overrideUserAgent:
-      'Mozilla/5.0 (Linux; Android 13; MeraBharatDukaan) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36 MBDApp/1.0',
+      'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
   },
   plugins: {
     SplashScreen: {
@@ -50,9 +49,6 @@ const config: CapacitorConfig = {
       style: 'DARK',
       backgroundColor: '#1a237e',
       overlaysWebView: false,
-    },
-    PushNotifications: {
-      presentationOptions: ['badge', 'sound', 'alert'],
     },
   },
 };
