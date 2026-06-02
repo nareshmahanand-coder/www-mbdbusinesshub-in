@@ -292,7 +292,7 @@ const EkycPage = () => {
       }
       setChecking(false);
     })();
-  }, [user, authLoading, navigate, location.search]);
+  }, [user, authLoading, navigate, location.search, scheduleMembershipRedirect]);
 
   const mobileValid = /^\d{10}$/.test(mobile);
   const aadhaarValid = /^\d{12}$/.test(aadhaar.replace(/\s/g, ""));
