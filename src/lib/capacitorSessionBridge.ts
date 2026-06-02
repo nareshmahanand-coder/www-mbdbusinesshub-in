@@ -6,6 +6,36 @@ import { Preferences } from "@capacitor/preferences";
 // survives WebView storage wipes, app updates, and OS cache clears so
 // users stay logged in until they explicitly sign out.
 const AUTH_KEY = "sb-tkenjzcyvnqnhgntmmen-auth-token";
+const KYC_PREFIX = "mbd-kyc-verified-";
+
+export const getKycVerifiedKey = (userId: string) => `${KYC_PREFIX}${userId}`;
+
+export async function persistKycVerifiedMarker(userId: string, timestamp = Date.now()): Promise<void> {
+  const key = getKycVerifiedKey(userId);
+  const value = String(timestamp);
+  try { localStorage.setItem(key, value); } catch {}
+  if (!Capacitor.isNativePlatform()) return;
+  try { await Preferences.set({ key, value }); } catch (err) { console.warn("[session-bridge] kyc marker persist failed", err); }
+}
+
+export async function readKycVerifiedMarker(userId: string): Promise<number | null> {
+  const key = getKycVerifiedKey(userId);
+  try {
+    const local = localStorage.getItem(key);
+    if (local) return Number(local) || null;
+  } catch {}
+  if (!Capacitor.isNativePlatform()) return null;
+  try {
+    const { value } = await Preferences.get({ key });
+    if (value) {
+      try { localStorage.setItem(key, value); } catch {}
+      return Number(value) || null;
+    }
+  } catch (err) {
+    console.warn("[session-bridge] kyc marker read failed", err);
+  }
+  return null;
+}
 
 export async function restoreSessionFromNativeStorage(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
