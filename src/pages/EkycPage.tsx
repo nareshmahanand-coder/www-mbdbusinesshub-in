@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, ShieldCheck, Camera, MapPin, CheckCircle2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { persistKycVerifiedMarker } from "@/lib/capacitorSessionBridge";
 import { toast } from "sonner";
 
 type Step = "details" | "aadhaar-front" | "aadhaar-back" | "selfie" | "processing" | "verified";
@@ -239,6 +240,26 @@ const EkycPage = () => {
   // Promise that resolves once OCR has finished (success or failure). confirmSelfie awaits this
   // so the certificate is never saved with empty Name/Father/Address fields.
   const ocrPromiseRef = useRef<Promise<any | null> | null>(null);
+  const membershipRedirectTimerRef = useRef<number | null>(null);
+  const redirectingToMembershipRef = useRef(false);
+
+  const goToMembership = useCallback(() => {
+    if (redirectingToMembershipRef.current) return;
+    redirectingToMembershipRef.current = true;
+    try { navigate("/membership", { replace: true }); } catch {}
+    window.setTimeout(() => {
+      if (window.location.pathname !== "/membership") window.location.replace("/membership");
+    }, 120);
+  }, [navigate]);
+
+  const scheduleMembershipRedirect = useCallback((delay = 2200) => {
+    if (membershipRedirectTimerRef.current) window.clearTimeout(membershipRedirectTimerRef.current);
+    membershipRedirectTimerRef.current = window.setTimeout(goToMembership, delay);
+  }, [goToMembership]);
+
+  useEffect(() => () => {
+    if (membershipRedirectTimerRef.current) window.clearTimeout(membershipRedirectTimerRef.current);
+  }, []);
 
   // Show the saved certificate only for a currently-valid KYC. Re-KYC/expired/pending
   // records must reopen the real upload form, not the certificate page.
@@ -259,6 +280,8 @@ const EkycPage = () => {
         if (valid && !forceUpload) {
           setExisting(data);
           setStep("verified");
+          void persistKycVerifiedMarker(user.id);
+          scheduleMembershipRedirect();
         } else {
           setExisting(null);
           setMobile(data.mobile || "");
@@ -269,7 +292,7 @@ const EkycPage = () => {
       }
       setChecking(false);
     })();
-  }, [user, authLoading, navigate, location.search]);
+  }, [user, authLoading, navigate, location.search, scheduleMembershipRedirect]);
 
   const mobileValid = /^\d{10}$/.test(mobile);
   const aadhaarValid = /^\d{12}$/.test(aadhaar.replace(/\s/g, ""));
@@ -418,13 +441,11 @@ const EkycPage = () => {
         aadhaar_back_preview: backImg,
       });
       setStep("verified");
-      // Set local marker so any stale KYC guard never loops the user back here.
-      try { localStorage.setItem(`mbd-kyc-verified-${user.id}`, String(Date.now())); } catch {}
+      // Persist marker in localStorage + native Preferences so Android WebView
+      // cannot loop back to KYC while the database cache catches up.
+      await persistKycVerifiedMarker(user.id);
       // Auto-open Bharat Gaurav Membership after a brief certificate view.
-      setTimeout(() => {
-        try { navigate("/membership", { replace: true }); }
-        catch { window.location.replace("/membership"); }
-      }, 2500);
+      scheduleMembershipRedirect();
     } catch (e: any) {
       console.error("[ekyc] verification failed:", e);
       toast.error(e?.message ?? "सत्यापन विफल / Verification failed");
@@ -434,7 +455,7 @@ const EkycPage = () => {
       setSelfieImg(null);
       setStep("selfie");
     }
-  }, [pendingSelfie, user, ocr, mobile, aadhaar, gps, frontImg, backImg]);
+  }, [pendingSelfie, user, ocr, mobile, aadhaar, gps, frontImg, backImg, scheduleMembershipRedirect]);
 
   if (authLoading || checking) {
     return (
@@ -568,7 +589,7 @@ const EkycPage = () => {
         )}
 
         {step === "verified" && existing && (
-          <Certificate data={existing} onContinue={() => { window.location.href = "/membership"; }} />
+          <Certificate data={existing} onContinue={goToMembership} />
         )}
       </div>
     </div>

@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { readKycVerifiedMarker } from "@/lib/capacitorSessionBridge";
+
+const KYC_MARKER_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 35;
 
 export const useKycStatus = () => {
   const { user } = useAuth();
@@ -14,24 +17,23 @@ export const useKycStatus = () => {
     (async () => {
       const { data } = await supabase
         .from("kyc_verifications")
-        .select("id,status,kyc_expires_at")
+        .select("id,status,kyc_expires_at,re_kyc_requested_at")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
       const valid =
         !!data &&
         data.status === "verified" &&
+        !data.re_kyc_requested_at &&
         (!data.kyc_expires_at || new Date(data.kyc_expires_at).getTime() > Date.now());
       // Local fallback: if DB read is stale right after submit, honor the
       // "verified" marker so the route guard never loops user back to /ekyc.
       let effective = valid;
       if (!effective) {
-        try {
-          const marker = localStorage.getItem(`mbd-kyc-verified-${user.id}`);
-          if (marker && Date.now() - Number(marker) < 1000 * 60 * 60 * 24) {
-            effective = true;
-          }
-        } catch {}
+        const marker = await readKycVerifiedMarker(user.id);
+        if (!data?.re_kyc_requested_at && marker && Date.now() - marker < KYC_MARKER_MAX_AGE_MS) {
+          effective = true;
+        }
       }
       setHasKyc(effective);
       setLoading(false);
