@@ -441,13 +441,11 @@ const EkycPage = () => {
         aadhaar_back_preview: backImg,
       });
       setStep("verified");
-      // Set local marker so any stale KYC guard never loops the user back here.
-      try { localStorage.setItem(`mbd-kyc-verified-${user.id}`, String(Date.now())); } catch {}
+      // Persist marker in localStorage + native Preferences so Android WebView
+      // cannot loop back to KYC while the database cache catches up.
+      await persistKycVerifiedMarker(user.id);
       // Auto-open Bharat Gaurav Membership after a brief certificate view.
-      setTimeout(() => {
-        try { navigate("/membership", { replace: true }); }
-        catch { window.location.replace("/membership"); }
-      }, 2500);
+      scheduleMembershipRedirect();
     } catch (e: any) {
       console.error("[ekyc] verification failed:", e);
       toast.error(e?.message ?? "सत्यापन विफल / Verification failed");
@@ -457,7 +455,7 @@ const EkycPage = () => {
       setSelfieImg(null);
       setStep("selfie");
     }
-  }, [pendingSelfie, user, ocr, mobile, aadhaar, gps, frontImg, backImg]);
+  }, [pendingSelfie, user, ocr, mobile, aadhaar, gps, frontImg, backImg, scheduleMembershipRedirect]);
 
   if (authLoading || checking) {
     return (
@@ -591,7 +589,7 @@ const EkycPage = () => {
         )}
 
         {step === "verified" && existing && (
-          <Certificate data={existing} onContinue={() => { window.location.href = "/membership"; }} />
+          <Certificate data={existing} onContinue={goToMembership} />
         )}
       </div>
     </div>
