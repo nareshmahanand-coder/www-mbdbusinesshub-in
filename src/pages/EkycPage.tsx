@@ -418,7 +418,13 @@ const EkycPage = () => {
         aadhaar_back_preview: backImg,
       });
       setStep("verified");
-      // Stay on the verified certificate screen; user manually clicks Continue.
+      // Set local marker so any stale KYC guard never loops the user back here.
+      try { localStorage.setItem(`mbd-kyc-verified-${user.id}`, String(Date.now())); } catch {}
+      // Auto-open Bharat Gaurav Membership after a brief certificate view.
+      setTimeout(() => {
+        try { navigate("/membership", { replace: true }); }
+        catch { window.location.replace("/membership"); }
+      }, 2500);
     } catch (e: any) {
       console.error("[ekyc] verification failed:", e);
       toast.error(e?.message ?? "सत्यापन विफल / Verification failed");
