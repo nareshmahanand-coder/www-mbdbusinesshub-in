@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, ShieldCheck, Camera, MapPin, CheckCircle2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { persistKycVerifiedMarker } from "@/lib/capacitorSessionBridge";
 import { toast } from "sonner";
 
 type Step = "details" | "aadhaar-front" | "aadhaar-back" | "selfie" | "processing" | "verified";
@@ -239,6 +240,26 @@ const EkycPage = () => {
   // Promise that resolves once OCR has finished (success or failure). confirmSelfie awaits this
   // so the certificate is never saved with empty Name/Father/Address fields.
   const ocrPromiseRef = useRef<Promise<any | null> | null>(null);
+  const membershipRedirectTimerRef = useRef<number | null>(null);
+  const redirectingToMembershipRef = useRef(false);
+
+  const goToMembership = useCallback(() => {
+    if (redirectingToMembershipRef.current) return;
+    redirectingToMembershipRef.current = true;
+    try { navigate("/membership", { replace: true }); } catch {}
+    window.setTimeout(() => {
+      if (window.location.pathname !== "/membership") window.location.replace("/membership");
+    }, 120);
+  }, [navigate]);
+
+  const scheduleMembershipRedirect = useCallback((delay = 2200) => {
+    if (membershipRedirectTimerRef.current) window.clearTimeout(membershipRedirectTimerRef.current);
+    membershipRedirectTimerRef.current = window.setTimeout(goToMembership, delay);
+  }, [goToMembership]);
+
+  useEffect(() => () => {
+    if (membershipRedirectTimerRef.current) window.clearTimeout(membershipRedirectTimerRef.current);
+  }, []);
 
   // Show the saved certificate only for a currently-valid KYC. Re-KYC/expired/pending
   // records must reopen the real upload form, not the certificate page.
@@ -259,6 +280,8 @@ const EkycPage = () => {
         if (valid && !forceUpload) {
           setExisting(data);
           setStep("verified");
+          void persistKycVerifiedMarker(user.id);
+          scheduleMembershipRedirect();
         } else {
           setExisting(null);
           setMobile(data.mobile || "");
