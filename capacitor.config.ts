@@ -30,6 +30,7 @@ const config: CapacitorConfig = {
       '@capacitor/app',
       '@capacitor/preferences',
       '@capacitor/browser',
+      '@capacitor/push-notifications',
     ],
     // Append a tag to the default Chrome UA so we stay recognized as Chrome
     // for analytics, while Google OAuth is handled in Chrome Custom Tabs
@@ -49,6 +50,9 @@ const config: CapacitorConfig = {
       style: 'DARK',
       backgroundColor: '#1a237e',
       overlaysWebView: false,
+    },
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert'],
     },
   },
 };
