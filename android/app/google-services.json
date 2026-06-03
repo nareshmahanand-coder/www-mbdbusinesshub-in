@@ -12,7 +12,20 @@
           "package_name": "com.merabharatdukaan.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "36966220674-ravdget2qmvdqlaq9dnska1c2ig0b1gf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.merabharatdukaan.app",
+            "certificate_hash": "769f2c91fa7e3c2a778157697945aa9df35781d5"
+          }
+        },
+        {
+          "client_id": "36966220674-2ddjv8kfhn91b2k93qqsb54muc5ilvf2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAxtJb8jL6jLBK6ftWo5-XOv3055cETgTs"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "36966220674-2ddjv8kfhn91b2k93qqsb54muc5ilvf2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

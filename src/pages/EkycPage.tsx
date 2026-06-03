@@ -444,11 +444,16 @@ const EkycPage = () => {
       // Persist marker in localStorage + native Preferences so Android WebView
       // cannot loop back to KYC while the database cache catches up.
       await persistKycVerifiedMarker(user.id);
-      // Auto-open Bharat Gaurav Membership after a brief certificate view.
-      scheduleMembershipRedirect();
+      // Auto-open Bharat Gaurav Membership immediately after success.
+      // Short delay only to flash the success state, then hard redirect.
+      scheduleMembershipRedirect(900);
     } catch (e: any) {
       console.error("[ekyc] verification failed:", e);
-      toast.error(e?.message ?? "सत्यापन विफल / Verification failed");
+      const msg = e?.message ?? e?.error_description ?? "सत्यापन विफल / Verification failed";
+      toast.error(msg);
+      // Native Android WebView often hides toasts behind the camera overlay —
+      // use a blocking alert so the user always sees the exact error.
+      try { window.alert(`KYC submission failed:\n${msg}`); } catch {}
       // Restore the captured selfie into the preview state so the user can re-confirm
       // instead of being thrown back to a blank camera (which felt like a loop).
       setPendingSelfie(selfieDataUrl);
