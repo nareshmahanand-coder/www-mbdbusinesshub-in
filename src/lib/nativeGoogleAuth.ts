@@ -27,7 +27,6 @@ async function ensureGoogleInitialized() {
   await SocialLogin.initialize({
     google: {
       webClientId: GOOGLE_WEB_CLIENT_ID,
-      mode: "online",
     },
   });
   googleInitialized = true;
@@ -43,45 +42,55 @@ export function registerNativeOAuthDeepLink() {
  * Native Google sign-in: opens Android's Google account picker (not Chrome),
  * then exchanges the returned Google ID token for the backend session.
  */
+export class NativeGoogleAuthError extends Error {
+  code?: string;
+  constructor(message: string, code?: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
 export async function signInWithGoogleNative(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) return false;
 
-  try {
-    await ensureGoogleInitialized();
-    const rawNonce = getUrlSafeNonce();
-    const nonceDigest = await sha256Hex(rawNonce);
+  await ensureGoogleInitialized();
+  const rawNonce = getUrlSafeNonce();
+  const nonceDigest = await sha256Hex(rawNonce);
 
-    const login = await SocialLogin.login({
+  let login: any;
+  try {
+    login = await SocialLogin.login({
       provider: "google",
       options: {
         scopes: ["email", "profile"],
         nonce: nonceDigest,
-        style: "bottom",
-        filterByAuthorizedAccounts: false,
-        autoSelectEnabled: false,
+        forceRefreshToken: true,
       },
     });
-
-    if (login.provider !== "google" || login.result.responseType !== "online" || !login.result.idToken) {
-      throw new Error("Google did not return an ID token.");
-    }
-
-    const { data, error } = await supabase.auth.signInWithIdToken({
-      provider: "google",
-      token: login.result.idToken,
-      nonce: rawNonce,
-    });
-
-    if (error || !data.session) {
-      throw error || new Error("Backend session was not created.");
-    }
-
-    await persistNativeAuthSession(data.session);
-    return true;
   } catch (error: any) {
-    if (error?.code !== "USER_CANCELLED") {
-      console.error("[native-google] sign-in failed", error);
+    if (error?.code === "USER_CANCELLED" || /cancel/i.test(error?.message || "")) {
+      return false;
     }
-    return false;
+    console.error("[native-google] plugin error", error);
+    throw new NativeGoogleAuthError(error?.message || "Google sign-in could not start.", error?.code);
   }
+
+  const idToken = login?.result?.idToken;
+  if (login?.provider !== "google" || !idToken) {
+    throw new NativeGoogleAuthError("Google did not return an ID token. Check SHA-1 fingerprint and Web Client ID in Firebase.");
+  }
+
+  const { data, error } = await supabase.auth.signInWithIdToken({
+    provider: "google",
+    token: idToken,
+    nonce: rawNonce,
+  });
+
+  if (error || !data.session) {
+    console.error("[native-google] supabase exchange failed", error);
+    throw new NativeGoogleAuthError(error?.message || "Backend session was not created.");
+  }
+
+  await persistNativeAuthSession(data.session);
+  return true;
 }
