@@ -1,8 +1,9 @@
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster as Sonner, toast as sonnerToast } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
@@ -40,7 +41,23 @@ import BlockedScreen from "@/components/BlockedScreen";
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
 import InstallPromptAutoTrigger from "./components/InstallPromptAutoTrigger";
-// AdminMessageListener removed — all notifications shown only in top Notification Bell
+
+const NativePushBanner = () => {
+  useEffect(() => {
+    const onNativePush = (event: Event) => {
+      const detail = (event as CustomEvent<{ title?: string; body?: string }>).detail ?? {};
+      sonnerToast(detail.title || "Mera Bharat Dukaan", {
+        description: detail.body || "New admin message",
+        duration: 8000,
+        position: "top-center",
+      });
+    };
+    window.addEventListener("mbd-native-push", onNativePush);
+    return () => window.removeEventListener("mbd-native-push", onNativePush);
+  }, []);
+
+  return null;
+};
 
 const queryClient = new QueryClient();
 
@@ -167,6 +184,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <NativePushBanner />
           <BrowserRouter>
             <AppShell />
           </BrowserRouter>
