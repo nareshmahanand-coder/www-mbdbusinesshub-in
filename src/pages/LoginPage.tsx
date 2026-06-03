@@ -82,9 +82,16 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
       // Google blocks OAuth inside an in-app WebView ("disallowed_useragent"),
       // so we MUST hand off to the system browser and catch the deep-link back.
       if (Capacitor.isNativePlatform()) {
-        const ok = await signInWithGoogleNative();
-        if (!ok) {
-          toast.error("Google login failed. Please try again.");
+        try {
+          const ok = await signInWithGoogleNative();
+          if (!ok) {
+            // User cancelled the picker - silent.
+            setGoogleLoading(false);
+            return;
+          }
+          navigate(POST_LOGIN_MEMBERSHIP_PATH, { replace: true });
+        } catch (err: any) {
+          toast.error(err?.message || "Google login failed. Please try again.");
           setGoogleLoading(false);
         }
         return;
