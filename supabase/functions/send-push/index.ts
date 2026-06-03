@@ -125,7 +125,6 @@ Deno.serve(async (req) => {
               default_vibrate_timings: true,
               default_light_settings: true,
               notification_priority: "PRIORITY_MAX",
-              click_action: "OPEN_MAIN_ACTIVITY",
             },
           },
         },
