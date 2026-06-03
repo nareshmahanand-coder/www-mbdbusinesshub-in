@@ -29,15 +29,21 @@ const config: CapacitorConfig = {
     includePlugins: [
       '@capacitor/app',
       '@capacitor/preferences',
-      '@capacitor/browser',
       '@capacitor/push-notifications',
+      '@capgo/capacitor-social-login',
     ],
-    // Append a tag to the default Chrome UA so we stay recognized as Chrome
-    // for analytics, while Google OAuth is handled in Chrome Custom Tabs
-    // (via @capacitor/browser) — never inside the WebView.
     appendUserAgent: 'MeraBharatDukaanApp',
   },
   plugins: {
+    SocialLogin: {
+      providers: {
+        google: true,
+        facebook: false,
+        apple: false,
+        twitter: false,
+      },
+      logLevel: 1,
+    },
     SplashScreen: {
       launchShowDuration: 1500,
       launchAutoHide: true,

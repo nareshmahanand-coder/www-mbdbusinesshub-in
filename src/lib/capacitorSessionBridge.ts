@@ -1,5 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import { Preferences } from "@capacitor/preferences";
+import type { Session } from "@supabase/supabase-js";
 
 // Mirror Supabase auth token between WebView localStorage and Capacitor
 // Preferences (Android SharedPreferences). This guarantees the session
@@ -9,6 +10,19 @@ const AUTH_KEY = "sb-tkenjzcyvnqnhgntmmen-auth-token";
 const KYC_PREFIX = "mbd-kyc-verified-";
 
 export const getKycVerifiedKey = (userId: string) => `${KYC_PREFIX}${userId}`;
+
+export async function persistNativeAuthSession(session: Session): Promise<void> {
+  const value = JSON.stringify(session);
+  try { localStorage.setItem(AUTH_KEY, value); } catch {}
+  if (!Capacitor.isNativePlatform()) return;
+  try { await Preferences.set({ key: AUTH_KEY, value }); } catch (err) { console.warn("[session-bridge] session persist failed", err); }
+}
+
+export async function clearNativeAuthSession(): Promise<void> {
+  try { localStorage.removeItem(AUTH_KEY); } catch {}
+  if (!Capacitor.isNativePlatform()) return;
+  try { await Preferences.remove({ key: AUTH_KEY }); } catch (err) { console.warn("[session-bridge] session clear failed", err); }
+}
 
 export async function persistKycVerifiedMarker(userId: string, timestamp = Date.now()): Promise<void> {
   const key = getKycVerifiedKey(userId);
