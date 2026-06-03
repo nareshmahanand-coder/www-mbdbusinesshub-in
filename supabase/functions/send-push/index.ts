@@ -69,18 +69,29 @@ Deno.serve(async (req) => {
     );
 
     const body = await req.json();
-    const { user_id, title, message, link } = body ?? {};
-    if (!user_id || !title) {
-      return new Response(JSON.stringify({ error: "user_id and title required" }), {
+    const { user_id, recipient_group, title, message, link, severity } = body ?? {};
+    if (!title) {
+      return new Response(JSON.stringify({ error: "title required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const { data: tokens, error } = await supabase
-      .from("device_push_tokens")
-      .select("token")
-      .eq("user_id", user_id);
+    let tokenQuery = supabase.from("device_push_tokens").select("token,user_id");
+    if (user_id) {
+      tokenQuery = tokenQuery.eq("user_id", user_id);
+    }
+    const { data: tokensRaw, error } = await tokenQuery;
     if (error) throw error;
+    let tokens = tokensRaw ?? [];
+
+    if (!user_id && recipient_group && recipient_group !== "all") {
+      const sourceTable = recipient_group === "merchants" ? "merchant_profiles" : "profiles";
+      const { data: users, error: groupError } = await supabase.from(sourceTable).select("user_id,id");
+      if (groupError) throw groupError;
+      const allowed = new Set((users ?? []).map((row: any) => row.user_id ?? row.id).filter(Boolean));
+      tokens = tokens.filter((row: any) => allowed.has(row.user_id));
+    }
+
     if (!tokens?.length) {
       return new Response(JSON.stringify({ sent: 0, reason: "no tokens" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -96,13 +107,26 @@ Deno.serve(async (req) => {
         message: {
           token,
           notification: { title, body: message ?? "" },
-          data: { link: link ?? "/", title, message: message ?? "" },
+          data: {
+            link: String(link ?? "/"),
+            title: String(title),
+            message: String(message ?? ""),
+            severity: String(severity ?? "critical"),
+            channel_id: "mbd_urgent_v2",
+          },
           android: {
             priority: "HIGH",
+            ttl: "30s",
+            direct_boot_ok: true,
             notification: {
-              channel_id: "mbd_default",
-              sound: "default",
-              click_action: "FLUTTER_NOTIFICATION_CLICK",
+              channel_id: "mbd_urgent_v2",
+              sound: "mbd_alert",
+              priority: "PRIORITY_MAX",
+              visibility: "PUBLIC",
+              default_vibrate_timings: true,
+              default_light_settings: true,
+              notification_priority: "PRIORITY_MAX",
+              click_action: "OPEN_MAIN_ACTIVITY",
             },
           },
         },
