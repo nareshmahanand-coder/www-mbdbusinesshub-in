@@ -22,15 +22,26 @@ export async function initNativePush(): Promise<void> {
     }
     if (perm.receive !== "granted") return;
 
-    // Create a high-importance channel with default ringtone (Android 8+).
+    // Create a high-importance heads-up channel with a bundled ringtone (Android 8+).
     try {
+      await PushNotifications.createChannel({
+        id: "mbd_urgent_v2",
+        name: "Mera Bharat Dukaan Urgent Alerts",
+        description: "High-priority admin messages with sound",
+        importance: 5,
+        visibility: 1,
+        sound: "mbd_alert.wav",
+        vibration: true,
+        lights: true,
+        lightColor: "#FF8C00",
+      });
       await PushNotifications.createChannel({
         id: "mbd_default",
         name: "Mera Bharat Dukaan Alerts",
         description: "Admin & owner messages",
         importance: 5,
         visibility: 1,
-        sound: "default",
+        sound: "mbd_alert.wav",
         vibration: true,
         lights: true,
         lightColor: "#FF8C00",
@@ -64,6 +75,16 @@ export async function initNativePush(): Promise<void> {
         if (link && typeof link === "string" && link.startsWith("/")) {
           window.location.assign(link);
         }
+      } catch {
+        /* no-op */
+      }
+    });
+
+    PushNotifications.addListener("pushNotificationReceived", (notification) => {
+      try {
+        const title = notification.title || "Mera Bharat Dukaan";
+        const body = notification.body || "New admin message";
+        window.dispatchEvent(new CustomEvent("mbd-native-push", { detail: { title, body } }));
       } catch {
         /* no-op */
       }
