@@ -121,7 +121,6 @@ Deno.serve(async (req) => {
             notification: {
               channel_id: "mbd_urgent_v2",
               sound: "mbd_alert",
-              priority: "PRIORITY_MAX",
               visibility: "PUBLIC",
               default_vibrate_timings: true,
               default_light_settings: true,
