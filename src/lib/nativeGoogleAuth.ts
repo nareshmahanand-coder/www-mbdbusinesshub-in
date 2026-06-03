@@ -1,82 +1,87 @@
 import { Capacitor } from "@capacitor/core";
-import { Browser } from "@capacitor/browser";
-import { App, type URLOpenListenerEvent } from "@capacitor/app";
+import { SocialLogin } from "@capgo/capacitor-social-login";
 import { supabase } from "@/integrations/supabase/client";
+import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 
-const NATIVE_REDIRECT = "https://shop.mbdbusinesshub.in/login";
+const GOOGLE_WEB_CLIENT_ID = "36966220674-2ddjv8kfhn91b2k93qqsb54muc5ilvf2.apps.googleusercontent.com";
 
-let listenerRegistered = false;
+let googleInitialized = false;
 
-/**
- * Register a single global listener that catches the OAuth deep-link
- * (https://shop.mbdbusinesshub.in/...?code=...) coming back from
- * Chrome Custom Tabs into the native app, exchanges the code for a
- * Supabase session and closes the in-app browser.
- */
-export function registerNativeOAuthDeepLink() {
-  if (listenerRegistered) return;
-  if (!Capacitor.isNativePlatform()) return;
-  listenerRegistered = true;
+const getUrlSafeNonce = () => {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes)
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+};
 
-  App.addListener("appUrlOpen", async (event: URLOpenListenerEvent) => {
-    try {
-      const incoming = event.url || "";
-      if (!incoming) return;
-      const url = new URL(incoming);
-      const code = url.searchParams.get("code");
-      const hasAuthHash = (url.hash || "").includes("access_token");
+const sha256Hex = async (value: string) => {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+};
 
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(incoming);
-        if (error) console.warn("[oauth] exchangeCodeForSession failed", error);
-      } else if (hasAuthHash) {
-        // Implicit flow fallback: parse tokens from the hash.
-        const params = new URLSearchParams(url.hash.replace(/^#/, ""));
-        const access_token = params.get("access_token");
-        const refresh_token = params.get("refresh_token");
-        if (access_token && refresh_token) {
-          await supabase.auth.setSession({ access_token, refresh_token });
-        }
-      }
-    } catch (err) {
-      console.warn("[oauth] deep-link handler failed", err);
-    } finally {
-      try {
-        await Browser.close();
-      } catch {
-        /* no-op */
-      }
-    }
+async function ensureGoogleInitialized() {
+  if (googleInitialized) return;
+  await SocialLogin.initialize({
+    google: {
+      webClientId: GOOGLE_WEB_CLIENT_ID,
+      mode: "online",
+    },
   });
+  googleInitialized = true;
+}
+
+// Kept as a no-op for older startup code paths. Google auth is now fully
+// native and does not use Chrome Custom Tabs or OAuth deep-link callbacks.
+export function registerNativeOAuthDeepLink() {
+  return;
 }
 
 /**
- * Native Google sign-in: opens the OAuth URL in Chrome Custom Tabs
- * instead of the WebView (Google blocks OAuth in WebViews).
- * Returns true when the native flow was started; false to let the
- * caller fall back to the standard web flow.
+ * Native Google sign-in: opens Android's Google account picker (not Chrome),
+ * then exchanges the returned Google ID token for the backend session.
  */
 export async function signInWithGoogleNative(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) return false;
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: NATIVE_REDIRECT,
-      skipBrowserRedirect: true,
-      queryParams: { prompt: "select_account" },
-    },
-  });
+  try {
+    await ensureGoogleInitialized();
+    const rawNonce = getUrlSafeNonce();
+    const nonceDigest = await sha256Hex(rawNonce);
 
-  if (error || !data?.url) {
-    console.error("[oauth] failed to build Google URL", error);
+    const login = await SocialLogin.login({
+      provider: "google",
+      options: {
+        scopes: ["email", "profile"],
+        nonce: nonceDigest,
+        style: "bottom",
+        filterByAuthorizedAccounts: false,
+        autoSelectEnabled: false,
+      },
+    });
+
+    if (login.provider !== "google" || login.result.responseType !== "online" || !login.result.idToken) {
+      throw new Error("Google did not return an ID token.");
+    }
+
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: "google",
+      token: login.result.idToken,
+      nonce: rawNonce,
+    });
+
+    if (error || !data.session) {
+      throw error || new Error("Backend session was not created.");
+    }
+
+    await persistNativeAuthSession(data.session);
+    return true;
+  } catch (error: any) {
+    if (error?.code !== "USER_CANCELLED") {
+      console.error("[native-google] sign-in failed", error);
+    }
     return false;
   }
-
-  await Browser.open({
-    url: data.url,
-    presentationStyle: "popover",
-    windowName: "_self",
-  });
-  return true;
 }

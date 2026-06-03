@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import { clearNativeAuthSession, persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 
 interface AuthContextType {
   user: User | null;
@@ -78,8 +79,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
 
       if (nextSession?.user) {
+        void persistNativeAuthSession(nextSession);
         void syncProfile(nextSession);
       } else {
+        void clearNativeAuthSession();
         syncedUserIdsRef.current.clear();
       }
     });
@@ -90,6 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
 
       if (initialSession?.user) {
+        void persistNativeAuthSession(initialSession);
         void syncProfile(initialSession);
       }
     });
@@ -103,6 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     window.dispatchEvent(new Event("mbd-superuser-changed"));
     setIsSuperUser(false);
     await supabase.auth.signOut();
+    await clearNativeAuthSession();
   };
 
   return (
