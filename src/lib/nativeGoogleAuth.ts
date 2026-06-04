@@ -3,7 +3,13 @@ import { SocialLogin } from "@capgo/capacitor-social-login";
 import { supabase } from "@/integrations/supabase/client";
 import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 
-const GOOGLE_WEB_CLIENT_ID = "822103899326-1p22puug67ueab5u9p3mpi3edkvpr8od.apps.googleusercontent.com";
+// MUST be the Web Client ID (client_type: 3) from the SAME Google Cloud
+// project as android/app/google-services.json. The Android OAuth client
+// (with this app's SHA-1) lives in project 36966220674, so Google Play
+// Services will only mint ID tokens whose `aud` is this Web Client ID.
+// Using a Web Client ID from a different project causes sign-in to fail
+// with no idToken (login loop) or "Unacceptable audience" on the backend.
+const GOOGLE_WEB_CLIENT_ID = "36966220674-2ddjv8kfhn91b2k93qqsb54muc5ilvf2.apps.googleusercontent.com";
 
 let googleInitialized = false;
 
