@@ -152,7 +152,7 @@ export async function signInWithGoogleNative(): Promise<boolean> {
         return false;
       }
       const { code, message } = readErrorInfo(error);
-      console.error("[native-google] plugin error", { code, msg, error });
+      console.error("[native-google] plugin error", { code, message, error });
       throw new NativeGoogleAuthError(
         message || "Google sign-in could not start. Please try again.",
         code || "GOOGLE_PLUGIN_FAILED",
