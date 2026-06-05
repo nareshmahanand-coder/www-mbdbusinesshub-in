@@ -4,12 +4,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 import { toast } from "sonner";
 
-// MUST be the Web Client ID (client_type: 3) from the SAME Google Cloud
-// project as android/app/google-services.json. The Android OAuth client
-// (with this app's SHA-1) lives in project 36966220674, so Google Play
-// Services will only mint ID tokens whose `aud` is this Web Client ID.
-// Using a Web Client ID from a different project causes sign-in to fail
-// with no idToken (login loop) or "Unacceptable audience" on the backend.
+// Google Sign-In configuration for native Android.
+// Web Client ID (Google OAuth client_type: 3):
+// 822103899326-5d5k2a6h1r7c1em3fgvcinq6k7scfp3p.apps.googleusercontent.com
+// Android package: com.merabharatdukaan.app
+// SHA-1 fingerprint:
+// 76:9F:2C:91:FA:7E:3C:2A:77:81:57:69:79:45:AA:9D:F3:57:81:05
+//
+// Setup checklist if Google Sign-In still cancels/fails:
+// 1) Google Cloud Console > APIs & Services > Credentials:
+//    - Create/verify an Android OAuth Client.
+//    - Package name must be: com.merabharatdukaan.app
+//    - SHA-1 must be: 76:9F:2C:91:FA:7E:3C:2A:77:81:57:69:79:45:AA:9D:F3:57:81:05
+// 2) Google Cloud Console > APIs & Services > Credentials:
+//    - Create/verify a Web OAuth Client.
+//    - Copy that Web Client ID into GOOGLE_WEB_CLIENT_ID below.
+// 3) Firebase Console > Project Settings > Your Android app:
+//    - Add the same SHA-1 fingerprint above.
+//    - Download the updated google-services.json.
+// 4) Backend/Cloud Google provider settings:
+//    - Use the SAME Web Client ID as GOOGLE_WEB_CLIENT_ID.
+//    - If this ID differs, backend token exchange fails with audience errors.
 const GOOGLE_WEB_CLIENT_ID = "822103899326-5d5k2a6h1r7c1em3fgvcinq6k7scfp3p.apps.googleusercontent.com";
 
 let googleInitialized = false;
@@ -34,7 +49,10 @@ async function ensureGoogleInitialized() {
   if (googleInitialized) return;
   try {
     await SocialLogin.initialize({
-      google: { webClientId: GOOGLE_WEB_CLIENT_ID },
+      google: {
+        webClientId: GOOGLE_WEB_CLIENT_ID,
+        mode: "online",
+      },
     });
     googleInitialized = true;
   } catch (err) {
@@ -64,6 +82,36 @@ export class NativeGoogleAuthError extends Error {
   }
 }
 
+const isUserCancelledGoogleSignIn = (error: any) => {
+  const code = String(error?.code || error?.errorCode || error?.statusCode || "").toUpperCase();
+  const message = String(error?.message || error?.errorMessage || error || "").toLowerCase();
+  return (
+    code === "USER_CANCELLED" ||
+    code === "CANCELED" ||
+    code === "CANCELLED" ||
+    code === "12501" ||
+    code === "16" ||
+    message.includes("user_cancelled") ||
+    message.includes("cancelled") ||
+    message.includes("canceled") ||
+    message.includes("cancel") ||
+    message.includes("closed") ||
+    message.includes("dismiss")
+  );
+};
+
+const readGoogleProfile = (result: any) => {
+  const profile = result?.profile || result?.user || result || {};
+  return {
+    id: profile.id ?? profile.sub ?? result?.id ?? null,
+    email: profile.email ?? result?.email ?? null,
+    name: profile.name ?? profile.displayName ?? result?.name ?? null,
+    givenName: profile.givenName ?? profile.given_name ?? null,
+    familyName: profile.familyName ?? profile.family_name ?? null,
+    photoUrl: profile.imageUrl ?? profile.photoUrl ?? profile.picture ?? result?.photoUrl ?? null,
+  };
+};
+
 export async function signInWithGoogleNative(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) return false;
 
@@ -80,25 +128,18 @@ export async function signInWithGoogleNative(): Promise<boolean> {
         options: {
           scopes: ["email", "profile"],
           nonce: nonceDigest,
-          forceRefreshToken: true,
+          filterByAuthorizedAccounts: false,
+          autoSelectEnabled: false,
         },
       });
     } catch (error: any) {
-      const code = error?.code || "";
-      const msg = String(error?.message || "");
-      // Gracefully handle user cancellation - DO NOT crash or surface as error.
-      if (
-        code === "USER_CANCELLED" ||
-        code === "CANCELED" ||
-        code === "12501" ||
-        /cancel/i.test(msg) ||
-        /closed/i.test(msg) ||
-        /dismiss/i.test(msg)
-      ) {
+      if (isUserCancelledGoogleSignIn(error)) {
         console.info("[native-google] user cancelled the sign-in picker");
         toast.message("Google Sign-In cancelled. आप दोबारा कोशिश कर सकते हैं।");
         return false;
       }
+      const code = error?.code || error?.errorCode || "GOOGLE_PLUGIN_FAILED";
+      const msg = String(error?.message || error?.errorMessage || "");
       console.error("[native-google] plugin error", { code, msg, error });
       throw new NativeGoogleAuthError(
         msg || "Google sign-in could not start. Please try again.",
@@ -114,31 +155,12 @@ export async function signInWithGoogleNative(): Promise<boolean> {
     }
 
     const result = login.result;
-    const idToken: string | undefined = result.idToken;
+    const idToken: string | undefined = result.idToken ?? result.authentication?.idToken;
     if (!idToken) {
       throw new NativeGoogleAuthError(
-        "Google did not return an ID token. Check SHA-1 fingerprint and Web Client ID in Firebase.",
+        "Google did not return an ID token. Check SHA-1 fingerprint and Web Client ID in Google/Firebase settings.",
         "NO_ID_TOKEN",
       );
-    }
-
-    // Persist Google profile locally for quick UI hydration.
-    const profile = result.profile || {};
-    const googleUser = {
-      email: profile.email ?? null,
-      name: profile.name ?? null,
-      givenName: profile.givenName ?? null,
-      familyName: profile.familyName ?? null,
-      photoUrl: profile.imageUrl ?? profile.photoUrl ?? null,
-      id: profile.id ?? null,
-      idToken,
-      accessToken: result.accessToken?.token ?? result.accessToken ?? null,
-      savedAt: Date.now(),
-    };
-    try {
-      localStorage.setItem(GOOGLE_USER_CACHE_KEY, JSON.stringify(googleUser));
-    } catch (storageErr) {
-      console.warn("[native-google] could not cache user", storageErr);
     }
 
     const { data, error } = await supabase.auth.signInWithIdToken({
@@ -156,8 +178,28 @@ export async function signInWithGoogleNative(): Promise<boolean> {
     }
 
     await persistNativeAuthSession(data.session);
+
+    // Save user data only after backend session creation succeeds.
+    const profile = readGoogleProfile(result);
+    const googleUser = {
+      ...profile,
+      backendUserId: data.user?.id ?? data.session.user.id,
+      idToken,
+      accessToken: result.accessToken?.token ?? result.accessToken ?? result.authentication?.accessToken ?? null,
+      savedAt: Date.now(),
+    };
+    try {
+      localStorage.setItem(GOOGLE_USER_CACHE_KEY, JSON.stringify(googleUser));
+    } catch (storageErr) {
+      console.warn("[native-google] could not cache user", storageErr);
+    }
+
     return true;
   } catch (error: any) {
+    if (isUserCancelledGoogleSignIn(error)) {
+      toast.message("Google Sign-In cancelled. कृपया दोबारा प्रयास करें।");
+      return false;
+    }
     if (error instanceof NativeGoogleAuthError) throw error;
     // Final safety net - never crash the caller.
     console.error("[native-google] unexpected error", error);
