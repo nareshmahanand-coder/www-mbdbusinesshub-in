@@ -141,6 +141,7 @@ export async function signInWithGoogleNative(): Promise<boolean> {
         options: {
           scopes: ["email", "profile"],
           nonce: nonceDigest,
+          style: "bottom",
           filterByAuthorizedAccounts: false,
           autoSelectEnabled: false,
         },
