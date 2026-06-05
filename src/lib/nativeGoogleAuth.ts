@@ -10,7 +10,7 @@ import { toast } from "sonner";
 // Services will only mint ID tokens whose `aud` is this Web Client ID.
 // Using a Web Client ID from a different project causes sign-in to fail
 // with no idToken (login loop) or "Unacceptable audience" on the backend.
-const GOOGLE_WEB_CLIENT_ID = "36966220674-2ddjv8kfhn91b2k93qqsb54muc5ilvf2.apps.googleusercontent.com";
+const GOOGLE_WEB_CLIENT_ID = "822103899326-5d5k2a6h1r7c1em3fgvcinq6k7scfp3p.apps.googleusercontent.com";
 
 let googleInitialized = false;
 const GOOGLE_USER_CACHE_KEY = "mbd-google-user";
