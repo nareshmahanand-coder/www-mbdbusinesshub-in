@@ -12,6 +12,7 @@ import { ExamDialog } from "@/components/skill/ExamDialog";
 import { Award, Eye } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import certificateTemplateUrl from "@/assets/certificate-template.jpg";
+import { openExternalUrl } from "@/lib/openExternal";
 
 /* ═══════════════════════════════════
    CATEGORY PDF LIBRARY VIEW
@@ -178,11 +179,10 @@ const CategoryLibrary = ({ category, onBack }: { category: BookCategory; onBack:
 
             <div className="grid grid-cols-2 gap-2.5">
               {filteredPdfs.map(pdf => (
-                <a
+                <button
+                  type="button"
                   key={pdf.id}
-                  href={pdf.pdfUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={() => openExternalUrl(pdf.pdfUrl)}
                   className="group flex flex-col items-center gap-1.5 p-3 rounded-xl border border-border bg-card hover:border-green-500 hover:shadow-md transition-all active:scale-[0.97]"
                 >
                   <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-green-600 to-emerald-500 flex items-center justify-center text-lg shadow-sm group-hover:scale-110 transition-transform">
@@ -192,7 +192,7 @@ const CategoryLibrary = ({ category, onBack }: { category: BookCategory; onBack:
                   <div className="flex items-center gap-1 text-[9px] text-green-700 font-medium">
                     <ExternalLink className="h-3 w-3" /> पुस्तक पढ़ें
                   </div>
-                </a>
+                </button>
               ))}
             </div>
 
@@ -291,11 +291,10 @@ const SkillDevelopmentPage = () => {
           <p className="text-xs text-muted-foreground mb-2">{filteredPdfs.length} PDF पुस्तकें मिलीं</p>
           <div className="grid grid-cols-2 gap-2.5 mb-4">
             {filteredPdfs.map(pdf => (
-              <a
+              <button
+                type="button"
                 key={pdf.id}
-                href={pdf.pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                onClick={() => openExternalUrl(pdf.pdfUrl)}
                 className="group flex flex-col items-center gap-1.5 p-3 rounded-xl border border-border bg-card hover:border-green-500 hover:shadow-md transition-all"
               >
                 <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-green-600 to-emerald-500 flex items-center justify-center text-lg shadow-sm">
@@ -303,7 +302,7 @@ const SkillDevelopmentPage = () => {
                 </div>
                 <p className="text-[10px] font-bold font-hindi text-foreground text-center leading-tight">{pdf.titleHi}</p>
                 <p className="text-[8px] text-muted-foreground">{pdf.categoryIcon} {pdf.categoryTitle}</p>
-              </a>
+              </button>
             ))}
           </div>
         </div>
