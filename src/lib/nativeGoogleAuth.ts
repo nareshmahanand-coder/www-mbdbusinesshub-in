@@ -68,13 +68,15 @@ export async function signInWithGoogleNative(): Promise<boolean> {
       },
     });
 
-    if (!login || !login.result || !login.result.idToken) {
+    const result = (login?.result ?? {}) as Record<string, unknown>;
+    const idToken =
+      (result.idToken as string | undefined) ??
+      ((result as { authentication?: { idToken?: string } }).authentication?.idToken);
+
+    if (!idToken) {
       toast.message("Google Sign-In cancelled. आप दोबारा कोशिश कर सकते हैं।");
       return false;
     }
-
-    const result = login.result;
-    const idToken = result.idToken;
 
     // Supabase login with Google ID Token
     const { data, error } = await supabase.auth.signInWithIdToken({
