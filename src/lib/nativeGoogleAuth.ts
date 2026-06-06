@@ -1,4 +1,8 @@
 import { toast } from "sonner";
+import { Capacitor } from "@capacitor/core";
+import { SocialLogin } from "@capgo/capacitor-social-login";
+import { supabase } from "@/integrations/supabase/client";
+import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 // Google Sign-In configuration for native Android.
 // Web Client ID (Google OAuth client_type: 3):
 // 822103899326-5d5k2a6h1r7c1em3fgvcinq6k7scfp3p.apps.googleusercontent.com
@@ -64,13 +68,15 @@ export async function signInWithGoogleNative(): Promise<boolean> {
       },
     });
 
-    if (!login || !login.result || !login.result.idToken) {
+    const result = (login?.result ?? {}) as Record<string, unknown>;
+    const idToken =
+      (result.idToken as string | undefined) ??
+      ((result as { authentication?: { idToken?: string } }).authentication?.idToken);
+
+    if (!idToken) {
       toast.message("Google Sign-In cancelled. आप दोबारा कोशिश कर सकते हैं।");
       return false;
     }
-
-    const result = login.result;
-    const idToken = result.idToken;
 
     // Supabase login with Google ID Token
     const { data, error } = await supabase.auth.signInWithIdToken({

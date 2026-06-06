@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { Capacitor } from "@capacitor/core";
 
 declare global {
   interface Window {
@@ -112,8 +113,11 @@ export const syncLatestRazorpayPayment = async ({ module, plan, paymentOrderId, 
 
 const startPaymentLink = async ({ module, plan, onSuccess, onFailure }: StartPaymentOptions) => {
   const link = PAYMENT_LINKS[module][plan];
-  // Open the tab SYNCHRONOUSLY inside the click gesture so popup blockers allow it.
-  const popup = window.open(link.url, "_blank", "noopener,noreferrer");
+  const isNative = Capacitor.isNativePlatform();
+  // On native (Capacitor) WebView: keep checkout inside the app to avoid
+  // Chrome Custom Tabs handoff. On web, open a popup synchronously inside
+  // the click gesture so popup blockers allow it.
+  const popup = isNative ? null : window.open(link.url, "_blank", "noopener,noreferrer");
 
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
@@ -158,7 +162,7 @@ const startPaymentLink = async ({ module, plan, onSuccess, onFailure }: StartPay
   if (popup && !popup.closed) {
     try { popup.location.href = paymentUrl.toString(); } catch { /* cross-origin after navigation – ignore */ }
   } else {
-    // Popup was blocked – fall back to same-tab navigation.
+    // Popup was blocked or we're on native – stay in the WebView.
     window.location.href = paymentUrl.toString();
   }
 
