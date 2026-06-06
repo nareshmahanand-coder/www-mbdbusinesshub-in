@@ -4,6 +4,24 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Native / mobile WebView: full-screen layout with proper safe-area padding.
+   Fixes content being cut off under status bar / nav bar on Capacitor Android. */
+html, body, #root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  margin: 0;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: contain;
+}
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  background-color: hsl(var(--background));
+}
+
 @layer base {
   :root {
     --background: 0 0% 97%;
