@@ -4,18 +4,28 @@ import { SocialLogin } from "@capgo/capacitor-social-login";
 import { supabase } from "@/integrations/supabase/client";
 import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 // Google Sign-In configuration for native Android.
-// Web Client ID (Google OAuth client_type: 3):
-// 822103899326-5d5k2a6h1r7c1em3fgvcinq6k7scfp3p.apps.googleusercontent.com
+//
+// Web Client ID (Google OAuth client_type: 3) — REQUIRED as `webClientId`
+// for @capgo/capacitor-social-login. This is the audience for the idToken
+// that Supabase verifies during signInWithIdToken.
+//
+// Verified Android signing certificate SHA-1:
+//   76:9F:2C:91:FA:7E:3C:2A:77:81:57:69:79:45:AA:9D:F3:57:81:D5
+// (must be registered on the Android OAuth client in Google Cloud Console,
+//  matching package name `com.merabharatdukaan.app`).
+//
+// The Android Client ID itself is matched automatically by Google Play
+// Services using package name + SHA-1, so it is NOT passed to the plugin.
 
-// IMPORTANT: The @capgo/capacitor-social-login plugin requires the WEB Client ID
-// to be passed as 'webClientId'. This is the audience for the idToken.
-// The Android Client ID is matched automatically by Google Play Services using
-// package name + SHA-1. It is NOT passed to the plugin.
+export const GOOGLE_WEB_CLIENT_ID =
+  "822103899326-5d5k2a6h1r7c1em3fgvcinq6k75cfg3p.apps.googleusercontent.com";
 
-const GOOGLE_WEB_CLIENT_ID = "822103899326-5d5k2a6h1r7c1em3fgvcinq6k7scfp3p.apps.googleusercontent.com";
+// Android Client ID (for reference / diagnostics only — never passed to plugin)
+export const GOOGLE_ANDROID_CLIENT_ID =
+  "822103899326-0b9oga5c5idh9vgtslgtghdjovc7rhj6.apps.googleusercontent.com";
 
-// Android Client ID (for reference only)
-const GOOGLE_ANDROID_CLIENT_ID = "822103899326-0b9oga5c5idh9vgtslgtghdjovc7rhj6.apps.googleusercontent.com";
+export const GOOGLE_ANDROID_SHA1 =
+  "76:9F:2C:91:FA:7E:3C:2A:77:81:57:69:79:45:AA:9D:F3:57:81:D5";
 
 let googleInitialized = false;
 const GOOGLE_USER_CACHE_KEY = "mbd-google-user";
