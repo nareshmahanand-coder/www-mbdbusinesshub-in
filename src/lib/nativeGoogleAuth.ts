@@ -6,27 +6,43 @@ import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 import { toast } from "sonner";
 
 // Google Sign-In configuration for native Android.
-// Web Client ID (Google OAuth client_type: 3):
-// 822103899326-5d5k2a6h1r7c1em3fgvcinq6k7scfp3p.apps.googleusercontent.com
+//
+// IMPORTANT: The @capgo/capacitor-social-login plugin (and Google's native
+// GoogleSignIn SDK) requires the WEB Client ID to be passed as `webClientId`.
+// That is the audience for the returned `idToken` that we exchange with the
+// backend. The Android Client ID is matched automatically by Google Play
+// Services using the app's package name + SHA-1 fingerprint - it is NOT
+// passed to the plugin, but it MUST exist in Google Cloud Console.
+//
+// Web Client ID (OAuth client_type: 3) - used as `webClientId`:
+//   822103899326-5d5k2a6h1r7c1em3fgvcinq6k7scfp3p.apps.googleusercontent.com
+//
+// Android Client ID (OAuth client_type: 1) - auto-matched by SHA-1, kept here
+// for reference only:
+//   822103899326-0b9oga5c5idh9vgtslgtghdjovc7rhj6.apps.googleusercontent.com
+//
 // Android package: com.merabharatdukaan.app
 // SHA-1 fingerprint:
-// 76:9F:2C:91:FA:7E:3C:2A:77:81:57:69:79:45:AA:9D:F3:57:81:05
+//   76:9F:2C:91:FA:7E:3C:2A:77:81:57:69:79:45:AA:9D:F3:57:81:05
 //
 // Setup checklist if Google Sign-In still cancels/fails:
-// 1) Google Cloud Console > APIs & Services > Credentials:
-//    - Create/verify an Android OAuth Client.
-//    - Package name must be: com.merabharatdukaan.app
-//    - SHA-1 must be: 76:9F:2C:91:FA:7E:3C:2A:77:81:57:69:79:45:AA:9D:F3:57:81:05
-// 2) Google Cloud Console > APIs & Services > Credentials:
-//    - Create/verify a Web OAuth Client.
-//    - Copy that Web Client ID into GOOGLE_WEB_CLIENT_ID below.
-// 3) Firebase Console > Project Settings > Your Android app:
-//    - Add the same SHA-1 fingerprint above.
-//    - Download the updated google-services.json.
-// 4) Backend/Cloud Google provider settings:
-//    - Use the SAME Web Client ID as GOOGLE_WEB_CLIENT_ID.
-//    - If this ID differs, backend token exchange fails with audience errors.
-const GOOGLE_WEB_CLIENT_ID = "822103899326-5d5k2a6h1r7c1em3fgvcinq6k7scfp3p.apps.googleusercontent.com";
+// 1) Google Cloud Console > Credentials > Android OAuth Client:
+//    - Package name: com.merabharatdukaan.app
+//    - SHA-1: 76:9F:2C:91:FA:7E:3C:2A:77:81:57:69:79:45:AA:9D:F3:57:81:05
+// 2) Google Cloud Console > Credentials > Web OAuth Client:
+//    - Copy its Client ID into GOOGLE_WEB_CLIENT_ID below.
+// 3) Firebase Console > Project Settings > Android app:
+//    - Add the same SHA-1.
+//    - Download updated google-services.json into android/app/.
+// 4) Backend Google provider settings:
+//    - Use the SAME Web Client ID as GOOGLE_WEB_CLIENT_ID below,
+//      otherwise backend token exchange fails with audience errors.
+const GOOGLE_WEB_CLIENT_ID =
+  "822103899326-5d5k2a6h1r7c1em3fgvcinq6k7scfp3p.apps.googleusercontent.com";
+const GOOGLE_ANDROID_CLIENT_ID =
+  "822103899326-0b9oga5c5idh9vgtslgtghdjovc7rhj6.apps.googleusercontent.com";
+// Exported for diagnostics / debug screens. The plugin does not need it.
+export { GOOGLE_WEB_CLIENT_ID, GOOGLE_ANDROID_CLIENT_ID };
 
 let googleInitialized = false;
 const GOOGLE_USER_CACHE_KEY = "mbd-google-user";
