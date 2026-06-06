@@ -1,4 +1,8 @@
 import { toast } from "sonner";
+import { Capacitor } from "@capacitor/core";
+import { SocialLogin } from "@capgo/capacitor-social-login";
+import { supabase } from "@/integrations/supabase/client";
+import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 // Google Sign-In configuration for native Android.
 // Web Client ID (Google OAuth client_type: 3):
 // 822103899326-5d5k2a6h1r7c1em3fgvcinq6k7scfp3p.apps.googleusercontent.com
