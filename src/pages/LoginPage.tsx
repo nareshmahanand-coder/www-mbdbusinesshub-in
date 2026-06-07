@@ -14,7 +14,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { Capacitor } from "@capacitor/core";
-import { signInWithGoogleNative } from "@/lib/nativeGoogleAuth";
+import { initializeNativeGoogleAuth, signInWithGoogleNative } from "@/lib/nativeGoogleAuth";
 import { SUPERUSER_FLAG, useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
@@ -65,6 +65,13 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   useEffect(() => {
     setMode(initialMode);
   }, [initialMode]);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    void initializeNativeGoogleAuth().catch((error) => {
+      console.error("Native Google initialization failed", error);
+    });
+  }, []);
 
   useEffect(() => {
     if (!authLoading && user) {
