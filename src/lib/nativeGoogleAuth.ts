@@ -65,7 +65,7 @@ const sha256Hex = async (value: string) => {
     .join("");
 };
 
-const decodeJwtPayload = (token: string): Record<string, any> => {
+const decodeJwtPayload = (token: string): Record<string, unknown> => {
   try {
     const [, payload] = token.split(".");
     if (!payload) return {};
@@ -78,12 +78,22 @@ const decodeJwtPayload = (token: string): Record<string, any> => {
   }
 };
 
-const getErrorCode = (error: any) =>
-  String(error?.code || error?.errorCode || error?.name || "").toUpperCase();
+const toRecord = (value: unknown): Record<string, unknown> =>
+  typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
 
-const getErrorMessage = (error: any) => String(error?.message || error || "");
+const asString = (value: unknown) => (typeof value === "string" && value.trim() ? value : null);
 
-const isUserCancelled = (error: any) => {
+const getErrorCode = (error: unknown) => {
+  const record = toRecord(error);
+  return String(record.code || record.errorCode || record.name || "").toUpperCase();
+};
+
+const getErrorMessage = (error: unknown) => {
+  const record = toRecord(error);
+  return String(record.message || error || "");
+};
+
+const isUserCancelled = (error: unknown) => {
   const code = getErrorCode(error);
   const message = getErrorMessage(error).toLowerCase();
   return code === "USER_CANCELLED" || /user.*cancel|cancelled by user|canceled by user/.test(message);
@@ -172,14 +182,13 @@ export async function signInWithGoogleNative(): Promise<boolean> {
     }
 
     const profile = result.profile ?? {};
-    const email = data.user.email ?? profile.email ?? tokenPayload.email ?? null;
+    const email = data.user.email ?? profile.email ?? asString(tokenPayload.email);
     const name =
       data.user.user_metadata?.full_name ??
       data.user.user_metadata?.name ??
       profile.name ??
-      tokenPayload.name ??
-      null;
-    const avatarUrl = data.user.user_metadata?.avatar_url ?? profile.imageUrl ?? tokenPayload.picture ?? null;
+      asString(tokenPayload.name);
+    const avatarUrl = data.user.user_metadata?.avatar_url ?? profile.imageUrl ?? asString(tokenPayload.picture);
 
     await persistNativeAuthSession(data.session);
 
@@ -195,7 +204,7 @@ export async function signInWithGoogleNative(): Promise<boolean> {
         sessionAccessToken: data.session.access_token,
         sessionExpiresAt: data.session.expires_at ?? null,
         googleAccessToken: getAccessTokenValue(result.accessToken ?? result.authentication?.accessToken ?? null),
-        tokenAudience: tokenPayload.aud ?? null,
+        tokenAudience: asString(tokenPayload.aud),
         webClientId: GOOGLE_WEB_CLIENT_ID,
         androidClientId: GOOGLE_ANDROID_CLIENT_ID,
         androidSha1: GOOGLE_ANDROID_SHA1,
@@ -217,7 +226,7 @@ export async function signInWithGoogleNative(): Promise<boolean> {
     toast.success("Google से सफलतापूर्वक लॉगिन हो गया!");
     return true;
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[native-google] login failed", {
       error,
       code: getErrorCode(error),
