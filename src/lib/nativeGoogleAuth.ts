@@ -104,6 +104,29 @@ const extractGoogleResult = (login: unknown): GoogleLoginResult => {
   return response.result ?? response;
 };
 
+const clearStaleGoogleCredentialState = async () => {
+  try {
+    await SocialLogin.logout({ provider: "google" });
+  } catch {
+    // Ignore: there may be no previous plugin credential state to clear.
+  }
+};
+
+const loginWithAndroidGoogle = async (style: "bottom" | "standard", nonceDigest: string) =>
+  SocialLogin.login({
+    provider: "google",
+    options: {
+      // `bottom` uses Android Credential Manager account picker. If Play
+      // Services reports a false USER_CANCELLED after account selection, we
+      // retry once with `standard` below.
+      style,
+      filterByAuthorizedAccounts: false,
+      autoSelectEnabled: false,
+      nonce: nonceDigest,
+      forceRefreshToken: false,
+    },
+  });
+
 const getAccessTokenValue = (accessToken: GoogleLoginResult["accessToken"]) => {
   if (!accessToken) return null;
   if (typeof accessToken === "string") return accessToken;
@@ -142,18 +165,17 @@ export async function signInWithGoogleNative(): Promise<boolean> {
     const rawNonce = getUrlSafeNonce();
     const nonceDigest = await sha256Hex(rawNonce);
 
-    const login = await SocialLogin.login({
-      provider: "google",
-      options: {
-        // Android Credential Manager bottom-sheet flow. Keep authorized-account
-        // filtering disabled so first-time users and supervised accounts are shown.
-        style: "bottom",
-        filterByAuthorizedAccounts: false,
-        autoSelectEnabled: false,
-        nonce: nonceDigest,
-        forceRefreshToken: false,
-      },
-    });
+    await clearStaleGoogleCredentialState();
+
+    let login: unknown;
+    try {
+      login = await loginWithAndroidGoogle("bottom", nonceDigest);
+    } catch (firstError) {
+      if (!isUserCancelled(firstError)) throw firstError;
+
+      console.warn("[native-google] bottom UI returned USER_CANCELLED; retrying standard UI once", firstError);
+      login = await loginWithAndroidGoogle("standard", nonceDigest);
+    }
 
     const result = extractGoogleResult(login);
     const idToken = result.idToken ?? result.authentication?.idToken ?? null;
