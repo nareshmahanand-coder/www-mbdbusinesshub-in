@@ -5,14 +5,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 
 /**
- * Native Android Google Sign-In configuration.
+ * Native Android Google Sign-In configuration — single source of truth.
  *
  * Google Cloud Console / Firebase checklist:
- * 1. OAuth consent screen: add scopes `openid`, `email`, `profile`.
- * 2. OAuth Credentials → Web application: use GOOGLE_WEB_CLIENT_ID below.
- * 3. OAuth Credentials → Android: package `com.merabharatdukaan.app` + SHA-1 below.
- * 4. Firebase Android app: add the same SHA-1, then download a fresh google-services.json.
- * 5. After changing IDs/SHA-1: run `npx cap sync android`, rebuild, then reinstall the APK.
+ * 1. Google Cloud Console → APIs & Services → OAuth consent screen:
+ *    add scopes `openid`, `email`, `profile` and publish/test-user access.
+ * 2. Google Cloud Console → APIs & Services → Credentials → Web application:
+ *    use GOOGLE_WEB_CLIENT_ID below. This same Web Client ID must be configured
+ *    in the backend Google provider because Supabase verifies the ID token `aud`.
+ * 3. Google Cloud Console → Credentials → Android OAuth client:
+ *    package name must be `com.merabharatdukaan.app` and SHA-1 must be
+ *    GOOGLE_ANDROID_SHA1 below. Create separate Android OAuth clients for debug,
+ *    release, and Play App Signing if those APKs are signed differently.
+ * 4. Firebase Console → Project settings → Android app:
+ *    add the same SHA-1, then download a fresh `google-services.json`.
+ * 5. After changing IDs/SHA-1: run `npx cap sync android`, rebuild a fresh APK,
+ *    uninstall the old app from the phone, then install the new APK.
  *
  * Important: @capgo/capacitor-social-login must receive the WEB client ID as
  * `webClientId`. The Android client ID is matched by Google Play Services from
@@ -30,6 +38,7 @@ export const GOOGLE_ANDROID_SHA1 =
 
 const GOOGLE_USER_CACHE_KEY = "mbd-google-user";
 let initializePromise: Promise<void> | null = null;
+const GOOGLE_SCOPES = ["openid", "email", "profile"];
 
 type GoogleProfile = {
   id?: string | null;
@@ -96,7 +105,12 @@ const getErrorMessage = (error: unknown) => {
 const isUserCancelled = (error: unknown) => {
   const code = getErrorCode(error);
   const message = getErrorMessage(error).toLowerCase();
-  return code === "USER_CANCELLED" || /user.*cancel|cancelled by user|canceled by user/.test(message);
+  return code === "USER_CANCELLED" || code === "CANCELED" || /user.*cancel|cancelled by user|canceled by user/.test(message);
+};
+
+const isConfigurationError = (error: unknown) => {
+  const message = getErrorMessage(error).toLowerCase();
+  return /10:|developer_error|invalid[_ ]?audience|audience|client id|oauth|sha-?1|api_exception|cannot find provider/.test(message);
 };
 
 const extractGoogleResult = (login: unknown): GoogleLoginResult => {
@@ -104,22 +118,12 @@ const extractGoogleResult = (login: unknown): GoogleLoginResult => {
   return response.result ?? response;
 };
 
-const clearStaleGoogleCredentialState = async () => {
-  try {
-    await SocialLogin.logout({ provider: "google" });
-  } catch {
-    // Ignore: there may be no previous plugin credential state to clear.
-  }
-};
-
 const loginWithAndroidGoogle = async (style: "bottom" | "standard", nonceDigest: string) =>
   SocialLogin.login({
     provider: "google",
     options: {
-      // `bottom` uses Android Credential Manager account picker. If Play
-      // Services reports a false USER_CANCELLED after account selection, we
-      // retry once with `standard` below.
       style,
+      scopes: GOOGLE_SCOPES,
       filterByAuthorizedAccounts: false,
       autoSelectEnabled: false,
       nonce: nonceDigest,
@@ -137,20 +141,20 @@ export async function initializeNativeGoogleAuth(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) return false;
 
   initializePromise ??= SocialLogin.initialize({
-      google: {
-        webClientId: GOOGLE_WEB_CLIENT_ID,
-        mode: "online",
-      },
-    }).catch((error) => {
-      initializePromise = null;
-      console.error("[native-google] initialize failed", {
-        error,
-        webClientId: GOOGLE_WEB_CLIENT_ID,
-        androidClientId: GOOGLE_ANDROID_CLIENT_ID,
-        androidSha1: GOOGLE_ANDROID_SHA1,
-      });
-      throw new Error("Google Sign-In initialize नहीं हो पाया। App update/sync करके दोबारा कोशिश करें।");
+    google: {
+      webClientId: GOOGLE_WEB_CLIENT_ID,
+      mode: "online",
+    },
+  }).catch((error) => {
+    initializePromise = null;
+    console.error("[native-google] initialize failed", {
+      error,
+      webClientId: GOOGLE_WEB_CLIENT_ID,
+      androidClientId: GOOGLE_ANDROID_CLIENT_ID,
+      androidSha1: GOOGLE_ANDROID_SHA1,
     });
+    throw new Error("Google Sign-In initialize नहीं हो पाया। App update/sync करके दोबारा कोशिश करें।");
+  });
 
   await initializePromise;
   return true;
@@ -165,15 +169,13 @@ export async function signInWithGoogleNative(): Promise<boolean> {
     const rawNonce = getUrlSafeNonce();
     const nonceDigest = await sha256Hex(rawNonce);
 
-    await clearStaleGoogleCredentialState();
-
     let login: unknown;
     try {
       login = await loginWithAndroidGoogle("bottom", nonceDigest);
     } catch (firstError) {
-      if (!isUserCancelled(firstError)) throw firstError;
+      if (!isUserCancelled(firstError) && !isConfigurationError(firstError)) throw firstError;
 
-      console.warn("[native-google] bottom UI returned USER_CANCELLED; retrying standard UI once", firstError);
+      console.warn("[native-google] bottom UI failed; retrying standard Google UI once", firstError);
       login = await loginWithAndroidGoogle("standard", nonceDigest);
     }
 
@@ -187,6 +189,19 @@ export async function signInWithGoogleNative(): Promise<boolean> {
     }
 
     const tokenPayload = decodeJwtPayload(idToken);
+    const tokenAudience = asString(tokenPayload.aud);
+
+    if (tokenAudience && tokenAudience !== GOOGLE_WEB_CLIENT_ID) {
+      console.error("[native-google] wrong token audience", {
+        tokenAudience,
+        expectedWebClientId: GOOGLE_WEB_CLIENT_ID,
+        androidClientId: GOOGLE_ANDROID_CLIENT_ID,
+        androidSha1: GOOGLE_ANDROID_SHA1,
+      });
+      toast.error("Google Client ID mismatch है। Web Client ID backend और app दोनों में same होना चाहिए।");
+      return false;
+    }
+
     const { data, error } = await supabase.auth.signInWithIdToken({
       provider: "google",
       token: idToken,
@@ -196,7 +211,7 @@ export async function signInWithGoogleNative(): Promise<boolean> {
     if (error || !data.session) {
       console.error("[native-google] auth token exchange failed", {
         error,
-        tokenAudience: tokenPayload.aud,
+        tokenAudience,
         expectedWebClientId: GOOGLE_WEB_CLIENT_ID,
       });
       toast.error("Google token verify नहीं हुआ। Backend Google Web Client ID इसी ID से match होना चाहिए।");
@@ -234,7 +249,7 @@ export async function signInWithGoogleNative(): Promise<boolean> {
       })
     );
 
-    await supabase.from("profiles").upsert(
+    const { error: profileError } = await supabase.from("profiles").upsert(
       {
         id: data.user.id,
         email,
@@ -244,6 +259,7 @@ export async function signInWithGoogleNative(): Promise<boolean> {
       },
       { onConflict: "id" }
     );
+    if (profileError) console.warn("[native-google] profile save failed", profileError);
 
     toast.success("Google से सफलतापूर्वक लॉगिन हो गया!");
     return true;
@@ -257,6 +273,11 @@ export async function signInWithGoogleNative(): Promise<boolean> {
       androidClientId: GOOGLE_ANDROID_CLIENT_ID,
       androidSha1: GOOGLE_ANDROID_SHA1,
     });
+
+    if (isConfigurationError(error)) {
+      toast.error("Google config mismatch है। Android SHA-1, Web Client ID और backend Google provider verify करें।");
+      return false;
+    }
 
     if (isUserCancelled(error)) {
       toast.message("Google Sign-In cancelled. आप दोबारा कोशिश कर सकते हैं।");
