@@ -105,7 +105,12 @@ const getErrorMessage = (error: unknown) => {
 const isUserCancelled = (error: unknown) => {
   const code = getErrorCode(error);
   const message = getErrorMessage(error).toLowerCase();
-  return code === "USER_CANCELLED" || /user.*cancel|cancelled by user|canceled by user/.test(message);
+  return code === "USER_CANCELLED" || code === "CANCELED" || /user.*cancel|cancelled by user|canceled by user/.test(message);
+};
+
+const isConfigurationError = (error: unknown) => {
+  const message = getErrorMessage(error).toLowerCase();
+  return /10:|developer_error|invalid[_ ]?audience|audience|client id|oauth|sha-?1|api_exception|cannot find provider/.test(message);
 };
 
 const extractGoogleResult = (login: unknown): GoogleLoginResult => {
@@ -113,22 +118,12 @@ const extractGoogleResult = (login: unknown): GoogleLoginResult => {
   return response.result ?? response;
 };
 
-const clearStaleGoogleCredentialState = async () => {
-  try {
-    await SocialLogin.logout({ provider: "google" });
-  } catch {
-    // Ignore: there may be no previous plugin credential state to clear.
-  }
-};
-
 const loginWithAndroidGoogle = async (style: "bottom" | "standard", nonceDigest: string) =>
   SocialLogin.login({
     provider: "google",
     options: {
-      // `bottom` uses Android Credential Manager account picker. If Play
-      // Services reports a false USER_CANCELLED after account selection, we
-      // retry once with `standard` below.
       style,
+      scopes: GOOGLE_SCOPES,
       filterByAuthorizedAccounts: false,
       autoSelectEnabled: false,
       nonce: nonceDigest,
@@ -146,20 +141,20 @@ export async function initializeNativeGoogleAuth(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) return false;
 
   initializePromise ??= SocialLogin.initialize({
-      google: {
-        webClientId: GOOGLE_WEB_CLIENT_ID,
-        mode: "online",
-      },
-    }).catch((error) => {
-      initializePromise = null;
-      console.error("[native-google] initialize failed", {
-        error,
-        webClientId: GOOGLE_WEB_CLIENT_ID,
-        androidClientId: GOOGLE_ANDROID_CLIENT_ID,
-        androidSha1: GOOGLE_ANDROID_SHA1,
-      });
-      throw new Error("Google Sign-In initialize नहीं हो पाया। App update/sync करके दोबारा कोशिश करें।");
+    google: {
+      webClientId: GOOGLE_WEB_CLIENT_ID,
+      mode: "online",
+    },
+  }).catch((error) => {
+    initializePromise = null;
+    console.error("[native-google] initialize failed", {
+      error,
+      webClientId: GOOGLE_WEB_CLIENT_ID,
+      androidClientId: GOOGLE_ANDROID_CLIENT_ID,
+      androidSha1: GOOGLE_ANDROID_SHA1,
     });
+    throw new Error("Google Sign-In initialize नहीं हो पाया। App update/sync करके दोबारा कोशिश करें।");
+  });
 
   await initializePromise;
   return true;
