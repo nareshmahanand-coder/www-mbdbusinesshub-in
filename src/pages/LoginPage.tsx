@@ -105,7 +105,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
       }
 
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${getStandaloneAuthOrigin()}/login?next=${encodeURIComponent(POST_LOGIN_MEMBERSHIP_PATH)}`,
+        redirect_uri: getStandaloneAuthOrigin(),
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
