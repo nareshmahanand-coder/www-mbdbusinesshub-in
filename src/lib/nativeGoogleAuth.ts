@@ -169,15 +169,13 @@ export async function signInWithGoogleNative(): Promise<boolean> {
     const rawNonce = getUrlSafeNonce();
     const nonceDigest = await sha256Hex(rawNonce);
 
-    await clearStaleGoogleCredentialState();
-
     let login: unknown;
     try {
       login = await loginWithAndroidGoogle("bottom", nonceDigest);
     } catch (firstError) {
-      if (!isUserCancelled(firstError)) throw firstError;
+      if (!isUserCancelled(firstError) && !isConfigurationError(firstError)) throw firstError;
 
-      console.warn("[native-google] bottom UI returned USER_CANCELLED; retrying standard UI once", firstError);
+      console.warn("[native-google] bottom UI failed; retrying standard Google UI once", firstError);
       login = await loginWithAndroidGoogle("standard", nonceDigest);
     }
 
@@ -191,6 +189,19 @@ export async function signInWithGoogleNative(): Promise<boolean> {
     }
 
     const tokenPayload = decodeJwtPayload(idToken);
+    const tokenAudience = asString(tokenPayload.aud);
+
+    if (tokenAudience && tokenAudience !== GOOGLE_WEB_CLIENT_ID) {
+      console.error("[native-google] wrong token audience", {
+        tokenAudience,
+        expectedWebClientId: GOOGLE_WEB_CLIENT_ID,
+        androidClientId: GOOGLE_ANDROID_CLIENT_ID,
+        androidSha1: GOOGLE_ANDROID_SHA1,
+      });
+      toast.error("Google Client ID mismatch है। Web Client ID backend और app दोनों में same होना चाहिए।");
+      return false;
+    }
+
     const { data, error } = await supabase.auth.signInWithIdToken({
       provider: "google",
       token: idToken,
@@ -200,7 +211,7 @@ export async function signInWithGoogleNative(): Promise<boolean> {
     if (error || !data.session) {
       console.error("[native-google] auth token exchange failed", {
         error,
-        tokenAudience: tokenPayload.aud,
+        tokenAudience,
         expectedWebClientId: GOOGLE_WEB_CLIENT_ID,
       });
       toast.error("Google token verify नहीं हुआ। Backend Google Web Client ID इसी ID से match होना चाहिए।");
@@ -238,7 +249,7 @@ export async function signInWithGoogleNative(): Promise<boolean> {
       })
     );
 
-    await supabase.from("profiles").upsert(
+    const { error: profileError } = await supabase.from("profiles").upsert(
       {
         id: data.user.id,
         email,
@@ -248,6 +259,7 @@ export async function signInWithGoogleNative(): Promise<boolean> {
       },
       { onConflict: "id" }
     );
+    if (profileError) console.warn("[native-google] profile save failed", profileError);
 
     toast.success("Google से सफलतापूर्वक लॉगिन हो गया!");
     return true;
@@ -261,6 +273,11 @@ export async function signInWithGoogleNative(): Promise<boolean> {
       androidClientId: GOOGLE_ANDROID_CLIENT_ID,
       androidSha1: GOOGLE_ANDROID_SHA1,
     });
+
+    if (isConfigurationError(error)) {
+      toast.error("Google config mismatch है। Android SHA-1, Web Client ID और backend Google provider verify करें।");
+      return false;
+    }
 
     if (isUserCancelled(error)) {
       toast.message("Google Sign-In cancelled. आप दोबारा कोशिश कर सकते हैं।");
