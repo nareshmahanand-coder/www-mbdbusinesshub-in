@@ -5,14 +5,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 
 /**
- * Native Android Google Sign-In configuration.
+ * Native Android Google Sign-In configuration — single source of truth.
  *
  * Google Cloud Console / Firebase checklist:
- * 1. OAuth consent screen: add scopes `openid`, `email`, `profile`.
- * 2. OAuth Credentials → Web application: use GOOGLE_WEB_CLIENT_ID below.
- * 3. OAuth Credentials → Android: package `com.merabharatdukaan.app` + SHA-1 below.
- * 4. Firebase Android app: add the same SHA-1, then download a fresh google-services.json.
- * 5. After changing IDs/SHA-1: run `npx cap sync android`, rebuild, then reinstall the APK.
+ * 1. Google Cloud Console → APIs & Services → OAuth consent screen:
+ *    add scopes `openid`, `email`, `profile` and publish/test-user access.
+ * 2. Google Cloud Console → APIs & Services → Credentials → Web application:
+ *    use GOOGLE_WEB_CLIENT_ID below. This same Web Client ID must be configured
+ *    in the backend Google provider because Supabase verifies the ID token `aud`.
+ * 3. Google Cloud Console → Credentials → Android OAuth client:
+ *    package name must be `com.merabharatdukaan.app` and SHA-1 must be
+ *    GOOGLE_ANDROID_SHA1 below. Create separate Android OAuth clients for debug,
+ *    release, and Play App Signing if those APKs are signed differently.
+ * 4. Firebase Console → Project settings → Android app:
+ *    add the same SHA-1, then download a fresh `google-services.json`.
+ * 5. After changing IDs/SHA-1: run `npx cap sync android`, rebuild a fresh APK,
+ *    uninstall the old app from the phone, then install the new APK.
  *
  * Important: @capgo/capacitor-social-login must receive the WEB client ID as
  * `webClientId`. The Android client ID is matched by Google Play Services from
@@ -30,6 +38,7 @@ export const GOOGLE_ANDROID_SHA1 =
 
 const GOOGLE_USER_CACHE_KEY = "mbd-google-user";
 let initializePromise: Promise<void> | null = null;
+const GOOGLE_SCOPES = ["openid", "email", "profile"];
 
 type GoogleProfile = {
   id?: string | null;
