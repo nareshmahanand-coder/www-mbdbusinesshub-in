@@ -41,6 +41,11 @@ const getStandaloneAuthOrigin = () => {
 
 const safeNextPath = (value: string | null) => (value?.startsWith("/") ? value : POST_LOGIN_MEMBERSHIP_PATH);
 
+const getOAuthRedirectUrl = (nextPath: string) => {
+  const origin = getStandaloneAuthOrigin();
+  return `${origin}/login?next=${encodeURIComponent(safeNextPath(nextPath))}`;
+};
+
 const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -76,9 +81,9 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   useEffect(() => {
     if (!authLoading && user) {
       sessionStorage.removeItem("mbd-auth-next");
-      navigate(POST_LOGIN_MEMBERSHIP_PATH, { replace: true });
+      navigate(nextPath, { replace: true });
     }
-  }, [authLoading, navigate, user]);
+  }, [authLoading, navigate, nextPath, user]);
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
@@ -105,7 +110,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
       }
 
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: getStandaloneAuthOrigin(),
+        redirect_uri: getOAuthRedirectUrl(nextPath),
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
@@ -114,7 +119,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
         return;
       }
       if (result.redirected) return;
-      navigate(POST_LOGIN_MEMBERSHIP_PATH, { replace: true });
+      navigate(nextPath, { replace: true });
     } catch (error) {
       console.error("Google login error:", error);
       toast.error("Login failed. Please try again.");
