@@ -20,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const SUPERUSER_FLAG = "mbd-superuser";
+const AUTH_NEXT_KEY = "mbd-auth-next";
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -82,6 +83,23 @@ const hasSupabasePkceVerifier = () => {
   } catch {
     return false;
   }
+};
+
+const getSafeNextPath = () => {
+  const stored = sessionStorage.getItem(AUTH_NEXT_KEY) || localStorage.getItem(AUTH_NEXT_KEY) || "/dashboard";
+  return stored.startsWith("/") && !stored.startsWith("//") ? stored : "/dashboard";
+};
+
+const redirectAfterManagedOAuth = () => {
+  const currentPath = window.location.pathname;
+  if (!["/", "/login", "/signup", "/auth/callback"].includes(currentPath)) return;
+
+  const nextPath = getSafeNextPath();
+  sessionStorage.removeItem(AUTH_NEXT_KEY);
+  localStorage.removeItem(AUTH_NEXT_KEY);
+  sessionStorage.setItem("bharat-mitra-pending-greet", "true");
+  window.history.replaceState(null, document.title, nextPath);
+  window.dispatchEvent(new PopStateEvent("popstate"));
 };
 
 const recoverSessionFromAuthUrl = async (): Promise<Session | null> => {
@@ -200,6 +218,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data: { session: initialSession } } = await supabase.auth.getSession();
       initializing = false;
       applySession(recoveredSession ?? initialSession);
+      if (recoveredSession) redirectAfterManagedOAuth();
     })();
 
     return () => {
