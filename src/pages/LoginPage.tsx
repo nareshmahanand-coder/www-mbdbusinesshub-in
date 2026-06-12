@@ -12,13 +12,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
-import { Capacitor } from "@capacitor/core";
-import { initializeNativeGoogleAuth, signInWithGoogleNative } from "@/lib/nativeGoogleAuth";
 import { SUPERUSER_FLAG, useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { Loader2, Lock, Mail, ShieldCheck, UserPlus } from "lucide-react";
+import { Loader2, Lock, Mail, UserPlus } from "lucide-react";
 import AdminPinAccess from "@/components/AdminPinAccess";
 
 type AuthMode = "login" | "signup";
@@ -41,11 +38,6 @@ const getStandaloneAuthOrigin = () => {
 
 const safeNextPath = (value: string | null) => (value?.startsWith("/") ? value : POST_LOGIN_MEMBERSHIP_PATH);
 
-const getOAuthRedirectUrl = (nextPath: string) => {
-  const origin = getStandaloneAuthOrigin();
-  return `${origin}/login?next=${encodeURIComponent(safeNextPath(nextPath))}`;
-};
-
 const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -56,7 +48,6 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [pin, setPin] = useState("");
@@ -72,60 +63,11 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   }, [initialMode]);
 
   useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
-    void initializeNativeGoogleAuth().catch((error) => {
-      console.error("Native Google initialization failed", error);
-    });
-  }, []);
-
-  useEffect(() => {
     if (!authLoading && user) {
       sessionStorage.removeItem("mbd-auth-next");
       navigate(nextPath, { replace: true });
     }
   }, [authLoading, navigate, nextPath, user]);
-
-  const handleGoogleLogin = async () => {
-    setGoogleLoading(true);
-    sessionStorage.setItem("mbd-auth-next", POST_LOGIN_MEMBERSHIP_PATH);
-    sessionStorage.setItem("bharat-mitra-pending-greet", "true");
-    try {
-      // Native Android/iOS: open Google OAuth in Chrome Custom Tabs.
-      // Google blocks OAuth inside an in-app WebView ("disallowed_useragent"),
-      // so we MUST hand off to the system browser and catch the deep-link back.
-      if (Capacitor.isNativePlatform()) {
-        try {
-          const ok = await signInWithGoogleNative();
-          if (!ok) {
-            // User cancelled the picker - silent.
-            setGoogleLoading(false);
-            return;
-          }
-          navigate(POST_LOGIN_MEMBERSHIP_PATH, { replace: true });
-        } catch (err: any) {
-          toast.error(err?.message || "Google login failed. Please try again.");
-          setGoogleLoading(false);
-        }
-        return;
-      }
-
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: getOAuthRedirectUrl(nextPath),
-        extraParams: { prompt: "select_account" },
-      });
-      if (result.error) {
-        toast.error("Google login failed. Please try again.");
-        setGoogleLoading(false);
-        return;
-      }
-      if (result.redirected) return;
-      navigate(nextPath, { replace: true });
-    } catch (error) {
-      console.error("Google login error:", error);
-      toast.error("Login failed. Please try again.");
-      setGoogleLoading(false);
-    }
-  };
 
   const handleEmailAuth = async (event: FormEvent) => {
     event.preventDefault();
@@ -254,21 +196,10 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
           <div className="text-center">
             <img src={logoCircle} alt="Mera Bharat Dukaan" className="mx-auto h-24 w-24 rounded-full border-4 border-background object-cover shadow-xl" />
             <h1 className="mt-4 text-2xl font-extrabold text-foreground">{mode === "signup" ? "Create your account" : "Secure Login"}</h1>
-            <p className="mt-1 text-sm font-hindi text-muted-foreground">Digital India access · Google और Email से सुरक्षित प्रवेश</p>
+            <p className="mt-1 text-sm font-hindi text-muted-foreground">Digital India access · Email और Password से सुरक्षित प्रवेश</p>
           </div>
 
-          <Button onClick={handleGoogleLogin} disabled={googleLoading || loading} className="mt-6 h-12 w-full bg-primary text-primary-foreground hover:bg-primary/90">
-            {googleLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShieldCheck className="mr-2 h-5 w-5" />}
-            Continue with Google
-          </Button>
-
-          <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-border" />
-            <span className="text-xs font-semibold text-muted-foreground">OR</span>
-            <div className="h-px flex-1 bg-border" />
-          </div>
-
-          <form onSubmit={handleEmailAuth} className="space-y-4">
+          <form onSubmit={handleEmailAuth} className="mt-6 space-y-4">
             {mode === "signup" && (
               <div className="space-y-2">
                 <Label htmlFor="fullName">Full Name</Label>
