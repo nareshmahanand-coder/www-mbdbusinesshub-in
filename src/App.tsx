@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
@@ -56,6 +58,36 @@ const NativePushBanner = () => {
     window.addEventListener("mbd-native-push", onNativePush);
     return () => window.removeEventListener("mbd-native-push", onNativePush);
   }, []);
+
+  return null;
+};
+
+const NativeDeepLinkRouter = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let handle: { remove: () => Promise<void> } | undefined;
+    void CapacitorApp.addListener("appUrlOpen", ({ url }) => {
+      try {
+        const nextUrl = new URL(url);
+        const nextPath = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
+        if (nextPath && nextPath !== `${location.pathname}${location.search}${location.hash}`) {
+          window.history.replaceState(null, document.title, nextPath);
+          window.dispatchEvent(new PopStateEvent("popstate"));
+        }
+      } catch (error) {
+        console.error("[auth] Native deep link handling failed", error);
+      }
+    }).then((listener) => {
+      handle = listener;
+    });
+
+    return () => {
+      void handle?.remove();
+    };
+  }, [location.hash, location.pathname, location.search]);
 
   return null;
 };
@@ -188,6 +220,7 @@ const App = () => (
           <Sonner />
           <NativePushBanner />
           <BrowserRouter>
+            <NativeDeepLinkRouter />
             <AppShell />
           </BrowserRouter>
         </TooltipProvider>
