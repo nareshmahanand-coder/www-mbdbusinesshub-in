@@ -200,7 +200,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
         await Browser.open({ url: data.url, presentationStyle: "fullscreen" });
         return;
       }
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabaseOAuth.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: getOAuthRedirectUri(),

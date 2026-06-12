@@ -39,6 +39,11 @@ const getAuthCodeFromUrl = (url: string) => {
   }
 };
 
+const isWebOAuthCallbackUrl = () => {
+  const path = window.location.pathname;
+  return path === "/auth/callback" || path.startsWith("/~oauth");
+};
+
 const redirectAfterOAuth = () => {
   const currentPath = window.location.pathname;
   if (!["/", "/login", "/signup", "/auth/callback"].includes(currentPath)) return;
@@ -59,6 +64,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     typeof window !== "undefined" && localStorage.getItem(SUPERUSER_FLAG) === "true"
   );
   const syncedUserIdsRef = useRef<Set<string>>(new Set());
+  const oauthProcessingRef = useRef(false);
+  const processedOAuthCodesRef = useRef<Set<string>>(new Set());
 
   // Keep isSuperUser in sync with localStorage (covers same-tab updates from LoginPage)
   useEffect(() => {
@@ -116,9 +123,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
+    const processOAuthCode = (code: string) => {
+      if (processedOAuthCodesRef.current.has(code)) return;
+      processedOAuthCodesRef.current.add(code);
+      oauthProcessingRef.current = true;
+      setLoading(true);
+
+      void supabaseOAuth.auth.exchangeCodeForSession(code).then(async ({ data, error }) => {
+        if (error || !data?.session) {
+          console.error("[auth] OAuth code exchange failed", error);
+          applySession(null);
+          return;
+        }
+
+        const { access_token, refresh_token } = data.session;
+        const { data: setData, error: setError } = await supabase.auth.setSession({
+          access_token,
+          refresh_token,
+        });
+        if (setError) {
+          console.error("[auth] Failed to mirror OAuth session to primary client", setError);
+          applySession(data.session);
+        } else {
+          applySession(setData.session ?? data.session);
+        }
+        redirectAfterOAuth();
+      }).catch((error) => {
+        console.error("[auth] OAuth callback handling failed", error);
+        applySession(null);
+      }).finally(() => {
+        oauthProcessingRef.current = false;
+      });
+    };
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (oauthProcessingRef.current && !nextSession) return;
       applySession(nextSession);
       if (event === "SIGNED_IN" && nextSession) {
         // Strip any leftover OAuth params from URL
@@ -140,34 +181,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      void supabaseOAuth.auth.exchangeCodeForSession(code).then(async ({ data, error }) => {
-        if (error || !data?.session) {
-          console.error("[auth] Native OAuth code exchange failed", error);
-          applySession(null);
-          return;
-        }
-        // Mirror the session into the primary supabase client so the rest of
-        // the app (which imports the default client) sees the logged-in user.
-        const { access_token, refresh_token } = data.session;
-        const { data: setData, error: setError } = await supabase.auth.setSession({
-          access_token,
-          refresh_token,
-        });
-        if (setError) {
-          console.error("[auth] Failed to mirror native session to primary client", setError);
-          applySession(data.session);
-        } else {
-          applySession(setData.session ?? data.session);
-        }
-        redirectAfterOAuth();
-      });
+      processOAuthCode(code);
     };
 
     window.addEventListener("mbd-native-auth-callback", handleNativeAuthCallback);
 
-    void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      applySession(initialSession);
-    });
+    const webCallbackCode = isWebOAuthCallbackUrl() ? getAuthCodeFromUrl(window.location.href) : null;
+    if (webCallbackCode) {
+      processOAuthCode(webCallbackCode);
+    } else {
+      void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+        if (oauthProcessingRef.current && !initialSession) return;
+        applySession(initialSession);
+      });
+    }
 
     return () => {
       mounted = false;
