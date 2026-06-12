@@ -15,6 +15,7 @@ import TermsPage from "./pages/TermsPage";
 import LegalPage from "./pages/LegalPage";
 import KisanRegistration from "./pages/KisanRegistration";
 import LoginPage from "./pages/LoginPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import MerchantDashboard from "./pages/MerchantDashboard";
@@ -116,7 +117,7 @@ const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
   const { hasKyc, loading: kycLoading } = useKycStatus();
   const { isMember, loading: memLoading } = useBharatGauravMembership();
   const location = useLocation();
-  const next = new URLSearchParams(location.search).get("next") || sessionStorage.getItem("mbd-auth-next") || "/dashboard";
+  const next = new URLSearchParams(location.search).get("next") || sessionStorage.getItem("mbd-auth-next") || localStorage.getItem("mbd-auth-next") || "/dashboard";
   if (loading || (user && (kycLoading || memLoading))) return <FullScreenLoader />;
   if (user && !isSuperUser && !hasKyc) return <Navigate to="/ekyc" replace />;
   if (user && !isSuperUser && !isMember) return <Navigate to="/membership" replace />;
@@ -143,8 +144,9 @@ const AppShell = () => {
       <Routes>
         <Route path="/login" element={<PublicLoginRoute><LoginPage /></PublicLoginRoute>} />
         <Route path="/signup" element={<PublicLoginRoute><LoginPage initialMode="signup" /></PublicLoginRoute>} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/~oauth/*" element={<FullScreenLoader />} />
+        <Route path="/~oauth/*" element={<AuthCallbackPage />} />
         <Route path="/ekyc" element={<EkycPage />} />
         <Route path="/membership" element={<ProtectedRoute><BharatGauravMembershipPage /></ProtectedRoute>} />
         <Route path="/terms" element={<TermsPage />} />
