@@ -14,6 +14,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { SUPERUSER_FLAG, useAuth } from "@/contexts/AuthContext";
+import { Browser } from "@capacitor/browser";
+import { Capacitor } from "@capacitor/core";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { Loader2, Lock, Mail, UserPlus } from "lucide-react";
@@ -47,6 +49,22 @@ const rememberNextPath = (path: string) => {
 };
 
 const getOAuthRedirectUri = () => `${getStandaloneAuthOrigin()}/auth/callback`;
+
+const createOAuthState = () => {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+};
+
+const getNativeOAuthUrl = () => {
+  const params = new URLSearchParams({
+    provider: "google",
+    redirect_uri: getOAuthRedirectUri(),
+    state: createOAuthState(),
+    prompt: "select_account",
+  });
+  return `${getStandaloneAuthOrigin()}/~oauth/initiate?${params.toString()}`;
+};
 
 const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const navigate = useNavigate();
@@ -174,6 +192,10 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
     setGoogleLoading(true);
     try {
       rememberNextPath(nextPath);
+      if (Capacitor.isNativePlatform()) {
+        await Browser.open({ url: getNativeOAuthUrl(), presentationStyle: "fullscreen" });
+        return;
+      }
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: getOAuthRedirectUri(),
         extraParams: { prompt: "select_account" },
