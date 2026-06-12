@@ -168,6 +168,23 @@ body {
 .tiranga-bg {
   position: relative;
 }
+
+/* Native App mode: fullscreen-like browser chrome, larger touch targets, no scroll bleed */
+html.mbd-native-mode,
+html.mbd-native-mode body {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+html.mbd-native-mode body {
+  font-size: 15px;
+}
+html.mbd-native-mode .ticker-tricolor {
+  display: none;
+}
+html.mbd-native-mode header.sticky {
+  top: 0 !important;
+}
 .tiranga-bg::after {
   content: '';
   position: fixed;

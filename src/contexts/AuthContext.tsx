@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { supabaseOAuth } from "@/lib/supabaseOAuthClient";
 import type { User, Session } from "@supabase/supabase-js";
 import { clearNativeAuthSession, persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 
@@ -30,20 +29,6 @@ const getSafeNextPath = () => {
   return stored.startsWith("/") && !stored.startsWith("//") ? stored : "/dashboard";
 };
 
-const getAuthCodeFromUrl = (url: string) => {
-  try {
-    const parsed = new URL(url);
-    return parsed.searchParams.get("code");
-  } catch {
-    return null;
-  }
-};
-
-const isWebOAuthCallbackUrl = () => {
-  const path = window.location.pathname;
-  return path === "/auth/callback" || path.startsWith("/~oauth");
-};
-
 const redirectAfterOAuth = () => {
   const currentPath = window.location.pathname;
   if (!["/", "/login", "/signup", "/auth/callback"].includes(currentPath) && !currentPath.startsWith("/~oauth")) return;
@@ -64,8 +49,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     typeof window !== "undefined" && localStorage.getItem(SUPERUSER_FLAG) === "true"
   );
   const syncedUserIdsRef = useRef<Set<string>>(new Set());
-  const oauthProcessingRef = useRef(false);
-  const processedOAuthCodesRef = useRef<Set<string>>(new Set());
 
   // Keep isSuperUser in sync with localStorage (covers same-tab updates from LoginPage)
   useEffect(() => {
@@ -123,82 +106,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    const processOAuthCode = (code: string) => {
-      if (processedOAuthCodesRef.current.has(code)) return;
-      processedOAuthCodesRef.current.add(code);
-      oauthProcessingRef.current = true;
-      setLoading(true);
-
-      void supabaseOAuth.auth.exchangeCodeForSession(code).then(async ({ data, error }) => {
-        if (error || !data?.session) {
-          console.error("[auth] OAuth code exchange failed", error);
-          applySession(null);
-          return;
-        }
-
-        const { access_token, refresh_token } = data.session;
-        const { data: setData, error: setError } = await supabase.auth.setSession({
-          access_token,
-          refresh_token,
-        });
-        if (setError) {
-          console.error("[auth] Failed to mirror OAuth session to primary client", setError);
-          applySession(data.session);
-        } else {
-          applySession(setData.session ?? data.session);
-        }
-        redirectAfterOAuth();
-      }).catch((error) => {
-        console.error("[auth] OAuth callback handling failed", error);
-        applySession(null);
-      }).finally(() => {
-        oauthProcessingRef.current = false;
-      });
-    };
-
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      if (oauthProcessingRef.current && !nextSession) return;
       applySession(nextSession);
       if (event === "SIGNED_IN" && nextSession) {
-        // Strip any leftover OAuth params from URL
-        if (window.location.search.includes("code=") || window.location.hash.includes("access_token=")) {
-          const url = new URL(window.location.href);
-          ["code", "state", "error", "error_description"].forEach((k) => url.searchParams.delete(k));
-          url.hash = "";
-          window.history.replaceState(null, document.title, `${url.pathname}${url.search}`);
-        }
         redirectAfterOAuth();
       }
     });
 
-    const handleNativeAuthCallback = (event: Event) => {
-      const url = (event as CustomEvent<{ url?: string }>).detail?.url;
-      const code = url ? getAuthCodeFromUrl(url) : null;
-      if (!code) {
-        console.warn("[auth] Native OAuth callback received without code", url);
-        return;
-      }
-
-      processOAuthCode(code);
-    };
-
-    window.addEventListener("mbd-native-auth-callback", handleNativeAuthCallback);
-
-    const webCallbackCode = isWebOAuthCallbackUrl() ? getAuthCodeFromUrl(window.location.href) : null;
-    if (webCallbackCode) {
-      processOAuthCode(webCallbackCode);
-    } else {
-      void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-        if (oauthProcessingRef.current && !initialSession) return;
-        applySession(initialSession);
-      });
-    }
+    void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      applySession(initialSession);
+    });
 
     return () => {
       mounted = false;
-      window.removeEventListener("mbd-native-auth-callback", handleNativeAuthCallback);
       subscription.unsubscribe();
     };
   }, []);
@@ -208,7 +130,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem(SUPERUSER_FLAG);
     window.dispatchEvent(new Event("mbd-superuser-changed"));
     setIsSuperUser(false);
-    await supabaseOAuth.auth.signOut();
     await supabase.auth.signOut();
     await clearNativeAuthSession();
   };
