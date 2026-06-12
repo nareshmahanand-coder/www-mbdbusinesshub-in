@@ -46,7 +46,7 @@ const isWebOAuthCallbackUrl = () => {
 
 const redirectAfterOAuth = () => {
   const currentPath = window.location.pathname;
-  if (!["/", "/login", "/signup", "/auth/callback"].includes(currentPath)) return;
+  if (!["/", "/login", "/signup", "/auth/callback"].includes(currentPath) && !currentPath.startsWith("/~oauth")) return;
 
   const nextPath = getSafeNextPath();
   sessionStorage.removeItem(AUTH_NEXT_KEY);
@@ -208,6 +208,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem(SUPERUSER_FLAG);
     window.dispatchEvent(new Event("mbd-superuser-changed"));
     setIsSuperUser(false);
+    await supabaseOAuth.auth.signOut();
     await supabase.auth.signOut();
     await clearNativeAuthSession();
   };
