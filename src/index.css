@@ -166,6 +166,7 @@ body {
 
 /* Tiranga background */
 .tiranga-bg {
+  position: relative;
 }
 
 /* Native App mode: fullscreen-like browser chrome, larger touch targets, no scroll bleed */
@@ -183,8 +184,6 @@ html.mbd-native-mode .ticker-tricolor {
 }
 html.mbd-native-mode header.sticky {
   top: 0 !important;
-}
-  position: relative;
 }
 .tiranga-bg::after {
   content: '';
