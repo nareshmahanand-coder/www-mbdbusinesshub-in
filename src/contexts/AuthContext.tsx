@@ -76,6 +76,14 @@ const cleanAuthParamsFromUrl = () => {
   }
 };
 
+const hasSupabasePkceVerifier = () => {
+  try {
+    return Object.keys(localStorage).some((key) => key.startsWith("sb-") && key.endsWith("-code-verifier"));
+  } catch {
+    return false;
+  }
+};
+
 const recoverSessionFromAuthUrl = async (): Promise<Session | null> => {
   if (typeof window === "undefined") return null;
 
@@ -97,6 +105,10 @@ const recoverSessionFromAuthUrl = async (): Promise<Session | null> => {
 
     const code = params.get("code");
     if (code) {
+      if (!hasSupabasePkceVerifier()) {
+        console.warn("[auth] Ignoring OAuth code without Supabase PKCE verifier; managed Google auth owns this exchange.");
+        return null;
+      }
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) throw error;
       return data.session ?? null;

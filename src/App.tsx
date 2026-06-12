@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { App as CapacitorApp } from "@capacitor/app";
+import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -74,6 +75,7 @@ const NativeDeepLinkRouter = () => {
         const nextUrl = new URL(url);
         const nextPath = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
         if (nextPath && nextPath !== `${location.pathname}${location.search}${location.hash}`) {
+          void Browser.close();
           window.history.replaceState(null, document.title, nextPath);
           window.dispatchEvent(new PopStateEvent("popstate"));
         }
