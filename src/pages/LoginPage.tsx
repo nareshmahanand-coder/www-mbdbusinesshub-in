@@ -48,7 +48,15 @@ const rememberNextPath = (path: string) => {
   localStorage.setItem(AUTH_NEXT_KEY, safePath);
 };
 
-const getOAuthRedirectUri = () => `${getStandaloneAuthOrigin()}/auth/callback`;
+const getOAuthRedirectUri = () => getStandaloneAuthOrigin();
+
+const clearStaleSupabasePkceVerifiers = () => {
+  try {
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith("sb-") && key.endsWith("-code-verifier"))
+      .forEach((key) => localStorage.removeItem(key));
+  } catch {}
+};
 
 const createOAuthState = () => {
   const bytes = new Uint8Array(16);
@@ -191,6 +199,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
+      clearStaleSupabasePkceVerifiers();
       rememberNextPath(nextPath);
       if (Capacitor.isNativePlatform()) {
         await Browser.open({ url: getNativeOAuthUrl(), presentationStyle: "fullscreen" });
