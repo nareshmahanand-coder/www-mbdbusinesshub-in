@@ -236,7 +236,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
               </button>
             )}
 
-            <Button type="submit" disabled={loading || googleLoading} className="h-12 w-full bg-accent text-accent-foreground hover:bg-accent/90">
+            <Button type="submit" disabled={loading} className="h-12 w-full bg-accent text-accent-foreground hover:bg-accent/90">
               {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : mode === "signup" ? <UserPlus className="mr-2 h-5 w-5" /> : <Mail className="mr-2 h-5 w-5" />}
               {mode === "signup" ? "Sign Up" : "Login"}
             </Button>
