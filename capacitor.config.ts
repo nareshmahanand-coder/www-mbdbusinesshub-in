@@ -30,20 +30,10 @@ const config: CapacitorConfig = {
       '@capacitor/app',
       '@capacitor/preferences',
       '@capacitor/push-notifications',
-      '@capgo/capacitor-social-login',
     ],
     appendUserAgent: 'MeraBharatDukaanApp',
   },
   plugins: {
-    SocialLogin: {
-      providers: {
-        google: true,
-        facebook: false,
-        apple: false,
-        twitter: false,
-      },
-      logLevel: 1,
-    },
     SplashScreen: {
       launchShowDuration: 1500,
       launchAutoHide: true,
