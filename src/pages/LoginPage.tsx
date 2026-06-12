@@ -30,6 +30,7 @@ const SUPERUSER_EMAIL = "superuser@mbd.local";
 const SUPERUSER_PASSWORD = "MBD_SuperUser_02032026!";
 const SHOP_APP_ORIGIN = "https://shop.mbdbusinesshub.in";
 const POST_LOGIN_MEMBERSHIP_PATH = "/dashboard";
+const AUTH_NEXT_KEY = "mbd-auth-next";
 
 const getStandaloneAuthOrigin = () => {
   const hostname = window.location.hostname;
@@ -38,6 +39,14 @@ const getStandaloneAuthOrigin = () => {
 };
 
 const safeNextPath = (value: string | null) => (value?.startsWith("/") ? value : POST_LOGIN_MEMBERSHIP_PATH);
+
+const rememberNextPath = (path: string) => {
+  const safePath = safeNextPath(path);
+  sessionStorage.setItem(AUTH_NEXT_KEY, safePath);
+  localStorage.setItem(AUTH_NEXT_KEY, safePath);
+};
+
+const getOAuthRedirectUri = () => `${getStandaloneAuthOrigin()}/auth/callback`;
 
 const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const navigate = useNavigate();
@@ -57,7 +66,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
 
   const nextPath = useMemo(() => {
     const fromUrl = new URLSearchParams(location.search).get("next");
-    return safeNextPath(fromUrl || sessionStorage.getItem("mbd-auth-next"));
+    return safeNextPath(fromUrl || sessionStorage.getItem(AUTH_NEXT_KEY) || localStorage.getItem(AUTH_NEXT_KEY));
   }, [location.search]);
 
   useEffect(() => {
@@ -66,7 +75,8 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
 
   useEffect(() => {
     if (!authLoading && user) {
-      sessionStorage.removeItem("mbd-auth-next");
+      sessionStorage.removeItem(AUTH_NEXT_KEY);
+      localStorage.removeItem(AUTH_NEXT_KEY);
       navigate(nextPath, { replace: true });
     }
   }, [authLoading, navigate, nextPath, user]);
@@ -92,7 +102,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
     }
 
     setLoading(true);
-    sessionStorage.setItem("mbd-auth-next", POST_LOGIN_MEMBERSHIP_PATH);
+    rememberNextPath(POST_LOGIN_MEMBERSHIP_PATH);
     try {
       if (mode === "signup") {
         const { data: dupRes } = await (supabase as any).rpc("check_signup_duplicate", {
@@ -163,9 +173,9 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
-      sessionStorage.setItem("mbd-auth-next", nextPath);
+      rememberNextPath(nextPath);
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: getOAuthRedirectUri(),
         extraParams: { prompt: "select_account" },
       });
       if (result.error) {
