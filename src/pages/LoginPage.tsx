@@ -165,7 +165,8 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
     try {
       sessionStorage.setItem("mbd-auth-next", nextPath);
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/login?next=${encodeURIComponent(nextPath)}`,
+        redirect_uri: window.location.origin,
+        extraParams: { prompt: "select_account" },
       });
       if (result.error) {
         toast.error(result.error.message || "Google sign-in failed.");
