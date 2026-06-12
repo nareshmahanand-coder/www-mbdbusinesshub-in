@@ -24,67 +24,6 @@ const AUTH_NEXT_KEY = "mbd-auth-next";
 
 export const useAuth = () => useContext(AuthContext);
 
-const AUTH_URL_PARAM_KEYS = [
-  "access_token",
-  "refresh_token",
-  "expires_in",
-  "expires_at",
-  "token_type",
-  "type",
-  "code",
-  "state",
-  "error",
-  "error_code",
-  "error_description",
-];
-
-const getAuthParamsFromUrl = () => {
-  const params = new URLSearchParams();
-  const searchParams = new URLSearchParams(window.location.search);
-  searchParams.forEach((value, key) => params.set(key, value));
-
-  const hash = window.location.hash.replace(/^#/, "");
-  if (hash && (hash.includes("access_token=") || hash.includes("refresh_token=") || hash.includes("code=") || hash.includes("error="))) {
-    const hashParams = new URLSearchParams(hash);
-    hashParams.forEach((value, key) => params.set(key, value));
-  }
-
-  return params;
-};
-
-const cleanAuthParamsFromUrl = () => {
-  const url = new URL(window.location.href);
-  let changed = false;
-
-  AUTH_URL_PARAM_KEYS.forEach((key) => {
-    if (url.searchParams.has(key)) {
-      url.searchParams.delete(key);
-      changed = true;
-    }
-  });
-
-  const hash = url.hash.replace(/^#/, "");
-  if (hash && (hash.includes("access_token=") || hash.includes("refresh_token=") || hash.includes("code=") || hash.includes("error="))) {
-    const hashParams = new URLSearchParams(hash);
-    AUTH_URL_PARAM_KEYS.forEach((key) => hashParams.delete(key));
-    const nextHash = hashParams.toString();
-    url.hash = nextHash ? `#${nextHash}` : "";
-    changed = true;
-  }
-
-  if (changed) {
-    window.history.replaceState(null, document.title, `${url.pathname}${url.search}${url.hash}`);
-  }
-};
-
-const hasSupabasePkceVerifier = () => {
-  try {
-    return Object.keys(localStorage).some((key) => key.startsWith("sb-") && key.endsWith("-code-verifier"));
-  } catch {
-    return false;
-  }
-};
-
 const getSafeNextPath = () => {
   const stored = sessionStorage.getItem(AUTH_NEXT_KEY) || localStorage.getItem(AUTH_NEXT_KEY) || "/dashboard";
   return stored.startsWith("/") && !stored.startsWith("//") ? stored : "/dashboard";
@@ -100,44 +39,6 @@ const redirectAfterManagedOAuth = () => {
   sessionStorage.setItem("bharat-mitra-pending-greet", "true");
   window.history.replaceState(null, document.title, nextPath);
   window.dispatchEvent(new PopStateEvent("popstate"));
-};
-
-const recoverSessionFromAuthUrl = async (): Promise<Session | null> => {
-  if (typeof window === "undefined") return null;
-
-  const params = getAuthParamsFromUrl();
-  const hasAuthParams = AUTH_URL_PARAM_KEYS.some((key) => params.has(key));
-  if (!hasAuthParams) return null;
-
-  try {
-    const oauthError = params.get("error_description") || params.get("error");
-    if (oauthError) throw new Error(oauthError);
-
-    const accessToken = params.get("access_token");
-    const refreshToken = params.get("refresh_token");
-    if (accessToken && refreshToken) {
-      const { data, error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-      if (error) throw error;
-      return data.session ?? null;
-    }
-
-    const code = params.get("code");
-    if (code) {
-      if (!hasSupabasePkceVerifier()) {
-        console.warn("[auth] Ignoring OAuth code without Supabase PKCE verifier; managed Google auth owns this exchange.");
-        return null;
-      }
-      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-      if (error) throw error;
-      return data.session ?? null;
-    }
-  } catch (error) {
-    console.error("[auth] OAuth session recovery failed", error);
-  } finally {
-    cleanAuthParamsFromUrl();
-  }
-
-  return null;
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -167,7 +68,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
-    let initializing = true;
 
     const syncProfile = async (activeSession: Session | null) => {
       const activeUser = activeSession?.user;
@@ -209,17 +109,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      if (initializing && event === "INITIAL_SESSION") return;
       applySession(nextSession);
+      if (event === "SIGNED_IN" && nextSession) {
+        // Strip any leftover OAuth params from URL
+        if (window.location.search.includes("code=") || window.location.hash.includes("access_token=")) {
+          const url = new URL(window.location.href);
+          ["code", "state", "error", "error_description"].forEach((k) => url.searchParams.delete(k));
+          url.hash = "";
+          window.history.replaceState(null, document.title, `${url.pathname}${url.search}`);
+        }
+        redirectAfterManagedOAuth();
+      }
     });
 
-    void (async () => {
-      const recoveredSession = await recoverSessionFromAuthUrl();
-      const { data: { session: initialSession } } = await supabase.auth.getSession();
-      initializing = false;
-      applySession(recoveredSession ?? initialSession);
-      if (recoveredSession) redirectAfterManagedOAuth();
-    })();
+    void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      applySession(initialSession);
+    });
 
     return () => {
       mounted = false;
