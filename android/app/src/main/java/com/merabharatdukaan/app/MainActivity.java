@@ -11,13 +11,10 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.WebViewListener;
-import ee.forgr.capacitor.social.login.ModifiedMainActivityForSocialLoginPlugin;
-import ee.forgr.capacitor.social.login.SocialLoginPlugin;
 
-public class MainActivity extends BridgeActivity implements ModifiedMainActivityForSocialLoginPlugin {
+public class MainActivity extends BridgeActivity {
     @Override
     protected void load() {
-        registerPlugin(SocialLoginPlugin.class);
         super.load();
         createUrgentNotificationChannel();
         configureWebView();
@@ -33,11 +30,6 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                 }
             });
         }
-    }
-
-    @Override
-    public void IHaveModifiedTheMainActivityForTheUseWithSocialLoginPlugin() {
-        // Required by @capgo/capacitor-social-login before Android scopes/offline mode are allowed.
     }
 
     private void configureWebView() {
