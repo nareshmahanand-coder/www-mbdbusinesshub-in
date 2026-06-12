@@ -29,7 +29,16 @@ const getSafeNextPath = () => {
   return stored.startsWith("/") && !stored.startsWith("//") ? stored : "/dashboard";
 };
 
-const redirectAfterManagedOAuth = () => {
+const getAuthCodeFromUrl = (url: string) => {
+  try {
+    const parsed = new URL(url);
+    return parsed.searchParams.get("code");
+  } catch {
+    return null;
+  }
+};
+
+const redirectAfterOAuth = () => {
   const currentPath = window.location.pathname;
   if (!["/", "/login", "/signup", "/auth/callback"].includes(currentPath)) return;
 
@@ -118,9 +127,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           url.hash = "";
           window.history.replaceState(null, document.title, `${url.pathname}${url.search}`);
         }
-        redirectAfterManagedOAuth();
+        redirectAfterOAuth();
       }
     });
+
+    const handleNativeAuthCallback = (event: Event) => {
+      const url = (event as CustomEvent<{ url?: string }>).detail?.url;
+      const code = url ? getAuthCodeFromUrl(url) : null;
+      if (!code) return;
+
+      void supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+        if (error) {
+          console.error("[auth] Native OAuth code exchange failed", error);
+          applySession(null);
+          return;
+        }
+        applySession(data.session);
+        redirectAfterOAuth();
+      });
+    };
+
+    window.addEventListener("mbd-native-auth-callback", handleNativeAuthCallback);
 
     void supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       applySession(initialSession);
@@ -128,6 +155,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       mounted = false;
+      window.removeEventListener("mbd-native-auth-callback", handleNativeAuthCallback);
       subscription.unsubscribe();
     };
   }, []);

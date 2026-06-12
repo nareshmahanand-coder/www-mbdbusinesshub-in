@@ -73,6 +73,13 @@ const NativeDeepLinkRouter = () => {
     void CapacitorApp.addListener("appUrlOpen", ({ url }) => {
       try {
         const nextUrl = new URL(url);
+        if (nextUrl.protocol === "com.merabharatdukaan.app:") {
+          void Browser.close();
+          window.dispatchEvent(new CustomEvent("mbd-native-auth-callback", { detail: { url } }));
+          window.history.replaceState(null, document.title, "/auth/callback");
+          window.dispatchEvent(new PopStateEvent("popstate"));
+          return;
+        }
         const nextPath = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
         if (nextPath && nextPath !== `${location.pathname}${location.search}${location.hash}`) {
           void Browser.close();

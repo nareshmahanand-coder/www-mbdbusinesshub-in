@@ -12,7 +12,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { SUPERUSER_FLAG, useAuth } from "@/contexts/AuthContext";
 import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
@@ -33,6 +32,7 @@ const SUPERUSER_PASSWORD = "MBD_SuperUser_02032026!";
 const SHOP_APP_ORIGIN = "https://shop.mbdbusinesshub.in";
 const POST_LOGIN_MEMBERSHIP_PATH = "/dashboard";
 const AUTH_NEXT_KEY = "mbd-auth-next";
+const NATIVE_AUTH_REDIRECT_URI = "com.merabharatdukaan.app://auth/callback";
 
 const getStandaloneAuthOrigin = () => {
   const hostname = window.location.hostname;
@@ -48,7 +48,7 @@ const rememberNextPath = (path: string) => {
   localStorage.setItem(AUTH_NEXT_KEY, safePath);
 };
 
-const getOAuthRedirectUri = () => getStandaloneAuthOrigin();
+const getOAuthRedirectUri = () => (Capacitor.isNativePlatform() ? NATIVE_AUTH_REDIRECT_URI : `${getStandaloneAuthOrigin()}/auth/callback`);
 
 const clearStaleSupabasePkceVerifiers = () => {
   try {
@@ -56,22 +56,6 @@ const clearStaleSupabasePkceVerifiers = () => {
       .filter((key) => key.startsWith("sb-") && key.endsWith("-code-verifier"))
       .forEach((key) => localStorage.removeItem(key));
   } catch {}
-};
-
-const createOAuthState = () => {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-};
-
-const getNativeOAuthUrl = () => {
-  const params = new URLSearchParams({
-    provider: "google",
-    redirect_uri: getOAuthRedirectUri(),
-    state: createOAuthState(),
-    prompt: "select_account",
-  });
-  return `${getStandaloneAuthOrigin()}/~oauth/initiate?${params.toString()}`;
 };
 
 const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
@@ -202,21 +186,27 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
       clearStaleSupabasePkceVerifiers();
       rememberNextPath(nextPath);
       if (Capacitor.isNativePlatform()) {
-        await Browser.open({ url: getNativeOAuthUrl(), presentationStyle: "fullscreen" });
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: NATIVE_AUTH_REDIRECT_URI,
+            skipBrowserRedirect: true,
+            queryParams: { prompt: "select_account" },
+          },
+        });
+        if (error) throw error;
+        if (!data?.url) throw new Error("Google sign-in URL नहीं मिला।");
+        await Browser.open({ url: data.url, presentationStyle: "fullscreen" });
         return;
       }
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: getOAuthRedirectUri(),
-        extraParams: { prompt: "select_account" },
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: getOAuthRedirectUri(),
+          queryParams: { prompt: "select_account" },
+        },
       });
-      if (result.error) {
-        toast.error(result.error.message || "Google sign-in failed.");
-        setGoogleLoading(false);
-        return;
-      }
-      if (result.redirected) return;
-      sessionStorage.setItem("bharat-mitra-pending-greet", "true");
-      navigate(nextPath, { replace: true });
+      if (error) throw error;
     } catch (error: any) {
       toast.error(error?.message || "Google sign-in failed.");
       setGoogleLoading(false);
