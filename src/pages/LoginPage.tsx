@@ -12,13 +12,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { supabaseOAuth } from "@/lib/supabaseOAuthClient";
 import { SUPERUSER_FLAG, useAuth } from "@/contexts/AuthContext";
-import { Browser } from "@capacitor/browser";
-import { Capacitor } from "@capacitor/core";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { Loader2, Lock, Mail, UserPlus } from "lucide-react";
+import { Loader2, Lock, Mail, UserPlus, ShieldCheck, ArrowLeft } from "lucide-react";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import AdminPinAccess from "@/components/AdminPinAccess";
 
 type AuthMode = "login" | "signup";
@@ -33,7 +31,6 @@ const SUPERUSER_PASSWORD = "MBD_SuperUser_02032026!";
 const SHOP_APP_ORIGIN = "https://shop.mbdbusinesshub.in";
 const POST_LOGIN_MEMBERSHIP_PATH = "/dashboard";
 const AUTH_NEXT_KEY = "mbd-auth-next";
-const NATIVE_AUTH_REDIRECT_URI = "com.merabharatdukaan.app://auth/callback";
 
 const getStandaloneAuthOrigin = () => {
   const hostname = window.location.hostname;
@@ -49,15 +46,7 @@ const rememberNextPath = (path: string) => {
   localStorage.setItem(AUTH_NEXT_KEY, safePath);
 };
 
-const getOAuthRedirectUri = () => (Capacitor.isNativePlatform() ? NATIVE_AUTH_REDIRECT_URI : `${getStandaloneAuthOrigin()}/auth/callback`);
-
-const clearStaleSupabasePkceVerifiers = () => {
-  try {
-    Object.keys(localStorage)
-      .filter((key) => key.startsWith("sb-") && key.endsWith("-code-verifier"))
-      .forEach((key) => localStorage.removeItem(key));
-  } catch {}
-};
+type GoogleStep = "idle" | "email" | "otp";
 
 const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const navigate = useNavigate();
@@ -73,7 +62,10 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [pin, setPin] = useState("");
   const [pinLoading, setPinLoading] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleStep, setGoogleStep] = useState<GoogleStep>("idle");
+  const [googleEmail, setGoogleEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [googleBusy, setGoogleBusy] = useState(false);
 
   const nextPath = useMemo(() => {
     const fromUrl = new URLSearchParams(location.search).get("next");
@@ -181,36 +173,63 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setGoogleLoading(true);
+  // Continue with Google → Email-OTP flow
+  // 1) Detect/confirm Google email  2) Send 6-digit OTP  3) Verify → Supabase session persists
+  const startGoogleFlow = () => {
+    rememberNextPath(nextPath);
+    // Pre-fill with last used Google email if available
+    const remembered = localStorage.getItem("mbd-google-email") || "";
+    setGoogleEmail(remembered);
+    setOtp("");
+    setGoogleStep("email");
+  };
+
+  const sendGoogleOtp = async () => {
+    const cleanEmail = googleEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      toast.error("कृपया valid Google email दर्ज करें / Enter a valid email.");
+      return;
+    }
+    setGoogleBusy(true);
     try {
-      clearStaleSupabasePkceVerifiers();
-      rememberNextPath(nextPath);
-      if (Capacitor.isNativePlatform()) {
-        const { data, error } = await supabaseOAuth.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: NATIVE_AUTH_REDIRECT_URI,
-            skipBrowserRedirect: true,
-            queryParams: { prompt: "select_account" },
-          },
-        });
-        if (error) throw error;
-        if (!data?.url) throw new Error("Google sign-in URL नहीं मिला।");
-        await Browser.open({ url: data.url, presentationStyle: "fullscreen" });
-        return;
-      }
-      const { error } = await supabaseOAuth.auth.signInWithOAuth({
-        provider: "google",
+      const { error } = await supabase.auth.signInWithOtp({
+        email: cleanEmail,
         options: {
-          redirectTo: getOAuthRedirectUri(),
-          queryParams: { prompt: "select_account" },
+          shouldCreateUser: true,
+          emailRedirectTo: `${getStandaloneAuthOrigin()}/dashboard`,
         },
       });
       if (error) throw error;
+      localStorage.setItem("mbd-google-email", cleanEmail);
+      setGoogleStep("otp");
+      toast.success(`6-digit OTP भेज दिया गया → ${cleanEmail}`);
     } catch (error: any) {
-      toast.error(error?.message || "Google sign-in failed.");
-      setGoogleLoading(false);
+      toast.error(error?.message || "OTP नहीं भेजा जा सका।");
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
+
+  const verifyGoogleOtp = async () => {
+    if (otp.length !== 6) {
+      toast.error("कृपया 6-digit OTP डालें।");
+      return;
+    }
+    setGoogleBusy(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: googleEmail.trim().toLowerCase(),
+        token: otp,
+        type: "email",
+      });
+      if (error) throw error;
+      sessionStorage.setItem("bharat-mitra-pending-greet", "true");
+      toast.success("Login successful!");
+      navigate(nextPath, { replace: true });
+    } catch (error: any) {
+      toast.error(error?.message || "OTP verify नहीं हुआ।");
+    } finally {
+      setGoogleBusy(false);
     }
   };
 
@@ -254,6 +273,72 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
             <h1 className="mt-4 text-2xl font-extrabold text-foreground">{mode === "signup" ? "Create your account" : "Secure Login"}</h1>
             <p className="mt-1 text-sm font-hindi text-muted-foreground">Digital India access · Email और Password से सुरक्षित प्रवेश</p>
           </div>
+
+          {googleStep !== "idle" && (
+            <div className="mt-6 rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
+              <button
+                type="button"
+                onClick={() => { setGoogleStep("idle"); setOtp(""); }}
+                className="mb-3 flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="h-3 w-3" /> Back
+              </button>
+              {googleStep === "email" && (
+                <div className="space-y-3">
+                  <Label htmlFor="googleEmail" className="text-sm font-bold">
+                    अपना Google email confirm करें
+                  </Label>
+                  <Input
+                    id="googleEmail"
+                    type="email"
+                    value={googleEmail}
+                    onChange={(e) => setGoogleEmail(e.target.value)}
+                    placeholder="you@gmail.com"
+                    autoComplete="email"
+                    autoFocus
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    इस email पर हम 6-digit OTP भेजेंगे — verify होते ही login हो जाएगा।
+                  </p>
+                  <Button onClick={sendGoogleOtp} disabled={googleBusy} className="h-11 w-full">
+                    {googleBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+                    Send OTP
+                  </Button>
+                </div>
+              )}
+              {googleStep === "otp" && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-bold">
+                    6-digit OTP डालें ({googleEmail})
+                  </Label>
+                  <div className="flex justify-center">
+                    <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
+                  <Button onClick={verifyGoogleOtp} disabled={googleBusy || otp.length !== 6} className="h-11 w-full">
+                    {googleBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                    Verify & Login
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={sendGoogleOtp}
+                    disabled={googleBusy}
+                    className="w-full text-xs font-semibold text-primary hover:underline"
+                  >
+                    Resend OTP
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           <form onSubmit={handleEmailAuth} className="mt-6 space-y-4">
             {mode === "signup" && (
@@ -306,21 +391,17 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
 
           <Button
             type="button"
-            onClick={handleGoogleLogin}
-            disabled={googleLoading || loading}
+            onClick={startGoogleFlow}
+            disabled={loading || googleStep !== "idle"}
             variant="outline"
             className="h-12 w-full gap-3 border-2"
           >
-            {googleLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.25 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                 <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-              </svg>
-            )}
+            </svg>
             <span className="font-semibold">Continue with Google</span>
           </Button>
 
