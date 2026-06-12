@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseOAuth } from "@/lib/supabaseOAuthClient";
 import { SUPERUSER_FLAG, useAuth } from "@/contexts/AuthContext";
 import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
@@ -186,7 +187,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
       clearStaleSupabasePkceVerifiers();
       rememberNextPath(nextPath);
       if (Capacitor.isNativePlatform()) {
-        const { data, error } = await supabase.auth.signInWithOAuth({
+        const { data, error } = await supabaseOAuth.auth.signInWithOAuth({
           provider: "google",
           options: {
             redirectTo: NATIVE_AUTH_REDIRECT_URI,

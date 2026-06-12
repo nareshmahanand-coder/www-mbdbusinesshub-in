@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseOAuth } from "@/lib/supabaseOAuthClient";
 import type { User, Session } from "@supabase/supabase-js";
 import { clearNativeAuthSession, persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 
@@ -134,15 +135,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const handleNativeAuthCallback = (event: Event) => {
       const url = (event as CustomEvent<{ url?: string }>).detail?.url;
       const code = url ? getAuthCodeFromUrl(url) : null;
-      if (!code) return;
+      if (!code) {
+        console.warn("[auth] Native OAuth callback received without code", url);
+        return;
+      }
 
-      void supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
-        if (error) {
+      void supabaseOAuth.auth.exchangeCodeForSession(code).then(async ({ data, error }) => {
+        if (error || !data?.session) {
           console.error("[auth] Native OAuth code exchange failed", error);
           applySession(null);
           return;
         }
-        applySession(data.session);
+        // Mirror the session into the primary supabase client so the rest of
+        // the app (which imports the default client) sees the logged-in user.
+        const { access_token, refresh_token } = data.session;
+        const { data: setData, error: setError } = await supabase.auth.setSession({
+          access_token,
+          refresh_token,
+        });
+        if (setError) {
+          console.error("[auth] Failed to mirror native session to primary client", setError);
+          applySession(data.session);
+        } else {
+          applySession(setData.session ?? data.session);
+        }
         redirectAfterOAuth();
       });
     };
