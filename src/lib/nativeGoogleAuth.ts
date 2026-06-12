@@ -28,10 +28,10 @@ import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
  */
 
 export const GOOGLE_WEB_CLIENT_ID =
-  "822103899326-5d5k2a6h1r7c1em3fgvcinq6k75cfg3p.apps.googleusercontent.com";
+  "822103899326-1p22puug67ueab5u9p3mpi3edkvpr8od.apps.googleusercontent.com";
 
 export const GOOGLE_ANDROID_CLIENT_ID =
-  "822103899326-0b9oga5c5idh9vgtslgtghdjovc7rhj6.apps.googleusercontent.com";
+  "822103899326-1p22puug67ueab5u9p3mpi3edkvpr8od.apps.googleusercontent.com";
 
 export const GOOGLE_ANDROID_SHA1 =
   "76:9F:2C:91:FA:7E:3C:2A:77:81:57:69:79:45:AA:9D:F3:57:81:D5";
