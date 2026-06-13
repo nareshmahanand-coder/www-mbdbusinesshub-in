@@ -294,11 +294,12 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
                     value={googleEmail}
                     onChange={(e) => setGoogleEmail(e.target.value)}
                     placeholder="you@gmail.com"
-                    autoComplete="email"
+                    autoComplete="email webauthn"
+                    inputMode="email"
                     autoFocus
                   />
                   <p className="text-xs text-muted-foreground">
-                    इस email पर हम 6-digit OTP भेजेंगे — verify होते ही login हो जाएगा।
+                    इस email पर हम 4-digit OTP भेजेंगे — verify होते ही login हो जाएगा।
                   </p>
                   <Button onClick={sendGoogleOtp} disabled={googleBusy} className="h-11 w-full">
                     {googleBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
@@ -309,21 +310,19 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
               {googleStep === "otp" && (
                 <div className="space-y-3">
                   <Label className="text-sm font-bold">
-                    6-digit OTP डालें ({googleEmail})
+                    4-digit OTP डालें ({googleEmail})
                   </Label>
                   <div className="flex justify-center">
-                    <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+                    <InputOTP maxLength={4} value={otp} onChange={setOtp}>
                       <InputOTPGroup>
                         <InputOTPSlot index={0} />
                         <InputOTPSlot index={1} />
                         <InputOTPSlot index={2} />
                         <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
                       </InputOTPGroup>
                     </InputOTP>
                   </div>
-                  <Button onClick={verifyGoogleOtp} disabled={googleBusy || otp.length !== 6} className="h-11 w-full">
+                  <Button onClick={verifyGoogleOtp} disabled={googleBusy || otp.length !== 4} className="h-11 w-full">
                     {googleBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
                     Verify & Login
                   </Button>
