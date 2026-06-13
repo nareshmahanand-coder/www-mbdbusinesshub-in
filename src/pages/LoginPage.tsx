@@ -16,7 +16,6 @@ import { SUPERUSER_FLAG, useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { Loader2, Lock, Mail, UserPlus, ShieldCheck, ArrowLeft } from "lucide-react";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import AdminPinAccess from "@/components/AdminPinAccess";
 
 type AuthMode = "login" | "signup";
@@ -46,7 +45,20 @@ const rememberNextPath = (path: string) => {
   localStorage.setItem(AUTH_NEXT_KEY, safePath);
 };
 
-type GoogleStep = "idle" | "email" | "otp";
+const decodeJwtEmail = (jwt: string): string | null => {
+  try {
+    const payload = JSON.parse(atob(jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    return (payload?.email as string) || null;
+  } catch {
+    return null;
+  }
+};
+
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
 
 const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const navigate = useNavigate();
@@ -62,10 +74,9 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [pin, setPin] = useState("");
   const [pinLoading, setPinLoading] = useState(false);
-  const [googleStep, setGoogleStep] = useState<GoogleStep>("idle");
-  const [googleEmail, setGoogleEmail] = useState("");
-  const [otp, setOtp] = useState("");
   const [googleBusy, setGoogleBusy] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState<string>("");
+  const [linkSentTo, setLinkSentTo] = useState<string>("");
 
   const nextPath = useMemo(() => {
     const fromUrl = new URLSearchParams(location.search).get("next");
@@ -83,6 +94,81 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
       navigate(nextPath, { replace: true });
     }
   }, [authLoading, navigate, nextPath, user]);
+
+  // Fetch public Google OAuth client ID and load GIS script
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke("google-client-id");
+        const id = (data as any)?.clientId;
+        if (!cancelled && id) setGoogleClientId(id);
+      } catch {
+        /* ignore */
+      }
+    })();
+    if (!document.getElementById("gis-script")) {
+      const s = document.createElement("script");
+      s.src = "https://accounts.google.com/gsi/client";
+      s.id = "gis-script";
+      s.async = true;
+      s.defer = true;
+      document.head.appendChild(s);
+    }
+    return () => { cancelled = true; };
+  }, []);
+
+  const sendMagicLinkTo = async (cleanEmail: string) => {
+    setGoogleBusy(true);
+    try {
+      rememberNextPath(nextPath);
+      const { error } = await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: `${getStandaloneAuthOrigin()}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+      localStorage.setItem("mbd-google-email", cleanEmail);
+      setLinkSentTo(cleanEmail);
+      toast.success(`Login link भेज दिया गया → ${cleanEmail}. कृपया अपना Gmail देखें।`);
+    } catch (error: any) {
+      toast.error(error?.message || "Login link नहीं भेजा जा सका।");
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
+
+  // Trigger Google One Tap / account picker, then auto-send magic link to the chosen Gmail
+  const startGoogleFlow = () => {
+    if (!window.google?.accounts?.id) {
+      toast.error("Google सेवा अभी load हो रही है, कृपया दोबारा प्रयास करें।");
+      return;
+    }
+    if (!googleClientId) {
+      toast.error("Google config तैयार नहीं है।");
+      return;
+    }
+    try {
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        callback: (resp: any) => {
+          const email = decodeJwtEmail(resp?.credential || "");
+          if (!email) {
+            toast.error("Google email नहीं मिला।");
+            return;
+          }
+          sendMagicLinkTo(email.toLowerCase());
+        },
+      });
+      window.google.accounts.id.prompt();
+    } catch (e: any) {
+      toast.error(e?.message || "Google prompt नहीं खुला।");
+    }
+  };
 
   const handleEmailAuth = async (event: FormEvent) => {
     event.preventDefault();
@@ -173,66 +259,6 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
     }
   };
 
-  // Continue with Google → Email-OTP flow
-  // 1) Detect/confirm Google email  2) Send 6-digit OTP  3) Verify → Supabase session persists
-  const startGoogleFlow = () => {
-    rememberNextPath(nextPath);
-    // Pre-fill with last used Google email if available
-    const remembered = localStorage.getItem("mbd-google-email") || "";
-    setGoogleEmail(remembered);
-    setOtp("");
-    setGoogleStep("email");
-  };
-
-  const sendGoogleOtp = async () => {
-    const cleanEmail = googleEmail.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      toast.error("कृपया valid Google email दर्ज करें / Enter a valid email.");
-      return;
-    }
-    setGoogleBusy(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: cleanEmail,
-        options: {
-          shouldCreateUser: true,
-          // No emailRedirectTo → Supabase sends OTP code only (no magic link)
-        },
-      });
-      if (error) throw error;
-      localStorage.setItem("mbd-google-email", cleanEmail);
-      setGoogleStep("otp");
-      toast.success(`OTP भेज दिया गया → ${cleanEmail}`);
-    } catch (error: any) {
-      toast.error(error?.message || "OTP नहीं भेजा जा सका।");
-    } finally {
-      setGoogleBusy(false);
-    }
-  };
-
-  const verifyGoogleOtp = async () => {
-    if (otp.length !== 6) {
-      toast.error("कृपया 6-digit OTP डालें।");
-      return;
-    }
-    setGoogleBusy(true);
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: googleEmail.trim().toLowerCase(),
-        token: otp,
-        type: "email",
-      });
-      if (error) throw error;
-      sessionStorage.setItem("bharat-mitra-pending-greet", "true");
-      toast.success("Login successful!");
-      navigate(nextPath, { replace: true });
-    } catch (error: any) {
-      toast.error(error?.message || "OTP verify नहीं हुआ।");
-    } finally {
-      setGoogleBusy(false);
-    }
-  };
-
   const handleSuperUserPin = async () => {
     if (pin !== SUPERUSER_PIN) {
       toast.error("गलत PIN / Invalid PIN");
@@ -274,70 +300,13 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
             <p className="mt-1 text-sm font-hindi text-muted-foreground">Digital India access · Email और Password से सुरक्षित प्रवेश</p>
           </div>
 
-          {googleStep !== "idle" && (
-            <div className="mt-6 rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
-              <button
-                type="button"
-                onClick={() => { setGoogleStep("idle"); setOtp(""); }}
-                className="mb-3 flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                <ArrowLeft className="h-3 w-3" /> Back
-              </button>
-              {googleStep === "email" && (
-                <div className="space-y-3">
-                  <Label htmlFor="googleEmail" className="text-sm font-bold">
-                    अपना Google email confirm करें
-                  </Label>
-                  <Input
-                    id="googleEmail"
-                    type="email"
-                    value={googleEmail}
-                    onChange={(e) => setGoogleEmail(e.target.value)}
-                    placeholder="you@gmail.com"
-                    autoComplete="email webauthn"
-                    inputMode="email"
-                    autoFocus
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    इस email पर हम 6-digit OTP भेजेंगे — verify होते ही login हो जाएगा।
-                  </p>
-                  <Button onClick={sendGoogleOtp} disabled={googleBusy} className="h-11 w-full">
-                    {googleBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
-                    Send OTP
-                  </Button>
-                </div>
-              )}
-              {googleStep === "otp" && (
-                <div className="space-y-3">
-                  <Label className="text-sm font-bold">
-                    6-digit OTP डालें ({googleEmail})
-                  </Label>
-                  <div className="flex justify-center">
-                    <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-                      <InputOTPGroup>
-                        <InputOTPSlot index={0} />
-                        <InputOTPSlot index={1} />
-                        <InputOTPSlot index={2} />
-                        <InputOTPSlot index={3} />
-                        <InputOTPSlot index={4} />
-                        <InputOTPSlot index={5} />
-                      </InputOTPGroup>
-                    </InputOTP>
-                  </div>
-                  <Button onClick={verifyGoogleOtp} disabled={googleBusy || otp.length !== 6} className="h-11 w-full">
-                    {googleBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
-                    Verify & Login
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={sendGoogleOtp}
-                    disabled={googleBusy}
-                    className="w-full text-xs font-semibold text-primary hover:underline"
-                  >
-                    Resend OTP
-                  </button>
-                </div>
-              )}
+          {linkSentTo && (
+            <div className="mt-6 rounded-xl border-2 border-primary/30 bg-primary/5 p-4 text-sm">
+              <p className="font-bold text-foreground">📧 Login link भेजा गया</p>
+              <p className="mt-1 text-muted-foreground">
+                <span className="font-semibold">{linkSentTo}</span> के Gmail inbox में login link भेज दिया गया है।
+                उस link पर click करते ही आप login हो जाएँगे।
+              </p>
             </div>
           )}
 
@@ -393,7 +362,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
           <Button
             type="button"
             onClick={startGoogleFlow}
-            disabled={loading || googleStep !== "idle"}
+            disabled={loading || googleBusy}
             variant="outline"
             className="h-12 w-full gap-3 border-2"
           >
