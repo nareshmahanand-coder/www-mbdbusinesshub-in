@@ -211,8 +211,8 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   };
 
   const verifyGoogleOtp = async () => {
-    if (otp.length !== 4) {
-      toast.error("कृपया 4-digit OTP डालें।");
+    if (otp.length !== 6) {
+      toast.error("कृपया 6-digit OTP डालें।");
       return;
     }
     setGoogleBusy(true);
