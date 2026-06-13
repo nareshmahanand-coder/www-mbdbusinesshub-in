@@ -196,13 +196,13 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
         email: cleanEmail,
         options: {
           shouldCreateUser: true,
-          emailRedirectTo: `${getStandaloneAuthOrigin()}/dashboard`,
+          // No emailRedirectTo → Supabase sends OTP code only (no magic link)
         },
       });
       if (error) throw error;
       localStorage.setItem("mbd-google-email", cleanEmail);
       setGoogleStep("otp");
-      toast.success(`6-digit OTP भेज दिया गया → ${cleanEmail}`);
+      toast.success(`OTP भेज दिया गया → ${cleanEmail}`);
     } catch (error: any) {
       toast.error(error?.message || "OTP नहीं भेजा जा सका।");
     } finally {
@@ -211,8 +211,8 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   };
 
   const verifyGoogleOtp = async () => {
-    if (otp.length !== 6) {
-      toast.error("कृपया 6-digit OTP डालें।");
+    if (otp.length !== 4) {
+      toast.error("कृपया 4-digit OTP डालें।");
       return;
     }
     setGoogleBusy(true);
