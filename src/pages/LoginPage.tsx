@@ -14,6 +14,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { SUPERUSER_FLAG, useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Capacitor } from "@capacitor/core";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { Loader2, Lock, Mail, UserPlus, ArrowLeft } from "lucide-react";
 import AdminPinAccess from "@/components/AdminPinAccess";
@@ -35,6 +36,16 @@ const getStandaloneAuthOrigin = () => {
   const hostname = window.location.hostname;
   if (hostname.endsWith("mbdbusinesshub.in")) return SHOP_APP_ORIGIN;
   return window.location.origin;
+};
+
+// Inside the Android Capacitor shell we ask Supabase to redirect the magic
+// link to a custom-scheme URL registered in AndroidManifest.xml. This makes
+// Gmail open the link directly in our native app instead of Chrome.
+const getMagicLinkRedirect = () => {
+  if (Capacitor.isNativePlatform()) {
+    return "com.merabharatdukaan.app://auth/callback";
+  }
+  return `${getStandaloneAuthOrigin()}/auth/callback`;
 };
 
 const safeNextPath = (value: string | null) => (value?.startsWith("/") ? value : POST_LOGIN_MEMBERSHIP_PATH);
@@ -102,7 +113,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
         email: cleanEmail,
         options: {
           shouldCreateUser: true,
-          emailRedirectTo: `${getStandaloneAuthOrigin()}/auth/callback`,
+          emailRedirectTo: getMagicLinkRedirect(),
         },
       });
       if (error) throw error;
