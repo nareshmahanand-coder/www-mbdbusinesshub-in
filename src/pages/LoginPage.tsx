@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SUPERUSER_FLAG, useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { Loader2, Lock, Mail, UserPlus, ShieldCheck, ArrowLeft } from "lucide-react";
+import { Loader2, Lock, Mail, UserPlus, ArrowLeft } from "lucide-react";
 import AdminPinAccess from "@/components/AdminPinAccess";
 
 type AuthMode = "login" | "signup";
@@ -45,21 +45,6 @@ const rememberNextPath = (path: string) => {
   localStorage.setItem(AUTH_NEXT_KEY, safePath);
 };
 
-const decodeJwtEmail = (jwt: string): string | null => {
-  try {
-    const payload = JSON.parse(atob(jwt.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-    return (payload?.email as string) || null;
-  } catch {
-    return null;
-  }
-};
-
-declare global {
-  interface Window {
-    google?: any;
-  }
-}
-
 const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -75,7 +60,8 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const [pin, setPin] = useState("");
   const [pinLoading, setPinLoading] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
-  const [googleClientId, setGoogleClientId] = useState<string>("");
+  const [googleStep, setGoogleStep] = useState<"idle" | "email">("idle");
+  const [googleEmail, setGoogleEmail] = useState("");
   const [linkSentTo, setLinkSentTo] = useState<string>("");
 
   const nextPath = useMemo(() => {
@@ -95,30 +81,20 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
     }
   }, [authLoading, navigate, nextPath, user]);
 
-  // Fetch public Google OAuth client ID and load GIS script
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await supabase.functions.invoke("google-client-id");
-        const id = (data as any)?.clientId;
-        if (!cancelled && id) setGoogleClientId(id);
-      } catch {
-        /* ignore */
-      }
-    })();
-    if (!document.getElementById("gis-script")) {
-      const s = document.createElement("script");
-      s.src = "https://accounts.google.com/gsi/client";
-      s.id = "gis-script";
-      s.async = true;
-      s.defer = true;
-      document.head.appendChild(s);
-    }
-    return () => { cancelled = true; };
-  }, []);
+  const startGoogleFlow = () => {
+    rememberNextPath(nextPath);
+    const remembered = localStorage.getItem("mbd-google-email") || "";
+    setGoogleEmail(remembered);
+    setLinkSentTo("");
+    setGoogleStep("email");
+  };
 
-  const sendMagicLinkTo = async (cleanEmail: string) => {
+  const sendGoogleMagicLink = async () => {
+    const cleanEmail = googleEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      toast.error("कृपया valid Google email दर्ज करें / Enter a valid email.");
+      return;
+    }
     setGoogleBusy(true);
     try {
       rememberNextPath(nextPath);
@@ -137,36 +113,6 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
       toast.error(error?.message || "Login link नहीं भेजा जा सका।");
     } finally {
       setGoogleBusy(false);
-    }
-  };
-
-  // Trigger Google One Tap / account picker, then auto-send magic link to the chosen Gmail
-  const startGoogleFlow = () => {
-    if (!window.google?.accounts?.id) {
-      toast.error("Google सेवा अभी load हो रही है, कृपया दोबारा प्रयास करें।");
-      return;
-    }
-    if (!googleClientId) {
-      toast.error("Google config तैयार नहीं है।");
-      return;
-    }
-    try {
-      window.google.accounts.id.initialize({
-        client_id: googleClientId,
-        auto_select: false,
-        cancel_on_tap_outside: true,
-        callback: (resp: any) => {
-          const email = decodeJwtEmail(resp?.credential || "");
-          if (!email) {
-            toast.error("Google email नहीं मिला।");
-            return;
-          }
-          sendMagicLinkTo(email.toLowerCase());
-        },
-      });
-      window.google.accounts.id.prompt();
-    } catch (e: any) {
-      toast.error(e?.message || "Google prompt नहीं खुला।");
     }
   };
 
@@ -300,13 +246,42 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
             <p className="mt-1 text-sm font-hindi text-muted-foreground">Digital India access · Email और Password से सुरक्षित प्रवेश</p>
           </div>
 
-          {linkSentTo && (
-            <div className="mt-6 rounded-xl border-2 border-primary/30 bg-primary/5 p-4 text-sm">
-              <p className="font-bold text-foreground">📧 Login link भेजा गया</p>
-              <p className="mt-1 text-muted-foreground">
-                <span className="font-semibold">{linkSentTo}</span> के Gmail inbox में login link भेज दिया गया है।
-                उस link पर click करते ही आप login हो जाएँगे।
-              </p>
+          {googleStep === "email" && (
+            <div className="mt-6 rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
+              <button
+                type="button"
+                onClick={() => { setGoogleStep("idle"); setLinkSentTo(""); }}
+                className="mb-3 flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="h-3 w-3" /> Back
+              </button>
+              <div className="space-y-3">
+                <Label htmlFor="googleEmail" className="text-sm font-bold">
+                  अपना Google email confirm करें
+                </Label>
+                <Input
+                  id="googleEmail"
+                  type="email"
+                  value={googleEmail}
+                  onChange={(e) => setGoogleEmail(e.target.value)}
+                  placeholder="you@gmail.com"
+                  autoComplete="email webauthn"
+                  inputMode="email"
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground">
+                  इस email पर हम login link भेजेंगे — Gmail में link पर click करते ही login हो जाएगा।
+                </p>
+                <Button onClick={sendGoogleMagicLink} disabled={googleBusy} className="h-11 w-full">
+                  {googleBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+                  Send Login Link
+                </Button>
+                {linkSentTo && (
+                  <p className="rounded-md bg-background/60 p-2 text-xs text-muted-foreground">
+                    ✅ Link भेज दिया गया → <span className="font-semibold text-foreground">{linkSentTo}</span>
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
@@ -362,7 +337,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
           <Button
             type="button"
             onClick={startGoogleFlow}
-            disabled={loading || googleBusy}
+            disabled={loading || googleStep !== "idle"}
             variant="outline"
             className="h-12 w-full gap-3 border-2"
           >
