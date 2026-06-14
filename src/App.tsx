@@ -75,8 +75,12 @@ const NativeDeepLinkRouter = () => {
         const nextUrl = new URL(url);
         if (nextUrl.protocol === "com.merabharatdukaan.app:") {
           void Browser.close();
+          // Preserve Supabase tokens (in either ?query or #hash) so that
+          // detectSessionInUrl can pick them up on /auth/callback.
+          const search = nextUrl.search || "";
+          const hash = nextUrl.hash || "";
           window.dispatchEvent(new CustomEvent("mbd-native-auth-callback", { detail: { url } }));
-          window.history.replaceState(null, document.title, "/auth/callback");
+          window.history.replaceState(null, document.title, `/auth/callback${search}${hash}`);
           window.dispatchEvent(new PopStateEvent("popstate"));
           return;
         }
