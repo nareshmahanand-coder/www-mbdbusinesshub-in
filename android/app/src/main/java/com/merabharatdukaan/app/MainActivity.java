@@ -40,8 +40,11 @@ public class MainActivity extends BridgeActivity {
         settings.setDatabaseEnabled(true);
         settings.setJavaScriptEnabled(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
-        settings.setLoadWithOverviewMode(false);
-        settings.setUseWideViewPort(false);
+        // Respect the <meta name="viewport"> tag so the page renders at the
+        // correct device-width inside the native WebView (otherwise pages
+        // appear cropped / smaller than the screen).
+        settings.setLoadWithOverviewMode(true);
+        settings.setUseWideViewPort(true);
         webView.setOverScrollMode(WebView.OVER_SCROLL_NEVER);
     }
 
