@@ -38,7 +38,7 @@ const AuthCallbackPage = () => {
     }
 
     const hasAuthPayload = Boolean(params.get("code") || params.get("access_token"));
-    if (window.location.pathname === "/auth/callback/native" && hasAuthPayload && !Capacitor.isNativePlatform()) {
+    if (params.get("native") === "1" && hasAuthPayload && !Capacitor.isNativePlatform()) {
       window.location.replace(`com.merabharatdukaan.app://auth/callback${window.location.search}${window.location.hash}`);
       return;
     }
