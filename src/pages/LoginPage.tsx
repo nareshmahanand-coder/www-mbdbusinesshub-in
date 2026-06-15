@@ -20,6 +20,7 @@ import { Loader2, Lock, Mail, UserPlus, ArrowLeft } from "lucide-react";
 import AdminPinAccess from "@/components/AdminPinAccess";
 
 type AuthMode = "login" | "signup";
+type DuplicateCheckResult = { duplicate?: boolean; message?: string } | null;
 
 interface LoginPageProps {
   initialMode?: AuthMode;
@@ -56,6 +57,8 @@ const rememberNextPath = (path: string) => {
   sessionStorage.setItem(AUTH_NEXT_KEY, safePath);
   localStorage.setItem(AUTH_NEXT_KEY, safePath);
 };
+
+const getErrorMessage = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
 
 const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const navigate = useNavigate();
@@ -121,8 +124,8 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
       localStorage.setItem("mbd-google-email", cleanEmail);
       setLinkSentTo(cleanEmail);
       toast.success(`Login link भेज दिया गया → ${cleanEmail}. कृपया अपना Gmail देखें।`);
-    } catch (error: any) {
-      toast.error(error?.message || "Login link नहीं भेजा जा सका।");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Login link नहीं भेजा जा सका।"));
     } finally {
       setGoogleBusy(false);
     }
@@ -152,12 +155,13 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
     rememberNextPath(POST_LOGIN_MEMBERSHIP_PATH);
     try {
       if (mode === "signup") {
-        const { data: dupRes } = await (supabase as any).rpc("check_signup_duplicate", {
+        const { data: dupRes } = await supabase.rpc("check_signup_duplicate", {
           p_email: email.trim(),
           p_phone: mobileDigits,
         });
-        if (dupRes?.duplicate) {
-          toast.error(dupRes.message || "Already registered");
+        const duplicateResult = dupRes as DuplicateCheckResult;
+        if (duplicateResult?.duplicate) {
+          toast.error(duplicateResult.message || "Already registered");
           setLoading(false);
           return;
         }
@@ -191,8 +195,8 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
       }
       sessionStorage.setItem("bharat-mitra-pending-greet", "true");
       navigate(POST_LOGIN_MEMBERSHIP_PATH, { replace: true });
-    } catch (error: any) {
-      toast.error(error?.message || "Authentication failed. Please try again.");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Authentication failed. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -210,8 +214,8 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
       });
       if (error) throw error;
       toast.success("Password reset link sent to your email.");
-    } catch (error: any) {
-      toast.error(error?.message || "Could not send reset email.");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Could not send reset email."));
     } finally {
       setResetLoading(false);
     }
@@ -224,7 +228,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
     }
     setPinLoading(true);
     try {
-      let { error: signInError } = await supabase.auth.signInWithPassword({ email: SUPERUSER_EMAIL, password: SUPERUSER_PASSWORD });
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email: SUPERUSER_EMAIL, password: SUPERUSER_PASSWORD });
       if (signInError) {
         const { error: signUpError } = await supabase.auth.signUp({
           email: SUPERUSER_EMAIL,
@@ -239,8 +243,8 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
       window.dispatchEvent(new Event("mbd-superuser-changed"));
       toast.success("🛡️ Super User Mode सक्रिय / Bypass Active");
       navigate("/", { replace: true });
-    } catch (error: any) {
-      toast.error(error?.message || "लॉगिन विफल।");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "लॉगिन विफल।"));
     } finally {
       setPinLoading(false);
       setPinDialogOpen(false);
