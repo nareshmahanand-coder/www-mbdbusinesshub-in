@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +14,7 @@ const getSafeNextPath = () => {
 const AuthCallbackPage = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const exchangeStartedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,6 +40,8 @@ const AuthCallbackPage = () => {
       const code = params.get("code");
       const accessToken = params.get("access_token");
       const refreshToken = params.get("refresh_token");
+      if ((!code && !(accessToken && refreshToken)) || exchangeStartedRef.current) return false;
+      exchangeStartedRef.current = true;
 
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -54,11 +57,13 @@ const AuthCallbackPage = () => {
         if (error) throw error;
         finishLogin();
       }
+      return true;
     };
 
-    void completeNativeMagicLink().catch((error: any) => {
+    void completeNativeMagicLink().catch((error: unknown) => {
       if (cancelled) return;
-      toast.error(error?.message || "Login link complete नहीं हुआ। कृपया दोबारा कोशिश करें।");
+      exchangeStartedRef.current = false;
+      toast.error(error instanceof Error ? error.message : "Login link complete नहीं हुआ। कृपया दोबारा कोशिश करें।");
       navigate("/login", { replace: true });
     });
 
