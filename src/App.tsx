@@ -196,8 +196,6 @@ const AppShell = () => {
         <Route path="/login" element={<PublicLoginRoute><LoginPage /></PublicLoginRoute>} />
         <Route path="/signup" element={<PublicLoginRoute><LoginPage initialMode="signup" /></PublicLoginRoute>} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
-        <Route path="/auth/callback/native" element={<AuthCallbackPage />} />
-        <Route path="/native-auth-callback.html" element={<AuthCallbackPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/~oauth/*" element={<AuthCallbackPage />} />
         <Route path="/ekyc" element={<EkycPage />} />

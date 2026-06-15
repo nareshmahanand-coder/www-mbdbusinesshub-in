@@ -3,8 +3,6 @@ project_id = "tkenjzcyvnqnhgntmmen"
 [auth]
 additional_redirect_urls = [
   "https://shop.mbdbusinesshub.in/auth/callback",
-  "https://shop.mbdbusinesshub.in/auth/callback/native",
-  "https://shop.mbdbusinesshub.in/native-auth-callback.html",
   "https://merabharatdukaan.lovable.app/auth/callback",
   "com.merabharatdukaan.app://auth/callback"
 ]
