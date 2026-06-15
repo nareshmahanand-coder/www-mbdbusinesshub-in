@@ -29,6 +29,7 @@ const SUPERUSER_PIN = "02032026";
 const SUPERUSER_EMAIL = "superuser@mbd.local";
 const SUPERUSER_PASSWORD = "MBD_SuperUser_02032026!";
 const SHOP_APP_ORIGIN = "https://shop.mbdbusinesshub.in";
+const NATIVE_MAGIC_CALLBACK_PATH = "/auth/callback/native";
 const POST_LOGIN_MEMBERSHIP_PATH = "/dashboard";
 const AUTH_NEXT_KEY = "mbd-auth-next";
 
@@ -43,7 +44,7 @@ const getStandaloneAuthOrigin = () => {
 // Gmail open the link directly in our native app instead of Chrome.
 const getMagicLinkRedirect = () => {
   if (Capacitor.isNativePlatform()) {
-    return "com.merabharatdukaan.app://auth/callback";
+    return `${SHOP_APP_ORIGIN}${NATIVE_MAGIC_CALLBACK_PATH}`;
   }
   return `${getStandaloneAuthOrigin()}/auth/callback`;
 };
