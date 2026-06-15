@@ -29,7 +29,7 @@ const SUPERUSER_PIN = "02032026";
 const SUPERUSER_EMAIL = "superuser@mbd.local";
 const SUPERUSER_PASSWORD = "MBD_SuperUser_02032026!";
 const SHOP_APP_ORIGIN = "https://shop.mbdbusinesshub.in";
-const NATIVE_MAGIC_CALLBACK_PATH = "/auth/callback/native";
+const NATIVE_MAGIC_CALLBACK_PATH = "/native-auth-callback.html";
 const POST_LOGIN_MEMBERSHIP_PATH = "/dashboard";
 const AUTH_NEXT_KEY = "mbd-auth-next";
 
