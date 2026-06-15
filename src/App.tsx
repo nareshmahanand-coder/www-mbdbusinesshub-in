@@ -69,14 +69,14 @@ const NativeDeepLinkRouter = () => {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
-    let handle: { remove: () => Promise<void> } | undefined;
-    void CapacitorApp.addListener("appUrlOpen", ({ url }) => {
+    const routeNativeUrl = (url: string) => {
       try {
         const nextUrl = new URL(url);
+        void Browser.close();
+
         if (nextUrl.protocol === "com.merabharatdukaan.app:") {
-          void Browser.close();
-          // Preserve Supabase tokens (in either ?query or #hash) so that
-          // detectSessionInUrl can pick them up on /auth/callback.
+          // Preserve auth tokens/code from the native scheme callback so the
+          // callback page can exchange them and persist the session.
           const search = nextUrl.search || "";
           const hash = nextUrl.hash || "";
           window.dispatchEvent(new CustomEvent("mbd-native-auth-callback", { detail: { url } }));
@@ -84,16 +84,22 @@ const NativeDeepLinkRouter = () => {
           window.dispatchEvent(new PopStateEvent("popstate"));
           return;
         }
+
         const nextPath = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
         if (nextPath && nextPath !== `${location.pathname}${location.search}${location.hash}`) {
-          void Browser.close();
           window.history.replaceState(null, document.title, nextPath);
           window.dispatchEvent(new PopStateEvent("popstate"));
         }
       } catch (error) {
         console.error("[auth] Native deep link handling failed", error);
       }
-    }).then((listener) => {
+    };
+
+    let handle: { remove: () => Promise<void> } | undefined;
+    void CapacitorApp.getLaunchUrl().then((launch) => {
+      if (launch?.url) routeNativeUrl(launch.url);
+    });
+    void CapacitorApp.addListener("appUrlOpen", ({ url }) => routeNativeUrl(url)).then((listener) => {
       handle = listener;
     });
 
