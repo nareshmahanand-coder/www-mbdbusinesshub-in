@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const AUTH_NEXT_KEY = "mbd-auth-next";
 
@@ -15,6 +16,15 @@ const AuthCallbackPage = () => {
   const { user, loading } = useAuth();
 
   useEffect(() => {
+    let cancelled = false;
+    const finishLogin = () => {
+      const nextPath = getSafeNextPath();
+      sessionStorage.removeItem(AUTH_NEXT_KEY);
+      localStorage.removeItem(AUTH_NEXT_KEY);
+      sessionStorage.setItem("bharat-mitra-pending-greet", "true");
+      navigate(nextPath, { replace: true });
+    };
+
     const params = new URLSearchParams(window.location.search || window.location.hash.replace(/^#/, ""));
     const authError = params.get("error_description") || params.get("error");
     if (authError) {
@@ -25,19 +35,48 @@ const AuthCallbackPage = () => {
       return;
     }
 
+    const completeNativeMagicLink = async () => {
+      const code = params.get("code");
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (cancelled) return;
+        if (error) throw error;
+        finishLogin();
+        return;
+      }
+
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+        if (cancelled) return;
+        if (error) throw error;
+        finishLogin();
+      }
+    };
+
+    void completeNativeMagicLink().catch((error: any) => {
+      if (cancelled) return;
+      toast.error(error?.message || "Login link complete नहीं हुआ। कृपया दोबारा कोशिश करें।");
+      navigate("/login", { replace: true });
+    });
+
     if (loading) return;
 
     if (user) {
-      const nextPath = getSafeNextPath();
-      sessionStorage.removeItem(AUTH_NEXT_KEY);
-      localStorage.removeItem(AUTH_NEXT_KEY);
-      sessionStorage.setItem("bharat-mitra-pending-greet", "true");
-      navigate(nextPath, { replace: true });
+      finishLogin();
       return;
     }
 
-    toast.error("Google sign-in session complete नहीं हुआ। कृपया दोबारा कोशिश करें।");
-    navigate("/login", { replace: true });
+    if (!params.get("code") && !params.get("access_token")) {
+      toast.error("Google sign-in session complete नहीं हुआ। कृपया दोबारा कोशिश करें।");
+      navigate("/login", { replace: true });
+    }
+
+    return () => {
+      cancelled = true;
+    };
   }, [loading, navigate, user]);
 
   return (
