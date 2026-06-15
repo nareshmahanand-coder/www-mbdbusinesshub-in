@@ -12,21 +12,14 @@ type DisplayMode = "native" | "web";
 
 const applyDisplayMode = (mode: DisplayMode) => {
   const root = document.documentElement;
-  // Toggle viewport meta so "Web" mode renders full desktop layout inside
-  // the Android WebView (which is otherwise constrained to device-width).
+  // Keep viewport at device-width in BOTH modes so the responsive mobile
+  // web layout fills the screen without cropping or zooming.
   const viewport = document.querySelector('meta[name="viewport"]') as HTMLMetaElement | null;
   if (viewport) {
-    if (mode === "web") {
-      viewport.setAttribute(
-        "content",
-        "width=1280, initial-scale=0.32, minimum-scale=0.2, maximum-scale=2.0, user-scalable=yes, viewport-fit=cover"
-      );
-    } else {
-      viewport.setAttribute(
-        "content",
-        "width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"
-      );
-    }
+    viewport.setAttribute(
+      "content",
+      "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    );
   }
   if (mode === "native") {
     root.classList.add("mbd-native-mode");
