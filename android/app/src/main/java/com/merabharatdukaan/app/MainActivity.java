@@ -6,6 +6,11 @@ import android.content.Context;
 import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
+import android.view.WindowManager;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -40,12 +45,24 @@ public class MainActivity extends BridgeActivity {
         settings.setDatabaseEnabled(true);
         settings.setJavaScriptEnabled(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
-        // Respect the <meta name="viewport"> tag so the page renders at the
-        // correct device-width inside the native WebView (otherwise pages
-        // appear cropped / smaller than the screen).
-        settings.setLoadWithOverviewMode(true);
-        settings.setUseWideViewPort(true);
+        // Do not zoom desktop pages down into the WebView. Let the app's
+        // device-width viewport render a true full mobile layout.
+        settings.setLoadWithOverviewMode(false);
+        settings.setUseWideViewPort(false);
+        settings.setTextZoom(100);
         webView.setOverScrollMode(WebView.OVER_SCROLL_NEVER);
+        webView.setInitialScale(100);
+        webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+
+        Window window = getWindow();
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.setDecorFitsSystemWindows(true);
+            WindowInsetsController controller = window.getInsetsController();
+            if (controller != null) {
+                controller.show(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+            }
+        }
     }
 
     private void createUrgentNotificationChannel() {
