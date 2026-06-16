@@ -48,7 +48,7 @@ public class MainActivity extends BridgeActivity {
         // Do not zoom desktop pages down into the WebView. Let the app's
         // device-width viewport render a true full mobile layout.
         settings.setLoadWithOverviewMode(false);
-        settings.setUseWideViewPort(false);
+        settings.setUseWideViewPort(true);
         settings.setTextZoom(100);
         webView.setOverScrollMode(WebView.OVER_SCROLL_NEVER);
         webView.setInitialScale(100);
