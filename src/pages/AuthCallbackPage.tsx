@@ -7,6 +7,15 @@ import { Capacitor } from "@capacitor/core";
 
 const AUTH_NEXT_KEY = "mbd-auth-next";
 
+const getAuthParams = () => {
+  const params = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  hashParams.forEach((value, key) => {
+    if (!params.has(key)) params.set(key, value);
+  });
+  return params;
+};
+
 const getSafeNextPath = () => {
   const stored = sessionStorage.getItem(AUTH_NEXT_KEY) || localStorage.getItem(AUTH_NEXT_KEY) || "/dashboard";
   return stored.startsWith("/") && !stored.startsWith("//") ? stored : "/dashboard";
@@ -27,7 +36,7 @@ const AuthCallbackPage = () => {
       navigate(nextPath, { replace: true });
     };
 
-    const params = new URLSearchParams(window.location.search || window.location.hash.replace(/^#/, ""));
+    const params = getAuthParams();
     const authError = params.get("error_description") || params.get("error");
     if (authError) {
       sessionStorage.removeItem(AUTH_NEXT_KEY);
