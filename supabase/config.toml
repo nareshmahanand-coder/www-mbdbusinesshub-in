@@ -4,7 +4,8 @@ project_id = "tkenjzcyvnqnhgntmmen"
 additional_redirect_urls = [
   "https://shop.mbdbusinesshub.in/auth/callback",
   "https://merabharatdukaan.lovable.app/auth/callback",
-  "com.merabharatdukaan.app://auth/callback"
+  "com.merabharatdukaan.app://auth/callback",
+  "com.merabharatdukaan.app://**"
 ]
 
 [functions.translate-quiz]
