@@ -30,7 +30,7 @@ const SUPERUSER_PIN = "02032026";
 const SUPERUSER_EMAIL = "superuser@mbd.local";
 const SUPERUSER_PASSWORD = "MBD_SuperUser_02032026!";
 const SHOP_APP_ORIGIN = "https://shop.mbdbusinesshub.in";
-const NATIVE_MAGIC_CALLBACK_PATH = "/auth/callback?native=1";
+const NATIVE_MAGIC_CALLBACK_URL = "com.merabharatdukaan.app://auth/callback";
 const POST_LOGIN_MEMBERSHIP_PATH = "/dashboard";
 const AUTH_NEXT_KEY = "mbd-auth-next";
 
@@ -40,12 +40,12 @@ const getStandaloneAuthOrigin = () => {
   return window.location.origin;
 };
 
-// Inside the Android Capacitor shell we ask Supabase to redirect the magic
-// link to a custom-scheme URL registered in AndroidManifest.xml. This makes
-// Gmail open the link directly in our native app instead of Chrome.
+// Inside the Android Capacitor shell we must use the app's custom URL scheme.
+// HTTPS redirects require Android App Links verification on the domain; without
+// assetlinks.json Android correctly keeps Gmail links in Chrome.
 const getMagicLinkRedirect = () => {
   if (Capacitor.isNativePlatform()) {
-    return `${SHOP_APP_ORIGIN}${NATIVE_MAGIC_CALLBACK_PATH}`;
+    return NATIVE_MAGIC_CALLBACK_URL;
   }
   return `${getStandaloneAuthOrigin()}/auth/callback`;
 };
