@@ -3,7 +3,7 @@ import { Toaster as Sonner, toast as sonnerToast } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
@@ -64,12 +64,15 @@ const NativePushBanner = () => {
 };
 
 const NativeDeepLinkRouter = () => {
-  const location = useLocation();
+  const handledUrlsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
     const routeNativeUrl = (url: string) => {
+      if (handledUrlsRef.current.has(url)) return;
+      handledUrlsRef.current.add(url);
+
       try {
         const nextUrl = new URL(url);
         void Browser.close();
@@ -86,7 +89,7 @@ const NativeDeepLinkRouter = () => {
         }
 
         const nextPath = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
-        if (nextPath && nextPath !== `${location.pathname}${location.search}${location.hash}`) {
+        if (nextPath && nextPath !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
           window.history.replaceState(null, document.title, nextPath);
           window.dispatchEvent(new PopStateEvent("popstate"));
         }
@@ -106,7 +109,30 @@ const NativeDeepLinkRouter = () => {
     return () => {
       void handle?.remove();
     };
-  }, [location.hash, location.pathname, location.search]);
+  }, []);
+
+  return null;
+};
+
+const NativeDesktopViewport = () => {
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const applyDesktopViewport = () => {
+      const viewport = document.querySelector('meta[name="viewport"]') as HTMLMetaElement | null;
+      const deviceWidth = Math.min(window.screen.width || window.innerWidth, window.screen.height || window.innerWidth);
+      const scale = Math.max(0.25, Math.min(1, deviceWidth / 1280));
+      viewport?.setAttribute(
+        "content",
+        `width=1280, initial-scale=${scale.toFixed(3)}, minimum-scale=0.25, maximum-scale=3.0, user-scalable=yes, viewport-fit=cover`
+      );
+      document.documentElement.classList.add("mbd-native-desktop");
+    };
+
+    applyDesktopViewport();
+    window.addEventListener("orientationchange", applyDesktopViewport);
+    return () => window.removeEventListener("orientationchange", applyDesktopViewport);
+  }, []);
 
   return null;
 };
@@ -239,6 +265,7 @@ const App = () => (
           <Sonner />
           <NativePushBanner />
           <BrowserRouter>
+            <NativeDesktopViewport />
             <NativeDeepLinkRouter />
             <AppShell />
           </BrowserRouter>

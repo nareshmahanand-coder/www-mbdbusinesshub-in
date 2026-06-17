@@ -1,53 +1,17 @@
 import { Link, useLocation } from "react-router-dom";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { LogIn, Menu, X, Globe, Smartphone, Monitor } from "lucide-react";
-import { useEffect, useState } from "react";
+import { LogIn, Menu, X, Globe } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useAuth } from "@/contexts/AuthContext";
 import UserProfileMenu from "@/components/UserProfileMenu";
-
-const DISPLAY_MODE_KEY = "mbd-display-mode";
-type DisplayMode = "native" | "web";
-
-const applyDisplayMode = (mode: DisplayMode) => {
-  const root = document.documentElement;
-  // Keep viewport at device-width in BOTH modes so the responsive mobile
-  // web layout fills the screen without cropping or zooming.
-  const viewport = document.querySelector('meta[name="viewport"]') as HTMLMetaElement | null;
-  if (viewport) {
-    viewport.setAttribute(
-      "content",
-      "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
-    );
-  }
-  if (mode === "native") {
-    root.classList.add("mbd-native-mode");
-    // Try fullscreen for true native feel (best-effort; ignored on iOS Safari)
-    if (document.fullscreenEnabled && !document.fullscreenElement) {
-      void root.requestFullscreen?.().catch(() => {});
-    }
-  } else {
-    root.classList.remove("mbd-native-mode");
-    if (document.fullscreenElement) {
-      void document.exitFullscreen?.().catch(() => {});
-    }
-  }
-};
 
 const AppHeader = () => {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const { lang, toggleLang, t } = useLanguage();
   const { user } = useAuth();
-  const [displayMode, setDisplayMode] = useState<DisplayMode>(
-    (typeof window !== "undefined" && (localStorage.getItem(DISPLAY_MODE_KEY) as DisplayMode)) || "web"
-  );
-
-  useEffect(() => {
-    applyDisplayMode(displayMode);
-    localStorage.setItem(DISPLAY_MODE_KEY, displayMode);
-  }, [displayMode]);
 
   const links = [
     { to: "/", label: t("home") },
@@ -56,31 +20,6 @@ const AppHeader = () => {
     { to: "https://billing.mbdbusinesshub.in/", label: "Business Billing", external: true },
     { to: "/contact", label: "Contact" },
   ];
-
-  const DisplayToggle = ({ className = "" }: { className?: string }) => (
-    <div className={`flex items-center rounded-full border border-primary-foreground/30 bg-primary-foreground/10 p-0.5 ${className}`}>
-      <button
-        type="button"
-        onClick={() => setDisplayMode("native")}
-        className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-          displayMode === "native" ? "bg-accent text-accent-foreground" : "text-primary-foreground/70"
-        }`}
-        title="Native App mode"
-      >
-        <Smartphone className="h-3 w-3" /> Native
-      </button>
-      <button
-        type="button"
-        onClick={() => setDisplayMode("web")}
-        className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-          displayMode === "web" ? "bg-accent text-accent-foreground" : "text-primary-foreground/70"
-        }`}
-        title="Web mode"
-      >
-        <Monitor className="h-3 w-3" /> Web
-      </button>
-    </div>
-  );
 
   return (
     <>
