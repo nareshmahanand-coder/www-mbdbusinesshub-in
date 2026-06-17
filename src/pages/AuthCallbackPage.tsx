@@ -16,6 +16,14 @@ const getAuthParams = () => {
   return params;
 };
 
+const buildNativeIntentUrl = (params: URLSearchParams) => {
+  const nativeParams = new URLSearchParams(params);
+  nativeParams.delete("native");
+  const callbackQuery = nativeParams.toString();
+  const fallback = `${window.location.origin}/login`;
+  return `intent://auth/callback${callbackQuery ? `?${callbackQuery}` : ""}#Intent;scheme=com.merabharatdukaan.app;package=com.merabharatdukaan.app;S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
+};
+
 const getSafeNextPath = () => {
   const stored = sessionStorage.getItem(AUTH_NEXT_KEY) || localStorage.getItem(AUTH_NEXT_KEY) || "/dashboard";
   return stored.startsWith("/") && !stored.startsWith("//") ? stored : "/dashboard";
@@ -48,7 +56,7 @@ const AuthCallbackPage = () => {
 
     const hasAuthPayload = Boolean(params.get("code") || params.get("access_token"));
     if (params.get("native") === "1" && hasAuthPayload && !Capacitor.isNativePlatform()) {
-      window.location.replace(`com.merabharatdukaan.app://auth/callback${window.location.search}${window.location.hash}`);
+      window.location.replace(buildNativeIntentUrl(params));
       return;
     }
 

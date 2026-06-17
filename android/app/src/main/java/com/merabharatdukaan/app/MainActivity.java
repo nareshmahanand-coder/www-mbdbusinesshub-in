@@ -45,13 +45,13 @@ public class MainActivity extends BridgeActivity {
         settings.setDatabaseEnabled(true);
         settings.setJavaScriptEnabled(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
-        // Do not zoom desktop pages down into the WebView. Let the app's
-        // device-width viewport render a true full mobile layout.
-        settings.setLoadWithOverviewMode(false);
+        // Native app is intentionally a full desktop-site view by default.
+        // WebView should honor the 1280px viewport and zoom out to fit width.
+        settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
         settings.setTextZoom(100);
         webView.setOverScrollMode(WebView.OVER_SCROLL_NEVER);
-        webView.setInitialScale(100);
+        webView.setInitialScale(0);
         webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
 
         Window window = getWindow();
