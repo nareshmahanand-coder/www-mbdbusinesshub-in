@@ -84,8 +84,6 @@ const AppHeader = () => {
               ))}
             </nav>
 
-            <DisplayToggle className="ml-2" />
-
             {/* Language Toggle */}
             <button
               onClick={toggleLang}
@@ -115,7 +113,6 @@ const AppHeader = () => {
 
           {/* Mobile */}
           <div className="flex items-center gap-2 md:hidden">
-            <DisplayToggle />
             {/* Language Toggle Mobile */}
             <button
               onClick={toggleLang}
