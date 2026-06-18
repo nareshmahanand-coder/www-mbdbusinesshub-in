@@ -8,16 +8,14 @@ const config: CapacitorConfig = {
     url: 'https://shop.mbdbusinesshub.in',
     cleartext: false,
     androidScheme: 'https',
-    // Keep all in-app navigation inside the native WebView (no Chrome handoff).
+    // Keep app pages in WebView, but do NOT keep Google OAuth domains here:
+    // Google blocks OAuth inside Android WebView with disallowed_useragent.
     allowNavigation: [
       'shop.mbdbusinesshub.in',
       '*.mbdbusinesshub.in',
       'merabharatdukaan.lovable.app',
       '*.lovable.app',
       '*.supabase.co',
-      '*.googleapis.com',
-      '*.gstatic.com',
-      'accounts.google.com',
     ],
   },
   android: {

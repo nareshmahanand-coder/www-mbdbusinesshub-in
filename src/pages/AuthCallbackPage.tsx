@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseOAuth } from "@/lib/supabaseOAuthClient";
 import { Capacitor } from "@capacitor/core";
 
 const AUTH_NEXT_KEY = "mbd-auth-next";
@@ -60,7 +61,7 @@ const AuthCallbackPage = () => {
       return;
     }
 
-    const completeNativeMagicLink = async () => {
+    const completeOAuthCallback = async () => {
       const code = params.get("code");
       const accessToken = params.get("access_token");
       const refreshToken = params.get("refresh_token");
@@ -68,8 +69,14 @@ const AuthCallbackPage = () => {
       exchangeStartedRef.current = true;
 
       if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        const { data: oauthData, error: exchangeError } = await supabaseOAuth.auth.exchangeCodeForSession(code);
         if (cancelled) return;
+        if (exchangeError) throw exchangeError;
+        if (!oauthData.session) throw new Error("Google sign-in session नहीं मिला। कृपया दोबारा कोशिश करें।");
+        const { error } = await supabase.auth.setSession({
+          access_token: oauthData.session.access_token,
+          refresh_token: oauthData.session.refresh_token,
+        });
         if (error) throw error;
         finishLogin();
         return;
@@ -84,7 +91,7 @@ const AuthCallbackPage = () => {
       return true;
     };
 
-    void completeNativeMagicLink().catch((error: unknown) => {
+    void completeOAuthCallback().catch((error: unknown) => {
       if (cancelled) return;
       exchangeStartedRef.current = false;
       toast.error(error instanceof Error ? error.message : "Login link complete नहीं हुआ। कृपया दोबारा कोशिश करें।");
