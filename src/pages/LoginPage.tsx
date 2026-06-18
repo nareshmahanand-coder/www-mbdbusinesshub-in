@@ -12,11 +12,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { SUPERUSER_FLAG, useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Capacitor } from "@capacitor/core";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { Loader2, Lock, Mail, UserPlus, ArrowLeft } from "lucide-react";
+import { Loader2, Lock, Mail, UserPlus } from "lucide-react";
 import AdminPinAccess from "@/components/AdminPinAccess";
 
 type AuthMode = "login" | "signup";
@@ -30,7 +30,6 @@ const SUPERUSER_PIN = "02032026";
 const SUPERUSER_EMAIL = "superuser@mbd.local";
 const SUPERUSER_PASSWORD = "MBD_SuperUser_02032026!";
 const SHOP_APP_ORIGIN = "https://shop.mbdbusinesshub.in";
-const NATIVE_MAGIC_CALLBACK_URL = `${SHOP_APP_ORIGIN}/auth/callback?native=1`;
 const POST_LOGIN_MEMBERSHIP_PATH = "/dashboard";
 const AUTH_NEXT_KEY = "mbd-auth-next";
 
@@ -38,16 +37,6 @@ const getStandaloneAuthOrigin = () => {
   const hostname = window.location.hostname;
   if (hostname.endsWith("mbdbusinesshub.in")) return SHOP_APP_ORIGIN;
   return window.location.origin;
-};
-
-// Native magic links must start from HTTPS because Gmail treats the email link
-// as a normal web URL. The callback page then hands the verified code/tokens to
-// Android with an intent:// deep link that targets this app package directly.
-const getMagicLinkRedirect = () => {
-  if (Capacitor.isNativePlatform()) {
-    return NATIVE_MAGIC_CALLBACK_URL;
-  }
-  return `${getStandaloneAuthOrigin()}/auth/callback`;
 };
 
 const safeNextPath = (value: string | null) => (value?.startsWith("/") ? value : POST_LOGIN_MEMBERSHIP_PATH);
@@ -75,9 +64,6 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const [pin, setPin] = useState("");
   const [pinLoading, setPinLoading] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
-  const [googleStep, setGoogleStep] = useState<"idle" | "email">("idle");
-  const [googleEmail, setGoogleEmail] = useState("");
-  const [linkSentTo, setLinkSentTo] = useState<string>("");
 
   const nextPath = useMemo(() => {
     const fromUrl = new URLSearchParams(location.search).get("next");
@@ -96,36 +82,22 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
     }
   }, [authLoading, navigate, nextPath, user]);
 
-  const startGoogleFlow = () => {
-    rememberNextPath(nextPath);
-    const remembered = localStorage.getItem("mbd-google-email") || "";
-    setGoogleEmail(remembered);
-    setLinkSentTo("");
-    setGoogleStep("email");
-  };
-
-  const sendGoogleMagicLink = async () => {
-    const cleanEmail = googleEmail.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      toast.error("कृपया valid Google email दर्ज करें / Enter a valid email.");
-      return;
-    }
+  const handleGoogleSignIn = async () => {
     setGoogleBusy(true);
     try {
       rememberNextPath(nextPath);
-      const { error } = await supabase.auth.signInWithOtp({
-        email: cleanEmail,
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: getMagicLinkRedirect(),
-        },
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+        extraParams: { prompt: "select_account" },
       });
-      if (error) throw error;
-      localStorage.setItem("mbd-google-email", cleanEmail);
-      setLinkSentTo(cleanEmail);
-      toast.success(`Login link भेज दिया गया → ${cleanEmail}. कृपया अपना Gmail देखें।`);
+      if (result.error) {
+        throw result.error instanceof Error ? result.error : new Error(String(result.error));
+      }
+      if (result.redirected) return;
+      sessionStorage.setItem("bharat-mitra-pending-greet", "true");
+      navigate(nextPath, { replace: true });
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error, "Login link नहीं भेजा जा सका।"));
+      toast.error(getErrorMessage(error, "Google sign-in नहीं हो सका।"));
     } finally {
       setGoogleBusy(false);
     }
@@ -262,45 +234,6 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
             <p className="mt-1 text-sm font-hindi text-muted-foreground">Digital India access · Email और Password से सुरक्षित प्रवेश</p>
           </div>
 
-          {googleStep === "email" && (
-            <div className="mt-6 rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
-              <button
-                type="button"
-                onClick={() => { setGoogleStep("idle"); setLinkSentTo(""); }}
-                className="mb-3 flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                <ArrowLeft className="h-3 w-3" /> Back
-              </button>
-              <div className="space-y-3">
-                <Label htmlFor="googleEmail" className="text-sm font-bold">
-                  अपना Google email confirm करें
-                </Label>
-                <Input
-                  id="googleEmail"
-                  type="email"
-                  value={googleEmail}
-                  onChange={(e) => setGoogleEmail(e.target.value)}
-                  placeholder="you@gmail.com"
-                  autoComplete="email webauthn"
-                  inputMode="email"
-                  autoFocus
-                />
-                <p className="text-xs text-muted-foreground">
-                  इस email पर हम login link भेजेंगे — Gmail में link पर click करते ही login हो जाएगा।
-                </p>
-                <Button onClick={sendGoogleMagicLink} disabled={googleBusy} className="h-11 w-full">
-                  {googleBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
-                  Send Login Link
-                </Button>
-                {linkSentTo && (
-                  <p className="rounded-md bg-background/60 p-2 text-xs text-muted-foreground">
-                    ✅ Link भेज दिया गया → <span className="font-semibold text-foreground">{linkSentTo}</span>
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
           <form onSubmit={handleEmailAuth} className="mt-6 space-y-4">
             {mode === "signup" && (
               <div className="space-y-2">
@@ -352,17 +285,21 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
 
           <Button
             type="button"
-            onClick={startGoogleFlow}
-            disabled={loading || googleStep !== "idle"}
+            onClick={handleGoogleSignIn}
+            disabled={loading || googleBusy}
             variant="outline"
             className="h-12 w-full gap-3 border-2"
           >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+            {googleBusy ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.25 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                 <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
+              </svg>
+            )}
             <span className="font-semibold">Continue with Google</span>
           </Button>
 

@@ -169,15 +169,6 @@ body {
   position: relative;
 }
 
-/* Android native app: desktop-site viewport inside Capacitor WebView */
-html.mbd-native-desktop,
-html.mbd-native-desktop body,
-html.mbd-native-desktop #root {
-  min-width: 1280px;
-  overflow-x: auto;
-  overscroll-behavior: none;
-  -webkit-tap-highlight-color: transparent;
-}
 .tiranga-bg::after {
   content: '';
   position: fixed;
