@@ -234,45 +234,6 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
             <p className="mt-1 text-sm font-hindi text-muted-foreground">Digital India access · Email और Password से सुरक्षित प्रवेश</p>
           </div>
 
-          {googleStep === "email" && (
-            <div className="mt-6 rounded-xl border-2 border-primary/30 bg-primary/5 p-4">
-              <button
-                type="button"
-                onClick={() => { setGoogleStep("idle"); setLinkSentTo(""); }}
-                className="mb-3 flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground"
-              >
-                <ArrowLeft className="h-3 w-3" /> Back
-              </button>
-              <div className="space-y-3">
-                <Label htmlFor="googleEmail" className="text-sm font-bold">
-                  अपना Google email confirm करें
-                </Label>
-                <Input
-                  id="googleEmail"
-                  type="email"
-                  value={googleEmail}
-                  onChange={(e) => setGoogleEmail(e.target.value)}
-                  placeholder="you@gmail.com"
-                  autoComplete="email webauthn"
-                  inputMode="email"
-                  autoFocus
-                />
-                <p className="text-xs text-muted-foreground">
-                  इस email पर हम login link भेजेंगे — Gmail में link पर click करते ही login हो जाएगा।
-                </p>
-                <Button onClick={sendGoogleMagicLink} disabled={googleBusy} className="h-11 w-full">
-                  {googleBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
-                  Send Login Link
-                </Button>
-                {linkSentTo && (
-                  <p className="rounded-md bg-background/60 p-2 text-xs text-muted-foreground">
-                    ✅ Link भेज दिया गया → <span className="font-semibold text-foreground">{linkSentTo}</span>
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
           <form onSubmit={handleEmailAuth} className="mt-6 space-y-4">
             {mode === "signup" && (
               <div className="space-y-2">
@@ -324,17 +285,21 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
 
           <Button
             type="button"
-            onClick={startGoogleFlow}
-            disabled={loading || googleStep !== "idle"}
+            onClick={handleGoogleSignIn}
+            disabled={loading || googleBusy}
             variant="outline"
             className="h-12 w-full gap-3 border-2"
           >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+            {googleBusy ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.25 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                 <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.83z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
+              </svg>
+            )}
             <span className="font-semibold">Continue with Google</span>
           </Button>
 
