@@ -114,29 +114,6 @@ const NativeDeepLinkRouter = () => {
   return null;
 };
 
-const NativeDesktopViewport = () => {
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
-
-    const applyDesktopViewport = () => {
-      const viewport = document.querySelector('meta[name="viewport"]') as HTMLMetaElement | null;
-      const deviceWidth = Math.min(window.screen.width || window.innerWidth, window.screen.height || window.innerWidth);
-      const scale = Math.max(0.25, Math.min(1, deviceWidth / 1280));
-      viewport?.setAttribute(
-        "content",
-        `width=1280, initial-scale=${scale.toFixed(3)}, minimum-scale=0.25, maximum-scale=3.0, user-scalable=yes, viewport-fit=cover`
-      );
-      document.documentElement.classList.add("mbd-native-desktop");
-    };
-
-    applyDesktopViewport();
-    window.addEventListener("orientationchange", applyDesktopViewport);
-    return () => window.removeEventListener("orientationchange", applyDesktopViewport);
-  }, []);
-
-  return null;
-};
-
 const queryClient = new QueryClient();
 
 const FullScreenLoader = () => (
@@ -265,7 +242,6 @@ const App = () => (
           <Sonner />
           <NativePushBanner />
           <BrowserRouter>
-            <NativeDesktopViewport />
             <NativeDeepLinkRouter />
             <AppShell />
           </BrowserRouter>
