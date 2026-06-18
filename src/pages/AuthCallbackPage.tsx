@@ -61,7 +61,7 @@ const AuthCallbackPage = () => {
       return;
     }
 
-    const completeNativeMagicLink = async () => {
+    const completeOAuthCallback = async () => {
       const code = params.get("code");
       const accessToken = params.get("access_token");
       const refreshToken = params.get("refresh_token");
@@ -91,7 +91,7 @@ const AuthCallbackPage = () => {
       return true;
     };
 
-    void completeNativeMagicLink().catch((error: unknown) => {
+    void completeOAuthCallback().catch((error: unknown) => {
       if (cancelled) return;
       exchangeStartedRef.current = false;
       toast.error(error instanceof Error ? error.message : "Login link complete नहीं हुआ। कृपया दोबारा कोशिश करें।");
