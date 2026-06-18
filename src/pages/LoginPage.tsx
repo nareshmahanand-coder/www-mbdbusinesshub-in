@@ -12,12 +12,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
+import { supabaseOAuth } from "@/lib/supabaseOAuthClient";
 import { SUPERUSER_FLAG, useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { Loader2, Lock, Mail, UserPlus } from "lucide-react";
 import AdminPinAccess from "@/components/AdminPinAccess";
+import { Browser } from "@capacitor/browser";
+import { Capacitor } from "@capacitor/core";
 
 type AuthMode = "login" | "signup";
 type DuplicateCheckResult = { duplicate?: boolean; message?: string } | null;
@@ -32,6 +34,8 @@ const SUPERUSER_PASSWORD = "MBD_SuperUser_02032026!";
 const SHOP_APP_ORIGIN = "https://shop.mbdbusinesshub.in";
 const POST_LOGIN_MEMBERSHIP_PATH = "/dashboard";
 const AUTH_NEXT_KEY = "mbd-auth-next";
+const WEB_GOOGLE_REDIRECT_URL = `${SHOP_APP_ORIGIN}${POST_LOGIN_MEMBERSHIP_PATH}`;
+const NATIVE_GOOGLE_REDIRECT_URL = "com.merabharatdukaan.app://auth/callback";
 
 const getStandaloneAuthOrigin = () => {
   const hostname = window.location.hostname;
@@ -85,20 +89,26 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const handleGoogleSignIn = async () => {
     setGoogleBusy(true);
     try {
-      rememberNextPath(nextPath);
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-        extraParams: { prompt: "select_account" },
+      rememberNextPath(POST_LOGIN_MEMBERSHIP_PATH);
+      const redirectTo = Capacitor.isNativePlatform() ? NATIVE_GOOGLE_REDIRECT_URL : WEB_GOOGLE_REDIRECT_URL;
+      const { data, error } = await supabaseOAuth.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          skipBrowserRedirect: Capacitor.isNativePlatform(),
+          queryParams: { prompt: "select_account" },
+        },
       });
-      if (result.error) {
-        throw result.error instanceof Error ? result.error : new Error(String(result.error));
+
+      if (error) throw error;
+
+      if (Capacitor.isNativePlatform()) {
+        if (!data.url) throw new Error("Google login URL नहीं मिला। कृपया दोबारा कोशिश करें।");
+        await Browser.open({ url: data.url, toolbarColor: "#1a237e", presentationStyle: "fullscreen" });
+        return;
       }
-      if (result.redirected) return;
-      sessionStorage.setItem("bharat-mitra-pending-greet", "true");
-      navigate(nextPath, { replace: true });
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, "Google sign-in नहीं हो सका।"));
-    } finally {
       setGoogleBusy(false);
     }
   };
