@@ -12,11 +12,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { SUPERUSER_FLAG, useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Capacitor } from "@capacitor/core";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { Loader2, Lock, Mail, UserPlus, ArrowLeft } from "lucide-react";
+import { Loader2, Lock, Mail, UserPlus } from "lucide-react";
 import AdminPinAccess from "@/components/AdminPinAccess";
 
 type AuthMode = "login" | "signup";
@@ -30,7 +30,6 @@ const SUPERUSER_PIN = "02032026";
 const SUPERUSER_EMAIL = "superuser@mbd.local";
 const SUPERUSER_PASSWORD = "MBD_SuperUser_02032026!";
 const SHOP_APP_ORIGIN = "https://shop.mbdbusinesshub.in";
-const NATIVE_MAGIC_CALLBACK_URL = `${SHOP_APP_ORIGIN}/auth/callback?native=1`;
 const POST_LOGIN_MEMBERSHIP_PATH = "/dashboard";
 const AUTH_NEXT_KEY = "mbd-auth-next";
 
@@ -38,16 +37,6 @@ const getStandaloneAuthOrigin = () => {
   const hostname = window.location.hostname;
   if (hostname.endsWith("mbdbusinesshub.in")) return SHOP_APP_ORIGIN;
   return window.location.origin;
-};
-
-// Native magic links must start from HTTPS because Gmail treats the email link
-// as a normal web URL. The callback page then hands the verified code/tokens to
-// Android with an intent:// deep link that targets this app package directly.
-const getMagicLinkRedirect = () => {
-  if (Capacitor.isNativePlatform()) {
-    return NATIVE_MAGIC_CALLBACK_URL;
-  }
-  return `${getStandaloneAuthOrigin()}/auth/callback`;
 };
 
 const safeNextPath = (value: string | null) => (value?.startsWith("/") ? value : POST_LOGIN_MEMBERSHIP_PATH);
@@ -75,9 +64,6 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
   const [pin, setPin] = useState("");
   const [pinLoading, setPinLoading] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
-  const [googleStep, setGoogleStep] = useState<"idle" | "email">("idle");
-  const [googleEmail, setGoogleEmail] = useState("");
-  const [linkSentTo, setLinkSentTo] = useState<string>("");
 
   const nextPath = useMemo(() => {
     const fromUrl = new URLSearchParams(location.search).get("next");
@@ -96,36 +82,22 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps) => {
     }
   }, [authLoading, navigate, nextPath, user]);
 
-  const startGoogleFlow = () => {
-    rememberNextPath(nextPath);
-    const remembered = localStorage.getItem("mbd-google-email") || "";
-    setGoogleEmail(remembered);
-    setLinkSentTo("");
-    setGoogleStep("email");
-  };
-
-  const sendGoogleMagicLink = async () => {
-    const cleanEmail = googleEmail.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      toast.error("कृपया valid Google email दर्ज करें / Enter a valid email.");
-      return;
-    }
+  const handleGoogleSignIn = async () => {
     setGoogleBusy(true);
     try {
       rememberNextPath(nextPath);
-      const { error } = await supabase.auth.signInWithOtp({
-        email: cleanEmail,
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: getMagicLinkRedirect(),
-        },
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+        extraParams: { prompt: "select_account" },
       });
-      if (error) throw error;
-      localStorage.setItem("mbd-google-email", cleanEmail);
-      setLinkSentTo(cleanEmail);
-      toast.success(`Login link भेज दिया गया → ${cleanEmail}. कृपया अपना Gmail देखें।`);
+      if (result.error) {
+        throw result.error instanceof Error ? result.error : new Error(String(result.error));
+      }
+      if (result.redirected) return;
+      sessionStorage.setItem("bharat-mitra-pending-greet", "true");
+      navigate(nextPath, { replace: true });
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error, "Login link नहीं भेजा जा सका।"));
+      toast.error(getErrorMessage(error, "Google sign-in नहीं हो सका।"));
     } finally {
       setGoogleBusy(false);
     }
