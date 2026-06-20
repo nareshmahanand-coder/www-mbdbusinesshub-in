@@ -8,8 +8,6 @@ const config: CapacitorConfig = {
     url: 'https://shop.mbdbusinesshub.in',
     cleartext: false,
     androidScheme: 'https',
-    // Keep app pages in WebView, but do NOT keep Google OAuth domains here:
-    // Google blocks OAuth inside Android WebView with disallowed_useragent.
     allowNavigation: [
       'shop.mbdbusinesshub.in',
       '*.mbdbusinesshub.in',
@@ -26,7 +24,6 @@ const config: CapacitorConfig = {
     initialFocus: true,
     includePlugins: [
       '@capacitor/app',
-      '@capacitor/browser',
       '@capacitor/preferences',
       '@capacitor/push-notifications',
     ],
