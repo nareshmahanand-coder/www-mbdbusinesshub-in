@@ -111,7 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
       applySession(nextSession);
       if (event === "SIGNED_IN" && nextSession) {
-        redirectAfterOAuth();
+        redirectAfterSignIn();
       }
     });
 
