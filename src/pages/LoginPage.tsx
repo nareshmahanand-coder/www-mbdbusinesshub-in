@@ -146,7 +146,11 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
                 <div className="space-y-2">
                   <Label className="block text-center">6-digit Code</Label>
                   <div className="flex justify-center">
-                    <InputOTP maxLength={6} value={otpCode} onChange={setOtpCode}>
+                    <InputOTP
+                      maxLength={6}
+                      value={otpCode}
+                      onChange={(value) => setOtpCode(value.replace(/\D/g, "").slice(0, 6))}
+                    >
                       <InputOTPGroup>
                         <InputOTPSlot index={0} />
                         <InputOTPSlot index={1} />
