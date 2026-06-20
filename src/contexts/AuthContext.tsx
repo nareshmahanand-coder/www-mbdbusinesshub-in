@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useRef, useState, ReactNode } fro
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 import { clearNativeAuthSession, persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
-import { supabaseOAuth } from "@/lib/supabaseOAuthClient";
 
 interface AuthContextType {
   user: User | null;
@@ -30,55 +29,9 @@ const getSafeNextPath = () => {
   return stored.startsWith("/") && !stored.startsWith("//") ? stored : "/dashboard";
 };
 
-const getAuthParamsFromUrl = () => {
-  const params = new URLSearchParams(window.location.search);
-  const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-  hashParams.forEach((value, key) => {
-    if (!params.has(key)) params.set(key, value);
-  });
-  return params;
-};
-
-const cleanAuthParamsFromUrl = () => {
-  const params = new URLSearchParams(window.location.search);
-  ["access_token", "refresh_token", "expires_at", "expires_in", "provider_token", "provider_refresh_token", "token_type", "type", "code", "state", "native"].forEach((key) => params.delete(key));
-  const nextUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
-  window.history.replaceState(null, document.title, nextUrl);
-};
-
-const recoverSessionFromOAuthUrl = async (): Promise<Session | null> => {
-  const params = getAuthParamsFromUrl();
-  const accessToken = params.get("access_token");
-  const refreshToken = params.get("refresh_token");
-  const code = params.get("code");
-
-  if (accessToken && refreshToken) {
-    const { data, error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-    if (error) throw error;
-    cleanAuthParamsFromUrl();
-    return data.session;
-  }
-
-  if (code) {
-    const oauthResult = await supabaseOAuth.auth.exchangeCodeForSession(code);
-    if (oauthResult.error) throw oauthResult.error;
-    const oauthSession = oauthResult.data.session;
-    if (!oauthSession) return null;
-    const { data, error } = await supabase.auth.setSession({
-      access_token: oauthSession.access_token,
-      refresh_token: oauthSession.refresh_token,
-    });
-    if (error) throw error;
-    cleanAuthParamsFromUrl();
-    return data.session ?? oauthSession;
-  }
-
-  return null;
-};
-
-const redirectAfterOAuth = () => {
+const redirectAfterSignIn = () => {
   const currentPath = window.location.pathname;
-  if (!["/", "/login", "/signup", "/auth/callback"].includes(currentPath) && !currentPath.startsWith("/~oauth")) return;
+  if (!["/", "/login", "/signup"].includes(currentPath)) return;
 
   const nextPath = getSafeNextPath();
   sessionStorage.removeItem(AUTH_NEXT_KEY);
@@ -158,22 +111,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
       applySession(nextSession);
       if (event === "SIGNED_IN" && nextSession) {
-        redirectAfterOAuth();
+        redirectAfterSignIn();
       }
     });
 
     void (async () => {
-      try {
-        const recoveredSession = await recoverSessionFromOAuthUrl();
-        if (recoveredSession) {
-          applySession(recoveredSession);
-          redirectAfterOAuth();
-          return;
-        }
-      } catch (error) {
-        console.error("[auth] OAuth callback recovery failed", error);
-      }
-
       const { data: { session: initialSession } } = await supabase.auth.getSession();
       applySession(initialSession);
     })();

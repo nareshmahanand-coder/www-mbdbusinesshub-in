@@ -3,10 +3,7 @@ import { Toaster as Sonner, toast as sonnerToast } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { useEffect, useRef } from "react";
-import { App as CapacitorApp } from "@capacitor/app";
-import { Browser } from "@capacitor/browser";
-import { Capacitor } from "@capacitor/core";
+import { useEffect } from "react";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
@@ -18,7 +15,6 @@ import TermsPage from "./pages/TermsPage";
 import LegalPage from "./pages/LegalPage";
 import KisanRegistration from "./pages/KisanRegistration";
 import LoginPage from "./pages/LoginPage";
-import AuthCallbackPage from "./pages/AuthCallbackPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import MerchantDashboard from "./pages/MerchantDashboard";
@@ -58,57 +54,6 @@ const NativePushBanner = () => {
     };
     window.addEventListener("mbd-native-push", onNativePush);
     return () => window.removeEventListener("mbd-native-push", onNativePush);
-  }, []);
-
-  return null;
-};
-
-const NativeDeepLinkRouter = () => {
-  const handledUrlsRef = useRef<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
-
-    const routeNativeUrl = (url: string) => {
-      if (handledUrlsRef.current.has(url)) return;
-      handledUrlsRef.current.add(url);
-
-      try {
-        const nextUrl = new URL(url);
-        void Browser.close();
-
-        if (nextUrl.protocol === "com.merabharatdukaan.app:") {
-          // Preserve auth tokens/code from the native scheme callback so the
-          // callback page can exchange them and persist the session.
-          const search = nextUrl.search || "";
-          const hash = nextUrl.hash || "";
-          window.dispatchEvent(new CustomEvent("mbd-native-auth-callback", { detail: { url } }));
-          window.history.replaceState(null, document.title, `/auth/callback${search}${hash}`);
-          window.dispatchEvent(new PopStateEvent("popstate"));
-          return;
-        }
-
-        const nextPath = `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`;
-        if (nextPath && nextPath !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
-          window.history.replaceState(null, document.title, nextPath);
-          window.dispatchEvent(new PopStateEvent("popstate"));
-        }
-      } catch (error) {
-        console.error("[auth] Native deep link handling failed", error);
-      }
-    };
-
-    let handle: { remove: () => Promise<void> } | undefined;
-    void CapacitorApp.getLaunchUrl().then((launch) => {
-      if (launch?.url) routeNativeUrl(launch.url);
-    });
-    void CapacitorApp.addListener("appUrlOpen", ({ url }) => routeNativeUrl(url)).then((listener) => {
-      handle = listener;
-    });
-
-    return () => {
-      void handle?.remove();
-    };
   }, []);
 
   return null;
@@ -198,9 +143,7 @@ const AppShell = () => {
       <Routes>
         <Route path="/login" element={<PublicLoginRoute><LoginPage /></PublicLoginRoute>} />
         <Route path="/signup" element={<PublicLoginRoute><LoginPage initialMode="signup" /></PublicLoginRoute>} />
-        <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/~oauth/*" element={<AuthCallbackPage />} />
         <Route path="/ekyc" element={<EkycPage />} />
         <Route path="/membership" element={<ProtectedRoute><BharatGauravMembershipPage /></ProtectedRoute>} />
         <Route path="/terms" element={<TermsPage />} />
@@ -242,7 +185,6 @@ const App = () => (
           <Sonner />
           <NativePushBanner />
           <BrowserRouter>
-            <NativeDeepLinkRouter />
             <AppShell />
           </BrowserRouter>
         </TooltipProvider>

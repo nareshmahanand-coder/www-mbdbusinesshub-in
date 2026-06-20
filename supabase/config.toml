@@ -3,11 +3,7 @@ project_id = "tkenjzcyvnqnhgntmmen"
 [auth]
 additional_redirect_urls = [
   "https://shop.mbdbusinesshub.in/dashboard",
-  "https://shop.mbdbusinesshub.in/auth/callback",
-  "https://merabharatdukaan.lovable.app/dashboard",
-  "https://merabharatdukaan.lovable.app/auth/callback",
-  "com.merabharatdukaan.app://auth/callback",
-  "com.merabharatdukaan.app://**"
+  "https://merabharatdukaan.lovable.app/dashboard"
 ]
 
 [functions.translate-quiz]

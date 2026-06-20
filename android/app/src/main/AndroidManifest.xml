@@ -27,23 +27,6 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
-            <!-- App Link: capture OAuth callback redirect from Chrome Custom Tabs back into the app -->
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="shop.mbdbusinesshub.in" />
-            </intent-filter>
-
-            <!-- Custom scheme callback used by Supabase OAuth inside the local Android APK -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="com.merabharatdukaan.app" />
-            </intent-filter>
-
         </activity>
 
         <provider
