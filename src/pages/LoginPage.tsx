@@ -8,10 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { KeyRound, Loader2 } from "lucide-react";
+import { ArrowLeft, KeyRound, Loader2, LockKeyhole, UserPlus } from "lucide-react";
 import AdminPinAccess from "@/components/AdminPinAccess";
 
 type AuthMode = "login" | "signup";
+type AuthView = "password" | "emailOtp";
 
 interface LoginPageProps {
   initialMode?: AuthMode;
@@ -22,11 +23,18 @@ const AUTH_NEXT_KEY = "mbd-auth-next";
 
 const safeNextPath = (value: string | null) => (value?.startsWith("/") && !value.startsWith("//") ? value : POST_LOGIN_PATH);
 const getErrorMessage = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
+const isValidEmail = (email: string) => /^\S+@\S+\.\S+$/.test(email);
 
 const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading: authLoading } = useAuth();
+  const [authView, setAuthView] = useState<AuthView>("password");
+  const [passwordMode, setPasswordMode] = useState<AuthMode>(initialMode);
+  const [fullName, setFullName] = useState("");
+  const [passwordEmail, setPasswordEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
   const [otpEmail, setOtpEmail] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
@@ -38,6 +46,10 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
   }, [location.search]);
 
   useEffect(() => {
+    setPasswordMode(initialMode);
+  }, [initialMode]);
+
+  useEffect(() => {
     if (!authLoading && user) {
       sessionStorage.removeItem(AUTH_NEXT_KEY);
       localStorage.removeItem(AUTH_NEXT_KEY);
@@ -45,10 +57,69 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
     }
   }, [authLoading, navigate, nextPath, user]);
 
+  const handlePasswordAuth = async (event: FormEvent) => {
+    event.preventDefault();
+    const email = passwordEmail.trim();
+    const name = fullName.trim();
+
+    if (!isValidEmail(email)) {
+      toast.error("कृपया सही email दर्ज करें / Please enter a valid email.");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("Password कम से कम 6 characters का होना चाहिए।");
+      return;
+    }
+    if (passwordMode === "signup" && name.length < 2) {
+      toast.error("कृपया अपना नाम दर्ज करें।");
+      return;
+    }
+
+    setPasswordLoading(true);
+    try {
+      if (passwordMode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: name,
+              name,
+              provider: "email",
+            },
+          },
+        });
+        if (error) throw error;
+        if (!data.session) {
+          toast.success("Account बन गया है। अब इसी email/password से login करें।");
+          setPasswordMode("login");
+          return;
+        }
+        toast.success("✅ Account created. Login हो रहे हैं…");
+        return;
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      toast.success("✅ Login हो रहे हैं…");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, passwordMode === "signup" ? "Account नहीं बना।" : "Login failed."));
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const openEmailOtp = () => {
+    setAuthView("emailOtp");
+    setOtpSent(false);
+    setOtpCode("");
+    setOtpEmail(passwordEmail.trim());
+  };
+
   const handleSendOtp = async (event: FormEvent) => {
     event.preventDefault();
-    const trimmedEmail = otpEmail.trim();
-    if (!/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+    const email = otpEmail.trim();
+    if (!isValidEmail(email)) {
       toast.error("कृपया सही email दर्ज करें / Please enter a valid email.");
       return;
     }
@@ -56,15 +127,17 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
     setOtpLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOtp({
-        email: trimmedEmail,
-        options: { shouldCreateUser: true },
+        email,
+        options: {
+          shouldCreateUser: true,
+        },
       });
       if (error) throw error;
       setOtpSent(true);
       setOtpCode("");
-      toast.success("✅ 6-digit code आपके email पर भेज दिया है।");
+      toast.success("✅ 6-digit OTP आपके email पर भेज दिया है।");
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error, "Code नहीं भेज सके। दोबारा कोशिश करें।"));
+      toast.error(getErrorMessage(error, "OTP नहीं भेज सके। दोबारा कोशिश करें।"));
     } finally {
       setOtpLoading(false);
     }
@@ -72,23 +145,27 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
 
   const handleVerifyOtp = async (event: FormEvent) => {
     event.preventDefault();
-    const trimmedEmail = otpEmail.trim();
+    const email = otpEmail.trim();
+    if (!isValidEmail(email)) {
+      toast.error("कृपया सही email दर्ज करें / Please enter a valid email.");
+      return;
+    }
     if (otpCode.length !== 6) {
-      toast.error("कृपया पूरा 6-digit code दर्ज करें।");
+      toast.error("कृपया पूरा 6-digit OTP दर्ज करें।");
       return;
     }
 
     setOtpLoading(true);
     try {
       const { error } = await supabase.auth.verifyOtp({
-        email: trimmedEmail,
+        email,
         token: otpCode,
         type: "email",
       });
       if (error) throw error;
-      toast.success("✅ Verified! Login हो रहे हैं…");
+      toast.success("✅ OTP verified. Login हो रहे हैं…");
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error, "गलत code. दोबारा कोशिश करें।"));
+      toast.error(getErrorMessage(error, "गलत OTP. दोबारा कोशिश करें।"));
     } finally {
       setOtpLoading(false);
     }
@@ -98,7 +175,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
     <main className="min-h-screen bg-background tiranga-bg">
       <div className="h-1.5 w-full bg-gradient-to-r from-saffron via-background to-green-india" />
       <section className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl">
+        <div className="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-2xl">
           <div className="text-center">
             <img
               src={logoCircle}
@@ -106,15 +183,89 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
               className="mx-auto h-24 w-24 rounded-full border-4 border-background object-cover shadow-xl"
             />
             <h1 className="mt-4 text-2xl font-extrabold text-foreground">
-              {initialMode === "signup" ? "Create Account" : "Welcome Back"}
+              {authView === "emailOtp" ? "Login with Google" : passwordMode === "signup" ? "Create Account" : "Welcome Back"}
             </h1>
             <p className="mt-1 text-sm font-hindi text-muted-foreground">
-              Android और Website दोनों में सिर्फ 6-digit email OTP से login करें।
+              {authView === "emailOtp"
+                ? "Email डालें और 6-digit OTP app में ही verify करें।"
+                : "Email और password से login करें, या OTP login चुनें।"}
             </p>
           </div>
 
           <div className="mt-6">
-            {!otpSent ? (
+            {authView === "password" ? (
+              <div className="space-y-5">
+                <form onSubmit={handlePasswordAuth} className="space-y-4">
+                  {passwordMode === "signup" && (
+                    <div className="space-y-2">
+                      <Label htmlFor="full-name">Name</Label>
+                      <Input
+                        id="full-name"
+                        type="text"
+                        autoComplete="name"
+                        value={fullName}
+                        onChange={(event) => setFullName(event.target.value)}
+                        placeholder="Your name"
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="password-email">Email</Label>
+                    <Input
+                      id="password-email"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      value={passwordEmail}
+                      onChange={(event) => setPasswordEmail(event.target.value)}
+                      placeholder="you@example.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      autoComplete={passwordMode === "signup" ? "new-password" : "current-password"}
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      placeholder="••••••••"
+                    />
+                  </div>
+                  <Button type="submit" disabled={passwordLoading} className="h-12 w-full">
+                    {passwordLoading ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : passwordMode === "signup" ? (
+                      <UserPlus className="h-5 w-5" />
+                    ) : (
+                      <LockKeyhole className="h-5 w-5" />
+                    )}
+                    {passwordMode === "signup" ? "Create Account" : "Login"}
+                  </Button>
+                </form>
+
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="h-px flex-1 bg-border" />
+                  <span>OR</span>
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+
+                <Button type="button" variant="outline" onClick={openEmailOtp} className="h-12 w-full">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background text-sm font-bold text-foreground">
+                    G
+                  </span>
+                  Login with Google
+                </Button>
+
+                <button
+                  type="button"
+                  className="block w-full text-center text-sm font-semibold text-primary underline-offset-4 hover:underline"
+                  onClick={() => setPasswordMode(passwordMode === "signup" ? "login" : "signup")}
+                >
+                  {passwordMode === "signup" ? "Already have an account? Login" : "Create account"}
+                </button>
+              </div>
+            ) : !otpSent ? (
               <form onSubmit={handleSendOtp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="otp-email">Email</Label>
@@ -128,23 +279,23 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
                     placeholder="you@example.com"
                   />
                 </div>
-                <Button
-                  type="submit"
-                  disabled={otpLoading}
-                  className="h-12 w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                >
-                  {otpLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <KeyRound className="mr-2 h-5 w-5" />}
-                  Send 6-digit Code
+                <Button type="submit" disabled={otpLoading} className="h-12 w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                  {otpLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <KeyRound className="h-5 w-5" />}
+                  Send 6-digit OTP
+                </Button>
+                <Button type="button" variant="ghost" onClick={() => setAuthView("password")} className="w-full">
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to login
                 </Button>
               </form>
             ) : (
               <form onSubmit={handleVerifyOtp} className="space-y-4">
                 <div className="rounded-lg border border-border bg-muted/40 p-3 text-center text-sm">
                   <p className="font-semibold text-foreground">{otpEmail}</p>
-                  <p className="text-xs text-muted-foreground">पर plain 6-digit code भेजा गया है।</p>
+                  <p className="text-xs text-muted-foreground">पर 6-digit OTP भेजा गया है।</p>
                 </div>
                 <div className="space-y-2">
-                  <Label className="block text-center">6-digit Code</Label>
+                  <Label className="block text-center">6-digit OTP</Label>
                   <div className="flex justify-center">
                     <InputOTP
                       maxLength={6}
@@ -167,18 +318,24 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
                   disabled={otpLoading || otpCode.length !== 6}
                   className="h-12 w-full bg-accent text-accent-foreground hover:bg-accent/90"
                 >
-                  {otpLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Verify & Login"}
+                  {otpLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <KeyRound className="h-5 w-5" />}
+                  Verify & Login
                 </Button>
-                <button
-                  type="button"
-                  className="block w-full text-center text-sm text-muted-foreground underline"
-                  onClick={() => {
-                    setOtpSent(false);
-                    setOtpCode("");
-                  }}
-                >
-                  दूसरा email इस्तेमाल करें
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setOtpSent(false);
+                      setOtpCode("");
+                    }}
+                  >
+                    Change email
+                  </Button>
+                  <Button type="button" variant="ghost" onClick={() => setAuthView("password")}>
+                    Back
+                  </Button>
+                </div>
               </form>
             )}
           </div>
