@@ -20,6 +20,8 @@ interface LoginPageProps {
 
 const POST_LOGIN_PATH = "/dashboard";
 const AUTH_NEXT_KEY = "mbd-auth-next";
+const ACTIVE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
+const LOVABLE_CLOUD_PROJECT_URL = "https://tkenjzcyvnqnhgntmmen.supabase.co";
 
 const safeNextPath = (value: string | null) => (value?.startsWith("/") && !value.startsWith("//") ? value : POST_LOGIN_PATH);
 const getErrorMessage = (error: unknown, fallback: string) => (error instanceof Error ? error.message : fallback);
@@ -121,6 +123,10 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
     const email = otpEmail.trim();
     if (!isValidEmail(email)) {
       toast.error("कृपया सही email दर्ज करें / Please enter a valid email.");
+      return;
+    }
+    if (ACTIVE_SUPABASE_URL === LOVABLE_CLOUD_PROJECT_URL) {
+      toast.error("Production Supabase URL अभी configured नहीं है। पहले Build Secret में custom URL/key जोड़ें।");
       return;
     }
 
