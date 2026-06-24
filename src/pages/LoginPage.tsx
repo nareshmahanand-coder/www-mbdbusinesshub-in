@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,12 +18,74 @@ interface LoginPageProps {
 
 const POST_LOGIN_PATH = "/dashboard";
 const AUTH_NEXT_KEY = "mbd-auth-next";
+const GOOGLE_IDENTITY_SCRIPT_ID = "google-identity-services";
+const GOOGLE_CLIENT_ID =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID ||
+  "822103899326-1p22puug67ueab5u9p3mpi3edkvpr8od.apps.googleusercontent.com";
+
+type GoogleCredentialResponse = {
+  credential?: string;
+};
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (options: {
+            client_id: string;
+            callback: (response: GoogleCredentialResponse) => void;
+          }) => void;
+          renderButton: (
+            parent: HTMLElement,
+            options: {
+              type?: "standard" | "icon";
+              theme?: "outline" | "filled_blue" | "filled_black";
+              size?: "large" | "medium" | "small";
+              text?: "signin_with" | "signup_with" | "continue_with" | "signin";
+              shape?: "rectangular" | "pill" | "circle" | "square";
+              logo_alignment?: "left" | "center";
+              width?: string | number;
+            }
+          ) => void;
+        };
+      };
+    };
+  }
+}
 
 const safeNextPath = (value: string | null) =>
   value?.startsWith("/") && !value.startsWith("//") ? value : POST_LOGIN_PATH;
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 const isValidEmail = (email: string) => /^\S+@\S+\.\S+$/.test(email);
+
+const loadGoogleIdentityScript = () =>
+  new Promise<void>((resolve, reject) => {
+    if (window.google?.accounts?.id) {
+      resolve();
+      return;
+    }
+
+    const existingScript = document.getElementById(GOOGLE_IDENTITY_SCRIPT_ID) as HTMLScriptElement | null;
+    if (existingScript) {
+      existingScript.addEventListener("load", () => resolve(), { once: true });
+      existingScript.addEventListener("error", () => reject(new Error("Google login script failed to load.")), {
+        once: true,
+      });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = GOOGLE_IDENTITY_SCRIPT_ID;
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Google login script failed to load."));
+    document.head.appendChild(script);
+  });
 
 const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
   const navigate = useNavigate();
@@ -35,6 +97,8 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleReady, setGoogleReady] = useState(false);
+  const googleButtonRef = useRef<HTMLDivElement | null>(null);
 
   const nextPath = useMemo(() => {
     const fromUrl = new URLSearchParams(location.search).get("next");
@@ -57,19 +121,65 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
     }
   }, [authLoading, navigate, nextPath, user]);
 
-  const handleGoogle = async () => {
-    setGoogleLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: `${window.location.origin}${nextPath}` },
-      });
-      if (error) throw error;
-    } catch (error: unknown) {
-      toast.error(getErrorMessage(error, "Google login failed. Try again."));
-      setGoogleLoading(false);
-    }
-  };
+  useEffect(() => {
+    let cancelled = false;
+
+    const renderGoogleButton = async () => {
+      if (!googleButtonRef.current) return;
+
+      try {
+        await loadGoogleIdentityScript();
+        if (cancelled || !googleButtonRef.current || !window.google?.accounts?.id) return;
+
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: async (response) => {
+            if (!response.credential) {
+              toast.error("Google login failed. Please try again.");
+              return;
+            }
+
+            setGoogleLoading(true);
+            try {
+              const { error } = await supabase.auth.signInWithIdToken({
+                provider: "google",
+                token: response.credential,
+              });
+              if (error) throw error;
+              toast.success("✅ Logged in with Google.");
+            } catch (error: unknown) {
+              toast.error(getErrorMessage(error, "Google login failed. Try again."));
+            } finally {
+              setGoogleLoading(false);
+            }
+          },
+        });
+
+        googleButtonRef.current.innerHTML = "";
+        window.google.accounts.id.renderButton(googleButtonRef.current, {
+          type: "standard",
+          theme: "outline",
+          size: "large",
+          text: authMode === "signup" ? "signup_with" : "continue_with",
+          shape: "rectangular",
+          logo_alignment: "left",
+          width: "100%",
+        });
+        setGoogleReady(true);
+      } catch (error: unknown) {
+        if (!cancelled) {
+          setGoogleReady(false);
+          toast.error(getErrorMessage(error, "Google login is not available right now."));
+        }
+      }
+    };
+
+    void renderGoogleButton();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authMode]);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -139,22 +249,19 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
           </div>
 
           <div className="mt-6 space-y-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleGoogle}
-              disabled={googleLoading}
-              className="h-12 w-full"
-            >
-              {googleLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <span className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background text-sm font-bold text-foreground">
-                  G
-                </span>
+            <div className="relative min-h-12">
+              <div
+                ref={googleButtonRef}
+                aria-label="Continue with Google"
+                className={googleLoading ? "pointer-events-none opacity-60" : undefined}
+              />
+              {(!googleReady || googleLoading) && (
+                <div className="absolute inset-0 flex h-12 items-center justify-center rounded-md border border-border bg-card text-sm text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  {googleLoading ? "Signing in with Google..." : "Loading Google login..."}
+                </div>
               )}
-              Continue with Google
-            </Button>
+            </div>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
