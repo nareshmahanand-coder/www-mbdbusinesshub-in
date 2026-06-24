@@ -1,9 +1,10 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
@@ -18,47 +19,12 @@ interface LoginPageProps {
 
 const POST_LOGIN_PATH = "/dashboard";
 const AUTH_NEXT_KEY = "mbd-auth-next";
-const GOOGLE_IDENTITY_SCRIPT_ID = "google-identity-services";
-const GOOGLE_CLIENT_ID =
-  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-  import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID ||
-  "822103899326-1p22puug67ueab5u9p3mpi3edkvpr8od.apps.googleusercontent.com";
-
-type GoogleCredentialResponse = {
-  credential?: string;
-};
 
 const safeNextPath = (value: string | null) =>
   value?.startsWith("/") && !value.startsWith("//") ? value : POST_LOGIN_PATH;
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 const isValidEmail = (email: string) => /^\S+@\S+\.\S+$/.test(email);
-
-const loadGoogleIdentityScript = () =>
-  new Promise<void>((resolve, reject) => {
-    if ((window as any).google?.accounts?.id) {
-      resolve();
-      return;
-    }
-
-    const existingScript = document.getElementById(GOOGLE_IDENTITY_SCRIPT_ID) as HTMLScriptElement | null;
-    if (existingScript) {
-      existingScript.addEventListener("load", () => resolve(), { once: true });
-      existingScript.addEventListener("error", () => reject(new Error("Google login script failed to load.")), {
-        once: true,
-      });
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.id = GOOGLE_IDENTITY_SCRIPT_ID;
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Google login script failed to load."));
-    document.head.appendChild(script);
-  });
 
 const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
   const navigate = useNavigate();
@@ -70,8 +36,6 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [googleReady, setGoogleReady] = useState(false);
-  const googleButtonRef = useRef<HTMLDivElement | null>(null);
 
   const nextPath = useMemo(() => {
     const fromUrl = new URLSearchParams(location.search).get("next");
@@ -94,66 +58,23 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
     }
   }, [authLoading, navigate, nextPath, user]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const handleGoogle = async () => {
+    setGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: `${window.location.origin}${nextPath}`,
+      });
 
-    const renderGoogleButton = async () => {
-      if (!googleButtonRef.current) return;
+      if (result.redirected) return;
+      if (result.error) throw result.error;
 
-      try {
-        await loadGoogleIdentityScript();
-        const googleAccounts = (window as any).google?.accounts?.id;
-        if (cancelled || !googleButtonRef.current || !googleAccounts) return;
-
-        googleAccounts.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: async (response: GoogleCredentialResponse) => {
-            if (!response.credential) {
-              toast.error("Google login failed. Please try again.");
-              return;
-            }
-
-            setGoogleLoading(true);
-            try {
-              const { error } = await supabase.auth.signInWithIdToken({
-                provider: "google",
-                token: response.credential,
-              });
-              if (error) throw error;
-              toast.success("✅ Logged in with Google.");
-            } catch (error: unknown) {
-              toast.error(getErrorMessage(error, "Google login failed. Try again."));
-            } finally {
-              setGoogleLoading(false);
-            }
-          },
-        });
-
-        googleButtonRef.current.innerHTML = "";
-        googleAccounts.renderButton(googleButtonRef.current, {
-          type: "standard",
-          theme: "outline",
-          size: "large",
-          text: authMode === "signup" ? "signup_with" : "continue_with",
-          shape: "rectangular",
-          logo_alignment: "left",
-          width: "100%",
-        });
-        setGoogleReady(true);
-      } catch (error: unknown) {
-        if (!cancelled) {
-          setGoogleReady(false);
-          toast.error(getErrorMessage(error, "Google login is not available right now."));
-        }
-      }
-    };
-
-    void renderGoogleButton();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authMode]);
+      toast.success("✅ Logged in with Google.");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Google login failed. Try again."));
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -223,19 +144,22 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
           </div>
 
           <div className="mt-6 space-y-4">
-            <div className="relative min-h-12">
-              <div
-                ref={googleButtonRef}
-                aria-label="Continue with Google"
-                className={googleLoading ? "pointer-events-none opacity-60" : undefined}
-              />
-              {(!googleReady || googleLoading) && (
-                <div className="absolute inset-0 flex h-12 items-center justify-center rounded-md border border-border bg-card text-sm text-muted-foreground">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  {googleLoading ? "Signing in with Google..." : "Loading Google login..."}
-                </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleGoogle}
+              disabled={googleLoading}
+              className="h-12 w-full"
+            >
+              {googleLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <span className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-background text-sm font-bold text-foreground">
+                  G
+                </span>
               )}
-            </div>
+              Continue with Google
+            </Button>
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
