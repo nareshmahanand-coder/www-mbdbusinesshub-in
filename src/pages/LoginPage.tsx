@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
@@ -60,13 +61,17 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
   const handleGoogle = async () => {
     setGoogleLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: `${window.location.origin}${nextPath}` },
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: `${window.location.origin}${nextPath}`,
       });
-      if (error) throw error;
+
+      if (result.redirected) return;
+      if (result.error) throw result.error;
+
+      toast.success("✅ Logged in with Google.");
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, "Google login failed. Try again."));
+    } finally {
       setGoogleLoading(false);
     }
   };
