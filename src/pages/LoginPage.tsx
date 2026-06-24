@@ -28,12 +28,6 @@ type GoogleCredentialResponse = {
   credential?: string;
 };
 
-declare global {
-  interface Window {
-    google?: any;
-  }
-}
-
 const safeNextPath = (value: string | null) =>
   value?.startsWith("/") && !value.startsWith("//") ? value : POST_LOGIN_PATH;
 const getErrorMessage = (error: unknown, fallback: string) =>
@@ -42,7 +36,7 @@ const isValidEmail = (email: string) => /^\S+@\S+\.\S+$/.test(email);
 
 const loadGoogleIdentityScript = () =>
   new Promise<void>((resolve, reject) => {
-    if (window.google?.accounts?.id) {
+    if ((window as any).google?.accounts?.id) {
       resolve();
       return;
     }
@@ -108,11 +102,12 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
 
       try {
         await loadGoogleIdentityScript();
-        if (cancelled || !googleButtonRef.current || !window.google?.accounts?.id) return;
+        const googleAccounts = (window as any).google?.accounts?.id;
+        if (cancelled || !googleButtonRef.current || !googleAccounts) return;
 
-        window.google.accounts.id.initialize({
+        googleAccounts.initialize({
           client_id: GOOGLE_CLIENT_ID,
-          callback: async (response) => {
+          callback: async (response: GoogleCredentialResponse) => {
             if (!response.credential) {
               toast.error("Google login failed. Please try again.");
               return;
@@ -135,7 +130,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
         });
 
         googleButtonRef.current.innerHTML = "";
-        window.google.accounts.id.renderButton(googleButtonRef.current, {
+        googleAccounts.renderButton(googleButtonRef.current, {
           type: "standard",
           theme: "outline",
           size: "large",
