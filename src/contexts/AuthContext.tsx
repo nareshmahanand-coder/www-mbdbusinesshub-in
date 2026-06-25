@@ -21,12 +21,15 @@ const AuthContext = createContext<AuthContextType>({
 
 export const SUPERUSER_FLAG = "mbd-superuser";
 const AUTH_NEXT_KEY = "mbd-auth-next";
+const AUTH_ROUTES = new Set(["/login", "/signup", "/reset-password"]);
 
 export const useAuth = () => useContext(AuthContext);
 
 const getSafeNextPath = () => {
   const stored = sessionStorage.getItem(AUTH_NEXT_KEY) || localStorage.getItem(AUTH_NEXT_KEY) || "/dashboard";
-  return stored.startsWith("/") && !stored.startsWith("//") ? stored : "/dashboard";
+  if (!stored.startsWith("/") || stored.startsWith("//")) return "/dashboard";
+  const pathname = stored.split(/[?#]/)[0];
+  return AUTH_ROUTES.has(pathname) ? "/dashboard" : stored;
 };
 
 const redirectAfterSignIn = () => {

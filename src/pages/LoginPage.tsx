@@ -19,9 +19,13 @@ interface LoginPageProps {
 
 const POST_LOGIN_PATH = "/dashboard";
 const AUTH_NEXT_KEY = "mbd-auth-next";
+const AUTH_ROUTES = new Set(["/login", "/signup", "/reset-password"]);
 
-const safeNextPath = (value: string | null) =>
-  value?.startsWith("/") && !value.startsWith("//") ? value : POST_LOGIN_PATH;
+const safeNextPath = (value: string | null) => {
+  if (!value?.startsWith("/") || value.startsWith("//")) return POST_LOGIN_PATH;
+  const pathname = value.split(/[?#]/)[0];
+  return AUTH_ROUTES.has(pathname) ? POST_LOGIN_PATH : value;
+};
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 const isValidEmail = (email: string) => /^\S+@\S+\.\S+$/.test(email);
@@ -65,7 +69,8 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
       localStorage.setItem(AUTH_NEXT_KEY, nextPath);
 
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/login`,
+        redirect_uri: window.location.origin,
+        extraParams: { prompt: "select_account" },
       });
 
       if (result.redirected) return;
