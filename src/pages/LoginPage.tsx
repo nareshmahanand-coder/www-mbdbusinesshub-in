@@ -61,8 +61,11 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
   const handleGoogle = async () => {
     setGoogleLoading(true);
     try {
+      sessionStorage.setItem(AUTH_NEXT_KEY, nextPath);
+      localStorage.setItem(AUTH_NEXT_KEY, nextPath);
+
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}${nextPath}`,
+        redirect_uri: `${window.location.origin}/login`,
       });
 
       if (result.redirected) return;
