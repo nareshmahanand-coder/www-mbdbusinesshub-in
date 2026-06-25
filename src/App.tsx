@@ -67,6 +67,16 @@ const FullScreenLoader = () => (
   </div>
 );
 
+const POST_LOGIN_PATH = "/dashboard";
+const AUTH_NEXT_KEY = "mbd-auth-next";
+const AUTH_ROUTES = new Set(["/login", "/signup", "/reset-password"]);
+
+const safeAuthNextPath = (value: string | null) => {
+  if (!value?.startsWith("/") || value.startsWith("//")) return POST_LOGIN_PATH;
+  const pathname = value.split(/[?#]/)[0];
+  return AUTH_ROUTES.has(pathname) ? POST_LOGIN_PATH : value;
+};
+
 const MaintenanceScreen = () => (
   <div className="flex min-h-screen items-center justify-center bg-background px-4 text-center">
     <div className="max-w-md space-y-3">
@@ -116,11 +126,15 @@ const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
   const { hasKyc, loading: kycLoading } = useKycStatus();
   const { isMember, loading: memLoading } = useBharatGauravMembership();
   const location = useLocation();
-  const next = new URLSearchParams(location.search).get("next") || sessionStorage.getItem("mbd-auth-next") || localStorage.getItem("mbd-auth-next") || "/dashboard";
+  const next = safeAuthNextPath(
+    new URLSearchParams(location.search).get("next") ||
+      sessionStorage.getItem(AUTH_NEXT_KEY) ||
+      localStorage.getItem(AUTH_NEXT_KEY)
+  );
   if (loading || (user && (kycLoading || memLoading))) return <FullScreenLoader />;
   if (user && !isSuperUser && !hasKyc) return <Navigate to="/ekyc" replace />;
   if (user && !isSuperUser && !isMember) return <Navigate to="/membership" replace />;
-  if (user) return <Navigate to={next.startsWith("/") ? next : "/dashboard"} replace />;
+  if (user) return <Navigate to={next} replace />;
   return <>{children}</>;
 };
 
