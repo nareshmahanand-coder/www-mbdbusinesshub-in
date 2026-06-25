@@ -20,29 +20,8 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const SUPERUSER_FLAG = "mbd-superuser";
-const AUTH_NEXT_KEY = "mbd-auth-next";
-const AUTH_ROUTES = new Set(["/login", "/signup", "/reset-password"]);
 
 export const useAuth = () => useContext(AuthContext);
-
-const getSafeNextPath = () => {
-  const stored = sessionStorage.getItem(AUTH_NEXT_KEY) || localStorage.getItem(AUTH_NEXT_KEY) || "/dashboard";
-  if (!stored.startsWith("/") || stored.startsWith("//")) return "/dashboard";
-  const pathname = stored.split(/[?#]/)[0];
-  return AUTH_ROUTES.has(pathname) ? "/dashboard" : stored;
-};
-
-const redirectAfterSignIn = () => {
-  const currentPath = window.location.pathname;
-  if (!["/", "/login", "/signup"].includes(currentPath)) return;
-
-  const nextPath = getSafeNextPath();
-  sessionStorage.removeItem(AUTH_NEXT_KEY);
-  localStorage.removeItem(AUTH_NEXT_KEY);
-  sessionStorage.setItem("bharat-mitra-pending-greet", "true");
-  window.history.replaceState(null, document.title, nextPath);
-  window.dispatchEvent(new PopStateEvent("popstate"));
-};
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -114,7 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
       applySession(nextSession);
       if (event === "SIGNED_IN" && nextSession) {
-        redirectAfterSignIn();
+        sessionStorage.setItem("bharat-mitra-pending-greet", "true");
       }
     });
 
