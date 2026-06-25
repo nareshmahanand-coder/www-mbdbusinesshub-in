@@ -69,12 +69,48 @@ const FullScreenLoader = () => (
 
 const POST_LOGIN_PATH = "/dashboard";
 const AUTH_NEXT_KEY = "mbd-auth-next";
-const AUTH_ROUTES = new Set(["/login", "/signup", "/reset-password"]);
+const AUTH_ROUTES = new Set(["/login", "/signup", "/reset-password", "/auth/continue"]);
+const ONBOARDING_ROUTES = new Set(["/ekyc", "/membership"]);
+const ONBOARDING_REQUIRED_AFTER = Date.parse("2026-06-25T00:00:00.000Z");
 
 const safeAuthNextPath = (value: string | null) => {
   if (!value?.startsWith("/") || value.startsWith("//")) return POST_LOGIN_PATH;
   const pathname = value.split(/[?#]/)[0];
   return AUTH_ROUTES.has(pathname) ? POST_LOGIN_PATH : value;
+};
+
+const clearAuthNextPath = () => {
+  sessionStorage.removeItem(AUTH_NEXT_KEY);
+  localStorage.removeItem(AUTH_NEXT_KEY);
+};
+
+const requiresNewUserOnboarding = (user: { created_at?: string } | null, isSuperUser: boolean) => {
+  if (!user || isSuperUser) return false;
+  const createdAt = Date.parse(user.created_at ?? "");
+  if (!Number.isFinite(createdAt)) return true;
+  return createdAt >= ONBOARDING_REQUIRED_AFTER;
+};
+
+const getPostLoginDestination = ({
+  user,
+  isSuperUser,
+  hasKyc,
+  isMember,
+  preferredPath,
+}: {
+  user: { created_at?: string } | null;
+  isSuperUser: boolean;
+  hasKyc: boolean;
+  isMember: boolean;
+  preferredPath: string;
+}) => {
+  const onboardingRequired = requiresNewUserOnboarding(user, isSuperUser);
+  if (onboardingRequired && !hasKyc) return "/ekyc";
+  if (onboardingRequired && !isMember) return "/membership";
+
+  const safePath = safeAuthNextPath(preferredPath);
+  const pathname = safePath.split(/[?#]/)[0];
+  return ONBOARDING_ROUTES.has(pathname) ? POST_LOGIN_PATH : safePath;
 };
 
 const MaintenanceScreen = () => (
@@ -107,13 +143,14 @@ const KycRequiredRoute = ({ children }: { children: React.ReactNode }) => {
   const { hasKyc, loading: kycLoading } = useKycStatus();
   const { isMember, loading: memLoading } = useBharatGauravMembership();
   const location = useLocation();
-  if (authLoading || (user && (kycLoading || memLoading))) return <FullScreenLoader />;
+  const onboardingRequired = requiresNewUserOnboarding(user, isSuperUser);
+  if (authLoading || (onboardingRequired && (kycLoading || memLoading))) return <FullScreenLoader />;
   if (!user) {
     const next = `${location.pathname}${location.search}`;
     return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
   }
-  if (!isSuperUser && !hasKyc) return <Navigate to="/ekyc" replace />;
-  if (!isSuperUser && !isMember) return <Navigate to="/membership" replace />;
+  if (onboardingRequired && !hasKyc) return <Navigate to="/ekyc" replace />;
+  if (onboardingRequired && !isMember) return <Navigate to="/membership" replace />;
   return <>{children}</>;
 };
 
@@ -131,11 +168,35 @@ const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
       sessionStorage.getItem(AUTH_NEXT_KEY) ||
       localStorage.getItem(AUTH_NEXT_KEY)
   );
-  if (loading || (user && (kycLoading || memLoading))) return <FullScreenLoader />;
-  if (user && !isSuperUser && !hasKyc) return <Navigate to="/ekyc" replace />;
-  if (user && !isSuperUser && !isMember) return <Navigate to="/membership" replace />;
-  if (user) return <Navigate to={next} replace />;
+  const onboardingRequired = requiresNewUserOnboarding(user, isSuperUser);
+  if (loading || (onboardingRequired && (kycLoading || memLoading))) return <FullScreenLoader />;
+  if (user) {
+    const destination = getPostLoginDestination({ user, isSuperUser, hasKyc, isMember, preferredPath: next });
+    clearAuthNextPath();
+    return <Navigate to={destination} replace />;
+  }
   return <>{children}</>;
+};
+
+const PostLoginRoute = () => {
+  const { user, loading, isSuperUser } = useAuth();
+  const { hasKyc, loading: kycLoading } = useKycStatus();
+  const { isMember, loading: memLoading } = useBharatGauravMembership();
+  const location = useLocation();
+  const next = safeAuthNextPath(
+    new URLSearchParams(location.search).get("next") ||
+      sessionStorage.getItem(AUTH_NEXT_KEY) ||
+      localStorage.getItem(AUTH_NEXT_KEY)
+  );
+  const onboardingRequired = requiresNewUserOnboarding(user, isSuperUser);
+
+  if (loading || (onboardingRequired && (kycLoading || memLoading))) return <FullScreenLoader />;
+  if (!user) return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
+
+  const destination = getPostLoginDestination({ user, isSuperUser, hasKyc, isMember, preferredPath: next });
+  clearAuthNextPath();
+  sessionStorage.setItem("bharat-mitra-pending-greet", "true");
+  return <Navigate to={destination} replace />;
 };
 
 
@@ -155,6 +216,7 @@ const AppShell = () => {
   return (
     <>
       <Routes>
+        <Route path="/auth/continue" element={<PostLoginRoute />} />
         <Route path="/login" element={<PublicLoginRoute><LoginPage /></PublicLoginRoute>} />
         <Route path="/signup" element={<PublicLoginRoute><LoginPage initialMode="signup" /></PublicLoginRoute>} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />

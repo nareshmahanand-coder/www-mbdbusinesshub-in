@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { Loader2, LogIn, UserPlus } from "lucide-react";
@@ -18,8 +17,9 @@ interface LoginPageProps {
 }
 
 const POST_LOGIN_PATH = "/dashboard";
+const POST_LOGIN_ROUTE = "/auth/continue";
 const AUTH_NEXT_KEY = "mbd-auth-next";
-const AUTH_ROUTES = new Set(["/login", "/signup", "/reset-password"]);
+const AUTH_ROUTES = new Set(["/login", "/signup", "/reset-password", POST_LOGIN_ROUTE]);
 
 const safeNextPath = (value: string | null) => {
   if (!value?.startsWith("/") || value.startsWith("//")) return POST_LOGIN_PATH;
@@ -33,7 +33,6 @@ const isValidEmail = (email: string) => /^\S+@\S+\.\S+$/.test(email);
 const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, loading: authLoading } = useAuth();
   const [authMode, setAuthMode] = useState<AuthMode>(initialMode);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -54,14 +53,6 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
     setAuthMode(initialMode);
   }, [initialMode]);
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      sessionStorage.removeItem(AUTH_NEXT_KEY);
-      localStorage.removeItem(AUTH_NEXT_KEY);
-      navigate(nextPath, { replace: true });
-    }
-  }, [authLoading, navigate, nextPath, user]);
-
   const handleGoogle = async () => {
     setGoogleLoading(true);
     try {
@@ -69,7 +60,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
       localStorage.setItem(AUTH_NEXT_KEY, nextPath);
 
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}${POST_LOGIN_ROUTE}`,
         extraParams: { prompt: "select_account" },
       });
 
@@ -77,6 +68,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
       if (result.error) throw result.error;
 
       toast.success("✅ Logged in with Google.");
+      navigate(POST_LOGIN_ROUTE, { replace: true });
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, "Google login failed. Try again."));
     } finally {
@@ -104,12 +96,15 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
 
     setSubmitting(true);
     try {
+      sessionStorage.setItem(AUTH_NEXT_KEY, nextPath);
+      localStorage.setItem(AUTH_NEXT_KEY, nextPath);
+
       if (authMode === "signup") {
         const { error } = await supabase.auth.signUp({
           email: cleanEmail,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}${nextPath}`,
+            emailRedirectTo: `${window.location.origin}${POST_LOGIN_ROUTE}`,
             data: { full_name: cleanName, name: cleanName },
           },
         });
@@ -123,6 +118,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
         if (error) throw error;
         toast.success("✅ Logged in.");
       }
+      navigate(POST_LOGIN_ROUTE, { replace: true });
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, "Authentication failed."));
     } finally {
