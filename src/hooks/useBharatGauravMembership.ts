@@ -31,7 +31,7 @@ export const useBharatGauravMembership = () => {
       .limit(1)
       .maybeSingle();
 
-    if (data && data.expires_at && new Date(data.expires_at) > new Date()) {
+    if (data && (!data.expires_at || new Date(data.expires_at) > new Date())) {
       setMembership(data as BharatGauravMembership);
     } else {
       setMembership(null);
