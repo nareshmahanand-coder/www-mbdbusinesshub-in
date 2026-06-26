@@ -20,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const SUPERUSER_FLAG = "mbd-superuser";
+const OAUTH_RECOVERED_FLAG = "mbd-oauth-recovered";
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -88,6 +89,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
+    const recoverSessionFromOAuthUrl = async (): Promise<Session | null> => {
+      if (typeof window === "undefined") return null;
+
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const queryParams = new URLSearchParams(window.location.search);
+      const accessToken = hashParams.get("access_token") || queryParams.get("access_token");
+      const refreshToken = hashParams.get("refresh_token") || queryParams.get("refresh_token");
+
+      if (!accessToken || !refreshToken) return null;
+
+      const { data, error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+
+      if (error || !data.session) return null;
+
+      sessionStorage.setItem(OAUTH_RECOVERED_FLAG, "true");
+      const cleanPath = window.location.pathname === "/" ? "/auth/continue" : window.location.pathname;
+      window.history.replaceState(null, "", `${window.location.origin}${cleanPath}`);
+      return data.session;
+    };
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
@@ -98,6 +122,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     void (async () => {
+      const recoveredSession = await recoverSessionFromOAuthUrl();
+      if (recoveredSession) {
+        applySession(recoveredSession);
+        return;
+      }
+
       const { data: { session: initialSession } } = await supabase.auth.getSession();
       applySession(initialSession);
     })();
