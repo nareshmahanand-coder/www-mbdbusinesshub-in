@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner, toast as sonnerToast } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -174,22 +174,6 @@ const PostLoginRoute = () => {
   return <Navigate to={destination} replace />;
 };
 
-const OAuthUrlRecovery = () => {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-    if (!hash.has("access_token")) return;
-
-    const cleanUrl = `${window.location.origin}/auth/continue`;
-    window.history.replaceState(null, "", cleanUrl);
-    navigate("/auth/continue", { replace: true });
-  }, [navigate]);
-
-  return null;
-};
-
-
 
 const AppShell = () => {
   useLastKnownLocation();
@@ -251,7 +235,6 @@ const App = () => (
           <Sonner />
           <NativePushBanner />
           <BrowserRouter>
-            <OAuthUrlRecovery />
             <AppShell />
           </BrowserRouter>
         </TooltipProvider>
