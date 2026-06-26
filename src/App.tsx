@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner, toast as sonnerToast } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -69,15 +69,7 @@ const FullScreenLoader = () => (
 
 const POST_LOGIN_PATH = "/dashboard";
 const AUTH_NEXT_KEY = "mbd-auth-next";
-const AUTH_ROUTES = new Set(["/login", "/signup", "/reset-password", "/auth/continue"]);
-const ONBOARDING_ROUTES = new Set(["/ekyc", "/membership"]);
 const ONBOARDING_REQUIRED_AFTER = Date.parse("2026-06-25T00:00:00.000Z");
-
-const safeAuthNextPath = (value: string | null) => {
-  if (!value?.startsWith("/") || value.startsWith("//")) return POST_LOGIN_PATH;
-  const pathname = value.split(/[?#]/)[0];
-  return AUTH_ROUTES.has(pathname) ? POST_LOGIN_PATH : value;
-};
 
 const clearAuthNextPath = () => {
   sessionStorage.removeItem(AUTH_NEXT_KEY);
@@ -96,21 +88,16 @@ const getPostLoginDestination = ({
   isSuperUser,
   hasKyc,
   isMember,
-  preferredPath,
 }: {
   user: { created_at?: string } | null;
   isSuperUser: boolean;
   hasKyc: boolean;
   isMember: boolean;
-  preferredPath: string;
 }) => {
   const onboardingRequired = requiresNewUserOnboarding(user, isSuperUser);
   if (onboardingRequired && !hasKyc) return "/ekyc";
   if (onboardingRequired && !isMember) return "/membership";
-
-  const safePath = safeAuthNextPath(preferredPath);
-  const pathname = safePath.split(/[?#]/)[0];
-  return ONBOARDING_ROUTES.has(pathname) ? POST_LOGIN_PATH : safePath;
+  return POST_LOGIN_PATH;
 };
 
 const MaintenanceScreen = () => (
@@ -162,16 +149,10 @@ const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, isSuperUser } = useAuth();
   const { hasKyc, loading: kycLoading } = useKycStatus();
   const { isMember, loading: memLoading } = useBharatGauravMembership();
-  const location = useLocation();
-  const next = safeAuthNextPath(
-    new URLSearchParams(location.search).get("next") ||
-      sessionStorage.getItem(AUTH_NEXT_KEY) ||
-      localStorage.getItem(AUTH_NEXT_KEY)
-  );
   const onboardingRequired = requiresNewUserOnboarding(user, isSuperUser);
   if (loading || (onboardingRequired && (kycLoading || memLoading))) return <FullScreenLoader />;
   if (user) {
-    const destination = getPostLoginDestination({ user, isSuperUser, hasKyc, isMember, preferredPath: next });
+    const destination = getPostLoginDestination({ user, isSuperUser, hasKyc, isMember });
     clearAuthNextPath();
     return <Navigate to={destination} replace />;
   }
@@ -182,21 +163,30 @@ const PostLoginRoute = () => {
   const { user, loading, isSuperUser } = useAuth();
   const { hasKyc, loading: kycLoading } = useKycStatus();
   const { isMember, loading: memLoading } = useBharatGauravMembership();
-  const location = useLocation();
-  const next = safeAuthNextPath(
-    new URLSearchParams(location.search).get("next") ||
-      sessionStorage.getItem(AUTH_NEXT_KEY) ||
-      localStorage.getItem(AUTH_NEXT_KEY)
-  );
   const onboardingRequired = requiresNewUserOnboarding(user, isSuperUser);
 
   if (loading || (onboardingRequired && (kycLoading || memLoading))) return <FullScreenLoader />;
-  if (!user) return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
+  if (!user) return <Navigate to="/login" replace />;
 
-  const destination = getPostLoginDestination({ user, isSuperUser, hasKyc, isMember, preferredPath: next });
+  const destination = getPostLoginDestination({ user, isSuperUser, hasKyc, isMember });
   clearAuthNextPath();
   sessionStorage.setItem("bharat-mitra-pending-greet", "true");
   return <Navigate to={destination} replace />;
+};
+
+const OAuthUrlRecovery = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    if (!hash.has("access_token")) return;
+
+    const cleanUrl = `${window.location.origin}/auth/continue`;
+    window.history.replaceState(null, "", cleanUrl);
+    navigate("/auth/continue", { replace: true });
+  }, [navigate]);
+
+  return null;
 };
 
 
@@ -261,6 +251,7 @@ const App = () => (
           <Sonner />
           <NativePushBanner />
           <BrowserRouter>
+            <OAuthUrlRecovery />
             <AppShell />
           </BrowserRouter>
         </TooltipProvider>
