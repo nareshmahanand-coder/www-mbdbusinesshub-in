@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { FormEvent, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,12 +19,10 @@ interface LoginPageProps {
 const POST_LOGIN_PATH = "/dashboard";
 const POST_LOGIN_ROUTE = "/auth/continue";
 const AUTH_NEXT_KEY = "mbd-auth-next";
-const AUTH_ROUTES = new Set(["/login", "/signup", "/reset-password", POST_LOGIN_ROUTE]);
 
-const safeNextPath = (value: string | null) => {
-  if (!value?.startsWith("/") || value.startsWith("//")) return POST_LOGIN_PATH;
-  const pathname = value.split(/[?#]/)[0];
-  return AUTH_ROUTES.has(pathname) ? POST_LOGIN_PATH : value;
+const resetAuthRedirectState = () => {
+  sessionStorage.setItem(AUTH_NEXT_KEY, POST_LOGIN_PATH);
+  localStorage.setItem(AUTH_NEXT_KEY, POST_LOGIN_PATH);
 };
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
@@ -32,22 +30,12 @@ const isValidEmail = (email: string) => /^\S+@\S+\.\S+$/.test(email);
 
 const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [authMode, setAuthMode] = useState<AuthMode>(initialMode);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-
-  const nextPath = useMemo(() => {
-    const fromUrl = new URLSearchParams(location.search).get("next");
-    return safeNextPath(
-      fromUrl ||
-        sessionStorage.getItem(AUTH_NEXT_KEY) ||
-        localStorage.getItem(AUTH_NEXT_KEY)
-    );
-  }, [location.search]);
 
   useEffect(() => {
     setAuthMode(initialMode);
@@ -56,8 +44,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
   const handleGoogle = async () => {
     setGoogleLoading(true);
     try {
-      sessionStorage.setItem(AUTH_NEXT_KEY, nextPath);
-      localStorage.setItem(AUTH_NEXT_KEY, nextPath);
+      resetAuthRedirectState();
 
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: `${window.location.origin}${POST_LOGIN_ROUTE}`,
@@ -96,15 +83,13 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
 
     setSubmitting(true);
     try {
-      sessionStorage.setItem(AUTH_NEXT_KEY, nextPath);
-      localStorage.setItem(AUTH_NEXT_KEY, nextPath);
+      resetAuthRedirectState();
 
       if (authMode === "signup") {
         const { error } = await supabase.auth.signUp({
           email: cleanEmail,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}${POST_LOGIN_ROUTE}`,
             data: { full_name: cleanName, name: cleanName },
           },
         });
