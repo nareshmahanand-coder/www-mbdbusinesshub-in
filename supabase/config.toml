@@ -2,7 +2,9 @@ project_id = "tkenjzcyvnqnhgntmmen"
 
 [auth]
 additional_redirect_urls = [
+  "https://shop.mbdbusinesshub.in/auth/continue",
   "https://shop.mbdbusinesshub.in/dashboard",
+  "https://merabharatdukaan.lovable.app/auth/continue",
   "https://merabharatdukaan.lovable.app/dashboard"
 ]
 
