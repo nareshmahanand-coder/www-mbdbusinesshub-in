@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner, toast as sonnerToast } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -174,6 +174,22 @@ const PostLoginRoute = () => {
   return <Navigate to={destination} replace />;
 };
 
+const AuthLandingRedirect = () => {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (loading || !user) return;
+    if (location.pathname === "/" && sessionStorage.getItem("mbd-oauth-recovered") === "true") {
+      sessionStorage.removeItem("mbd-oauth-recovered");
+      navigate("/auth/continue", { replace: true });
+    }
+  }, [user, loading, location.pathname, navigate]);
+
+  return null;
+};
+
 
 const AppShell = () => {
   useLastKnownLocation();
@@ -220,6 +236,7 @@ const AppShell = () => {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <AuthLandingRedirect />
       <BharatMitraChatbot />
       <InstallPromptAutoTrigger />
     </>
