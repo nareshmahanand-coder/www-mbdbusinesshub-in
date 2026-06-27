@@ -51,6 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
+    let authBootstrapped = false;
 
     const syncProfile = async (activeSession: Session | null) => {
       const activeUser = activeSession?.user;
@@ -126,6 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === "INITIAL_SESSION" && !authBootstrapped) return;
       applySession(nextSession);
       if (event === "SIGNED_IN" && nextSession) {
         sessionStorage.setItem("bharat-mitra-pending-greet", "true");
@@ -140,6 +142,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const { data: { session: initialSession } } = await supabase.auth.getSession();
+      authBootstrapped = true;
       applySession(initialSession);
     })();
 

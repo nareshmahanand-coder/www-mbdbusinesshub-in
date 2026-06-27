@@ -6,7 +6,15 @@ import type { Session } from "@supabase/supabase-js";
 // Preferences (Android SharedPreferences). This guarantees the session
 // survives WebView storage wipes, app updates, and OS cache clears so
 // users stay logged in until they explicitly sign out.
-const AUTH_KEY = "sb-tkenjzcyvnqnhgntmmen-auth-token";
+const getProjectRefFromUrl = (url: string | undefined) => {
+  try {
+    return new URL(url || "").hostname.split(".")[0] || "tkenjzcyvnqnhgntmmen";
+  } catch {
+    return "tkenjzcyvnqnhgntmmen";
+  }
+};
+
+const AUTH_KEY = `sb-${getProjectRefFromUrl(import.meta.env.VITE_SUPABASE_URL)}-auth-token`;
 const KYC_PREFIX = "mbd-kyc-verified-";
 
 export const getKycVerifiedKey = (userId: string) => `${KYC_PREFIX}${userId}`;

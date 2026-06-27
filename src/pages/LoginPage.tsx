@@ -106,7 +106,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
       resetAuthRedirectState();
 
       if (authMode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: cleanEmail,
           password,
           options: {
@@ -114,13 +114,20 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
           },
         });
         if (error) throw error;
+        if (!data.session) {
+          toast.success("✅ Account created. Please log in with your password.");
+          setAuthMode("login");
+          setPassword("");
+          return;
+        }
         toast.success("✅ Account created. You're signed in.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
           password,
         });
         if (error) throw error;
+        if (!data.session) throw new Error("Login session was not created. Please try again.");
         toast.success("✅ Logged in.");
       }
       navigate(POST_LOGIN_ROUTE, { replace: true });
