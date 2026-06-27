@@ -3,18 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { Loader2, LogIn, UserPlus } from "lucide-react";
+import { Loader2, LogIn, Mail } from "lucide-react";
 import AdminPinAccess from "@/components/AdminPinAccess";
-
-type AuthMode = "login" | "signup";
-
-interface LoginPageProps {
-  initialMode?: AuthMode;
-}
 
 const POST_LOGIN_PATH = "/dashboard";
 const POST_LOGIN_ROUTE = "/auth/continue";
@@ -28,18 +23,25 @@ const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 const isValidEmail = (email: string) => /^\S+@\S+\.\S+$/.test(email);
 
-const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
+interface LoginPageProps {
+  initialMode?: "login" | "signup";
+}
+
+const LoginPage = (_props: LoginPageProps = {}) => {
   const navigate = useNavigate();
-  const [authMode, setAuthMode] = useState<AuthMode>(initialMode);
-  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
 
   useEffect(() => {
-    setAuthMode(initialMode);
-  }, [initialMode]);
+    if (resendIn <= 0) return;
+    const t = window.setInterval(() => setResendIn((s) => (s > 0 ? s - 1 : 0)), 1000);
+    return () => window.clearInterval(t);
+  }, [resendIn]);
 
   const handleGoogle = async () => {
     setGoogleLoading(true);
@@ -58,7 +60,6 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
             queryParams: { prompt: "select_account" },
           },
         });
-
         if (error) throw error;
         if (data.url) {
           window.location.assign(data.url);
@@ -70,7 +71,6 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
         redirect_uri: redirectTo,
         extraParams: { prompt: "select_account" },
       });
-
       if (result.redirected) return;
       if (result.error) throw result.error;
 
@@ -83,58 +83,56 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
     }
   };
 
-  const handleSubmit = async (event: FormEvent) => {
+  const handleSendOtp = async (event: FormEvent) => {
     event.preventDefault();
-    const cleanEmail = email.trim();
-    const cleanName = fullName.trim();
-
+    const cleanEmail = email.trim().toLowerCase();
     if (!isValidEmail(cleanEmail)) {
       toast.error("Please enter a valid email.");
       return;
     }
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters.");
-      return;
-    }
-    if (authMode === "signup" && cleanName.length < 2) {
-      toast.error("Please enter your name.");
-      return;
-    }
-
-    setSubmitting(true);
+    setSending(true);
     try {
       resetAuthRedirectState();
+      const { error } = await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+        options: {
+          shouldCreateUser: true,
+        },
+      });
+      if (error) throw error;
+      setEmail(cleanEmail);
+      setOtpSent(true);
+      setOtp("");
+      setResendIn(45);
+      toast.success("📩 6-digit OTP sent to your email.");
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, "Could not send OTP. Try again."));
+    } finally {
+      setSending(false);
+    }
+  };
 
-      if (authMode === "signup") {
-        const { data, error } = await supabase.auth.signUp({
-          email: cleanEmail,
-          password,
-          options: {
-            data: { full_name: cleanName, name: cleanName },
-          },
-        });
-        if (error) throw error;
-        if (!data.session) {
-          toast.success("✅ Account created. Please log in with your password.");
-          setAuthMode("login");
-          setPassword("");
-          return;
-        }
-        toast.success("✅ Account created. You're signed in.");
-      } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password,
-        });
-        if (error) throw error;
-        if (!data.session) throw new Error("Login session was not created. Please try again.");
-        toast.success("✅ Logged in.");
-      }
+  const handleVerifyOtp = async (event: FormEvent) => {
+    event.preventDefault();
+    if (otp.length !== 6) {
+      toast.error("Enter the 6-digit OTP.");
+      return;
+    }
+    setVerifying(true);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: email.trim().toLowerCase(),
+        token: otp,
+        type: "email",
+      });
+      if (error) throw error;
+      if (!data.session) throw new Error("Could not start session. Try again.");
+      toast.success("✅ Logged in.");
       navigate(POST_LOGIN_ROUTE, { replace: true });
     } catch (error: unknown) {
-      toast.error(getErrorMessage(error, "Authentication failed."));
+      toast.error(getErrorMessage(error, "Invalid or expired OTP."));
     } finally {
-      setSubmitting(false);
+      setVerifying(false);
     }
   };
 
@@ -149,13 +147,9 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
               alt="Mera Bharat Dukaan"
               className="mx-auto h-24 w-24 rounded-full border-4 border-background object-cover shadow-xl"
             />
-            <h1 className="mt-4 text-2xl font-extrabold text-foreground">
-              {authMode === "signup" ? "Create Account" : "Welcome Back"}
-            </h1>
+            <h1 className="mt-4 text-2xl font-extrabold text-foreground">Welcome</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {authMode === "signup"
-                ? "Sign up with your name, email and password."
-                : "Log in with Google or your email and password."}
+              Log in with Google or get a 6-digit OTP on your email.
             </p>
           </div>
 
@@ -186,68 +180,82 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {authMode === "signup" && (
+            {!otpSent ? (
+              <form onSubmit={handleSendOtp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="full-name">Name</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
-                    id="full-name"
-                    type="text"
-                    autoComplete="name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Your name"
+                    id="email"
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
                   />
                 </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete={authMode === "signup" ? "new-password" : "current-password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                />
-              </div>
-              <Button
-                type="submit"
-                disabled={submitting}
-                className="h-12 w-full bg-accent text-accent-foreground hover:bg-accent/90"
-              >
-                {submitting ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : authMode === "signup" ? (
-                  <UserPlus className="h-5 w-5" />
-                ) : (
-                  <LogIn className="h-5 w-5" />
-                )}
-                {authMode === "signup" ? "Create Account" : "Log In"}
-              </Button>
-            </form>
-
-            <button
-              type="button"
-              onClick={() => setAuthMode(authMode === "signup" ? "login" : "signup")}
-              className="w-full text-center text-sm text-muted-foreground underline"
-            >
-              {authMode === "signup"
-                ? "Already have an account? Log in"
-                : "New here? Create an account"}
-            </button>
+                <Button
+                  type="submit"
+                  disabled={sending}
+                  className="h-12 w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                >
+                  {sending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Mail className="h-5 w-5" />}
+                  Send 6-digit OTP
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOtp} className="space-y-4">
+                <div className="space-y-2 text-center">
+                  <Label>Enter 6-digit OTP</Label>
+                  <p className="text-xs text-muted-foreground">Sent to {email}</p>
+                  <div className="flex justify-center">
+                    <InputOTP
+                      maxLength={6}
+                      value={otp}
+                      onChange={(v) => setOtp(v.replace(/\D/g, ""))}
+                      inputMode="numeric"
+                    >
+                      <InputOTPGroup>
+                        {[0, 1, 2, 3, 4, 5].map((i) => (
+                          <InputOTPSlot key={i} index={i} />
+                        ))}
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
+                </div>
+                <Button
+                  type="submit"
+                  disabled={verifying || otp.length !== 6}
+                  className="h-12 w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                >
+                  {verifying ? <Loader2 className="h-5 w-5 animate-spin" /> : <LogIn className="h-5 w-5" />}
+                  Verify & Log In
+                </Button>
+                <div className="flex items-center justify-between text-sm">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtpSent(false);
+                      setOtp("");
+                    }}
+                    className="text-muted-foreground underline"
+                  >
+                    Change email
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      if (resendIn > 0) return;
+                      handleSendOtp(e as unknown as FormEvent);
+                    }}
+                    disabled={resendIn > 0 || sending}
+                    className="text-primary underline disabled:opacity-50"
+                  >
+                    {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend OTP"}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
 
           <p className="mt-5 text-center text-xs text-muted-foreground">
