@@ -94,8 +94,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
       const queryParams = new URLSearchParams(window.location.search);
+      const authorizationCode = queryParams.get("code");
       const accessToken = hashParams.get("access_token") || queryParams.get("access_token");
       const refreshToken = hashParams.get("refresh_token") || queryParams.get("refresh_token");
+
+      const finishRecovery = (nextSession: Session) => {
+        sessionStorage.setItem(OAUTH_RECOVERED_FLAG, "true");
+        const cleanPath = window.location.pathname === "/" ? "/auth/continue" : window.location.pathname;
+        window.history.replaceState(null, "", `${window.location.origin}${cleanPath}`);
+        return nextSession;
+      };
+
+      if (authorizationCode) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(authorizationCode);
+        if (error || !data.session) return null;
+        return finishRecovery(data.session);
+      }
 
       if (!accessToken || !refreshToken) return null;
 
@@ -106,10 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error || !data.session) return null;
 
-      sessionStorage.setItem(OAUTH_RECOVERED_FLAG, "true");
-      const cleanPath = window.location.pathname === "/" ? "/auth/continue" : window.location.pathname;
-      window.history.replaceState(null, "", `${window.location.origin}${cleanPath}`);
-      return data.session;
+      return finishRecovery(data.session);
     };
 
     const {

@@ -45,9 +45,29 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
     setGoogleLoading(true);
     try {
       resetAuthRedirectState();
+      const redirectTo = `${window.location.origin}${POST_LOGIN_ROUTE}`;
+      const hasCustomBackend = Boolean(
+        import.meta.env.VITE_CUSTOM_SUPABASE_URL && import.meta.env.VITE_CUSTOM_SUPABASE_ANON_KEY
+      );
+
+      if (hasCustomBackend) {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo,
+            queryParams: { prompt: "select_account" },
+          },
+        });
+
+        if (error) throw error;
+        if (data.url) {
+          window.location.assign(data.url);
+          return;
+        }
+      }
 
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}${POST_LOGIN_ROUTE}`,
+        redirect_uri: redirectTo,
         extraParams: { prompt: "select_account" },
       });
 
