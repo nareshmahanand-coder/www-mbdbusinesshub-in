@@ -45,9 +45,29 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
     setGoogleLoading(true);
     try {
       resetAuthRedirectState();
+      const redirectTo = `${window.location.origin}${POST_LOGIN_ROUTE}`;
+      const hasCustomBackend = Boolean(
+        import.meta.env.VITE_CUSTOM_SUPABASE_URL && import.meta.env.VITE_CUSTOM_SUPABASE_ANON_KEY
+      );
+
+      if (hasCustomBackend) {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo,
+            queryParams: { prompt: "select_account" },
+          },
+        });
+
+        if (error) throw error;
+        if (data.url) {
+          window.location.assign(data.url);
+          return;
+        }
+      }
 
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}${POST_LOGIN_ROUTE}`,
+        redirect_uri: redirectTo,
         extraParams: { prompt: "select_account" },
       });
 
@@ -86,7 +106,7 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
       resetAuthRedirectState();
 
       if (authMode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: cleanEmail,
           password,
           options: {
@@ -94,13 +114,20 @@ const LoginPage = ({ initialMode = "login" }: LoginPageProps = {}) => {
           },
         });
         if (error) throw error;
+        if (!data.session) {
+          toast.success("✅ Account created. Please log in with your password.");
+          setAuthMode("login");
+          setPassword("");
+          return;
+        }
         toast.success("✅ Account created. You're signed in.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
           password,
         });
         if (error) throw error;
+        if (!data.session) throw new Error("Login session was not created. Please try again.");
         toast.success("✅ Logged in.");
       }
       navigate(POST_LOGIN_ROUTE, { replace: true });
