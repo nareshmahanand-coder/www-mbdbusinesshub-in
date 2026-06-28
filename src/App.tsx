@@ -29,6 +29,9 @@ import FamilyInvitePage from "./pages/FamilyInvitePage";
 import EkycPage from "./pages/EkycPage";
 import BharatGauravMembershipPage from "./pages/BharatGauravMembershipPage";
 import AdminDashboard from "./pages/AdminDashboard";
+import Login from "./pages/Login";
+import AuthCallback from "./pages/AuthCallback";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { useKycStatus } from "@/hooks/useKycStatus";
 import { useBharatGauravMembership } from "@/hooks/useBharatGauravMembership";
 import { useLastKnownLocation } from "@/hooks/useLastKnownLocation";
@@ -114,7 +117,9 @@ const PublicHomeRoute = () => {
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 
-const KycRequiredRoute = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+const KycRequiredRoute = ({ children }: { children: React.ReactNode }) => (
+  <ProtectedRoute>{children}</ProtectedRoute>
+);
 
 const MerchantAccessRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
@@ -138,11 +143,12 @@ const AppShell = () => {
   return (
     <>
       <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/continue" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/login" element={<Navigate to="/" replace />} />
-        <Route path="/signup" element={<Navigate to="/" replace />} />
-        <Route path="/ekyc" element={<EkycPage />} />
-        <Route path="/membership" element={<ProtectedRoute><BharatGauravMembershipPage /></ProtectedRoute>} />
+        <Route path="/signup" element={<Navigate to="/login" replace />} />
+        <Route path="/ekyc" element={<ProtectedRoute allowDuringOnboarding><EkycPage /></ProtectedRoute>} />
+        <Route path="/membership" element={<ProtectedRoute allowDuringOnboarding><BharatGauravMembershipPage /></ProtectedRoute>} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/contact" element={<LegalPage section="contact" />} />
         <Route path="/privacy-policy" element={<LegalPage section="privacy" />} />
