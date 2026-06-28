@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 
 const sanitizeNext = (value: string | null): string => {
   if (!value) return "/dashboard";
@@ -23,6 +25,10 @@ export default function AuthCallback() {
 
     (async () => {
       try {
+        if (Capacitor.isNativePlatform()) {
+          void Browser.close().catch(() => {});
+        }
+
         const url = new URL(window.location.href);
         const code = url.searchParams.get("code");
         const hashParams = new URLSearchParams(url.hash.replace(/^#/, ""));
@@ -30,14 +36,18 @@ export default function AuthCallback() {
         const refreshToken = hashParams.get("refresh_token");
 
         if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) throw error;
+          if (!data.session) throw new Error("No active session after Google callback");
         } else if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({
+          const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
           if (error) throw error;
+          if (!data.session) throw new Error("No active session after callback");
+        } else {
+          throw new Error("Missing authentication code");
         }
 
         // Confirm a session exists before navigating away.

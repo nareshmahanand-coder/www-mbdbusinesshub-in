@@ -13,7 +13,6 @@ const config: CapacitorConfig = {
       '*.mbdbusinesshub.in',
       'merabharatdukaan.lovable.app',
       '*.lovable.app',
-      '*.supabase.co',
     ],
   },
   android: {

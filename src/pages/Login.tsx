@@ -6,12 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 
 const sanitizeNext = (value: string | null): string => {
   if (!value) return "/dashboard";
   if (!value.startsWith("/")) return "/dashboard";
   if (value.startsWith("/login") || value.startsWith("/auth")) return "/dashboard";
   return value;
+};
+
+const getOAuthRedirectTo = (next: string) => {
+  const encodedNext = encodeURIComponent(next);
+  if (Capacitor.isNativePlatform()) {
+    return `com.merabharatdukaan.app://auth/callback?next=${encodedNext}`;
+  }
+  return `${window.location.origin}/auth/callback?next=${encodedNext}`;
 };
 
 export default function Login() {
@@ -36,12 +46,22 @@ export default function Login() {
   const handleGoogle = async () => {
     setBusy(true);
     try {
-      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
-      const { error } = await supabase.auth.signInWithOAuth({
+      const isNative = Capacitor.isNativePlatform();
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo },
+        options: {
+          redirectTo: getOAuthRedirectTo(next),
+          skipBrowserRedirect: isNative,
+          queryParams: { prompt: "select_account" },
+        },
       });
       if (error) throw error;
+
+      // Android WebView cannot run Google OAuth. Use Chrome Custom Tabs and
+      // return through the app's custom URL scheme handled in App.tsx.
+      if (isNative && data?.url) {
+        await Browser.open({ url: data.url, presentationStyle: "fullscreen" });
+      }
     } catch (err: any) {
       toast.error(err?.message || "Google sign-in failed");
       setBusy(false);
@@ -61,7 +81,7 @@ export default function Login() {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: getOAuthRedirectTo(next),
             data: { full_name: name || email.split("@")[0] },
           },
         });
