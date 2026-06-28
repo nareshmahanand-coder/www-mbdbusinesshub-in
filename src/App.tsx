@@ -115,8 +115,6 @@ const PublicHomeRoute = () => {
   return <Index />;
 };
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => <>{children}</>;
-
 const KycRequiredRoute = ({ children }: { children: React.ReactNode }) => (
   <ProtectedRoute>{children}</ProtectedRoute>
 );
