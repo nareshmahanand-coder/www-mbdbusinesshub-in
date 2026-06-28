@@ -14,8 +14,6 @@ import HelpPage from "./pages/HelpPage";
 import TermsPage from "./pages/TermsPage";
 import LegalPage from "./pages/LegalPage";
 import KisanRegistration from "./pages/KisanRegistration";
-import LoginPage from "./pages/LoginPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import MerchantDashboard from "./pages/MerchantDashboard";
 import MatrimonyPage from "./pages/MatrimonyPage";
@@ -114,81 +112,15 @@ const PublicHomeRoute = () => {
   return <Index />;
 };
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  const location = useLocation();
-  if (loading) return <FullScreenLoader />;
-  if (!user) {
-    const next = `${location.pathname}${location.search}`;
-    return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
-  }
-  return <>{children}</>;
-};
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 
-const KycRequiredRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading: authLoading, isSuperUser } = useAuth();
-  const { hasKyc, loading: kycLoading } = useKycStatus();
-  const { isMember, loading: memLoading } = useBharatGauravMembership();
-  const location = useLocation();
-  const onboardingRequired = requiresNewUserOnboarding(user, isSuperUser);
-  if (authLoading || (onboardingRequired && (kycLoading || memLoading))) return <FullScreenLoader />;
-  if (!user) {
-    const next = `${location.pathname}${location.search}`;
-    return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace />;
-  }
-  if (onboardingRequired && !hasKyc) return <Navigate to="/ekyc" replace />;
-  if (onboardingRequired && !isMember) return <Navigate to="/membership" replace />;
-  return <>{children}</>;
-};
+const KycRequiredRoute = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 
 const MerchantAccessRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const PublicLoginRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading, isSuperUser } = useAuth();
-  const { hasKyc, loading: kycLoading } = useKycStatus();
-  const { isMember, loading: memLoading } = useBharatGauravMembership();
-  const onboardingRequired = requiresNewUserOnboarding(user, isSuperUser);
-  if (loading || (onboardingRequired && (kycLoading || memLoading))) return <FullScreenLoader />;
-  if (user) {
-    const destination = getPostLoginDestination({ user, isSuperUser, hasKyc, isMember });
-    clearAuthNextPath();
-    return <Navigate to={destination} replace />;
-  }
-  return <>{children}</>;
-};
-
-const PostLoginRoute = () => {
-  const { user, loading, isSuperUser } = useAuth();
-  const { hasKyc, loading: kycLoading } = useKycStatus();
-  const { isMember, loading: memLoading } = useBharatGauravMembership();
-  const onboardingRequired = requiresNewUserOnboarding(user, isSuperUser);
-
-  if (loading || (onboardingRequired && (kycLoading || memLoading))) return <FullScreenLoader />;
-  if (!user) return <Navigate to="/login" replace />;
-
-  const destination = getPostLoginDestination({ user, isSuperUser, hasKyc, isMember });
-  clearAuthNextPath();
-  sessionStorage.setItem("bharat-mitra-pending-greet", "true");
-  return <Navigate to={destination} replace />;
-};
-
-const AuthLandingRedirect = () => {
-  const { user, loading } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (loading || !user) return;
-    if (location.pathname === "/" && sessionStorage.getItem("mbd-oauth-recovered") === "true") {
-      sessionStorage.removeItem("mbd-oauth-recovered");
-      navigate("/auth/continue", { replace: true });
-    }
-  }, [user, loading, location.pathname, navigate]);
-
-  return null;
-};
+const AuthLandingRedirect = () => null;
 
 
 const AppShell = () => {
@@ -206,10 +138,9 @@ const AppShell = () => {
   return (
     <>
       <Routes>
-        <Route path="/auth/continue" element={<PostLoginRoute />} />
-        <Route path="/login" element={<PublicLoginRoute><LoginPage /></PublicLoginRoute>} />
-        <Route path="/signup" element={<PublicLoginRoute><LoginPage initialMode="signup" /></PublicLoginRoute>} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/auth/continue" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/login" element={<Navigate to="/" replace />} />
+        <Route path="/signup" element={<Navigate to="/" replace />} />
         <Route path="/ekyc" element={<EkycPage />} />
         <Route path="/membership" element={<ProtectedRoute><BharatGauravMembershipPage /></ProtectedRoute>} />
         <Route path="/terms" element={<TermsPage />} />
