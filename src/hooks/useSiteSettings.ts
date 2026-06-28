@@ -29,13 +29,18 @@ export const useSiteSettings = () => {
 
   const refresh = async () => {
     setLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("site_settings")
       .select("id, maintenance_mode, merchant_registrations_enabled, razorpay_key_reference, ai_key_reference, merchant_area_label, admin_area_label, admin_security_updated_at")
       .limit(1)
       .maybeSingle();
 
-    setSettings(data ? { ...DEFAULT_SITE_SETTINGS, ...data } : DEFAULT_SITE_SETTINGS);
+    if (error) {
+      console.warn("[site-settings] using defaults", error.message);
+      setSettings(DEFAULT_SITE_SETTINGS);
+    } else {
+      setSettings(data ? { ...DEFAULT_SITE_SETTINGS, ...data } : DEFAULT_SITE_SETTINGS);
+    }
     setLoading(false);
   };
 

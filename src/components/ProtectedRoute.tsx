@@ -42,14 +42,26 @@ export default function ProtectedRoute({
     return <>{children}</>;
   }
 
-  // Onboarding pages themselves should render once the user is authenticated.
-  if (allowDuringOnboarding) {
-    return <>{children}</>;
-  }
-
   // 3. Wait for KYC + membership status before enforcing onboarding redirects.
   if (kycLoading || memberLoading) {
     return <FullScreenLoader label="Checking your account…" />;
+  }
+
+  // Onboarding pages can render only when they are the correct next step.
+  if (allowDuringOnboarding) {
+    if (location.pathname === "/ekyc" && hasKyc && !isMember) {
+      return <Navigate to="/membership" replace />;
+    }
+    if (location.pathname === "/ekyc" && hasKyc && isMember) {
+      return <Navigate to="/dashboard" replace />;
+    }
+    if (location.pathname === "/membership" && !hasKyc) {
+      return <Navigate to="/ekyc" replace />;
+    }
+    if (location.pathname === "/membership" && isMember) {
+      return <Navigate to="/dashboard" replace />;
+    }
+    return <>{children}</>;
   }
 
   // 4. New / incomplete users → /ekyc → /membership → /dashboard

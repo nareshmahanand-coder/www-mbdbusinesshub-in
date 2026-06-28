@@ -4,6 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Browser } from "@capacitor/browser";
+import { Capacitor } from "@capacitor/core";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
@@ -125,6 +128,47 @@ const MerchantAccessRoute = ({ children }: { children: React.ReactNode }) => {
 
 const AuthLandingRedirect = () => null;
 
+const NativeAuthDeepLinkHandler = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    const routeNativeUrl = (rawUrl?: string) => {
+      if (!rawUrl) return;
+      try {
+        const url = new URL(rawUrl);
+        const isCustomAuthCallback =
+          url.protocol === "com.merabharatdukaan.app:" &&
+          url.host === "auth" &&
+          url.pathname.startsWith("/callback");
+        const isHttpsAuthCallback =
+          url.protocol === "https:" &&
+          url.host === "shop.mbdbusinesshub.in" &&
+          url.pathname.startsWith("/auth/callback");
+
+        if (!isCustomAuthCallback && !isHttpsAuthCallback) return;
+
+        void Browser.close().catch(() => {});
+        const target = `/auth/callback${url.search}${url.hash}`;
+        navigate(target, { replace: true });
+      } catch {
+        // Ignore malformed external URLs.
+      }
+    };
+
+    let cleanup: (() => void) | undefined;
+    void CapacitorApp.addListener("appUrlOpen", (event) => routeNativeUrl(event.url)).then((handle) => {
+      cleanup = () => void handle.remove();
+    });
+    void CapacitorApp.getLaunchUrl().then((event) => routeNativeUrl(event?.url));
+
+    return () => cleanup?.();
+  }, [navigate]);
+
+  return null;
+};
+
 
 const AppShell = () => {
   useLastKnownLocation();
@@ -172,6 +216,7 @@ const AppShell = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <AuthLandingRedirect />
+      <NativeAuthDeepLinkHandler />
       <BharatMitraChatbot />
       <InstallPromptAutoTrigger />
     </>
