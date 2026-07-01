@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Capacitor } from "@capacitor/core";
-import { Browser } from "@capacitor/browser";
+import { SocialLogin } from "@capgo/capacitor-social-login";
 
 const sanitizeNext = (value: string | null): string => {
   if (!value) return "/dashboard";
@@ -43,25 +43,60 @@ export default function Login() {
     }
   }, [loading, user, next, navigate]);
 
+  // Initialize native Google Sign-In once when running inside the Android/iOS app.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const webClientId = import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined;
+    if (!webClientId) return;
+    SocialLogin.initialize({
+      google: {
+        webClientId,
+        mode: "online",
+      },
+    }).catch(() => {});
+  }, []);
+
   const handleGoogle = async () => {
     setBusy(true);
     try {
       const isNative = Capacitor.isNativePlatform();
+
+      if (isNative) {
+        // Native Google Sign-In via Android Credential Manager / iOS SDK.
+        // Returns a Google ID token that Supabase can verify directly — no
+        // external browser, no WebView redirect, no "Browser plugin" error.
+        const webClientId = import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined;
+        if (!webClientId) {
+          throw new Error(
+            "Google Web Client ID missing. Set VITE_GOOGLE_WEB_CLIENT_ID in .env and rebuild the app."
+          );
+        }
+        const res: any = await SocialLogin.login({
+          provider: "google",
+          options: { forceRefreshToken: true },
+        });
+        const idToken: string | undefined =
+          res?.result?.idToken || res?.result?.responseAccessToken || undefined;
+        if (!idToken) throw new Error("Google Sign-In returned no idToken");
+
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: "google",
+          token: idToken,
+        });
+        if (error) throw error;
+        return; // AuthProvider onAuthStateChange will route the user.
+      }
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: getOAuthRedirectTo(next),
-          skipBrowserRedirect: isNative,
+          skipBrowserRedirect: false,
           queryParams: { prompt: "select_account" },
         },
       });
       if (error) throw error;
-
-      // Android WebView cannot run Google OAuth. Use Chrome Custom Tabs and
-      // return through the app's custom URL scheme handled in App.tsx.
-      if (isNative && data?.url) {
-        await Browser.open({ url: data.url, presentationStyle: "fullscreen" });
-      }
+      void data;
     } catch (err: any) {
       toast.error(err?.message || "Google sign-in failed");
       setBusy(false);
