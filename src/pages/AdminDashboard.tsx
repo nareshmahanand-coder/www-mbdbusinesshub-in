@@ -950,7 +950,7 @@ const KycSection = () => {
   const decide = async (id: string, status: "verified" | "rejected") => {
     const patch: any = { status };
     if (status === "verified") {
-      patch.kyc_expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      patch.kyc_expires_at = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
       patch.verified_at = new Date().toISOString();
       patch.re_kyc_requested_at = null;
     }

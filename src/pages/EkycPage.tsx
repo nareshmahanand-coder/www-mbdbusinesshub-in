@@ -415,7 +415,7 @@ const EkycPage = () => {
         selfie_url: selfieUrl,
         status: "verified",
         verified_at: new Date().toISOString(),
-        kyc_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        kyc_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
         re_kyc_requested_at: null,
       };
       const { data: inserted, error: insErr } = await supabase

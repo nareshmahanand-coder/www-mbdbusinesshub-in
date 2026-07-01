@@ -289,7 +289,7 @@ Deno.serve(async (req) => {
         const { user_id } = body;
         if (!user_id) return json({ error: "user_id required" }, 400);
         const now = new Date().toISOString();
-        const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
         await sb.from("kyc_verifications").update({
           status: "verified",
           verified_at: now,
