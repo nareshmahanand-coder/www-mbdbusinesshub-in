@@ -25,6 +25,7 @@ const config: CapacitorConfig = {
       '@capacitor/app',
       '@capacitor/preferences',
       '@capacitor/push-notifications',
+      '@capgo/capacitor-social-login',
     ],
     appendUserAgent: 'MeraBharatDukaanApp',
   },
