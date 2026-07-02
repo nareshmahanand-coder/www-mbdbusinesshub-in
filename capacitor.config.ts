@@ -46,6 +46,15 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert', 'banner', 'list'],
     },
+    SocialLogin: {
+      providers: {
+        google: true,
+        facebook: false,
+        apple: false,
+        twitter: false,
+      },
+      logLevel: 1,
+    },
   },
 };
 
