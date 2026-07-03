@@ -92,7 +92,7 @@ export default function Login() {
         await initializeNativeGoogle();
         const res: any = await SocialLogin.login({
           provider: "google",
-          options: { scopes: ["email", "profile"] },
+          options: {},
         });
         const idToken: string | undefined =
           res?.result?.idToken || res?.result?.responseAccessToken || undefined;
