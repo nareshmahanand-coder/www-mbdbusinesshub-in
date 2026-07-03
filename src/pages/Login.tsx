@@ -12,6 +12,14 @@ import { SocialLogin } from "@capgo/capacitor-social-login";
 let nativeGoogleClientIdPromise: Promise<string> | null = null;
 let nativeGoogleInitialized = false;
 
+const getGoogleErrorMessage = (err: any) => {
+  const rawMessage = String(err?.message || err || "");
+  if (rawMessage.includes("28444") || rawMessage.toLowerCase().includes("developer console")) {
+    return "Google Sign-In setup mismatch: Android package/SHA is not linked to this Google Web Client ID.";
+  }
+  return rawMessage || "Google sign-in failed";
+};
+
 const sanitizeNext = (value: string | null): string => {
   if (!value) return "/dashboard";
   if (!value.startsWith("/")) return "/dashboard";
@@ -92,7 +100,11 @@ export default function Login() {
         await initializeNativeGoogle();
         const res: any = await SocialLogin.login({
           provider: "google",
-          options: {},
+          options: {
+            style: "bottom",
+            filterByAuthorizedAccounts: false,
+            scopes: ["email", "profile"],
+          },
         });
         const idToken: string | undefined =
           res?.result?.idToken || res?.result?.responseAccessToken || undefined;
@@ -117,7 +129,7 @@ export default function Login() {
       if (error) throw error;
       void data;
     } catch (err: any) {
-      toast.error(err?.message || "Google sign-in failed");
+      toast.error(getGoogleErrorMessage(err));
       setBusy(false);
     }
   };
