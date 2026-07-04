@@ -21,16 +21,6 @@ const getGoogleErrorMessage = (err: any) => {
   return rawMessage || "Google sign-in failed";
 };
 
-const createOAuthState = () => {
-  try {
-    const bytes = new Uint8Array(16);
-    crypto.getRandomValues(bytes);
-    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-  } catch {
-    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  }
-};
-
 const sanitizeNext = (value: string | null): string => {
   if (!value) return "/dashboard";
   if (!value.startsWith("/")) return "/dashboard";
@@ -42,17 +32,6 @@ const getOAuthRedirectTo = (next: string, forceWebCallback = false) => {
   const params = new URLSearchParams({ next });
   if (!forceWebCallback && Capacitor.isNativePlatform()) params.set("native", "1");
   return `${window.location.origin}/auth/callback?${params.toString()}`;
-};
-
-const getNativeGoogleOAuthUrl = (next: string) => {
-  const params = new URLSearchParams({
-    provider: "google",
-    redirect_uri: getOAuthRedirectTo(next),
-    state: createOAuthState(),
-    prompt: "select_account",
-    app_name: "Mera Bharat Dukaan",
-  });
-  return `${window.location.origin}/~oauth/initiate?${params.toString()}`;
 };
 
 export default function Login() {
@@ -80,7 +59,17 @@ export default function Login() {
       const isNative = Capacitor.isNativePlatform();
 
       if (isNative) {
-        await Browser.open({ url: getNativeGoogleOAuthUrl(next), presentationStyle: "fullscreen" });
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: getOAuthRedirectTo(next),
+            queryParams: { prompt: "select_account" },
+            skipBrowserRedirect: true,
+          },
+        });
+        if (error) throw error;
+        if (!data.url) throw new Error("Google sign-in URL could not be created");
+        await Browser.open({ url: data.url, presentationStyle: "fullscreen" });
         return;
       }
 
