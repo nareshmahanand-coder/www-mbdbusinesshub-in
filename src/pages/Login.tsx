@@ -10,6 +10,8 @@ import { toast } from "@/components/ui/sonner";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
 
+const NATIVE_CALLBACK_URL = "com.merabharatdukaan.app://auth/callback";
+
 const getGoogleErrorMessage = (err: any) => {
   const rawMessage = String(err?.message || err || "");
   if (rawMessage.toLowerCase().includes("invalid_client") || rawMessage.toLowerCase().includes("client secret")) {
@@ -38,9 +40,9 @@ const sanitizeNext = (value: string | null): string => {
   return value;
 };
 
-const getOAuthRedirectTo = (next: string) => {
+const getOAuthRedirectTo = (next: string, forceWebCallback = false) => {
   const params = new URLSearchParams({ next });
-  if (Capacitor.isNativePlatform()) params.set("native", "1");
+  if (!forceWebCallback && Capacitor.isNativePlatform()) return `${NATIVE_CALLBACK_URL}?${params.toString()}`;
   return `${window.location.origin}/auth/callback?${params.toString()}`;
 };
 
@@ -50,6 +52,7 @@ const getNativeGoogleOAuthUrl = (next: string) => {
     redirect_uri: getOAuthRedirectTo(next),
     state: createOAuthState(),
     prompt: "select_account",
+    app_name: "Mera Bharat Dukaan",
   });
   return `${window.location.origin}/~oauth/initiate?${params.toString()}`;
 };
@@ -84,7 +87,7 @@ export default function Login() {
       }
 
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: getOAuthRedirectTo(next),
+        redirect_uri: getOAuthRedirectTo(next, true),
         extraParams: { prompt: "select_account" },
       });
       if (result.error) throw result.error;
