@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
 
+const NATIVE_CALLBACK_SCHEME = "com.merabharatdukaan.app://auth/callback";
+
 const sanitizeNext = (value: string | null): string => {
   if (!value) return "/dashboard";
   if (!value.startsWith("/")) return "/dashboard";
@@ -25,20 +27,31 @@ export default function AuthCallback() {
 
     (async () => {
       try {
-        if (Capacitor.isNativePlatform()) {
+        const isNativeWebView = Capacitor.isNativePlatform();
+        const isNativeBrowserCallback = searchParams.get("native") === "1" && !isNativeWebView;
+
+        if (isNativeWebView) {
           void Browser.close().catch(() => {});
         }
 
         const url = new URL(window.location.href);
+        const callbackError = url.searchParams.get("error_description") || url.searchParams.get("error");
+        if (callbackError) throw new Error(callbackError);
+
         const code = url.searchParams.get("code");
         const hashParams = new URLSearchParams(url.hash.replace(/^#/, ""));
-        const accessToken = hashParams.get("access_token");
-        const refreshToken = hashParams.get("refresh_token");
+        const accessToken = hashParams.get("access_token") || url.searchParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token") || url.searchParams.get("refresh_token");
+        let nativeSessionTokens: { access_token: string; refresh_token: string } | null = null;
 
         if (code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) throw error;
           if (!data.session) throw new Error("No active session after Google callback");
+          nativeSessionTokens = {
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          };
         } else if (accessToken && refreshToken) {
           const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
@@ -46,6 +59,7 @@ export default function AuthCallback() {
           });
           if (error) throw error;
           if (!data.session) throw new Error("No active session after callback");
+          nativeSessionTokens = { access_token: accessToken, refresh_token: refreshToken };
         } else {
           throw new Error("Missing authentication code");
         }
@@ -55,6 +69,13 @@ export default function AuthCallback() {
         if (sessionError) throw sessionError;
         if (!data.session) {
           throw new Error("No active session after callback");
+        }
+
+        if (isNativeBrowserCallback && nativeSessionTokens) {
+          const nativeParams = new URLSearchParams({ next });
+          const nativeHash = new URLSearchParams(nativeSessionTokens);
+          window.location.replace(`${NATIVE_CALLBACK_SCHEME}?${nativeParams.toString()}#${nativeHash.toString()}`);
+          return;
         }
 
         // Clean URL and route.

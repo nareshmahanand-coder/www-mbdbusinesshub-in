@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,10 +12,23 @@ import { Browser } from "@capacitor/browser";
 
 const getGoogleErrorMessage = (err: any) => {
   const rawMessage = String(err?.message || err || "");
+  if (rawMessage.toLowerCase().includes("invalid_client") || rawMessage.toLowerCase().includes("client secret")) {
+    return "Google sign-in settings are invalid on the backend. I have switched this app to the managed Google login flow.";
+  }
   if (rawMessage.includes("28444") || rawMessage.toLowerCase().includes("developer console")) {
     return "Google setup mismatch: Android package/SHA must be added in the same Google project as the Web Client ID used by this app.";
   }
   return rawMessage || "Google sign-in failed";
+};
+
+const createOAuthState = () => {
+  try {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
 };
 
 const sanitizeNext = (value: string | null): string => {
@@ -25,11 +39,19 @@ const sanitizeNext = (value: string | null): string => {
 };
 
 const getOAuthRedirectTo = (next: string) => {
-  const encodedNext = encodeURIComponent(next);
-  if (Capacitor.isNativePlatform()) {
-    return `com.merabharatdukaan.app://auth/callback?next=${encodedNext}`;
-  }
-  return `${window.location.origin}/auth/callback?next=${encodedNext}`;
+  const params = new URLSearchParams({ next });
+  if (Capacitor.isNativePlatform()) params.set("native", "1");
+  return `${window.location.origin}/auth/callback?${params.toString()}`;
+};
+
+const getNativeGoogleOAuthUrl = (next: string) => {
+  const params = new URLSearchParams({
+    provider: "google",
+    redirect_uri: getOAuthRedirectTo(next),
+    state: createOAuthState(),
+    prompt: "select_account",
+  });
+  return `${window.location.origin}/~oauth/initiate?${params.toString()}`;
 };
 
 export default function Login() {
@@ -56,18 +78,18 @@ export default function Login() {
     try {
       const isNative = Capacitor.isNativePlatform();
 
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: getOAuthRedirectTo(next),
-          skipBrowserRedirect: isNative,
-          queryParams: { prompt: "select_account" },
-        },
-      });
-      if (error) throw error;
-      if (isNative && data.url) {
-        await Browser.open({ url: data.url, presentationStyle: "fullscreen" });
+      if (isNative) {
+        await Browser.open({ url: getNativeGoogleOAuthUrl(next), presentationStyle: "fullscreen" });
+        return;
       }
+
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: getOAuthRedirectTo(next),
+        extraParams: { prompt: "select_account" },
+      });
+      if (result.error) throw result.error;
+      if (result.redirected) return;
+      navigate(next, { replace: true });
     } catch (err: any) {
       toast.error(getGoogleErrorMessage(err));
       setBusy(false);
