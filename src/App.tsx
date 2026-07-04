@@ -157,9 +157,11 @@ const NativeAuthDeepLinkHandler = () => {
       }
     };
 
-    window.addEventListener("mbd-native-auth-url", ((event: Event) => {
-      routeNativeUrl((event as CustomEvent<string>).detail);
-    }) as EventListener);
+    const routeNativeAuthEvent = (event: Event) => {
+      routeNativeUrl((event as CustomEvent<string>).detail || (event as Event & { url?: string }).url);
+    };
+
+    window.addEventListener("mbd-native-auth-url", routeNativeAuthEvent);
 
     let cleanup: (() => void) | undefined;
     void CapacitorApp.addListener("appUrlOpen", (event) => routeNativeUrl(event.url)).then((handle) => {
@@ -168,9 +170,7 @@ const NativeAuthDeepLinkHandler = () => {
     void CapacitorApp.getLaunchUrl().then((event) => routeNativeUrl(event?.url));
 
     return () => {
-      window.removeEventListener("mbd-native-auth-url", ((event: Event) => {
-        routeNativeUrl((event as CustomEvent<string>).detail);
-      }) as EventListener);
+      window.removeEventListener("mbd-native-auth-url", routeNativeAuthEvent);
       cleanup?.();
     };
   }, [navigate]);

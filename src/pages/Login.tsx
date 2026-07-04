@@ -10,8 +10,6 @@ import { toast } from "@/components/ui/sonner";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
 
-const NATIVE_CALLBACK_URL = "com.merabharatdukaan.app://auth/callback";
-
 const getGoogleErrorMessage = (err: any) => {
   const rawMessage = String(err?.message || err || "");
   if (rawMessage.toLowerCase().includes("invalid_client") || rawMessage.toLowerCase().includes("client secret")) {
@@ -42,7 +40,7 @@ const sanitizeNext = (value: string | null): string => {
 
 const getOAuthRedirectTo = (next: string, forceWebCallback = false) => {
   const params = new URLSearchParams({ next });
-  if (!forceWebCallback && Capacitor.isNativePlatform()) return `${NATIVE_CALLBACK_URL}?${params.toString()}`;
+  if (!forceWebCallback && Capacitor.isNativePlatform()) params.set("native", "1");
   return `${window.location.origin}/auth/callback?${params.toString()}`;
 };
 

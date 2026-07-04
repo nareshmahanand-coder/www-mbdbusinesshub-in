@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
 
+const NATIVE_CALLBACK_SCHEME = "com.merabharatdukaan.app://auth/callback";
+
 const sanitizeNext = (value: string | null): string => {
   if (!value) return "/dashboard";
   if (!value.startsWith("/")) return "/dashboard";
@@ -26,12 +28,20 @@ export default function AuthCallback() {
     (async () => {
       try {
         const isNativeWebView = Capacitor.isNativePlatform();
+        const isNativeBrowserCallback = searchParams.get("native") === "1" && !isNativeWebView;
 
         if (isNativeWebView) {
           void Browser.close().catch(() => {});
         }
 
         const url = new URL(window.location.href);
+        if (isNativeBrowserCallback) {
+          const nativeSearch = new URLSearchParams(url.search);
+          nativeSearch.delete("native");
+          window.location.replace(`${NATIVE_CALLBACK_SCHEME}?${nativeSearch.toString()}${url.hash}`);
+          return;
+        }
+
         const callbackError = url.searchParams.get("error_description") || url.searchParams.get("error");
         if (callbackError) throw new Error(callbackError);
 
