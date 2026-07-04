@@ -103,7 +103,6 @@ export default function Login() {
           options: {
             style: "bottom",
             filterByAuthorizedAccounts: false,
-            scopes: ["email", "profile"],
           },
         });
         const idToken: string | undefined =
