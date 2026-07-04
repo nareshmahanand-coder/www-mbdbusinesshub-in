@@ -15,7 +15,7 @@ let nativeGoogleInitialized = false;
 const getGoogleErrorMessage = (err: any) => {
   const rawMessage = String(err?.message || err || "");
   if (rawMessage.includes("28444") || rawMessage.toLowerCase().includes("developer console")) {
-    return "Google Sign-In setup mismatch: Android package/SHA is not linked to this Google Web Client ID.";
+    return "Google setup mismatch: Android package/SHA must be added in the same Google project as the Web Client ID used by this app.";
   }
   return rawMessage || "Google sign-in failed";
 };
