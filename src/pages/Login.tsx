@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 import { SocialLogin } from "@capgo/capacitor-social-login";
 
 let nativeGoogleClientIdPromise: Promise<string> | null = null;
@@ -93,7 +94,7 @@ export default function Login() {
     try {
       const isNative = Capacitor.isNativePlatform();
 
-      if (isNative) {
+      if (isNative && false) {
         // Native Google Sign-In via Android Credential Manager / iOS SDK.
         // Returns a Google ID token that Supabase can verify directly — no
         // external browser, no WebView redirect, no "Browser plugin" error.
@@ -126,7 +127,9 @@ export default function Login() {
         },
       });
       if (error) throw error;
-      void data;
+      if (isNative && data.url) {
+        await Browser.open({ url: data.url, presentationStyle: "fullscreen" });
+      }
     } catch (err: any) {
       toast.error(getGoogleErrorMessage(err));
       setBusy(false);
