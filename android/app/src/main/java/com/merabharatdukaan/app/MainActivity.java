@@ -20,6 +20,7 @@ import com.getcapacitor.BridgeActivity;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginHandle;
 import com.getcapacitor.WebViewListener;
+import org.json.JSONObject;
 import ee.forgr.capacitor.social.login.GoogleProvider;
 import ee.forgr.capacitor.social.login.ModifiedMainActivityForSocialLoginPlugin;
 import ee.forgr.capacitor.social.login.SocialLoginPlugin;
@@ -42,6 +43,31 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                 }
             });
         }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleNativeAuthIntent(intent);
+    }
+
+    private void handleNativeAuthIntent(Intent intent) {
+        if (intent == null || intent.getData() == null || bridge == null) return;
+
+        Uri uri = intent.getData();
+        if (!"com.merabharatdukaan.app".equals(uri.getScheme())
+            || !"auth".equals(uri.getHost())
+            || uri.getPath() == null
+            || !uri.getPath().startsWith("/callback")) {
+            return;
+        }
+
+        try {
+            JSONObject payload = new JSONObject();
+            payload.put("url", uri.toString());
+            bridge.triggerWindowJSEvent("mbd-native-auth-url", payload.toString());
+        } catch (Exception ignored) {}
     }
 
     @Override
