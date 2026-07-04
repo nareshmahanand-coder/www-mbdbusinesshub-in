@@ -7,10 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Capacitor } from "@capacitor/core";
-import { SocialLogin } from "@capgo/capacitor-social-login";
-
-let nativeGoogleClientIdPromise: Promise<string> | null = null;
-let nativeGoogleInitialized = false;
+import { Browser } from "@capacitor/browser";
 
 const getGoogleErrorMessage = (err: any) => {
   const rawMessage = String(err?.message || err || "");
@@ -35,34 +32,6 @@ const getOAuthRedirectTo = (next: string) => {
   return `${window.location.origin}/auth/callback?next=${encodedNext}`;
 };
 
-const getNativeGoogleClientId = async () => {
-  const envClientId = (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined)?.trim();
-  if (envClientId) return envClientId;
-
-  nativeGoogleClientIdPromise ??= supabase.functions
-    .invoke<{ clientId?: string }>("google-client-id")
-    .then(({ data, error }) => {
-      if (error) throw error;
-      const clientId = data?.clientId?.trim();
-      if (!clientId) throw new Error("Google sign-in is not configured yet.");
-      return clientId;
-    });
-
-  return nativeGoogleClientIdPromise;
-};
-
-const initializeNativeGoogle = async () => {
-  if (!Capacitor.isNativePlatform() || nativeGoogleInitialized) return;
-  const webClientId = await getNativeGoogleClientId();
-  await SocialLogin.initialize({
-    google: {
-      webClientId,
-      mode: "online",
-    },
-  });
-  nativeGoogleInitialized = true;
-};
-
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -82,51 +51,23 @@ export default function Login() {
     }
   }, [loading, user, next, navigate]);
 
-  // Initialize native Google Sign-In once when running inside the Android/iOS app.
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
-    initializeNativeGoogle().catch(() => {});
-  }, []);
-
   const handleGoogle = async () => {
     setBusy(true);
     try {
       const isNative = Capacitor.isNativePlatform();
 
-      if (isNative) {
-        // Native Google Sign-In via Android Credential Manager / iOS SDK.
-        // Returns a Google ID token that Supabase can verify directly — no
-        // external browser, no WebView redirect, no "Browser plugin" error.
-        await initializeNativeGoogle();
-        const res: any = await SocialLogin.login({
-          provider: "google",
-          options: {
-            style: "bottom",
-            filterByAuthorizedAccounts: false,
-          },
-        });
-        const idToken: string | undefined =
-          res?.result?.idToken || res?.result?.responseAccessToken || undefined;
-        if (!idToken) throw new Error("Google Sign-In returned no idToken");
-
-        const { error } = await supabase.auth.signInWithIdToken({
-          provider: "google",
-          token: idToken,
-        });
-        if (error) throw error;
-        return; // AuthProvider onAuthStateChange will route the user.
-      }
-
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: getOAuthRedirectTo(next),
-          skipBrowserRedirect: false,
+          skipBrowserRedirect: isNative,
           queryParams: { prompt: "select_account" },
         },
       });
       if (error) throw error;
-      void data;
+      if (isNative && data.url) {
+        await Browser.open({ url: data.url, presentationStyle: "fullscreen" });
+      }
     } catch (err: any) {
       toast.error(getGoogleErrorMessage(err));
       setBusy(false);

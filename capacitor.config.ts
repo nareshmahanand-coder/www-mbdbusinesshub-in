@@ -23,6 +23,7 @@ const config: CapacitorConfig = {
     initialFocus: true,
     includePlugins: [
       '@capacitor/app',
+      '@capacitor/browser',
       '@capacitor/preferences',
       '@capacitor/push-notifications',
       '@capgo/capacitor-social-login',
