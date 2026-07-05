@@ -8,17 +8,50 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Capacitor } from "@capacitor/core";
-import { Browser } from "@capacitor/browser";
+import { SocialLogin } from "@capgo/capacitor-social-login";
 
 const getGoogleErrorMessage = (err: any) => {
   const rawMessage = String(err?.message || err || "");
   if (rawMessage.toLowerCase().includes("invalid_client") || rawMessage.toLowerCase().includes("client secret")) {
-    return "Google sign-in settings are invalid on the backend. I have switched this app to the managed Google login flow.";
+    return "Google backend settings still have an invalid client secret. Android login now uses native Google token sign-in instead of that broken browser code path.";
   }
-  if (rawMessage.includes("28444") || rawMessage.toLowerCase().includes("developer console")) {
+  if (
+    rawMessage.includes("28444") ||
+    rawMessage.includes("10:") ||
+    rawMessage.includes("16:") ||
+    rawMessage.toLowerCase().includes("developer console")
+  ) {
     return "Google setup mismatch: Android package/SHA must be added in the same Google project as the Web Client ID used by this app.";
   }
   return rawMessage || "Google sign-in failed";
+};
+
+let nativeGoogleInitPromise: Promise<void> | null = null;
+
+const initializeNativeGoogleLogin = async () => {
+  if (nativeGoogleInitPromise) return nativeGoogleInitPromise;
+
+  nativeGoogleInitPromise = (async () => {
+    const { data, error } = await supabase.functions.invoke<{ clientId?: string }>("google-client-id");
+    if (error) throw error;
+
+    const webClientId = data?.clientId?.trim();
+    if (!webClientId) {
+      throw new Error("Google Web Client ID is missing in backend settings");
+    }
+
+    await SocialLogin.initialize({
+      google: {
+        webClientId,
+        mode: "online",
+      },
+    });
+  })().catch((error) => {
+    nativeGoogleInitPromise = null;
+    throw error;
+  });
+
+  return nativeGoogleInitPromise;
 };
 
 const sanitizeNext = (value: string | null): string => {
@@ -59,17 +92,35 @@ export default function Login() {
       const isNative = Capacitor.isNativePlatform();
 
       if (isNative) {
-        const { data, error } = await supabase.auth.signInWithOAuth({
+        await initializeNativeGoogleLogin();
+        const googleLogin = await SocialLogin.login({
           provider: "google",
           options: {
-            redirectTo: getOAuthRedirectTo(next),
-            queryParams: { prompt: "select_account" },
-            skipBrowserRedirect: true,
+            scopes: ["email", "profile"],
+            prompt: "select_account",
+            filterByAuthorizedAccounts: false,
+            autoSelectEnabled: false,
           },
         });
+
+        const googleResult = googleLogin.result;
+        if (googleResult.responseType !== "online" || !googleResult.idToken) {
+          throw new Error("Google did not return an ID token");
+        }
+
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: "google",
+          token: googleResult.idToken,
+          access_token: googleResult.accessToken?.token,
+        });
         if (error) throw error;
-        if (!data.url) throw new Error("Google sign-in URL could not be created");
-        await Browser.open({ url: data.url, presentationStyle: "fullscreen" });
+        if (!data.session) throw new Error("No active session after Google sign-in");
+
+        const { data: verifiedSession, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!verifiedSession.session) throw new Error("No active session after Google sign-in");
+
+        window.location.replace(next);
         return;
       }
 
