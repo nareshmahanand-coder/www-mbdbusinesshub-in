@@ -116,7 +116,11 @@ export default function Login() {
         if (error) throw error;
         if (!data.session) throw new Error("No active session after Google sign-in");
 
-        navigate(next, { replace: true });
+        const { data: verifiedSession, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        if (!verifiedSession.session) throw new Error("No active session after Google sign-in");
+
+        window.location.replace(next);
         return;
       }
 
