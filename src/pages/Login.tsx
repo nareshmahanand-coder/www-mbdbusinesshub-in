@@ -201,12 +201,20 @@ export default function Login() {
       }
 
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: getOAuthRedirectTo(next, true),
+        // Lovable managed OAuth uses a popup + web_message flow. The redirect_uri
+        // must be a same-origin public URL (window.location.origin) so the broker
+        // can post tokens back and the wrapper calls supabase.auth.setSession().
+        // Pointing this at /auth/callback breaks that flow and causes a login loop.
+        redirect_uri: window.location.origin,
         extraParams: { prompt: "select_account" },
       });
       if (result.error) throw result.error;
       if (result.redirected) return;
-      navigate(next, { replace: true });
+      // Wrapper already set the session; hard-replace so the app boots with it
+      // and ProtectedRoute doesn't briefly see an empty auth state.
+      const { data } = await supabase.auth.getSession();
+      const destination = getPostLoginDestinationForUser(data.session?.user ?? null, next, isSuperUser);
+      window.location.replace(destination);
     } catch (err: any) {
       const message = getGoogleErrorMessage(err);
       if (isNative && isNativeGoogleConfigError(err)) {
