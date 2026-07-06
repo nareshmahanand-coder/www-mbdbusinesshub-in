@@ -1,4 +1,4 @@
-package com.merabharatdukaan.app;
+package com.merabharatdukaan.app2;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -80,7 +80,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     private String toWebAuthCallbackUrl(Uri uri) {
         if (uri == null || uri.getPath() == null) return null;
 
-        boolean isCustomCallback = "com.merabharatdukaan.app".equals(uri.getScheme())
+        boolean isCustomCallback = "com.merabharatdukaan.app2".equals(uri.getScheme())
             && "auth".equals(uri.getHost())
             && uri.getPath().startsWith("/callback");
         boolean isHttpsCallback = "https".equals(uri.getScheme())
