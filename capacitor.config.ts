@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.merabharatdukaan.app',
+  appId: 'com.merabharatdukaan.app2',
   appName: 'Mera Bharat Dukaan',
   webDir: 'dist',
   server: {

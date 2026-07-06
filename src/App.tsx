@@ -139,7 +139,7 @@ const NativeAuthDeepLinkHandler = () => {
       try {
         const url = new URL(rawUrl);
         const isCustomAuthCallback =
-          url.protocol === "com.merabharatdukaan.app:" &&
+          url.protocol === "com.merabharatdukaan.app2:" &&
           url.host === "auth" &&
           url.pathname.startsWith("/callback");
         const isHttpsAuthCallback =

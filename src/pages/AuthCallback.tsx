@@ -7,7 +7,7 @@ import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 import { getPostLoginDestinationForUser, sanitizeAuthNextPath } from "@/lib/authRedirect";
 import type { Session } from "@supabase/supabase-js";
 
-const NATIVE_CALLBACK_SCHEME = "com.merabharatdukaan.app://auth/callback";
+const NATIVE_CALLBACK_SCHEME = "com.merabharatdukaan.app2://auth/callback";
 
 export default function AuthCallback() {
   const navigate = useNavigate();
