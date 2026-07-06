@@ -204,7 +204,7 @@ const BharatMitraChatbot = () => {
     const cleanText = cleanForSpeech(text);
     if (!cleanText) return;
 
-    // Browser TTS fallback (declared early so ElevenLabs catch can call it)
+    // Browser TTS via Web Speech API (window.speechSynthesis) — free, no server call.
     const speakBrowser = () => {
       const utterance = new SpeechSynthesisUtterance(cleanText);
       const voices = synth.getVoices();
@@ -245,48 +245,6 @@ const BharatMitraChatbot = () => {
         synth.speak(utterance);
       }
     };
-
-    // ===== Studio-quality ElevenLabs (Matilda) — Hindi + English (all users) =====
-    {
-      try {
-        synth.cancel();
-        if (elevenAudioRef.current) {
-          elevenAudioRef.current.pause();
-          elevenAudioRef.current = null;
-        }
-        setIsSpeaking(true);
-        if (msgId) setSpeakingMsgId(msgId);
-        supabase.functions
-          .invoke("elevenlabs-tts", { body: { text: cleanText, voice: "aria" } })
-          .then(({ data, error }) => {
-            if (error) throw error;
-            if (data?.fallback || !data?.audioContent) {
-              setIsSpeaking(false); setSpeakingMsgId(null);
-              speakBrowser();
-              return;
-            }
-            const audio = new Audio(`data:audio/mpeg;base64,${data.audioContent}`);
-            elevenAudioRef.current = audio;
-            audio.onended = () => {
-              setIsSpeaking(false); setSpeakingMsgId(null); elevenAudioRef.current = null;
-              if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
-            };
-            audio.onerror = () => {
-              setIsSpeaking(false); setSpeakingMsgId(null); elevenAudioRef.current = null;
-              if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
-            };
-            audio.play().catch(() => { setIsSpeaking(false); setSpeakingMsgId(null); });
-          })
-          .catch((e) => {
-            console.warn("ElevenLabs failed, falling back to browser TTS:", e);
-            setIsSpeaking(false); setSpeakingMsgId(null);
-            speakBrowser();
-          });
-        return;
-      } catch (e) {
-        console.warn("ElevenLabs invoke error:", e);
-      }
-    }
 
     speakBrowser();
   }, [isPremium]);
