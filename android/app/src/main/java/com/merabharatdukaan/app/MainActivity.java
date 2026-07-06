@@ -31,6 +31,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         super.load();
         createUrgentNotificationChannel();
         configureWebView();
+        handleNativeAuthIntent(getIntent());
         if (bridge != null) {
             bridge.addWebViewListener(new WebViewListener() {
                 @Override
