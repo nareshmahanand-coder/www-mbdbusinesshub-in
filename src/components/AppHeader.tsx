@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { LogIn, Menu, X, Globe } from "lucide-react";
+import { LogIn, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -10,7 +10,7 @@ import UserProfileMenu from "@/components/UserProfileMenu";
 const AppHeader = () => {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { lang, toggleLang, t } = useLanguage();
+  const { t } = useLanguage();
   const { user } = useAuth();
 
   const links = [
