@@ -8,10 +8,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Capacitor } from "@capacitor/core";
-import { Browser } from "@capacitor/browser";
+import { SocialLogin, type GoogleLoginResponseOnline } from "@capgo/capacitor-social-login";
 import { getPostLoginDestinationForUser, sanitizeAuthNextPath } from "@/lib/authRedirect";
+import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 
 const APP_ORIGIN = "https://shop.mbdbusinesshub.in";
+// Public Google Web Client ID used by the current managed Google sign-in flow.
+// Android native Google Sign-In must request an ID token for the same audience,
+// then the backend can create the app session without any redirect URI round-trip.
+const GOOGLE_WEB_CLIENT_ID =
+  (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined)?.trim() ||
+  "822103899326-1p22puug67ueab5u9p3mpi3edkvpr8od.apps.googleusercontent.com";
 
 const getGoogleErrorMessage = (err: any) => {
   const rawMessage = String(err?.message || err || "");
@@ -19,9 +26,17 @@ const getGoogleErrorMessage = (err: any) => {
     return "Google OAuth client settings are invalid. Please re-check the Google Client ID/Secret saved in backend auth settings.";
   }
   if (
+    rawMessage.toLowerCase().includes("developer_error") ||
+    rawMessage.includes("10:") ||
+    rawMessage.toLowerCase().includes("api_exception") ||
+    rawMessage.toLowerCase().includes("package name") ||
+    rawMessage.toLowerCase().includes("sha")
+  ) {
+    return "Android Google Sign-In setup is incomplete: add this app package and SHA-1/SHA-256 in Firebase/Google, then download the updated google-services.json.";
+  }
+  if (
     rawMessage.toLowerCase().includes("redirect_uri_mismatch") ||
     rawMessage.includes("28444") ||
-    rawMessage.includes("10:") ||
     rawMessage.includes("16:") ||
     rawMessage.toLowerCase().includes("developer console")
   ) {
@@ -35,22 +50,6 @@ const getOAuthRedirectTo = (next: string, forceWebCallback = false) => {
   if (!forceWebCallback && Capacitor.isNativePlatform()) params.set("native", "1");
   const origin = Capacitor.isNativePlatform() ? APP_ORIGIN : window.location.origin;
   return `${origin}/auth/callback?${params.toString()}`;
-};
-
-const createOAuthState = () => {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-};
-
-const getManagedGoogleOAuthUrl = (next: string) => {
-  const params = new URLSearchParams({
-    provider: "google",
-    redirect_uri: getOAuthRedirectTo(next),
-    state: createOAuthState(),
-    prompt: "select_account",
-  });
-  return `${APP_ORIGIN}/~oauth/initiate?${params.toString()}`;
 };
 
 export default function Login() {
@@ -105,14 +104,42 @@ export default function Login() {
       const isNative = Capacitor.isNativePlatform();
 
       if (isNative) {
-        // Android must use the managed OAuth broker, not the direct backend
-        // /authorize endpoint. The direct endpoint is currently failing with
-        // Google invalid_client, so no session reaches the WebView and the
-        // route guard sends the user back to /login.
-        await Browser.open({
-          url: getManagedGoogleOAuthUrl(next),
-          presentationStyle: "fullscreen",
+        // Native Android must not use the browser OAuth redirect flow here:
+        // the current Google client rejects the broker callback URL before the
+        // app receives a code/token, which causes the visible login loop.
+        // Use native Google Sign-In -> backend ID-token session instead.
+        await SocialLogin.initialize({
+          google: {
+            webClientId: GOOGLE_WEB_CLIENT_ID,
+            mode: "online",
+          },
         });
+
+        const nativeResult = await SocialLogin.login({
+          provider: "google",
+          options: {
+            scopes: ["profile", "email"],
+            forceRefreshToken: true,
+            filterByAuthorizedAccounts: false,
+            autoSelectEnabled: false,
+          },
+        });
+
+        const googleResult = nativeResult.result as GoogleLoginResponseOnline;
+        if (googleResult.responseType !== "online" || !googleResult.idToken) {
+          throw new Error("Google did not return an Android ID token");
+        }
+
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: "google",
+          token: googleResult.idToken,
+        });
+        if (error) throw error;
+        if (!data.session?.user) throw new Error("No active session after Google sign-in");
+
+        await persistNativeAuthSession(data.session);
+        const destination = getPostLoginDestinationForUser(data.session.user, next, isSuperUser);
+        window.location.replace(destination);
         return;
       }
 
