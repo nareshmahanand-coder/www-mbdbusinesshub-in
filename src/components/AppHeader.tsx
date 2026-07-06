@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { LogIn, Menu, X, Globe } from "lucide-react";
+import { LogIn, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -10,7 +10,7 @@ import UserProfileMenu from "@/components/UserProfileMenu";
 const AppHeader = () => {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { lang, toggleLang, t } = useLanguage();
+  const { t } = useLanguage();
   const { user } = useAuth();
 
   const links = [
@@ -84,19 +84,6 @@ const AppHeader = () => {
               ))}
             </nav>
 
-            {/* Language Toggle */}
-            <button
-              onClick={toggleLang}
-              className="ml-2 flex items-center gap-1.5 rounded-full border border-primary-foreground/20 bg-primary-foreground/10 px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary-foreground/20"
-              title="Switch Language"
-            >
-              <Globe className="h-3.5 w-3.5" />
-              <span>{lang === "en" ? "A/अ" : "अ/A"}</span>
-              <span className="hidden lg:inline">
-                {lang === "en" ? "हिन्दी" : "EN"}
-              </span>
-            </button>
-
             {user ? (
               <div className="ml-2">
                 <UserProfileMenu />
@@ -113,15 +100,6 @@ const AppHeader = () => {
 
           {/* Mobile */}
           <div className="flex items-center gap-2 md:hidden">
-            {/* Language Toggle Mobile */}
-            <button
-              onClick={toggleLang}
-              className="flex items-center gap-1 rounded-full border border-primary-foreground/20 bg-primary-foreground/10 px-2.5 py-1.5 text-[11px] font-semibold text-primary-foreground"
-            >
-              <Globe className="h-3.5 w-3.5" />
-              {lang === "en" ? "हिन्दी" : "EN"}
-            </button>
-
             {user ? (
               <UserProfileMenu />
             ) : (
