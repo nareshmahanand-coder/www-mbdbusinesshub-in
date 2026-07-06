@@ -26,6 +26,8 @@ import ee.forgr.capacitor.social.login.ModifiedMainActivityForSocialLoginPlugin;
 import ee.forgr.capacitor.social.login.SocialLoginPlugin;
 
 public class MainActivity extends BridgeActivity implements ModifiedMainActivityForSocialLoginPlugin {
+    private static final String APP_ORIGIN = "https://shop.mbdbusinesshub.in";
+
     @Override
     protected void load() {
         super.load();
@@ -57,18 +59,43 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         if (intent == null || intent.getData() == null || bridge == null) return;
 
         Uri uri = intent.getData();
-        if (!"com.merabharatdukaan.app".equals(uri.getScheme())
-            || !"auth".equals(uri.getHost())
-            || uri.getPath() == null
-            || !uri.getPath().startsWith("/callback")) {
+        String callbackUrl = toWebAuthCallbackUrl(uri);
+        if (callbackUrl == null) {
             return;
         }
 
         try {
             JSONObject payload = new JSONObject();
-            payload.put("url", uri.toString());
+            payload.put("url", callbackUrl);
             bridge.triggerWindowJSEvent("mbd-native-auth-url", payload.toString());
         } catch (Exception ignored) {}
+
+        try {
+            if (bridge.getWebView() != null) {
+                bridge.getWebView().post(() -> bridge.getWebView().loadUrl(callbackUrl));
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private String toWebAuthCallbackUrl(Uri uri) {
+        if (uri == null || uri.getPath() == null) return null;
+
+        boolean isCustomCallback = "com.merabharatdukaan.app".equals(uri.getScheme())
+            && "auth".equals(uri.getHost())
+            && uri.getPath().startsWith("/callback");
+        boolean isHttpsCallback = "https".equals(uri.getScheme())
+            && "shop.mbdbusinesshub.in".equals(uri.getHost())
+            && uri.getPath().startsWith("/auth/callback");
+
+        if (isHttpsCallback) return uri.toString();
+        if (!isCustomCallback) return null;
+
+        StringBuilder callback = new StringBuilder(APP_ORIGIN).append("/auth/callback");
+        String query = uri.getEncodedQuery();
+        String fragment = uri.getEncodedFragment();
+        if (query != null && !query.isEmpty()) callback.append('?').append(query);
+        if (fragment != null && !fragment.isEmpty()) callback.append('#').append(fragment);
+        return callback.toString();
     }
 
     @Override

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
+import { getPostLoginDestinationForUser, sanitizeAuthNextPath } from "@/lib/authRedirect";
 
 const getGoogleErrorMessage = (err: any) => {
   const rawMessage = String(err?.message || err || "");
@@ -26,13 +27,6 @@ const getGoogleErrorMessage = (err: any) => {
   return rawMessage || "Google sign-in failed";
 };
 
-const sanitizeNext = (value: string | null): string => {
-  if (!value) return "/dashboard";
-  if (!value.startsWith("/")) return "/dashboard";
-  if (value.startsWith("/login") || value.startsWith("/auth")) return "/dashboard";
-  return value;
-};
-
 const getOAuthRedirectTo = (next: string, forceWebCallback = false) => {
   const params = new URLSearchParams({ next });
   if (!forceWebCallback && Capacitor.isNativePlatform()) params.set("native", "1");
@@ -42,8 +36,8 @@ const getOAuthRedirectTo = (next: string, forceWebCallback = false) => {
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, loading } = useAuth();
-  const next = sanitizeNext(searchParams.get("next"));
+  const { user, loading, isSuperUser } = useAuth();
+  const next = sanitizeAuthNextPath(searchParams.get("next"));
 
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
@@ -54,13 +48,14 @@ export default function Login() {
   // If already authenticated, leave the login page.
   useEffect(() => {
     if (!loading && user) {
+      const destination = getPostLoginDestinationForUser(user, next, isSuperUser);
       if (Capacitor.isNativePlatform()) {
-        window.location.replace(next);
+        window.location.replace(destination);
       } else {
-        navigate(next, { replace: true });
+        navigate(destination, { replace: true });
       }
     }
-  }, [loading, user, next, navigate]);
+  }, [loading, user, next, navigate, isSuperUser]);
 
   // Android WebView can return to /login before React auth context receives the
   // OAuth SIGNED_IN event. If a valid session is already stored, leave login
@@ -71,17 +66,18 @@ export default function Login() {
 
     void supabase.auth.getSession().then(({ data }) => {
       if (cancelled || !data.session) return;
+      const destination = getPostLoginDestinationForUser(data.session.user, next, isSuperUser);
       if (Capacitor.isNativePlatform()) {
-        window.location.replace(next);
+        window.location.replace(destination);
       } else {
-        navigate(next, { replace: true });
+        navigate(destination, { replace: true });
       }
     });
 
     return () => {
       cancelled = true;
     };
-  }, [loading, user, next, navigate]);
+  }, [loading, user, next, navigate, isSuperUser]);
 
   const handleGoogle = async () => {
     setBusy(true);
