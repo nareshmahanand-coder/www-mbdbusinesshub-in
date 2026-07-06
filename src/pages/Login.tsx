@@ -11,18 +11,21 @@ import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
 import { getPostLoginDestinationForUser, sanitizeAuthNextPath } from "@/lib/authRedirect";
 
+const APP_ORIGIN = "https://shop.mbdbusinesshub.in";
+
 const getGoogleErrorMessage = (err: any) => {
   const rawMessage = String(err?.message || err || "");
   if (rawMessage.toLowerCase().includes("invalid_client") || rawMessage.toLowerCase().includes("client secret")) {
     return "Google OAuth client settings are invalid. Please re-check the Google Client ID/Secret saved in backend auth settings.";
   }
   if (
+    rawMessage.toLowerCase().includes("redirect_uri_mismatch") ||
     rawMessage.includes("28444") ||
     rawMessage.includes("10:") ||
     rawMessage.includes("16:") ||
     rawMessage.toLowerCase().includes("developer console")
   ) {
-    return "Google setup mismatch: Android package/SHA must be added in the same Google project as the Web Client ID used by this app.";
+    return "Google redirect mismatch: add this exact callback in Google OAuth Web Client: https://shop.mbdbusinesshub.in/~oauth/callback";
   }
   return rawMessage || "Google sign-in failed";
 };
@@ -30,7 +33,24 @@ const getGoogleErrorMessage = (err: any) => {
 const getOAuthRedirectTo = (next: string, forceWebCallback = false) => {
   const params = new URLSearchParams({ next });
   if (!forceWebCallback && Capacitor.isNativePlatform()) params.set("native", "1");
-  return `${window.location.origin}/auth/callback?${params.toString()}`;
+  const origin = Capacitor.isNativePlatform() ? APP_ORIGIN : window.location.origin;
+  return `${origin}/auth/callback?${params.toString()}`;
+};
+
+const createOAuthState = () => {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+};
+
+const getManagedGoogleOAuthUrl = (next: string) => {
+  const params = new URLSearchParams({
+    provider: "google",
+    redirect_uri: getOAuthRedirectTo(next),
+    state: createOAuthState(),
+    prompt: "select_account",
+  });
+  return `${APP_ORIGIN}/~oauth/initiate?${params.toString()}`;
 };
 
 export default function Login() {
@@ -85,24 +105,12 @@ export default function Login() {
       const isNative = Capacitor.isNativePlatform();
 
       if (isNative) {
-        // Native Android must use the backend OAuth authorize URL directly.
-        // The Lovable broker rewrites Google's redirect_uri to
-        // https://shop.mbdbusinesshub.in/~oauth/callback, which is not allowed
-        // in the current Google client and causes 400 redirect_uri_mismatch.
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: getOAuthRedirectTo(next),
-            skipBrowserRedirect: true,
-            queryParams: { prompt: "select_account" },
-          },
-        });
-
-        if (error) throw error;
-        if (!data.url) throw new Error("Google sign-in URL was not created");
-
+        // Android must use the managed OAuth broker, not the direct backend
+        // /authorize endpoint. The direct endpoint is currently failing with
+        // Google invalid_client, so no session reaches the WebView and the
+        // route guard sends the user back to /login.
         await Browser.open({
-          url: data.url,
+          url: getManagedGoogleOAuthUrl(next),
           presentationStyle: "fullscreen",
         });
         return;
