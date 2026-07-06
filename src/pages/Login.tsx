@@ -54,8 +54,33 @@ export default function Login() {
   // If already authenticated, leave the login page.
   useEffect(() => {
     if (!loading && user) {
-      navigate(next, { replace: true });
+      if (Capacitor.isNativePlatform()) {
+        window.location.replace(next);
+      } else {
+        navigate(next, { replace: true });
+      }
     }
+  }, [loading, user, next, navigate]);
+
+  // Android WebView can return to /login before React auth context receives the
+  // OAuth SIGNED_IN event. If a valid session is already stored, leave login
+  // immediately instead of showing a loop.
+  useEffect(() => {
+    if (loading || user) return;
+    let cancelled = false;
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (cancelled || !data.session) return;
+      if (Capacitor.isNativePlatform()) {
+        window.location.replace(next);
+      } else {
+        navigate(next, { replace: true });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [loading, user, next, navigate]);
 
   const handleGoogle = async () => {

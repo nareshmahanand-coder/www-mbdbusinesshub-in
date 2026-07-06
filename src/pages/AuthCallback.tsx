@@ -3,6 +3,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
+import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
+import type { Session } from "@supabase/supabase-js";
 
 const NATIVE_CALLBACK_SCHEME = "com.merabharatdukaan.app://auth/callback";
 
@@ -49,11 +51,13 @@ export default function AuthCallback() {
         const hashParams = new URLSearchParams(url.hash.replace(/^#/, ""));
         const accessToken = hashParams.get("access_token") || url.searchParams.get("access_token");
         const refreshToken = hashParams.get("refresh_token") || url.searchParams.get("refresh_token");
+        let activeSession: Session | null = null;
 
         if (code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) throw error;
           if (!data.session) throw new Error("No active session after Google callback");
+          activeSession = data.session;
         } else if (accessToken && refreshToken) {
           const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
@@ -61,20 +65,20 @@ export default function AuthCallback() {
           });
           if (error) throw error;
           if (!data.session) throw new Error("No active session after callback");
+          activeSession = data.session;
         } else {
           throw new Error("Missing authentication code");
         }
 
-        // Confirm a session exists before navigating away.
-        const { data, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        if (!data.session) {
-          throw new Error("No active session after callback");
+        if (activeSession) {
+          await persistNativeAuthSession(activeSession);
+          sessionStorage.setItem("mbd-auth-callback-ok", String(Date.now()));
         }
 
-        // Clean URL and route.
-        window.history.replaceState(null, "", window.location.origin + next);
-        navigate(next, { replace: true });
+        // Hard replace after OAuth so the app boots with the freshly saved session.
+        // This prevents the protected route guard from seeing a stale empty auth state
+        // and sending the user back to /login in the Android WebView.
+        window.location.replace(next);
       } catch (err: any) {
         setError(err?.message || "Authentication failed");
         setTimeout(() => navigate("/login", { replace: true }), 2000);
