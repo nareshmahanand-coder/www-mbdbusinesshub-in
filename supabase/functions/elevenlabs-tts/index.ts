@@ -68,41 +68,68 @@ serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get("ELEVENLABS_API_KEY");
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: "ELEVENLABS_API_KEY not configured" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const normalizedText = normalizeNumbersForHindi(text);
+
+    // Primary: Lovable AI Gateway TTS (openai/gpt-4o-mini-tts) — works on all
+    // plans, no extra provider key needed. Returns mp3 bytes we base64-encode
+    // so the client can play via `data:audio/mpeg;base64,...` (same shape as
+    // before, so no client changes required).
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+    const gatewayVoice = (() => {
+      const v = String(voice ?? "").toLowerCase();
+      // Map our historical voice names to gpt-4o-mini-tts voices.
+      if (["alloy","ash","ballad","coral","echo","fable","onyx","nova","sage","shimmer","verse"].includes(v)) return v;
+      if (v === "matilda" || v === "sarah" || v === "jessica") return "shimmer";
+      return "alloy"; // aria & default
+    })();
+
+    let r: Response | null = null;
+    if (lovableKey) {
+      r = await fetch("https://ai.gateway.lovable.dev/v1/audio/speech", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovableKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-4o-mini-tts",
+          input: normalizedText,
+          voice: gatewayVoice,
+          response_format: "mp3",
+          stream_format: "audio",
+        }),
       });
     }
 
-    const voiceId = VOICE_MAP[voice.toLowerCase()] ?? VOICE_MAP.aria;
-    const normalizedText = normalizeNumbersForHindi(text);
-
-    const r = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
-      {
-        method: "POST",
-        headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: normalizedText,
-          model_id: "eleven_multilingual_v2", // best for Hindi + English
-          voice_settings: {
-            stability: 0.55,
-            similarity_boost: 0.85,
-            style: 0.35,
-            use_speaker_boost: true,
-            speed: 1.0,
+    // Fallback: ElevenLabs (only works on paid plan; kept for future).
+    if (!r || !r.ok) {
+      const elKey = Deno.env.get("ELEVENLABS_API_KEY");
+      if (elKey && (!r || r.status !== 402)) {
+        const voiceId = VOICE_MAP[String(voice).toLowerCase()] ?? VOICE_MAP.aria;
+        const el = await fetch(
+          `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
+          {
+            method: "POST",
+            headers: { "xi-api-key": elKey, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              text: normalizedText,
+              model_id: "eleven_multilingual_v2",
+              voice_settings: { stability: 0.55, similarity_boost: 0.85, style: 0.35, use_speaker_boost: true, speed: 1.0 },
+            }),
           },
-        }),
+        );
+        if (el.ok) r = el;
+        else if (!r) r = el;
       }
-    );
+    }
 
-    if (!r.ok) {
+    if (!r || !r.ok) {
+      const status = r?.status ?? 500;
       const err = await r.text();
-      console.error("ElevenLabs TTS error:", r.status, err);
+      console.error("TTS error:", status, err);
       let parsed: any = {};
       try { parsed = JSON.parse(err); } catch {}
-      const isPaymentRequired = r.status === 402 || parsed?.detail?.code === "paid_plan_required";
+      const isPaymentRequired = status === 402 || parsed?.detail?.code === "paid_plan_required";
       return new Response(
         JSON.stringify({
           error: isPaymentRequired ? "PAYMENT_REQUIRED" : "SERVICE_UNAVAILABLE",
