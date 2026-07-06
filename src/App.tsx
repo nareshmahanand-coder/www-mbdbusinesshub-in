@@ -159,7 +159,16 @@ const NativeAuthDeepLinkHandler = () => {
 
     const routeNativeAuthEvent = (event: Event) => {
       const detail = (event as CustomEvent<string | { url?: string }>).detail;
-      routeNativeUrl(typeof detail === "string" ? detail : detail?.url || (event as Event & { url?: string }).url);
+      if (typeof detail === "string") {
+        try {
+          const parsed = JSON.parse(detail) as { url?: string };
+          routeNativeUrl(parsed.url || detail);
+        } catch {
+          routeNativeUrl(detail);
+        }
+        return;
+      }
+      routeNativeUrl(detail?.url || (event as Event & { url?: string }).url);
     };
 
     window.addEventListener("mbd-native-auth-url", routeNativeAuthEvent);
