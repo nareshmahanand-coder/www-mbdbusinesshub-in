@@ -16,9 +16,63 @@ const APP_ORIGIN = "https://shop.mbdbusinesshub.in";
 // Public Google Web Client ID used by the current managed Google sign-in flow.
 // Android native Google Sign-In must request an ID token for the same audience,
 // then the backend can create the app session without any redirect URI round-trip.
-const GOOGLE_WEB_CLIENT_ID =
+const GOOGLE_WEB_CLIENT_ID_FALLBACK =
   (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined)?.trim() ||
   "822103899326-1p22puug67ueab5u9p3mpi3edkvpr8od.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID_CACHE_KEY = "mbd-google-web-client-id";
+
+const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
+  new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error("Google Client ID request timed out")), ms);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+
+const getGoogleWebClientId = async () => {
+  try {
+    const cached = localStorage.getItem(GOOGLE_CLIENT_ID_CACHE_KEY)?.trim();
+    if (cached?.endsWith(".apps.googleusercontent.com")) return cached;
+  } catch {}
+
+  try {
+    const { data, error } = await withTimeout(
+      supabase.functions.invoke<{ clientId?: string }>("google-client-id"),
+      3000,
+    );
+    if (error) throw error;
+    const clientId = data?.clientId?.trim();
+    if (clientId?.endsWith(".apps.googleusercontent.com")) {
+      try { localStorage.setItem(GOOGLE_CLIENT_ID_CACHE_KEY, clientId); } catch {}
+      return clientId;
+    }
+  } catch (err) {
+    console.warn("[google-auth] using bundled Google Web Client ID fallback", err);
+  }
+
+  return GOOGLE_WEB_CLIENT_ID_FALLBACK;
+};
+
+const isNativeGoogleConfigError = (err: any) => {
+  const raw = String(err?.message || err || "").toLowerCase();
+  return (
+    raw.includes("developer_error") ||
+    raw.includes("api_exception") ||
+    raw.includes("10:") ||
+    raw.includes("16:") ||
+    raw.includes("package name") ||
+    raw.includes("sha") ||
+    raw.includes("cannot find provider") ||
+    raw.includes("not initialized")
+  );
+};
 
 const getGoogleErrorMessage = (err: any) => {
   const rawMessage = String(err?.message || err || "");
@@ -100,17 +154,19 @@ export default function Login() {
 
   const handleGoogle = async () => {
     setBusy(true);
+    const isNative = Capacitor.isNativePlatform();
     try {
-      const isNative = Capacitor.isNativePlatform();
-
       if (isNative) {
         // Native Android must not use the browser OAuth redirect flow here:
         // the current Google client rejects the broker callback URL before the
         // app receives a code/token, which causes the visible login loop.
-        // Use native Google Sign-In -> backend ID-token session instead.
+        // Use native Google Sign-In -> backend ID-token session instead, and
+        // fail visibly if Firebase/package/SHA config is missing. Do not fall
+        // back to web OAuth on Android.
+        const googleWebClientId = await getGoogleWebClientId();
         await SocialLogin.initialize({
           google: {
-            webClientId: GOOGLE_WEB_CLIENT_ID,
+            webClientId: googleWebClientId,
             mode: "online",
           },
         });
@@ -122,6 +178,7 @@ export default function Login() {
             forceRefreshToken: true,
             filterByAuthorizedAccounts: false,
             autoSelectEnabled: false,
+            style: "standard",
           },
         });
 
@@ -151,7 +208,12 @@ export default function Login() {
       if (result.redirected) return;
       navigate(next, { replace: true });
     } catch (err: any) {
-      toast.error(getGoogleErrorMessage(err));
+      const message = getGoogleErrorMessage(err);
+      if (isNative && isNativeGoogleConfigError(err)) {
+        sessionStorage.setItem("mbd-native-google-config-error", String(Date.now()));
+        console.error("[google-auth] Native Android Google Sign-In configuration failed", err);
+      }
+      toast.error(message);
       setBusy(false);
     }
   };
