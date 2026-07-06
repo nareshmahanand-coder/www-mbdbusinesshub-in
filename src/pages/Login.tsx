@@ -33,26 +33,6 @@ const getOAuthRedirectTo = (next: string, forceWebCallback = false) => {
   return `${window.location.origin}/auth/callback?${params.toString()}`;
 };
 
-const createOAuthState = () => {
-  try {
-    const bytes = new Uint8Array(16);
-    crypto.getRandomValues(bytes);
-    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-  } catch {
-    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  }
-};
-
-const getLovableManagedOAuthUrl = (next: string) => {
-  const params = new URLSearchParams({
-    provider: "google",
-    redirect_uri: getOAuthRedirectTo(next),
-    state: createOAuthState(),
-    prompt: "select_account",
-  });
-  return `${window.location.origin}/~oauth/initiate?${params.toString()}`;
-};
-
 export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -105,8 +85,24 @@ export default function Login() {
       const isNative = Capacitor.isNativePlatform();
 
       if (isNative) {
+        // Native Android must use the backend OAuth authorize URL directly.
+        // The Lovable broker rewrites Google's redirect_uri to
+        // https://shop.mbdbusinesshub.in/~oauth/callback, which is not allowed
+        // in the current Google client and causes 400 redirect_uri_mismatch.
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: getOAuthRedirectTo(next),
+            skipBrowserRedirect: true,
+            queryParams: { prompt: "select_account" },
+          },
+        });
+
+        if (error) throw error;
+        if (!data.url) throw new Error("Google sign-in URL was not created");
+
         await Browser.open({
-          url: getLovableManagedOAuthUrl(next),
+          url: data.url,
           presentationStyle: "fullscreen",
         });
         return;
