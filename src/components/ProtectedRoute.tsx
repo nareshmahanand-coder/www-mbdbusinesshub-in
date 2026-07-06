@@ -3,6 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useKycStatus } from "@/hooks/useKycStatus";
 import { useBharatGauravMembership } from "@/hooks/useBharatGauravMembership";
+import { requiresPostLoginOnboarding } from "@/lib/authRedirect";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -39,6 +40,16 @@ export default function ProtectedRoute({
 
   // Admins / super-users bypass onboarding entirely.
   if (isSuperUser) {
+    return <>{children}</>;
+  }
+
+  // Existing users are allowed straight into the app. Only accounts created
+  // after the onboarding launch date must complete KYC/membership.
+  const onboardingRequired = requiresPostLoginOnboarding(user, isSuperUser);
+  if (!onboardingRequired) {
+    if (allowDuringOnboarding && ["/ekyc", "/membership"].includes(location.pathname)) {
+      return <Navigate to="/dashboard" replace />;
+    }
     return <>{children}</>;
   }
 

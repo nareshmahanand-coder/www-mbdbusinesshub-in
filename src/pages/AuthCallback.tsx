@@ -4,16 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
 import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
+import { getPostLoginDestinationForUser, sanitizeAuthNextPath } from "@/lib/authRedirect";
 import type { Session } from "@supabase/supabase-js";
 
 const NATIVE_CALLBACK_SCHEME = "com.merabharatdukaan.app://auth/callback";
-
-const sanitizeNext = (value: string | null): string => {
-  if (!value) return "/dashboard";
-  if (!value.startsWith("/")) return "/dashboard";
-  if (value.startsWith("/login") || value.startsWith("/auth")) return "/dashboard";
-  return value;
-};
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -25,7 +19,7 @@ export default function AuthCallback() {
     if (ranRef.current) return;
     ranRef.current = true;
 
-    const next = sanitizeNext(searchParams.get("next"));
+    const next = sanitizeAuthNextPath(searchParams.get("next"));
 
     (async () => {
       try {
@@ -53,6 +47,13 @@ export default function AuthCallback() {
         const refreshToken = hashParams.get("refresh_token") || url.searchParams.get("refresh_token");
         let activeSession: Session | null = null;
 
+        const { data: existingAuth } = await supabase.auth.getSession();
+        if (!code && !accessToken && !refreshToken && existingAuth.session?.user) {
+          const destination = getPostLoginDestinationForUser(existingAuth.session.user, next);
+          window.location.replace(destination);
+          return;
+        }
+
         if (code) {
           const { data, error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) throw error;
@@ -75,11 +76,22 @@ export default function AuthCallback() {
           sessionStorage.setItem("mbd-auth-callback-ok", String(Date.now()));
         }
 
+        const { data: verifiedAuth } = await supabase.auth.getSession();
+        const redirectSession = verifiedAuth.session ?? activeSession;
+        if (!redirectSession?.user) throw new Error("No active session after Google callback");
+
         // Hard replace after OAuth so the app boots with the freshly saved session.
         // This prevents the protected route guard from seeing a stale empty auth state
         // and sending the user back to /login in the Android WebView.
-        window.location.replace(next);
+        const destination = getPostLoginDestinationForUser(redirectSession.user, next);
+        window.location.replace(destination);
       } catch (err: any) {
+        const { data: recoveredAuth } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
+        if (recoveredAuth.session?.user) {
+          const destination = getPostLoginDestinationForUser(recoveredAuth.session.user, next);
+          window.location.replace(destination);
+          return;
+        }
         setError(err?.message || "Authentication failed");
         setTimeout(() => navigate("/login", { replace: true }), 2000);
       }
