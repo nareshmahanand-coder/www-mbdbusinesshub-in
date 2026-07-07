@@ -28,6 +28,31 @@ function getNativePlugin() {
   return nativePluginPromise;
 }
 
+const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+function nativeLanguageCandidates(lang: string): string[] {
+  const requested = (lang || "hi-IN").trim();
+  const base = requested.split("-")[0];
+  return Array.from(new Set([
+    requested,
+    base,
+    "hi-IN",
+    "hi",
+    "en-IN",
+    "en-US",
+  ].filter(Boolean)));
+}
+
+function isInitOrEngineError(error: unknown): boolean {
+  const message = String((error as { message?: string })?.message ?? error).toLowerCase();
+  return message.includes("not yet initialized") || message.includes("not available");
+}
+
+function isUnsupportedLanguageError(error: unknown): boolean {
+  const message = String((error as { message?: string })?.message ?? error).toLowerCase();
+  return message.includes("language") && message.includes("not supported");
+}
+
 export function isNativeTtsPlatform(): boolean {
   try {
     return Capacitor.isNativePlatform();
@@ -54,21 +79,42 @@ export async function speakUnified(opts: SpeakOptions): Promise<void> {
   if (isNativeTtsPlatform()) {
     const tts = await getNativePlugin();
     if (!tts) { onError?.(); return; }
-    try { await tts.stop(); } catch {}
-    try {
+
+    const nativePayload = {
+      text,
+      rate: Math.min(2, Math.max(0.1, rate)),
+      pitch: Math.min(2, Math.max(0, pitch)),
+      volume: Math.min(1, Math.max(0, volume)),
+      category: "playback",
+      queueStrategy: 0,
+    };
+
+    let started = false;
+    const markStarted = () => {
+      if (started) return;
+      started = true;
       onStart?.();
-      await tts.speak({
-        text,
-        lang,
-        rate: Math.min(2, Math.max(0.1, rate)),
-        pitch: Math.min(2, Math.max(0, pitch)),
-        volume: Math.min(1, Math.max(0, volume)),
-        category: "playback",
-      });
-      onEnd?.();
-    } catch {
-      onError?.();
+    };
+
+    for (const candidateLang of nativeLanguageCandidates(lang)) {
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        if (attempt > 0) await wait(300);
+        try { await tts.stop(); } catch {}
+        try {
+          markStarted();
+          await tts.speak({ ...nativePayload, lang: candidateLang });
+          onEnd?.();
+          return;
+        } catch (error) {
+          if (isInitOrEngineError(error)) continue;
+          if (isUnsupportedLanguageError(error)) break;
+          onError?.();
+          return;
+        }
+      }
     }
+
+    onError?.();
     return;
   }
 
