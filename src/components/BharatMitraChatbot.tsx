@@ -233,7 +233,7 @@ const BharatMitraChatbot = () => {
 
     // If AI is currently speaking, mic tap should INTERRUPT and start listening immediately.
     if (isSpeaking) {
-      try { window.speechSynthesis?.cancel(); } catch {}
+      try { void cancelSpeech(); } catch {}
       try { elevenAudioRef.current?.pause(); } catch {}
       elevenAudioRef.current = null;
       setIsSpeaking(false);
@@ -823,7 +823,7 @@ const BharatMitraChatbot = () => {
           >
             {isMaximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </button>
-          <button onClick={() => { setOpen(false); setActiveTab(null); window.speechSynthesis?.cancel(); setIsListening(false); recognitionRef.current?.stop(); }} className="text-primary-foreground/70 hover:text-primary-foreground">
+          <button onClick={() => { setOpen(false); setActiveTab(null); void cancelSpeech(); setIsListening(false); recognitionRef.current?.stop(); }} className="text-primary-foreground/70 hover:text-primary-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
