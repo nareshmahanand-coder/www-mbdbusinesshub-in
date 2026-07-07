@@ -27,6 +27,7 @@ const config: CapacitorConfig = {
       '@capacitor/preferences',
       '@capacitor/push-notifications',
       '@capgo/capacitor-social-login',
+      '@capacitor-community/text-to-speech',
     ],
     appendUserAgent: 'MeraBharatDukaanApp',
   },
