@@ -30,6 +30,25 @@ function getNativePlugin() {
 
 const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
+function hasNativeTextToSpeechBridge(): boolean {
+  try {
+    const cap = (globalThis as any)?.Capacitor ?? Capacitor;
+    const pluginHeaders = cap?.PluginHeaders;
+    const hasPluginHeader = Array.isArray(pluginHeaders)
+      && pluginHeaders.some((header: { name?: string }) => header?.name === "TextToSpeech");
+
+    return Boolean(
+      cap?.isNativePlatform?.()
+      || cap?.getPlatform?.() === "android"
+      || cap?.getPlatform?.() === "ios"
+      || cap?.isPluginAvailable?.("TextToSpeech")
+      || (hasPluginHeader && typeof cap?.nativePromise === "function")
+    );
+  } catch {
+    return false;
+  }
+}
+
 function nativeLanguageCandidates(lang: string): string[] {
   const requested = (lang || "hi-IN").trim();
   const base = requested.split("-")[0];
@@ -54,11 +73,7 @@ function isUnsupportedLanguageError(error: unknown): boolean {
 }
 
 export function isNativeTtsPlatform(): boolean {
-  try {
-    return Capacitor.isNativePlatform();
-  } catch {
-    return false;
-  }
+  return hasNativeTextToSpeechBridge();
 }
 
 export async function cancelSpeech(): Promise<void> {
@@ -97,6 +112,14 @@ export async function speakUnified(opts: SpeakOptions): Promise<void> {
     };
 
     for (const candidateLang of nativeLanguageCandidates(lang)) {
+      try {
+        const support = await tts.isLanguageSupported?.({ lang: candidateLang });
+        if (support && support.supported === false) continue;
+      } catch {
+        // Some Android engines throw during early boot; the speak retry below
+        // is the authoritative check, so keep going.
+      }
+
       for (let attempt = 0; attempt < 5; attempt += 1) {
         if (attempt > 0) await wait(300);
         try { await tts.stop(); } catch {}
@@ -106,6 +129,13 @@ export async function speakUnified(opts: SpeakOptions): Promise<void> {
           onEnd?.();
           return;
         } catch (error) {
+          console.warn("Bharat Mitra native TTS failed", {
+            platform: (() => { try { return Capacitor.getPlatform(); } catch { return "unknown"; } })(),
+            pluginAvailable: (() => { try { return Capacitor.isPluginAvailable("TextToSpeech"); } catch { return false; } })(),
+            lang: candidateLang,
+            attempt: attempt + 1,
+            message: String((error as { message?: string })?.message ?? error),
+          });
           if (isInitOrEngineError(error)) continue;
           if (isUnsupportedLanguageError(error)) break;
           onError?.();
@@ -114,6 +144,7 @@ export async function speakUnified(opts: SpeakOptions): Promise<void> {
       }
     }
 
+    try { await tts.openInstall?.(); } catch {}
     onError?.();
     return;
   }
