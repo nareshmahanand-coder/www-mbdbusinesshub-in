@@ -121,7 +121,6 @@ const BharatMitraChatbot = () => {
   const recognitionRef = useRef<any>(null);
   const wakeRecogRef = useRef<any>(null);
   const wakeShouldRunRef = useRef<boolean>(false);
-  const elevenAudioRef = useRef<HTMLAudioElement | null>(null);
   const sendVoiceRef = useRef<((text: string) => void) | null>(null);
   const startLiveListenRef = useRef<(() => void) | null>(null);
 
@@ -234,8 +233,6 @@ const BharatMitraChatbot = () => {
     // If AI is currently speaking, mic tap should INTERRUPT and start listening immediately.
     if (isSpeaking) {
       try { void cancelSpeech(); } catch {}
-      try { elevenAudioRef.current?.pause(); } catch {}
-      elevenAudioRef.current = null;
       setIsSpeaking(false);
       setSpeakingMsgId(null);
     }
