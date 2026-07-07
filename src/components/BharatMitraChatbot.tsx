@@ -165,8 +165,8 @@ const BharatMitraChatbot = () => {
 
   // TTS — speak a specific message in a given language
   const speakText = useCallback((text: string, msgId?: string, langCode?: string) => {
-    if (!("speechSynthesis" in window)) return;
-    const synth = window.speechSynthesis;
+    const hasWebSpeech = typeof window !== "undefined" && "speechSynthesis" in window;
+    if (!isNativeTtsPlatform() && !hasWebSpeech) return;
     // Strip markdown/special characters so TTS reads only the actual words.
     const cleanForSpeech = (raw: string): string => {
       let t = raw;
@@ -205,49 +205,22 @@ const BharatMitraChatbot = () => {
     const cleanText = cleanForSpeech(text);
     if (!cleanText) return;
 
-    // Browser TTS via Web Speech API (window.speechSynthesis) — free, no server call.
-    const speakBrowser = () => {
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      const voices = synth.getVoices();
-      const target = (langCode ?? "hi-IN").toLowerCase();
-      const targetPrefix = target.split("-")[0];
-      const isNatural = (v: SpeechSynthesisVoice) => {
-        const n = v.name.toLowerCase();
-        return n.includes("natural") || n.includes("neural") || n.includes("wavenet") ||
-               n.includes("google") || n.includes("online");
-      };
-      const langMatch = (v: SpeechSynthesisVoice, exact: boolean) =>
-        exact ? v.lang.toLowerCase() === target : v.lang.toLowerCase().startsWith(targetPrefix);
-      const preferredVoice =
-        voices.find((v) => langMatch(v, true) && isNatural(v)) ??
-        voices.find((v) => langMatch(v, false) && isNatural(v)) ??
-        voices.find((v) => langMatch(v, true)) ??
-        voices.find((v) => langMatch(v, false)) ??
-        voices.find((v) => v.lang.toLowerCase().startsWith("hi") && isNatural(v)) ??
-        voices.find((v) => v.lang.toLowerCase().startsWith("hi")) ??
-        voices.find((v) => v.lang.toLowerCase().includes("in")) ?? null;
-      if (preferredVoice) { utterance.voice = preferredVoice; utterance.lang = preferredVoice.lang; }
-      else { utterance.lang = langCode ?? "hi-IN"; }
-      utterance.rate = 0.98; utterance.pitch = 1.0; utterance.volume = 1;
-      utterance.onstart = () => { setIsSpeaking(true); if (msgId) setSpeakingMsgId(msgId); };
-      utterance.onend = () => {
+    void speakUnified({
+      text: cleanText,
+      lang: langCode ?? "hi-IN",
+      rate: 0.98,
+      pitch: 1.0,
+      volume: 1,
+      onStart: () => { setIsSpeaking(true); if (msgId) setSpeakingMsgId(msgId); },
+      onEnd: () => {
         setIsSpeaking(false); setSpeakingMsgId(null);
         if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
-      };
-      utterance.onerror = () => {
+      },
+      onError: () => {
         setIsSpeaking(false); setSpeakingMsgId(null);
         if (liveModeRef.current) setTimeout(() => startLiveListenRef.current?.(), 250);
-      };
-      synth.cancel();
-      if (synth.getVoices().length === 0) {
-        synth.onvoiceschanged = () => { synth.onvoiceschanged = null; synth.speak(utterance); };
-        window.setTimeout(() => synth.speak(utterance), 350);
-      } else {
-        synth.speak(utterance);
-      }
-    };
-
-    speakBrowser();
+      },
+    });
   }, [isPremium]);
 
   // STT — Web Speech API. Hands-free: auto-submits on stop and interrupts AI speech if currently speaking.
