@@ -185,7 +185,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                     try {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                             mbdTextToSpeech.setAudioAttributes(new AudioAttributes.Builder()
-                                .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
+                                .setUsage(AudioAttributes.USAGE_MEDIA)
                                 .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                                 .build());
                         }
