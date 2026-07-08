@@ -30,6 +30,27 @@ function getNativePlugin() {
 
 const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
+type AndroidDirectTtsBridge = {
+  isReady?: () => boolean;
+  isAvailable?: () => boolean;
+  speak?: (text: string, lang: string, rate: number, pitch: number, volume: number) => string;
+  stop?: () => void;
+  openInstall?: () => void;
+};
+
+function getAndroidDirectTtsBridge(): AndroidDirectTtsBridge | null {
+  if (typeof window === "undefined") return null;
+  const bridge = (window as any).MbdNativeTts as AndroidDirectTtsBridge | undefined;
+  if (!bridge || typeof bridge.speak !== "function") return null;
+  return bridge;
+}
+
+function hasAndroidDirectTtsBridge(): boolean {
+  const bridge = getAndroidDirectTtsBridge();
+  if (!bridge) return false;
+  try { return bridge.isAvailable?.() !== false; } catch { return true; }
+}
+
 function hasNativeTextToSpeechBridge(): boolean {
   try {
     const cap = (globalThis as any)?.Capacitor ?? Capacitor;
@@ -73,10 +94,14 @@ function isUnsupportedLanguageError(error: unknown): boolean {
 }
 
 export function isNativeTtsPlatform(): boolean {
-  return hasNativeTextToSpeechBridge();
+  return hasAndroidDirectTtsBridge() || hasNativeTextToSpeechBridge();
 }
 
 export async function cancelSpeech(): Promise<void> {
+  const directBridge = getAndroidDirectTtsBridge();
+  if (directBridge) {
+    try { directBridge.stop?.(); } catch {}
+  }
   if (isNativeTtsPlatform()) {
     const tts = await getNativePlugin();
     try { await tts?.stop(); } catch {}
@@ -90,7 +115,92 @@ export async function speakUnified(opts: SpeakOptions): Promise<void> {
           onStart, onEnd, onError } = opts;
   if (!text) return;
 
-  // NATIVE (Android / iOS)
+  // ANDROID WebView hard fallback.
+  // Some remote-server Capacitor builds can load the web bundle correctly but
+  // fail to expose Capacitor community plugin proxies to JS. This direct
+  // JavaScriptInterface is injected by MainActivity and talks to Android's
+  // TextToSpeech engine without relying on the Capacitor plugin bridge.
+  const directBridge = getAndroidDirectTtsBridge();
+  if (directBridge) {
+    let started = false;
+    const markStarted = () => {
+      if (started) return;
+      started = true;
+      onStart?.();
+    };
+
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      try {
+        if (directBridge.isReady?.() !== false) break;
+      } catch {
+        break;
+      }
+      await wait(200);
+    }
+
+    await new Promise<void>((resolve) => {
+      let utteranceId = "";
+      let finished = false;
+      const cleanup = () => {
+        window.removeEventListener("mbd-native-tts-start", handleStart as EventListener);
+        window.removeEventListener("mbd-native-tts-end", handleEnd as EventListener);
+        window.removeEventListener("mbd-native-tts-error", handleError as EventListener);
+        window.clearTimeout(timeoutId);
+      };
+      const isThisUtterance = (event: Event) => {
+        const id = (event as CustomEvent<{ utteranceId?: string }>).detail?.utteranceId;
+        return !id || !utteranceId || id === utteranceId;
+      };
+      const finish = (ok: boolean) => {
+        if (finished) return;
+        finished = true;
+        cleanup();
+        if (ok) onEnd?.(); else onError?.();
+        resolve();
+      };
+      const handleStart = (event: Event) => {
+        if (!isThisUtterance(event)) return;
+        markStarted();
+      };
+      const handleEnd = (event: Event) => {
+        if (!isThisUtterance(event)) return;
+        finish(true);
+      };
+      const handleError = (event: Event) => {
+        if (!isThisUtterance(event)) return;
+        console.warn("Bharat Mitra direct Android TTS failed", (event as CustomEvent).detail);
+        finish(false);
+      };
+      const timeoutId = window.setTimeout(() => {
+        // If Android does not return progress callbacks on a specific engine,
+        // avoid leaving the UI stuck in speaking mode.
+        finish(true);
+      }, Math.min(90000, Math.max(10000, text.length * 90)));
+
+      window.addEventListener("mbd-native-tts-start", handleStart as EventListener);
+      window.addEventListener("mbd-native-tts-end", handleEnd as EventListener);
+      window.addEventListener("mbd-native-tts-error", handleError as EventListener);
+
+      try {
+        directBridge.stop?.();
+        utteranceId = directBridge.speak?.(
+          text,
+          lang,
+          Math.min(2, Math.max(0.1, rate)),
+          Math.min(2, Math.max(0.1, pitch)),
+          Math.min(1, Math.max(0, volume)),
+        ) ?? "";
+        window.setTimeout(markStarted, 250);
+      } catch (error) {
+        console.warn("Bharat Mitra direct Android TTS bridge call failed", error);
+        try { directBridge.openInstall?.(); } catch {}
+        finish(false);
+      }
+    });
+    return;
+  }
+
+  // CAPACITOR NATIVE (Android / iOS)
   if (isNativeTtsPlatform()) {
     const tts = await getNativePlugin();
     if (!tts) { onError?.(); return; }
