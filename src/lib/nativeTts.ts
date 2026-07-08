@@ -165,13 +165,16 @@ export async function speakUnified(opts: SpeakOptions): Promise<void> {
       try {
         onStart?.();
         await MbdNativeTts.stop().catch(() => undefined);
-        await MbdNativeTts.speak({
-          text,
-          lang,
-          rate: Math.min(2, Math.max(0.1, rate)),
-          pitch: Math.min(2, Math.max(0.1, pitch)),
-          volume: Math.min(1, Math.max(0, volume)),
-        });
+        await Promise.race([
+          MbdNativeTts.speak({
+            text,
+            lang,
+            rate: Math.min(2, Math.max(0.1, rate)),
+            pitch: Math.min(2, Math.max(0.1, pitch)),
+            volume: Math.min(1, Math.max(0, volume)),
+          }),
+          wait(Math.min(90000, Math.max(10000, text.length * 90))),
+        ]);
         onEnd?.();
         return;
       } catch (error) {
