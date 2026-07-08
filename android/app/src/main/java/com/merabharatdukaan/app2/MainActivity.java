@@ -42,10 +42,10 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
 
     @Override
     protected void load() {
+        initMbdNativeTts();
         super.load();
         createUrgentNotificationChannel();
         configureWebView();
-        initMbdNativeTts();
         handleNativeAuthIntent(getIntent());
         if (bridge != null) {
             bridge.addWebViewListener(new WebViewListener() {
