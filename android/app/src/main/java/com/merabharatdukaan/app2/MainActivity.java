@@ -169,7 +169,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         webView.setOverScrollMode(WebView.OVER_SCROLL_NEVER);
         webView.setInitialScale(100);
         webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
-        webView.addJavascriptInterface(new MbdNativeTtsBridge(), "MbdNativeTts");
+        webView.addJavascriptInterface(new MbdNativeTtsBridge(), "MbdNativeTtsDirect");
 
         Window window = getWindow();
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
