@@ -41,6 +41,12 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     private boolean mbdTtsFailed = false;
 
     @Override
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(MbdNativeTtsPlugin.class);
+        super.onCreate(savedInstanceState);
+    }
+
+    @Override
     protected void load() {
         initMbdNativeTts();
         super.load();
