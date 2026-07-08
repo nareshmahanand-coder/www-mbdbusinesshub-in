@@ -5,7 +5,7 @@
 //   / iOS AVSpeechSynthesizer). Android WebView does NOT ship the Web
 //   Speech API, so the plugin is required for the app build.
 
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 
 type SpeakOptions = {
   text: string;
@@ -17,6 +17,15 @@ type SpeakOptions = {
   onEnd?: () => void;
   onError?: () => void;
 };
+
+type MbdNativeTtsPlugin = {
+  isAvailable: () => Promise<{ available?: boolean; ready?: boolean }>;
+  speak: (options: { text: string; lang: string; rate: number; pitch: number; volume: number }) => Promise<void>;
+  stop: () => Promise<void>;
+  openInstall: () => Promise<void>;
+};
+
+const MbdNativeTts = registerPlugin<MbdNativeTtsPlugin>("MbdNativeTts");
 
 let nativePluginPromise: Promise<any> | null = null;
 function getNativePlugin() {
@@ -40,7 +49,7 @@ type AndroidDirectTtsBridge = {
 
 function getAndroidDirectTtsBridge(): AndroidDirectTtsBridge | null {
   if (typeof window === "undefined") return null;
-  const bridge = (window as any).MbdNativeTts as AndroidDirectTtsBridge | undefined;
+  const bridge = (window as any).MbdNativeTtsDirect as AndroidDirectTtsBridge | undefined;
   if (!bridge || typeof bridge.speak !== "function") return null;
   return bridge;
 }
@@ -49,6 +58,22 @@ function hasAndroidDirectTtsBridge(): boolean {
   const bridge = getAndroidDirectTtsBridge();
   if (!bridge) return false;
   try { return bridge.isAvailable?.() !== false; } catch { return true; }
+}
+
+function hasCustomNativeTtsPlugin(): boolean {
+  try {
+    const cap = (globalThis as any)?.Capacitor ?? Capacitor;
+    const pluginHeaders = cap?.PluginHeaders;
+    const hasPluginHeader = Array.isArray(pluginHeaders)
+      && pluginHeaders.some((header: { name?: string }) => header?.name === "MbdNativeTts");
+
+    return Boolean(
+      cap?.isPluginAvailable?.("MbdNativeTts")
+      || (hasPluginHeader && typeof cap?.nativePromise === "function")
+    );
+  } catch {
+    return false;
+  }
 }
 
 function hasNativeTextToSpeechBridge(): boolean {
@@ -94,10 +119,13 @@ function isUnsupportedLanguageError(error: unknown): boolean {
 }
 
 export function isNativeTtsPlatform(): boolean {
-  return hasAndroidDirectTtsBridge() || hasNativeTextToSpeechBridge();
+  return hasCustomNativeTtsPlugin() || hasAndroidDirectTtsBridge() || hasNativeTextToSpeechBridge();
 }
 
 export async function cancelSpeech(): Promise<void> {
+  if (hasCustomNativeTtsPlugin()) {
+    try { await MbdNativeTts.stop(); } catch {}
+  }
   const directBridge = getAndroidDirectTtsBridge();
   if (directBridge) {
     try { directBridge.stop?.(); } catch {}
@@ -114,6 +142,44 @@ export async function speakUnified(opts: SpeakOptions): Promise<void> {
   const { text, lang = "hi-IN", rate = 1.0, pitch = 1.0, volume = 1.0,
           onStart, onEnd, onError } = opts;
   if (!text) return;
+
+  // PRIMARY ANDROID PATH: custom in-app native plugin.
+  // This avoids the previous root problem: the community plugin proxy may not
+  // be available to the remote WebView bundle, while a registered app plugin is
+  // guaranteed to ship inside this APK.
+  if (hasCustomNativeTtsPlugin()) {
+    let ready = true;
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      try {
+        const state = await MbdNativeTts.isAvailable();
+        if (state.available === false) break;
+        ready = state.ready !== false;
+        if (ready) break;
+      } catch {
+        break;
+      }
+      await wait(200);
+    }
+
+    if (ready) {
+      try {
+        onStart?.();
+        await MbdNativeTts.stop().catch(() => undefined);
+        await MbdNativeTts.speak({
+          text,
+          lang,
+          rate: Math.min(2, Math.max(0.1, rate)),
+          pitch: Math.min(2, Math.max(0.1, pitch)),
+          volume: Math.min(1, Math.max(0, volume)),
+        });
+        onEnd?.();
+        return;
+      } catch (error) {
+        console.warn("Bharat Mitra custom native TTS failed, trying fallback", error);
+        try { await MbdNativeTts.openInstall(); } catch {}
+      }
+    }
+  }
 
   // ANDROID WebView hard fallback.
   // Some remote-server Capacitor builds can load the web bundle correctly but
