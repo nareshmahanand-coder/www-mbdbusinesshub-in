@@ -27,13 +27,17 @@ public class MbdNativeTtsPlugin extends Plugin {
     private PluginCall activeSpeakCall;
     private String activeUtteranceId;
 
+    public MbdNativeTtsPlugin() {
+        super();
+    }
+
     @Override
     public void load() {
         initTts();
     }
 
     @Override
-    protected void handleOnDestroy() {
+    public void handleOnDestroy() {
         try {
             if (tts != null) {
                 tts.stop();

@@ -39,19 +39,22 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
     private TextToSpeech mbdTextToSpeech;
     private boolean mbdTtsReady = false;
     private boolean mbdTtsFailed = false;
+    private boolean mbdDirectBridgeInjected = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(MbdNativeTtsPlugin.class);
+        Log.i(TAG_TTS, "Registered MbdNativeTtsPlugin with Capacitor bridge");
         super.onCreate(savedInstanceState);
     }
 
     @Override
-    protected void load() {
+    public void load() {
         initMbdNativeTts();
+        configureWebView(findViewById(com.getcapacitor.android.R.id.webview));
         super.load();
         createUrgentNotificationChannel();
-        configureWebView();
+        configureWebView(bridge != null ? bridge.getWebView() : null);
         handleNativeAuthIntent(getIntent());
         if (bridge != null) {
             bridge.addWebViewListener(new WebViewListener() {
@@ -153,9 +156,8 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         super.onDestroy();
     }
 
-    private void configureWebView() {
-        if (bridge == null || bridge.getWebView() == null) return;
-        WebView webView = bridge.getWebView();
+    private void configureWebView(WebView webView) {
+        if (webView == null) return;
         WebSettings settings = webView.getSettings();
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
@@ -169,7 +171,11 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         webView.setOverScrollMode(WebView.OVER_SCROLL_NEVER);
         webView.setInitialScale(100);
         webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
-        webView.addJavascriptInterface(new MbdNativeTtsBridge(), "MbdNativeTtsDirect");
+        if (!mbdDirectBridgeInjected) {
+            webView.addJavascriptInterface(new MbdNativeTtsBridge(), "MbdNativeTtsDirect");
+            mbdDirectBridgeInjected = true;
+            Log.i(TAG_TTS, "Injected MbdNativeTtsDirect JavaScript bridge");
+        }
 
         Window window = getWindow();
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
@@ -269,7 +275,9 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         return locales;
     }
 
-    private class MbdNativeTtsBridge {
+    public class MbdNativeTtsBridge {
+        public MbdNativeTtsBridge() {}
+
         @JavascriptInterface
         public boolean isReady() {
             return mbdTtsReady && mbdTextToSpeech != null;
