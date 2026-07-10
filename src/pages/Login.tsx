@@ -20,6 +20,24 @@ const GOOGLE_WEB_CLIENT_ID_FALLBACK =
   (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined)?.trim() ||
   "822103899326-1p22puug67ueab5u9p3mpi3edkvpr8od.apps.googleusercontent.com";
 const GOOGLE_CLIENT_ID_CACHE_KEY = "mbd-google-web-client-id";
+const WEBSITE_AUTH_NEXT_KEY = "mbd-auth-next";
+
+const isEmbeddedWebsitePreview = () => {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+};
+
+const rememberWebsiteAuthNext = (nextPath: string) => {
+  try {
+    sessionStorage.setItem(WEBSITE_AUTH_NEXT_KEY, nextPath);
+    localStorage.setItem(WEBSITE_AUTH_NEXT_KEY, nextPath);
+  } catch {
+    // Storage can be unavailable in some browsers; login still continues.
+  }
+};
 
 const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
   new Promise((resolve, reject) => {
@@ -200,12 +218,18 @@ export default function Login() {
         return;
       }
 
+      const isEmbeddedWeb = isEmbeddedWebsitePreview();
+      if (!isEmbeddedWeb) rememberWebsiteAuthNext(next);
+
       const result = await lovable.auth.signInWithOAuth("google", {
-        // Lovable managed OAuth uses a popup + web_message flow. The redirect_uri
-        // must be a same-origin public URL (window.location.origin) so the broker
-        // can post tokens back and the wrapper calls supabase.auth.setSession().
-        // Pointing this at /auth/callback breaks that flow and causes a login loop.
-        redirect_uri: window.location.origin,
+        // Website root cause: in a normal top-level website tab the managed OAuth
+        // library performs a full-page redirect and returns before it can call
+        // supabase.auth.setSession(). Sending that flow back to `/` leaves the
+        // app without an explicit callback, so protected routes send the user
+        // back to /login. Embedded Lovable preview still uses origin for the
+        // web_message popup flow; published/custom-domain website uses the
+        // app callback route to persist the returned tokens.
+        redirect_uri: isEmbeddedWeb ? window.location.origin : `${window.location.origin}/auth/callback`,
         extraParams: { prompt: "select_account" },
       });
       if (result.error) throw result.error;
