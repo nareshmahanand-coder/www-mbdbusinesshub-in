@@ -249,8 +249,21 @@ export default function Login() {
           setMode("signin");
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+
+        // Website-only hard redirect after password login. Relying only on the
+        // auth-state event can leave the web route guard seeing a stale empty
+        // session and sending the user back to /login. Do not change the native
+        // Android flow here.
+        if (!Capacitor.isNativePlatform()) {
+          const { data: verifiedAuth } = await supabase.auth.getSession();
+          const activeUser = verifiedAuth.session?.user ?? data.session?.user ?? null;
+          if (!activeUser) throw new Error("No active session after sign in");
+          const destination = getPostLoginDestinationForUser(activeUser, next, isSuperUser);
+          window.location.replace(destination);
+          return;
+        }
       }
     } catch (err: any) {
       toast.error(err?.message || "Authentication failed");
