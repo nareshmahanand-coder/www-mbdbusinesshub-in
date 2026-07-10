@@ -8,6 +8,24 @@ import { getPostLoginDestinationForUser, sanitizeAuthNextPath } from "@/lib/auth
 import type { Session } from "@supabase/supabase-js";
 
 const NATIVE_CALLBACK_SCHEME = "com.merabharatdukaan.app2://auth/callback";
+const WEBSITE_AUTH_NEXT_KEY = "mbd-auth-next";
+
+const getStoredWebsiteAuthNext = () => {
+  try {
+    return sessionStorage.getItem(WEBSITE_AUTH_NEXT_KEY) || localStorage.getItem(WEBSITE_AUTH_NEXT_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const clearStoredWebsiteAuthNext = () => {
+  try {
+    sessionStorage.removeItem(WEBSITE_AUTH_NEXT_KEY);
+    localStorage.removeItem(WEBSITE_AUTH_NEXT_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+};
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -19,7 +37,7 @@ export default function AuthCallback() {
     if (ranRef.current) return;
     ranRef.current = true;
 
-    const next = sanitizeAuthNextPath(searchParams.get("next"));
+      const next = sanitizeAuthNextPath(searchParams.get("next") || getStoredWebsiteAuthNext());
 
     (async () => {
       try {
@@ -50,6 +68,7 @@ export default function AuthCallback() {
         const { data: existingAuth } = await supabase.auth.getSession();
         if (!code && !accessToken && !refreshToken && existingAuth.session?.user) {
           const destination = getPostLoginDestinationForUser(existingAuth.session.user, next);
+          clearStoredWebsiteAuthNext();
           window.location.replace(destination);
           return;
         }
@@ -84,11 +103,13 @@ export default function AuthCallback() {
         // This prevents the protected route guard from seeing a stale empty auth state
         // and sending the user back to /login in the Android WebView.
         const destination = getPostLoginDestinationForUser(redirectSession.user, next);
+        clearStoredWebsiteAuthNext();
         window.location.replace(destination);
       } catch (err: any) {
         const { data: recoveredAuth } = await supabase.auth.getSession().catch(() => ({ data: { session: null } }));
         if (recoveredAuth.session?.user) {
           const destination = getPostLoginDestinationForUser(recoveredAuth.session.user, next);
+          clearStoredWebsiteAuthNext();
           window.location.replace(destination);
           return;
         }
