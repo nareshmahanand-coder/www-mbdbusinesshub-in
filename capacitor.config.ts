@@ -26,7 +26,7 @@ const config: CapacitorConfig = {
       '@capacitor/browser',
       '@capacitor/preferences',
       '@capacitor/push-notifications',
-      '@capgo/capacitor-social-login',
+      '@codetrix-studio/capacitor-google-auth',
       '@capacitor-community/text-to-speech',
     ],
     appendUserAgent: 'MeraBharatDukaanApp',
@@ -48,14 +48,10 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert', 'banner', 'list'],
     },
-    SocialLogin: {
-      providers: {
-        google: true,
-        facebook: false,
-        apple: false,
-        twitter: false,
-      },
-      logLevel: 1,
+    GoogleAuth: {
+      scopes: ['profile', 'email'],
+      serverClientId: '822103899326-1p22puug67ueab5u9p3mpi3edkvpr8od.apps.googleusercontent.com',
+      forceCodeForRefreshToken: true,
     },
   },
 };

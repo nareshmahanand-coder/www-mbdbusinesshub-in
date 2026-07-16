@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Capacitor } from "@capacitor/core";
-import { SocialLogin, type GoogleLoginResponseOnline } from "@capgo/capacitor-social-login";
+import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 import { getPostLoginDestinationForUser, sanitizeAuthNextPath } from "@/lib/authRedirect";
 import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 
@@ -182,32 +182,25 @@ export default function Login() {
         // fail visibly if Firebase/package/SHA config is missing. Do not fall
         // back to web OAuth on Android.
         const googleWebClientId = await getGoogleWebClientId();
-        await SocialLogin.initialize({
-          google: {
-            webClientId: googleWebClientId,
-            mode: "online",
-          },
-        });
-
-        const nativeResult = await SocialLogin.login({
-          provider: "google",
-          options: {
+        try {
+          await GoogleAuth.initialize({
+            clientId: googleWebClientId,
             scopes: ["profile", "email"],
-            forceRefreshToken: true,
-            filterByAuthorizedAccounts: false,
-            autoSelectEnabled: false,
-            style: "standard",
-          },
-        });
+            grantOfflineAccess: true,
+          });
+        } catch {
+          // initialize is idempotent; ignore if already initialized
+        }
 
-        const googleResult = nativeResult.result as GoogleLoginResponseOnline;
-        if (googleResult.responseType !== "online" || !googleResult.idToken) {
+        const googleUser = await GoogleAuth.signIn();
+        const idToken = googleUser?.authentication?.idToken;
+        if (!idToken) {
           throw new Error("Google did not return an Android ID token");
         }
 
         const { data, error } = await supabase.auth.signInWithIdToken({
           provider: "google",
-          token: googleResult.idToken,
+          token: idToken,
         });
         if (error) throw error;
         if (!data.session?.user) throw new Error("No active session after Google sign-in");
