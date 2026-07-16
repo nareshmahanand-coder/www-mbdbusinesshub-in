@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Capacitor } from "@capacitor/core";
-import { SocialLogin, type GoogleLoginResponseOnline } from "@capgo/capacitor-social-login";
+import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
 import { getPostLoginDestinationForUser, sanitizeAuthNextPath } from "@/lib/authRedirect";
 import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 
