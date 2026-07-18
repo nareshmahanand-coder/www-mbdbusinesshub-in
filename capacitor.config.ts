@@ -50,6 +50,11 @@ const config: CapacitorConfig = {
     },
     GoogleAuth: {
       scopes: ['profile', 'email'],
+      // Use the OAuth Web Client ID for native Android ID-token auth.
+      // The Android OAuth client is only for package/SHA registration in
+      // Google/Firebase; passing it here causes release-only ApiException 10.
+      clientId: '822103899326-1p22puug67ueab5u9p3mpi3edkvpr8od.apps.googleusercontent.com',
+      androidClientId: '822103899326-1p22puug67ueab5u9p3mpi3edkvpr8od.apps.googleusercontent.com',
       serverClientId: '822103899326-1p22puug67ueab5u9p3mpi3edkvpr8od.apps.googleusercontent.com',
       forceCodeForRefreshToken: true,
     },
