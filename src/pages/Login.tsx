@@ -79,7 +79,11 @@ const getGoogleWebClientId = async () => {
 };
 
 const isNativeGoogleConfigError = (err: any) => {
-  const raw = String(err?.message || err || "").toLowerCase();
+  const raw = [err?.message, err?.code, err?.errorMessage, err]
+    .filter(Boolean)
+    .map(String)
+    .join(" ")
+    .toLowerCase();
   return (
     raw.includes("developer_error") ||
     raw.includes("api_exception") ||
@@ -93,24 +97,28 @@ const isNativeGoogleConfigError = (err: any) => {
 };
 
 const getGoogleErrorMessage = (err: any) => {
-  const rawMessage = String(err?.message || err || "");
-  if (rawMessage.toLowerCase().includes("invalid_client") || rawMessage.toLowerCase().includes("client secret")) {
+  const rawMessage = [err?.message, err?.code, err?.errorMessage, err]
+    .filter(Boolean)
+    .map(String)
+    .join(" ");
+  const lowerMessage = rawMessage.toLowerCase();
+  if (lowerMessage.includes("invalid_client") || lowerMessage.includes("client secret")) {
     return "Google OAuth client settings are invalid. Please re-check the Google Client ID/Secret saved in backend auth settings.";
   }
   if (
-    rawMessage.toLowerCase().includes("developer_error") ||
-    rawMessage.includes("10:") ||
-    rawMessage.toLowerCase().includes("api_exception") ||
-    rawMessage.toLowerCase().includes("package name") ||
-    rawMessage.toLowerCase().includes("sha")
+    lowerMessage.includes("developer_error") ||
+    /(^|\D)10($|\D)/.test(rawMessage) ||
+    lowerMessage.includes("api_exception") ||
+    lowerMessage.includes("package name") ||
+    lowerMessage.includes("sha")
   ) {
-    return "Android Google Sign-In setup is incomplete: add this app package and SHA-1/SHA-256 in Firebase/Google, then download the updated google-services.json.";
+    return "Android Google Sign-In setup is incomplete for the Play Store release: add package com.merabharatdukaan.app2 with the Play App Signing SHA-1/SHA-256 in Google/Firebase, then rebuild the AAB.";
   }
   if (
-    rawMessage.toLowerCase().includes("redirect_uri_mismatch") ||
+    lowerMessage.includes("redirect_uri_mismatch") ||
     rawMessage.includes("28444") ||
-    rawMessage.includes("16:") ||
-    rawMessage.toLowerCase().includes("developer console")
+    /(^|\D)16($|\D)/.test(rawMessage) ||
+    lowerMessage.includes("developer console")
   ) {
     return "Google redirect mismatch: add this exact callback in Google OAuth Web Client: https://shop.mbdbusinesshub.in/~oauth/callback";
   }
