@@ -18,7 +18,7 @@ const APP_ORIGIN = "https://shop.mbdbusinesshub.in";
 // then the backend can create the app session without any redirect URI round-trip.
 const GOOGLE_WEB_CLIENT_ID_FALLBACK =
   (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined)?.trim() ||
-  "822103899326-1p22puug67ueab5u9p3mpi3edkvpr8od.apps.googleusercontent.com";
+  "36966220674-2ddjv8kfhn91b2k93qqsb54muc5ilvf2.apps.googleusercontent.com";
 const GOOGLE_CLIENT_ID_CACHE_KEY = "mbd-google-web-client-id";
 const WEBSITE_AUTH_NEXT_KEY = "mbd-auth-next";
 
