@@ -46,7 +46,10 @@ dependencies {
 
 apply from: 'capacitor.build.gradle'
 
-// Apply Google Services plugin only when google-services.json is present.
+// Google Services is required for release builds. Keep debug builds usable in
+// source checkouts that intentionally do not commit this environment file.
 if (file('google-services.json').exists()) {
     apply plugin: 'com.google.gms.google-services'
+} else if (gradle.startParameter.taskNames.any { it.toLowerCase().contains('release') }) {
+    throw new GradleException('Missing android/app/google-services.json; release Google Sign-In cannot be configured')
 }

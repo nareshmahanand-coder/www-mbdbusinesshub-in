@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Capacitor } from "@capacitor/core";
-import { GoogleAuth } from "@codetrix-studio/capacitor-google-auth";
+import { SocialLogin } from "@capgo/capacitor-social-login";
 import { getPostLoginDestinationForUser, sanitizeAuthNextPath } from "@/lib/authRedirect";
 import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 
@@ -16,10 +16,9 @@ const APP_ORIGIN = "https://shop.mbdbusinesshub.in";
 // Public Google Web Client ID used by the current managed Google sign-in flow.
 // Android native Google Sign-In must request an ID token for the same audience,
 // then the backend can create the app session without any redirect URI round-trip.
-const GOOGLE_WEB_CLIENT_ID_FALLBACK =
+const GOOGLE_WEB_CLIENT_ID =
   (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined)?.trim() ||
   "36966220674-2ddjv8kfhn91b2k93qqsb54muc5ilvf2.apps.googleusercontent.com";
-const GOOGLE_CLIENT_ID_CACHE_KEY = "mbd-google-web-client-id";
 const WEBSITE_AUTH_NEXT_KEY = "mbd-auth-next";
 
 const isEmbeddedWebsitePreview = () => {
@@ -37,45 +36,6 @@ const rememberWebsiteAuthNext = (nextPath: string) => {
   } catch {
     // Storage can be unavailable in some browsers; login still continues.
   }
-};
-
-const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
-  new Promise((resolve, reject) => {
-    const timer = window.setTimeout(() => reject(new Error("Google Client ID request timed out")), ms);
-    promise.then(
-      (value) => {
-        window.clearTimeout(timer);
-        resolve(value);
-      },
-      (error) => {
-        window.clearTimeout(timer);
-        reject(error);
-      },
-    );
-  });
-
-const getGoogleWebClientId = async () => {
-  try {
-    const cached = localStorage.getItem(GOOGLE_CLIENT_ID_CACHE_KEY)?.trim();
-    if (cached?.endsWith(".apps.googleusercontent.com")) return cached;
-  } catch {}
-
-  try {
-    const { data, error } = await withTimeout(
-      supabase.functions.invoke<{ clientId?: string }>("google-client-id"),
-      3000,
-    );
-    if (error) throw error;
-    const clientId = data?.clientId?.trim();
-    if (clientId?.endsWith(".apps.googleusercontent.com")) {
-      try { localStorage.setItem(GOOGLE_CLIENT_ID_CACHE_KEY, clientId); } catch {}
-      return clientId;
-    }
-  } catch (err) {
-    console.warn("[google-auth] using bundled Google Web Client ID fallback", err);
-  }
-
-  return GOOGLE_WEB_CLIENT_ID_FALLBACK;
 };
 
 const isNativeGoogleConfigError = (err: any) => {
@@ -189,19 +149,21 @@ export default function Login() {
         // Use native Google Sign-In -> backend ID-token session instead, and
         // fail visibly if Firebase/package/SHA config is missing. Do not fall
         // back to web OAuth on Android.
-        const googleWebClientId = await getGoogleWebClientId();
-        try {
-          await GoogleAuth.initialize({
-            clientId: googleWebClientId,
-            scopes: ["profile", "email"],
-            grantOfflineAccess: true,
-          });
-        } catch {
-          // initialize is idempotent; ignore if already initialized
-        }
-
-        const googleUser = await GoogleAuth.signIn();
-        const idToken = googleUser?.authentication?.idToken;
+        // Keep the native token audience deterministic. Reading it from remote
+        // config/localStorage can pair a release APK with a stale OAuth project.
+        await SocialLogin.initialize({
+          google: {
+            webClientId: GOOGLE_WEB_CLIENT_ID,
+            mode: "online",
+          },
+        });
+        const googleLogin = await SocialLogin.login({
+          provider: "google",
+          options: { scopes: ["email", "profile"] },
+        });
+        const idToken = googleLogin.result.responseType === "online"
+          ? googleLogin.result.idToken
+          : null;
         if (!idToken) {
           throw new Error("Google did not return an Android ID token");
         }

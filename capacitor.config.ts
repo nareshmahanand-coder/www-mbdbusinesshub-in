@@ -26,7 +26,7 @@ const config: CapacitorConfig = {
       '@capacitor/browser',
       '@capacitor/preferences',
       '@capacitor/push-notifications',
-      '@codetrix-studio/capacitor-google-auth',
+      '@capgo/capacitor-social-login',
       '@capacitor-community/text-to-speech',
     ],
     appendUserAgent: 'MeraBharatDukaanApp',
@@ -48,15 +48,14 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert', 'banner', 'list'],
     },
-    GoogleAuth: {
-      scopes: ['profile', 'email'],
-      // Use the OAuth Web Client ID for native Android ID-token auth.
-      // The Android OAuth client is only for package/SHA registration in
-      // Google/Firebase; passing it here causes release-only ApiException 10.
-      clientId: '36966220674-2ddjv8kfhn91b2k93qqsb54muc5ilvf2.apps.googleusercontent.com',
-      androidClientId: '36966220674-2ddjv8kfhn91b2k93qqsb54muc5ilvf2.apps.googleusercontent.com',
-      serverClientId: '36966220674-2ddjv8kfhn91b2k93qqsb54muc5ilvf2.apps.googleusercontent.com',
-      forceCodeForRefreshToken: true,
+    SocialLogin: {
+      providers: {
+        google: true,
+        facebook: false,
+        apple: false,
+        twitter: false,
+      },
+      logLevel: 1,
     },
   },
 };
