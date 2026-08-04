@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
+import { useMembershipGate } from "@/hooks/useMembershipGate";
 
 const StarRating = ({ rating, onRate, interactive = false }: { rating: number; onRate?: (r: number) => void; interactive?: boolean }) => {
   const [hover, setHover] = useState(0);
@@ -38,14 +39,17 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
   const [userRating, setUserRating] = useState(0);
   const [userComment, setUserComment] = useState("");
   const [reviews, setReviews] = useState(shop.reviews || []);
+  const { requireMembership, membershipDialog } = useMembershipGate();
 
   const handleWhatsApp = () => {
-    const message = `नमस्ते! मैं आपके पास मेरा भारत दुकान के ज़रिए आया/आई हूँ और मुझे आपकी दुकान "${shop.name}" से सामान की तलाश है। कृपया बताइए क्या उपलब्ध है।`;
-    window.open(`https://wa.me/${shop.whatsapp}?text=${encodeURIComponent(message)}`, "_blank");
+    requireMembership(() => {
+      const message = `नमस्ते! मैं आपके पास मेरा भारत दुकान के ज़रिए आया/आई हूँ और मुझे आपकी दुकान "${shop.name}" से सामान की तलाश है। कृपया बताइए क्या उपलब्ध है।`;
+      window.open(`https://wa.me/${shop.whatsapp}?text=${encodeURIComponent(message)}`, "_blank");
+    });
   };
 
   const handleCall = () => {
-    window.open(`tel:+${shop.phone}`);
+    requireMembership(() => window.open(`tel:+${shop.phone}`));
   };
 
   const handleReport = () => {
