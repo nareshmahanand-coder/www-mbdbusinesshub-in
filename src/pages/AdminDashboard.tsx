@@ -1821,18 +1821,57 @@ const AgentsSection = () => {
               </div>
 
               <div>
-                <p className="mb-1 font-semibold">Merchants under this agent ({detail.referrals.length})</p>
-                <div className="space-y-1">
-                  {detail.referrals.map((r: any) => {
-                    const m = detail.merchants.find((x: any) => x.user_id === r.merchant_user_id);
-                    return (
-                      <div key={r.id} className="flex items-center justify-between rounded border p-2 text-xs">
-                        <span>{m?.shop_name || r.shop_name || "Shop"} · {m?.city || "—"}</span>
-                        <Badge variant={m?.is_premium ? "default" : "secondary"}>{m?.is_premium ? `Premium ${m.premium_plan || ""}` : "Free"}</Badge>
-                      </div>
-                    );
-                  })}
-                  {!detail.referrals.length && <p className="text-xs text-muted-foreground">No referrals yet</p>}
+                <p className="mb-2 font-semibold">Merchants referred by this agent ({detail.referrals.length})</p>
+                <div className="overflow-x-auto rounded border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs">Merchant</TableHead>
+                        <TableHead className="text-xs">Mobile</TableHead>
+                        <TableHead className="text-xs">Plan</TableHead>
+                        <TableHead className="text-xs">Subscription</TableHead>
+                        <TableHead className="text-xs">Registered</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {detail.referrals.map((r: any) => {
+                        const m = (detail.merchants || []).find((x: any) => x.user_id === r.merchant_user_id);
+                        const p = (detail.profiles || []).find((x: any) => x.id === r.merchant_user_id);
+                        const paid = (detail.orders || []).find(
+                          (o: any) => o.user_id === r.merchant_user_id && o.status === "paid"
+                        );
+                        const plan = m?.premium_plan || paid?.plan || null;
+                        const planLabel = plan === "yearly" ? "₹999 Yearly Plan" : plan === "monthly" ? "₹99 Monthly Plan" : "No plan";
+                        const endsAt = m?.plan_ends_at ? new Date(m.plan_ends_at) : null;
+                        const expired = !!endsAt && endsAt < new Date();
+                        const status = !plan ? "Free" : m?.access_status === "suspended" ? "Suspended" : expired ? "Expired" : "Active";
+                        return (
+                          <TableRow key={r.id}>
+                            <TableCell className="text-xs">
+                              <span className="font-medium">{m?.shop_name || r.shop_name || "Shop"}</span>
+                              <span className="block text-[11px] text-muted-foreground">
+                                {m?.owner_name || p?.display_name || "—"} · {m?.city || "—"}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-xs">{m?.phone || p?.phone || m?.whatsapp || "—"}</TableCell>
+                            <TableCell className="text-xs">{planLabel}</TableCell>
+                            <TableCell className="text-xs">
+                              <Badge variant={status === "Active" ? "default" : status === "Free" ? "secondary" : "destructive"}>{status}</Badge>
+                              {endsAt && (
+                                <span className="block text-[11px] text-muted-foreground">
+                                  {expired ? "Ended" : "Renews/ends"} {endsAt.toLocaleDateString("en-IN")}
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs">
+                              {new Date(m?.created_at || r.created_at).toLocaleDateString("en-IN")}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                  {!detail.referrals.length && <p className="py-6 text-center text-xs text-muted-foreground">No referrals yet</p>}
                 </div>
               </div>
 
