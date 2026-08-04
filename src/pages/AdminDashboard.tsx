@@ -1719,4 +1719,150 @@ const DeleteRequestsSection = () => {
   );
 };
 
+const AgentsSection = () => {
+  const [rows, setRows] = useState<any[]>([]);
+  const [refCounts, setRefCounts] = useState<Record<string, number>>({});
+  const [commTotals, setCommTotals] = useState<Record<string, number>>({});
+  const [q, setQ] = useState("");
+  const [detail, setDetail] = useState<any>(null);
+  const [notes, setNotes] = useState("");
+
+  const load = async () => {
+    const d = await adminFetch("agents");
+    if (!d) return;
+    setRows(d.rows || []);
+    setRefCounts(d.refCounts || {});
+    setCommTotals(d.commTotals || {});
+  };
+  useAutoRefresh(load, 10000, []);
+
+  const openDetail = async (id: string) => {
+    const d = await adminFetch("agent_detail", { id });
+    if (!d) { toast.error("Failed to load agent"); return; }
+    setNotes(d.agent?.admin_notes || "");
+    setDetail(d);
+  };
+
+  const setStatus = async (id: string, status: string) => {
+    const d = await adminFetch("agent_status", { id, status, admin_notes: notes });
+    if (!d?.ok) { toast.error("Update failed"); return; }
+    toast.success(`Agent ${status}`);
+    await load();
+    if (detail?.agent?.id === id) await openDetail(id);
+  };
+
+  const filtered = rows.filter((r) =>
+    !q || [r.name, r.mobile, r.agent_code, r.city, r.email].some((v: string) => (v || "").toLowerCase().includes(q.toLowerCase()))
+  );
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-3">
+        <CardTitle className="text-base">Agent Management ({rows.length})</CardTitle>
+        <div className="flex items-center gap-2">
+          <Input placeholder="Search agent…" value={q} onChange={(e) => setQ(e.target.value)} className="h-9 w-48" />
+          <Button size="sm" variant="outline" onClick={load}><RefreshCw className="h-4 w-4" /></Button>
+        </div>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Agent</TableHead><TableHead>Code</TableHead><TableHead>Mobile</TableHead>
+              <TableHead>Status</TableHead><TableHead>Referrals</TableHead><TableHead>Wallet</TableHead><TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((a) => (
+              <TableRow key={a.id}>
+                <TableCell className="font-medium">{a.name}</TableCell>
+                <TableCell className="font-mono text-xs">{a.agent_code}</TableCell>
+                <TableCell>{a.mobile}</TableCell>
+                <TableCell>
+                  <Badge variant={a.status === "approved" ? "default" : a.status === "pending" ? "secondary" : "destructive"}>{a.status}</Badge>
+                </TableCell>
+                <TableCell>{refCounts[a.id] || 0}</TableCell>
+                <TableCell>{inr(a.wallet_balance)}</TableCell>
+                <TableCell className="text-right">
+                  <Button size="sm" variant="outline" onClick={() => openDetail(a.id)}><Eye className="mr-1 h-3.5 w-3.5" /> View</Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {!filtered.length && <p className="py-8 text-center text-sm text-muted-foreground">No agents</p>}
+      </CardContent>
+
+      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+          <DialogHeader><DialogTitle>{detail?.agent?.name} — {detail?.agent?.agent_code}</DialogTitle></DialogHeader>
+          {detail?.agent && (
+            <div className="space-y-4 text-sm">
+              <div className="flex flex-wrap gap-4">
+                {detail.agent.photo_url && <img src={detail.agent.photo_url} alt="agent" className="h-24 w-24 rounded-lg object-cover border" />}
+                <div className="space-y-1">
+                  <p><Phone className="mr-1 inline h-3.5 w-3.5" />{detail.agent.mobile}</p>
+                  <p><Mail className="mr-1 inline h-3.5 w-3.5" />{detail.agent.email || "—"}</p>
+                  <p><MapPin className="mr-1 inline h-3.5 w-3.5" />{detail.agent.city || "—"} · {detail.agent.address || "—"}</p>
+                  <p>Aadhaar: {detail.agent.aadhaar_number || "—"} · PAN: {detail.agent.pan_number || "—"}</p>
+                  <p className="flex items-center gap-1 font-semibold text-emerald-600"><Wallet className="h-4 w-4" /> Wallet {inr(detail.agent.wallet_balance)}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                {[["Aadhaar Front", detail.agent.aadhaar_front_url], ["Aadhaar Back", detail.agent.aadhaar_back_url], ["PAN", detail.agent.pan_url]].map(([label, url]: any) => (
+                  url ? (
+                    <a key={label} href={url} target="_blank" rel="noreferrer" className="block">
+                      <img src={url} alt={label} className="h-24 w-full rounded border object-cover" />
+                      <span className="text-[11px] text-muted-foreground">{label}</span>
+                    </a>
+                  ) : <div key={label} className="flex h-24 items-center justify-center rounded border text-[11px] text-muted-foreground">{label}: —</div>
+                ))}
+              </div>
+
+              <div>
+                <p className="mb-1 font-semibold">Merchants under this agent ({detail.referrals.length})</p>
+                <div className="space-y-1">
+                  {detail.referrals.map((r: any) => {
+                    const m = detail.merchants.find((x: any) => x.user_id === r.merchant_user_id);
+                    return (
+                      <div key={r.id} className="flex items-center justify-between rounded border p-2 text-xs">
+                        <span>{m?.shop_name || r.shop_name || "Shop"} · {m?.city || "—"}</span>
+                        <Badge variant={m?.is_premium ? "default" : "secondary"}>{m?.is_premium ? `Premium ${m.premium_plan || ""}` : "Free"}</Badge>
+                      </div>
+                    );
+                  })}
+                  {!detail.referrals.length && <p className="text-xs text-muted-foreground">No referrals yet</p>}
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-1 font-semibold">Commission breakdown ({detail.commissions.length})</p>
+                <div className="space-y-1">
+                  {detail.commissions.map((c: any) => (
+                    <div key={c.id} className="flex items-center justify-between rounded border p-2 text-xs">
+                      <span>{c.plan} · {new Date(c.created_at).toLocaleString("en-IN")}</span>
+                      <span className="font-semibold text-emerald-600">+{inr(c.amount)}</span>
+                    </div>
+                  ))}
+                  {!detail.commissions.length && <p className="text-xs text-muted-foreground">No commissions yet</p>}
+                </div>
+              </div>
+
+              <Textarea placeholder="Admin notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button size="sm" className="bg-green-600 text-white hover:bg-green-700" onClick={() => setStatus(detail.agent.id, "approved")}>
+                  <CheckCircle2 className="mr-1 h-4 w-4" /> Approve
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setStatus(detail.agent.id, "suspended")}><ShieldOff className="mr-1 h-4 w-4" /> Suspend</Button>
+                <Button size="sm" variant="destructive" onClick={() => setStatus(detail.agent.id, "rejected")}><XCircle className="mr-1 h-4 w-4" /> Reject</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+};
+
 export default AdminDashboard;
