@@ -156,6 +156,7 @@ const MatrimonyProfileCard = ({ profile: p, isRecommended, userId }: Props) => {
           </Button>
         </DialogContent>
       </Dialog>
+      {membershipDialog}
     </>
   );
 };
