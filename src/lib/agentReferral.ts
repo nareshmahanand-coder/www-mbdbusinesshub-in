@@ -51,6 +51,3 @@ export const attachAgentReferral = async (params: {
 
   clearStoredAgentReferral();
 };
-
-export const buildAgentReferralLink = (agentCode: string) =>
-  `${window.location.origin}/merchant?ref=${encodeURIComponent(agentCode)}`;
