@@ -2,7 +2,6 @@ import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useKycStatus } from "@/hooks/useKycStatus";
-import { useBharatGauravMembership } from "@/hooks/useBharatGauravMembership";
 import { requiresPostLoginOnboarding } from "@/lib/authRedirect";
 
 interface ProtectedRouteProps {
@@ -25,7 +24,6 @@ export default function ProtectedRoute({
   const location = useLocation();
   const { user, loading: authLoading, isSuperUser } = useAuth();
   const { hasKyc, loading: kycLoading } = useKycStatus();
-  const { isMember, loading: memberLoading } = useBharatGauravMembership();
 
   // 1. Wait for Supabase session hydration before deciding anything.
   if (authLoading) {
@@ -53,34 +51,23 @@ export default function ProtectedRoute({
     return <>{children}</>;
   }
 
-  // 3. Wait for KYC + membership status before enforcing onboarding redirects.
-  if (kycLoading || memberLoading) {
+  // 3. Wait for KYC status before enforcing onboarding redirects.
+  if (kycLoading) {
     return <FullScreenLoader label="Checking your account…" />;
   }
 
   // Onboarding pages can render only when they are the correct next step.
+  // Membership is never forced — it is a purely optional page.
   if (allowDuringOnboarding) {
-    if (location.pathname === "/ekyc" && hasKyc && !isMember) {
-      return <Navigate to="/membership" replace />;
-    }
-    if (location.pathname === "/ekyc" && hasKyc && isMember) {
-      return <Navigate to="/dashboard" replace />;
-    }
-    if (location.pathname === "/membership" && !hasKyc) {
-      return <Navigate to="/ekyc" replace />;
-    }
-    if (location.pathname === "/membership" && isMember) {
+    if (location.pathname === "/ekyc" && hasKyc) {
       return <Navigate to="/dashboard" replace />;
     }
     return <>{children}</>;
   }
 
-  // 4. New / incomplete users → /ekyc → /membership → /dashboard
+  // 4. New / incomplete users → /ekyc → /dashboard
   if (!hasKyc && location.pathname !== "/ekyc") {
     return <Navigate to="/ekyc" replace />;
-  }
-  if (hasKyc && !isMember && location.pathname !== "/membership") {
-    return <Navigate to="/membership" replace />;
   }
 
   // 5. Fully onboarded → render the requested route.

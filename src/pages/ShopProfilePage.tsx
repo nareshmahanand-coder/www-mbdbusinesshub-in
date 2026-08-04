@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Phone, MessageCircle, ShieldCheck, ArrowLeft, Store, Navigation } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import NandaPortalView from "@/components/NandaPortalView";
+import { useMembershipGate } from "@/hooks/useMembershipGate";
 
 interface ShopData {
   id: string;
@@ -31,6 +32,7 @@ const ShopProfilePage = () => {
   const navigate = useNavigate();
   const [shop, setShop] = useState<ShopData | null>(null);
   const [loading, setLoading] = useState(true);
+  const { requireMembership, membershipDialog } = useMembershipGate();
 
   useEffect(() => {
     const fetchShop = async () => {
@@ -131,11 +133,13 @@ const ShopProfilePage = () => {
   }
 
   const handleWhatsApp = () => {
-    const message = `नमस्ते! मैं मेरा भारत दुकान से आया/आई हूँ। मुझे "${shop.name}" से कुछ सामान चाहिए। कृपया बताइए क्या उपलब्ध है।`;
-    window.open(`https://wa.me/${shop.whatsapp}?text=${encodeURIComponent(message)}`, "_blank");
+    requireMembership(() => {
+      const message = `नमस्ते! मैं मेरा भारत दुकान से आया/आई हूँ। मुझे "${shop.name}" से कुछ सामान चाहिए। कृपया बताइए क्या उपलब्ध है।`;
+      window.open(`https://wa.me/${shop.whatsapp}?text=${encodeURIComponent(message)}`, "_blank");
+    });
   };
 
-  const handleCall = () => window.open(`tel:+${shop.phone}`);
+  const handleCall = () => requireMembership(() => window.open(`tel:+${shop.phone}`));
 
   const handleDirections = () => {
     if (shop.lat && shop.lng) {
@@ -216,6 +220,7 @@ const ShopProfilePage = () => {
           </CardContent>
         </Card>
       </div>
+      {membershipDialog}
     </div>
   );
 };

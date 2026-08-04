@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import type { MatrimonyProfile } from "@/pages/MatrimonyPage";
 import { getAge } from "@/pages/MatrimonyPage";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useMembershipGate } from "@/hooks/useMembershipGate";
 
 interface Props {
   profile: MatrimonyProfile;
@@ -18,15 +19,18 @@ interface Props {
 
 const MatrimonyProfileCard = ({ profile: p, isRecommended, userId }: Props) => {
   const [viewOpen, setViewOpen] = useState(false);
+  const { requireMembership, membershipDialog } = useMembershipGate();
   const age = getAge(p.dob);
   const isOnline = Math.random() > 0.5; // Simulated — replace with real presence
 
-  const requestContact = async () => {
-    if (!userId) { toast.error("Please login first"); return; }
-    const { error } = await supabase.from("contact_requests").insert({ requester_id: userId, profile_id: p.id });
-    if (error?.code === "23505") toast.info("Request already sent");
-    else if (error) toast.error("Failed to send request");
-    else toast.success("Interest sent! ✨");
+  const requestContact = () => {
+    requireMembership(async () => {
+      if (!userId) { toast.error("Please login first"); return; }
+      const { error } = await supabase.from("contact_requests").insert({ requester_id: userId, profile_id: p.id });
+      if (error?.code === "23505") toast.info("Request already sent");
+      else if (error) toast.error("Failed to send request");
+      else toast.success("Interest sent! ✨");
+    });
   };
 
   return (
@@ -152,6 +156,7 @@ const MatrimonyProfileCard = ({ profile: p, isRecommended, userId }: Props) => {
           </Button>
         </DialogContent>
       </Dialog>
+      {membershipDialog}
     </>
   );
 };
