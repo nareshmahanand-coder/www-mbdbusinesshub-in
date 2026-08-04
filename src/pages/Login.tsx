@@ -8,27 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Capacitor } from "@capacitor/core";
-import { SocialLogin } from "@capgo/capacitor-social-login";
-import { Browser } from "@capacitor/browser";
 import { getPostLoginDestinationForUser, sanitizeAuthNextPath } from "@/lib/authRedirect";
-import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 
-const APP_ORIGIN = "https://shop.mbdbusinesshub.in";
-// Public Google Web Client ID used by the current managed Google sign-in flow.
-// Android native Google Sign-In must request an ID token for the same audience,
-// then the backend can create the app session without any redirect URI round-trip.
-const GOOGLE_WEB_CLIENT_ID =
-  (import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID as string | undefined)?.trim() ||
-  "36966220674-2ddjv8kfhn91b2k93qqsb54muc5ilvf2.apps.googleusercontent.com";
 const WEBSITE_AUTH_NEXT_KEY = "mbd-auth-next";
-
-const isEmbeddedWebsitePreview = () => {
-  try {
-    return window.self !== window.top;
-  } catch {
-    return true;
-  }
-};
 
 const rememberWebsiteAuthNext = (nextPath: string) => {
   try {
@@ -37,39 +19,6 @@ const rememberWebsiteAuthNext = (nextPath: string) => {
   } catch {
     // Storage can be unavailable in some browsers; login still continues.
   }
-};
-
-const isNativeGoogleConfigError = (err: any) => {
-  const raw = [err?.message, err?.code, err?.errorMessage, err]
-    .filter(Boolean)
-    .map(String)
-    .join(" ")
-    .toLowerCase();
-  return (
-    raw.includes("developer_error") ||
-    raw.includes("api_exception") ||
-    raw.includes("10:") ||
-    raw.includes("16:") ||
-    raw.includes("package name") ||
-    raw.includes("sha") ||
-    raw.includes("cannot find provider") ||
-    raw.includes("not initialized")
-  );
-};
-
-/** True when the native SocialLogin plugin is missing from this Android build. */
-const isPluginUnavailableError = (err: any) => {
-  const raw = [err?.message, err?.code, err?.errorMessage, err]
-    .filter(Boolean)
-    .map(String)
-    .join(" ")
-    .toLowerCase();
-  return (
-    raw.includes("not implemented") ||
-    raw.includes("not available") ||
-    raw.includes("unimplemented") ||
-    raw.includes("plugin is not")
-  );
 };
 
 const getGoogleErrorMessage = (err: any) => {
@@ -104,8 +53,7 @@ const getGoogleErrorMessage = (err: any) => {
 const getOAuthRedirectTo = (next: string, forceWebCallback = false) => {
   const params = new URLSearchParams({ next });
   if (!forceWebCallback && Capacitor.isNativePlatform()) params.set("native", "1");
-  const origin = Capacitor.isNativePlatform() ? APP_ORIGIN : window.location.origin;
-  return `${origin}/auth/callback?${params.toString()}`;
+  return `${window.location.origin}/auth/callback?${params.toString()}`;
 };
 
 export default function Login() {
@@ -156,91 +104,15 @@ export default function Login() {
 
   const handleGoogle = async () => {
     setBusy(true);
-    const isNative = Capacitor.isNativePlatform();
-
-    // Web-friendly fallback that works on any Android build, even when the
-    // native Google plugin is not compiled into the APK. Opens the standard
-    // Supabase Google OAuth page in the system browser and returns to the app
-    // through the existing /auth/callback -> deep-link bridge.
-    const runNativeBrowserGoogleLogin = async () => {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: getOAuthRedirectTo(next),
-          skipBrowserRedirect: true,
-          queryParams: { prompt: "select_account" },
-        },
-      });
-      if (error) throw error;
-      if (!data?.url) throw new Error("Google sign-in URL was not returned");
-      await Browser.open({ url: data.url, presentationStyle: "popover" });
-    };
 
     try {
-      if (isNative) {
-        // Preferred: native Google Sign-In -> ID token -> app session.
-        // If the SocialLogin plugin is missing from the build (the
-        // "SocialLogin plugin is not implemented on android" error), fall back
-        // to the browser OAuth flow so login still works.
-        if (!Capacitor.isPluginAvailable("SocialLogin")) {
-          await runNativeBrowserGoogleLogin();
-          return;
-        }
-
-        // Keep the native token audience deterministic. Reading it from remote
-        // config/localStorage can pair a release APK with a stale OAuth project.
-        let googleLogin: any;
-        try {
-          await SocialLogin.initialize({
-            google: {
-              webClientId: GOOGLE_WEB_CLIENT_ID,
-              mode: "online",
-            },
-          });
-          googleLogin = await SocialLogin.login({
-            provider: "google",
-            options: { scopes: ["email", "profile"] },
-          });
-        } catch (nativeErr: any) {
-          if (isPluginUnavailableError(nativeErr)) {
-            console.warn("[google-auth] SocialLogin unavailable, using browser OAuth", nativeErr);
-            await runNativeBrowserGoogleLogin();
-            return;
-          }
-          throw nativeErr;
-        }
-        const idToken = googleLogin.result.responseType === "online"
-          ? googleLogin.result.idToken
-          : null;
-        if (!idToken) {
-          throw new Error("Google did not return an Android ID token");
-        }
-
-        const { data, error } = await supabase.auth.signInWithIdToken({
-          provider: "google",
-          token: idToken,
-        });
-        if (error) throw error;
-        if (!data.session?.user) throw new Error("No active session after Google sign-in");
-
-        await persistNativeAuthSession(data.session);
-        const destination = getPostLoginDestinationForUser(data.session.user, next, isSuperUser);
-        window.location.replace(destination);
-        return;
-      }
-
-      const isEmbeddedWeb = isEmbeddedWebsitePreview();
-      if (!isEmbeddedWeb) rememberWebsiteAuthNext(next);
+      rememberWebsiteAuthNext(next);
 
       const result = await lovable.auth.signInWithOAuth("google", {
-        // Website root cause: in a normal top-level website tab the managed OAuth
-        // library performs a full-page redirect and returns before it can call
-        // supabase.auth.setSession(). Sending that flow back to `/` leaves the
-        // app without an explicit callback, so protected routes send the user
-        // back to /login. Embedded Lovable preview still uses origin for the
-        // web_message popup flow; published/custom-domain website uses the
-        // app callback route to persist the returned tokens.
-        redirect_uri: isEmbeddedWeb ? window.location.origin : `${window.location.origin}/auth/callback`,
+        // Use the same managed browser flow on web and Capacitor Android. This
+        // avoids native plugin/SHA registration failures and the legacy Google
+        // client-secret configuration that returned invalid_client on Android.
+        redirect_uri: window.location.origin,
         extraParams: { prompt: "select_account" },
       });
       if (result.error) throw result.error;
@@ -252,10 +124,6 @@ export default function Login() {
       window.location.replace(destination);
     } catch (err: any) {
       const message = getGoogleErrorMessage(err);
-      if (isNative && isNativeGoogleConfigError(err)) {
-        sessionStorage.setItem("mbd-native-google-config-error", String(Date.now()));
-        console.error("[google-auth] Native Android Google Sign-In configuration failed", err);
-      }
       toast.error(message);
       setBusy(false);
     }
