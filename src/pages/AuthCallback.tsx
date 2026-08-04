@@ -60,6 +60,22 @@ export default function AuthCallback() {
         if (callbackError) throw new Error(callbackError);
 
         const code = url.searchParams.get("code");
+
+        // Google (not Supabase) authorization codes look like "4/0A...". They arrive here
+        // when the Google OAuth client redirect URI points at this app route instead of the
+        // auth server callback. supabase.auth.exchangeCodeForSession() cannot consume them
+        // ("Unable to exchange external code"), so forward the whole callback to the auth
+        // server, which exchanges it and redirects back with its own code.
+        if (code && /^4\//.test(code) && url.searchParams.get("mbd_forwarded") !== "1") {
+          const authBase = (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(/\/$/, "");
+          if (authBase) {
+            const forwarded = new URLSearchParams(url.search);
+            forwarded.set("mbd_forwarded", "1");
+            window.location.replace(`${authBase}/auth/v1/callback?${forwarded.toString()}`);
+            return;
+          }
+        }
+
         const hashParams = new URLSearchParams(url.hash.replace(/^#/, ""));
         const accessToken = hashParams.get("access_token") || url.searchParams.get("access_token");
         const refreshToken = hashParams.get("refresh_token") || url.searchParams.get("refresh_token");
