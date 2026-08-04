@@ -167,6 +167,46 @@ Deno.serve(async (req) => {
         const { data } = await sb.from("complaints").select("*").order("created_at", { ascending: false }).limit(500);
         return json({ rows: data || [] });
       }
+      case "agents": {
+        const { data: agents } = await sb.from("agents").select("*").order("created_at", { ascending: false }).limit(1000);
+        const ids = (agents || []).map((a: any) => a.id);
+        let refCounts: Record<string, number> = {};
+        let commTotals: Record<string, number> = {};
+        if (ids.length) {
+          const [{ data: refs }, { data: comms }] = await Promise.all([
+            sb.from("agent_referrals").select("agent_id").in("agent_id", ids),
+            sb.from("agent_commissions").select("agent_id,amount").in("agent_id", ids),
+          ]);
+          (refs || []).forEach((r: any) => { refCounts[r.agent_id] = (refCounts[r.agent_id] || 0) + 1; });
+          (comms || []).forEach((c: any) => { commTotals[c.agent_id] = (commTotals[c.agent_id] || 0) + Number(c.amount || 0); });
+        }
+        return json({ rows: agents || [], refCounts, commTotals });
+      }
+      case "agent_detail": {
+        const { id } = body;
+        if (!id) return json({ error: "id required" }, 400);
+        const [{ data: agent }, { data: referrals }, { data: commissions }] = await Promise.all([
+          sb.from("agents").select("*").eq("id", id).maybeSingle(),
+          sb.from("agent_referrals").select("*").eq("agent_id", id).order("created_at", { ascending: false }),
+          sb.from("agent_commissions").select("*").eq("agent_id", id).order("created_at", { ascending: false }),
+        ]);
+        const userIds = Array.from(new Set((referrals || []).map((r: any) => r.merchant_user_id).filter(Boolean)));
+        let merchants: any[] = [];
+        if (userIds.length) {
+          const { data } = await sb.from("merchant_profiles").select("user_id,shop_name,city,phone,is_premium,premium_plan,plan_ends_at").in("user_id", userIds);
+          merchants = data || [];
+        }
+        return json({ agent: agent || null, referrals: referrals || [], commissions: commissions || [], merchants });
+      }
+      case "agent_status": {
+        const { id, status, admin_notes } = body;
+        if (!id || !["pending", "approved", "rejected", "suspended"].includes(status)) {
+          return json({ error: "invalid status" }, 400);
+        }
+        const { error } = await sb.from("agents").update({ status, admin_notes: admin_notes ?? "" }).eq("id", id);
+        if (error) return json({ error: error.message }, 400);
+        return json({ ok: true });
+      }
       case "audit": {
         const filter = body.filter || "all";
         let q = sb.from("payment_orders").select("*").order("created_at", { ascending: false }).limit(500);
