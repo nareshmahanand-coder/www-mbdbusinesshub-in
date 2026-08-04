@@ -88,7 +88,9 @@ const JobDetailPage = () => {
     setMessages((data as unknown as JobMessage[]) || []);
   };
 
-  const requestRecruiterNumber = async () => {
+  const requestRecruiterNumber = () => requireMembership(() => { void requestRecruiterNumberInner(); });
+
+  const requestRecruiterNumberInner = async () => {
     if (!user || !job) { toast.info("Please login to request recruiter number."); return; }
     if (job.user_id === user.id) { toast.info("This is your own job post."); return; }
     if (request?.status === "approved") { toast.success("Recruiter approved your request. Number is visible now."); return; }
@@ -150,7 +152,7 @@ const JobDetailPage = () => {
             <DetailRow icon={Phone} label="Recruiter Contact" value={approved && job.contact_phone ? job.contact_phone : request?.status === "pending" ? "Request pending approval" : "Hidden until recruiter approval"} />
             <Card><CardContent className="space-y-2 p-4">
               {approved && job.contact_phone ? <a href={`tel:${job.contact_phone}`}><Button className="w-full"><Phone className="mr-2 h-4 w-4" /> Call Recruiter</Button></a> : <Button variant="outline" className="w-full" onClick={requestRecruiterNumber}><ShieldCheck className="mr-2 h-4 w-4" /> {request?.status === "pending" ? "Request Pending" : "Request Contact Number"}</Button>}
-              <Button className="w-full" onClick={() => startChat()}><MessageCircle className="mr-2 h-4 w-4" /> Chat in App</Button>
+              <Button className="w-full" onClick={() => requireMembership(() => { void startChat(); })}><MessageCircle className="mr-2 h-4 w-4" /> Chat in App</Button>
             </CardContent></Card>
           </aside>
         </div>
@@ -164,6 +166,7 @@ const JobDetailPage = () => {
           <div className="flex gap-2"><Input value={replyMessage} onChange={e => setReplyMessage(e.target.value)} placeholder="Type message..." onKeyDown={e => { if (e.key === "Enter") void sendReply(); }} /><Button onClick={sendReply} disabled={!conversation || !replyMessage.trim()}><Send className="h-4 w-4" /></Button></div>
         </DialogContent>
       </Dialog>
+      {membershipDialog}
     </div>
   );
 };

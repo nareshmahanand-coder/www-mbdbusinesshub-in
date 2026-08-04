@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Search, SlidersHorizontal, Plus, X, MapPin, ChevronLeft, ChevronRight, MessageCircle, Phone, ShieldCheck, HeartHandshake, Eye, Home, ClipboardList, UserCircle, Archive, Trash2, Loader2, Navigation, Bell, CheckCircle2, Send } from "lucide-react";
 import { City, State } from "country-state-city";
 import { reverseGeocodeIndiaLocation, searchIndiaLocations } from "@/lib/googleLocation";
+import { useMembershipGate } from "@/hooks/useMembershipGate";
 
 export interface ClassifiedAd {
   id: string;
@@ -87,6 +88,7 @@ const conditionLabel = (condition?: string) => {
 
 const ClassifiedsPage = () => {
   const { user } = useAuth();
+  const { requireMembership, membershipDialog } = useMembershipGate();
   const [ads, setAds] = useState<ClassifiedAd[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
