@@ -213,6 +213,7 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
           {reported ? "Reported" : "Report Shop"}
         </button>
       </CardContent>
+      {membershipDialog}
     </Card>
   );
 };
