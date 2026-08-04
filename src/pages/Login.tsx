@@ -157,26 +157,58 @@ export default function Login() {
   const handleGoogle = async () => {
     setBusy(true);
     const isNative = Capacitor.isNativePlatform();
+
+    // Web-friendly fallback that works on any Android build, even when the
+    // native Google plugin is not compiled into the APK. Opens the standard
+    // Supabase Google OAuth page in the system browser and returns to the app
+    // through the existing /auth/callback -> deep-link bridge.
+    const runNativeBrowserGoogleLogin = async () => {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: getOAuthRedirectTo(next),
+          skipBrowserRedirect: true,
+          queryParams: { prompt: "select_account" },
+        },
+      });
+      if (error) throw error;
+      if (!data?.url) throw new Error("Google sign-in URL was not returned");
+      await Browser.open({ url: data.url, presentationStyle: "popover" });
+    };
+
     try {
       if (isNative) {
-        // Native Android must not use the browser OAuth redirect flow here:
-        // the current Google client rejects the broker callback URL before the
-        // app receives a code/token, which causes the visible login loop.
-        // Use native Google Sign-In -> backend ID-token session instead, and
-        // fail visibly if Firebase/package/SHA config is missing. Do not fall
-        // back to web OAuth on Android.
+        // Preferred: native Google Sign-In -> ID token -> app session.
+        // If the SocialLogin plugin is missing from the build (the
+        // "SocialLogin plugin is not implemented on android" error), fall back
+        // to the browser OAuth flow so login still works.
+        if (!Capacitor.isPluginAvailable("SocialLogin")) {
+          await runNativeBrowserGoogleLogin();
+          return;
+        }
+
         // Keep the native token audience deterministic. Reading it from remote
         // config/localStorage can pair a release APK with a stale OAuth project.
-        await SocialLogin.initialize({
-          google: {
-            webClientId: GOOGLE_WEB_CLIENT_ID,
-            mode: "online",
-          },
-        });
-        const googleLogin = await SocialLogin.login({
-          provider: "google",
-          options: { scopes: ["email", "profile"] },
-        });
+        let googleLogin: any;
+        try {
+          await SocialLogin.initialize({
+            google: {
+              webClientId: GOOGLE_WEB_CLIENT_ID,
+              mode: "online",
+            },
+          });
+          googleLogin = await SocialLogin.login({
+            provider: "google",
+            options: { scopes: ["email", "profile"] },
+          });
+        } catch (nativeErr: any) {
+          if (isPluginUnavailableError(nativeErr)) {
+            console.warn("[google-auth] SocialLogin unavailable, using browser OAuth", nativeErr);
+            await runNativeBrowserGoogleLogin();
+            return;
+          }
+          throw nativeErr;
+        }
         const idToken = googleLogin.result.responseType === "online"
           ? googleLogin.result.idToken
           : null;
