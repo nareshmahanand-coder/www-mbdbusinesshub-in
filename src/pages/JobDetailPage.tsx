@@ -48,6 +48,7 @@ const DetailRow = ({ icon: Icon, label, value }: { icon: React.ElementType; labe
 const JobDetailPage = () => {
   const { id } = useParams();
   const { user } = useAuth();
+  const { requireMembership, membershipDialog } = useMembershipGate();
   const [job, setJob] = useState<Job | null>(null);
   const [request, setRequest] = useState<JobContactRequest | null>(null);
   const [conversation, setConversation] = useState<JobConversation | null>(null);
