@@ -17,6 +17,15 @@ export const getStoredAgentReferral = () =>
 
 export const clearStoredAgentReferral = () => localStorage.removeItem(AGENT_REF_KEY);
 
+/** Build the public referral link an agent can share. */
+export const buildAgentReferralLink = (code: string) => {
+  const origin =
+    typeof window !== "undefined" && window.location.origin.startsWith("http")
+      ? window.location.origin
+      : "https://shop.mbdbusinesshub.in";
+  return `${origin}/merchant?ref=${encodeURIComponent(code)}`;
+};
+
 /**
  * Attach the stored referral code to a freshly registered merchant.
  * Safe to call always — it silently no-ops when there is no referral.
