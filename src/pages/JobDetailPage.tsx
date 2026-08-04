@@ -1,3 +1,4 @@
+import { useMembershipGate } from "@/hooks/useMembershipGate";
 import { useEffect, useState } from "react";
 import type React from "react";
 import { Link, useParams } from "react-router-dom";
