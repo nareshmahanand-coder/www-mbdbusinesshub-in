@@ -12,14 +12,6 @@ import { getPostLoginDestinationForUser, sanitizeAuthNextPath } from "@/lib/auth
 
 const WEBSITE_AUTH_NEXT_KEY = "mbd-auth-next";
 
-const isEmbeddedWebsitePreview = () => {
-  try {
-    return window.self !== window.top;
-  } catch {
-    return true;
-  }
-};
-
 const rememberWebsiteAuthNext = (nextPath: string) => {
   try {
     sessionStorage.setItem(WEBSITE_AUTH_NEXT_KEY, nextPath);
@@ -114,7 +106,6 @@ export default function Login() {
     setBusy(true);
 
     try {
-      const isEmbeddedWeb = isEmbeddedWebsitePreview();
       rememberWebsiteAuthNext(next);
 
       const result = await lovable.auth.signInWithOAuth("google", {
