@@ -724,6 +724,7 @@ const ClassifiedsPage = () => {
           )}
         </DialogContent>
       </Dialog>
+      {membershipDialog}
     </div>
   );
 };
