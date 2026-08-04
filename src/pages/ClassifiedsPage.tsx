@@ -239,7 +239,7 @@ const ClassifiedsPage = () => {
   const nextPhoto = () => setActivePhoto(i => selectedPhotos.length ? (i + 1) % selectedPhotos.length : 0);
   const prevPhoto = () => setActivePhoto(i => selectedPhotos.length ? (i - 1 + selectedPhotos.length) % selectedPhotos.length : 0);
 
-  const startChatForAd = async (ad: ClassifiedAd, messageText?: string) => {
+  const startChatForAdInner = async (ad: ClassifiedAd, messageText?: string) => {
     if (!user) { toast.info("Please login to chat with the seller."); return; }
     if (ad.user_id === user.id) { toast.info("This is your own listing."); return; }
     const message = messageText?.trim() || `Hi, I am interested in your ${ad.title}.`;
@@ -256,7 +256,12 @@ const ClassifiedsPage = () => {
     else { toast.success("Chat started with seller"); await loadConversations(); setActiveSection("chats"); }
   };
 
-  const requestSellerNumber = async (ad: ClassifiedAd) => {
+  const startChatForAd = (ad: ClassifiedAd, messageText?: string) =>
+    requireMembership(() => { void startChatForAdInner(ad, messageText); });
+
+  const requestSellerNumber = (ad: ClassifiedAd) => requireMembership(() => { void requestSellerNumberInner(ad); });
+
+  const requestSellerNumberInner = async (ad: ClassifiedAd) => {
     if (!user) { toast.info("Please login to request seller number."); return; }
     if (ad.user_id === user.id) { toast.info("This is your own listing."); return; }
     const existing = contactRequests.find(request => request.classified_id === ad.id && request.buyer_id === user.id);
@@ -265,7 +270,7 @@ const ClassifiedsPage = () => {
     const message = `Buyer is interested in ${ad.title} and requested your mobile number.`;
     const { error } = await supabase.from("classified_contact_requests" as any).insert({ classified_id: ad.id, buyer_id: user.id, seller_id: ad.user_id, message });
     if (error) toast.error("Could not send request");
-    else { toast.success("Request sent to seller for approval"); await loadContactRequests(); await startChatForAd(ad, `Hi, I am interested in ${ad.title}. Please approve my number request if convenient.`); }
+    else { toast.success("Request sent to seller for approval"); await loadContactRequests(); await startChatForAdInner(ad, `Hi, I am interested in ${ad.title}. Please approve my number request if convenient.`); }
   };
 
   const updateContactRequest = async (request: ContactRequest, status: "approved" | "rejected") => {
