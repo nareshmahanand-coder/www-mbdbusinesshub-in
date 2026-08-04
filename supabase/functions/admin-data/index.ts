@@ -192,11 +192,19 @@ Deno.serve(async (req) => {
         ]);
         const userIds = Array.from(new Set((referrals || []).map((r: any) => r.merchant_user_id).filter(Boolean)));
         let merchants: any[] = [];
+        let profiles: any[] = [];
+        let orders: any[] = [];
         if (userIds.length) {
-          const { data } = await sb.from("merchant_profiles").select("user_id,shop_name,city,phone,is_premium,premium_plan,plan_ends_at").in("user_id", userIds);
-          merchants = data || [];
+          const [{ data: mp }, { data: pf }, { data: po }] = await Promise.all([
+            sb.from("merchant_profiles").select("user_id,shop_name,owner_name,city,phone,whatsapp,is_premium,premium_plan,premium_start_date,plan_ends_at,access_status,created_at").in("user_id", userIds),
+            sb.from("profiles").select("id,display_name,phone,email").in("id", userIds),
+            sb.from("payment_orders").select("user_id,module,plan,amount,status,created_at,unlocked_at").in("user_id", userIds).eq("module", "merchant_premium").order("created_at", { ascending: false }),
+          ]);
+          merchants = mp || [];
+          profiles = pf || [];
+          orders = po || [];
         }
-        return json({ agent: agent || null, referrals: referrals || [], commissions: commissions || [], merchants });
+        return json({ agent: agent || null, referrals: referrals || [], commissions: commissions || [], merchants, profiles, orders });
       }
       case "agent_status": {
         const { id, status, admin_notes } = body;
