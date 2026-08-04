@@ -246,9 +246,9 @@ const EkycPage = () => {
   const goToMembership = useCallback(() => {
     if (redirectingToMembershipRef.current) return;
     redirectingToMembershipRef.current = true;
-    try { navigate("/membership", { replace: true }); } catch {}
+    try { navigate("/dashboard", { replace: true }); } catch {}
     window.setTimeout(() => {
-      if (window.location.pathname !== "/membership") window.location.replace("/membership");
+      if (window.location.pathname !== "/dashboard") window.location.replace("/dashboard");
     }, 120);
   }, [navigate]);
 

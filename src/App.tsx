@@ -35,8 +35,6 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import ProtectedRoute from "./components/ProtectedRoute";
-import { useKycStatus } from "@/hooks/useKycStatus";
-import { useBharatGauravMembership } from "@/hooks/useBharatGauravMembership";
 import { useLastKnownLocation } from "@/hooks/useLastKnownLocation";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { useBlockedStatus } from "@/hooks/useBlockedStatus";
@@ -91,16 +89,13 @@ const getPostLoginDestination = ({
   user,
   isSuperUser,
   hasKyc,
-  isMember,
 }: {
   user: { created_at?: string } | null;
   isSuperUser: boolean;
   hasKyc: boolean;
-  isMember: boolean;
 }) => {
   const onboardingRequired = requiresNewUserOnboarding(user, isSuperUser);
   if (onboardingRequired && !hasKyc) return "/ekyc";
-  if (onboardingRequired && !isMember) return "/membership";
   return POST_LOGIN_PATH;
 };
 
