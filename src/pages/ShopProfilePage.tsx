@@ -220,6 +220,7 @@ const ShopProfilePage = () => {
           </CardContent>
         </Card>
       </div>
+      {membershipDialog}
     </div>
   );
 };
