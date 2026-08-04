@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useLocation } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { MerchantPremiumLinkButton } from "@/components/MerchantPremiumLinkButton";
+import { attachAgentReferral } from "@/lib/agentReferral";
 
 const MerchantPortal = () => {
   const { user } = useAuth();
@@ -97,7 +98,7 @@ const MerchantPortal = () => {
     if (!isPanValid) { toast.error("कृपया मान्य PAN नंबर दर्ज करें (ABCDE1234F)"); return; }
     if (!aadhaarFrontUrl || !aadhaarBackUrl) { toast.error("आधार कार्ड के दोनों फ़ोटो अपलोड करें"); return; }
     if (!panUrl) { toast.error("PAN कार्ड का फ़ोटो अपलोड करें"); return; }
-    const { error } = await supabase.from("merchant_profiles").insert({
+    const { data: created, error } = await supabase.from("merchant_profiles").insert({
       user_id: user.id,
       owner_name: form.ownerName,
       aadhaar_last4: form.aadhaarNumber.slice(-4),
@@ -118,8 +119,13 @@ const MerchantPortal = () => {
       description: form.description,
       photos: shopPhotos,
       access_status: "active",
-    });
+    }).select("id").maybeSingle();
     if (error) { toast.error("Shop registration failed"); return; }
+    await attachAgentReferral({
+      merchantUserId: user.id,
+      merchantProfileId: created?.id ?? null,
+      shopName: form.shopName,
+    }).catch(() => {});
     toast.success("मुफ़्त रजिस्ट्रेशन सफल! आप चाहें तो प्रीमियम में अपग्रेड कर सकते हैं।");
     setSubmitted(true);
   };

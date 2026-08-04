@@ -98,6 +98,154 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_commissions: {
+        Row: {
+          agent_id: string
+          amount: number
+          created_at: string
+          id: string
+          merchant_user_id: string
+          note: string
+          payment_order_id: string | null
+          plan: string
+          razorpay_payment_id: string | null
+        }
+        Insert: {
+          agent_id: string
+          amount: number
+          created_at?: string
+          id?: string
+          merchant_user_id: string
+          note?: string
+          payment_order_id?: string | null
+          plan: string
+          razorpay_payment_id?: string | null
+        }
+        Update: {
+          agent_id?: string
+          amount?: number
+          created_at?: string
+          id?: string
+          merchant_user_id?: string
+          note?: string
+          payment_order_id?: string | null
+          plan?: string
+          razorpay_payment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_commissions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_referrals: {
+        Row: {
+          agent_id: string
+          created_at: string
+          id: string
+          merchant_profile_id: string | null
+          merchant_user_id: string
+          shop_name: string | null
+          source: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          id?: string
+          merchant_profile_id?: string | null
+          merchant_user_id: string
+          shop_name?: string | null
+          source?: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          id?: string
+          merchant_profile_id?: string | null
+          merchant_user_id?: string
+          shop_name?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_referrals_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agents: {
+        Row: {
+          aadhaar_back_url: string | null
+          aadhaar_front_url: string | null
+          aadhaar_number: string | null
+          address: string | null
+          admin_notes: string
+          agent_code: string
+          city: string | null
+          created_at: string
+          email: string | null
+          id: string
+          mobile: string
+          name: string
+          pan_number: string | null
+          pan_url: string | null
+          photo_url: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          wallet_balance: number
+        }
+        Insert: {
+          aadhaar_back_url?: string | null
+          aadhaar_front_url?: string | null
+          aadhaar_number?: string | null
+          address?: string | null
+          admin_notes?: string
+          agent_code?: string
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          mobile: string
+          name: string
+          pan_number?: string | null
+          pan_url?: string | null
+          photo_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          wallet_balance?: number
+        }
+        Update: {
+          aadhaar_back_url?: string | null
+          aadhaar_front_url?: string | null
+          aadhaar_number?: string | null
+          address?: string | null
+          admin_notes?: string
+          agent_code?: string
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          mobile?: string
+          name?: string
+          pan_number?: string | null
+          pan_url?: string | null
+          photo_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          wallet_balance?: number
+        }
+        Relationships: []
+      }
       bharat_gaurav_memberships: {
         Row: {
           amount: number
@@ -1752,6 +1900,7 @@ export type Database = {
         Args: { p_email: string; p_phone: string }
         Returns: Json
       }
+      generate_agent_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1782,6 +1931,15 @@ export type Database = {
           subscription_plan: string
           updated_at: string
           user_id: string
+        }[]
+      }
+      lookup_agent_by_code: {
+        Args: { p_code: string }
+        Returns: {
+          agent_code: string
+          id: string
+          name: string
+          status: string
         }[]
       }
     }

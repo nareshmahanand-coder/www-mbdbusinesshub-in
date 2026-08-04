@@ -30,6 +30,7 @@ import SkillDevelopmentPage from "./pages/SkillDevelopmentPage";
 import FamilySafetyPage from "./pages/FamilySafetyPage";
 import FamilyInvitePage from "./pages/FamilyInvitePage";
 import EkycPage from "./pages/EkycPage";
+import AgentPortal from "./pages/AgentPortal";
 import BharatGauravMembershipPage from "./pages/BharatGauravMembershipPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
@@ -43,6 +44,7 @@ import BlockedScreen from "@/components/BlockedScreen";
 import NotFound from "./pages/NotFound";
 import BharatMitraChatbot from "./components/BharatMitraChatbot";
 import InstallPromptAutoTrigger from "./components/InstallPromptAutoTrigger";
+import { captureAgentReferralFromUrl } from "@/lib/agentReferral";
 
 const NativePushBanner = () => {
   useEffect(() => {
@@ -186,6 +188,7 @@ const NativeAuthDeepLinkHandler = () => {
 
 const AppShell = () => {
   useLastKnownLocation();
+  useEffect(() => { captureAgentReferralFromUrl(); }, []);
   const { isSuperUser, user } = useAuth();
   const { settings, loading: settingsLoading } = useSiteSettings();
   const { blocked, reason, loading: blockedLoading } = useBlockedStatus();
@@ -211,6 +214,7 @@ const AppShell = () => {
         <Route path="/refund-policy" element={<LegalPage section="refund" />} />
         <Route path="/" element={<PublicHomeRoute />} />
         <Route path="/merchant" element={<KycRequiredRoute><MerchantPortal /></KycRequiredRoute>} />
+        <Route path="/agent" element={<AgentPortal />} />
         <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
         <Route path="/settings" element={<KycRequiredRoute><Navigate to="/dashboard?tab=settings" replace /></KycRequiredRoute>} />
         <Route path="/kisan" element={<KycRequiredRoute><KisanRegistration /></KycRequiredRoute>} />

@@ -16,6 +16,7 @@ const AppHeader = () => {
   const links = [
     { to: "/", label: t("home") },
     { to: "/merchant", label: t("merchant_portal") },
+    { to: "/agent", label: "Agent Portal" },
     { to: "/help", label: t("help_desk") },
     { to: "https://billing.mbdbusinesshub.in/", label: "Business Billing", external: true },
   ];
