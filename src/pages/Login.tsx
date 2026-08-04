@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Capacitor } from "@capacitor/core";
 import { SocialLogin } from "@capgo/capacitor-social-login";
+import { Browser } from "@capacitor/browser";
 import { getPostLoginDestinationForUser, sanitizeAuthNextPath } from "@/lib/authRedirect";
 import { persistNativeAuthSession } from "@/lib/capacitorSessionBridge";
 
@@ -53,6 +54,21 @@ const isNativeGoogleConfigError = (err: any) => {
     raw.includes("sha") ||
     raw.includes("cannot find provider") ||
     raw.includes("not initialized")
+  );
+};
+
+/** True when the native SocialLogin plugin is missing from this Android build. */
+const isPluginUnavailableError = (err: any) => {
+  const raw = [err?.message, err?.code, err?.errorMessage, err]
+    .filter(Boolean)
+    .map(String)
+    .join(" ")
+    .toLowerCase();
+  return (
+    raw.includes("not implemented") ||
+    raw.includes("not available") ||
+    raw.includes("unimplemented") ||
+    raw.includes("plugin is not")
   );
 };
 
