@@ -35,6 +35,7 @@ import BharatGauravMembershipPage from "./pages/BharatGauravMembershipPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useLastKnownLocation } from "@/hooks/useLastKnownLocation";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -204,6 +205,7 @@ const AppShell = () => {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/continue" element={<Navigate to="/dashboard" replace />} />
         <Route path="/signup" element={<Navigate to="/login" replace />} />
         <Route path="/ekyc" element={<ProtectedRoute allowDuringOnboarding><EkycPage /></ProtectedRoute>} />

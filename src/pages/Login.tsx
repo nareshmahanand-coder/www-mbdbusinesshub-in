@@ -2,53 +2,14 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { lovable } from "@/integrations/lovable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Capacitor } from "@capacitor/core";
+import { Mail, Lock, User, Loader2 } from "lucide-react";
+import logoCircle from "@/assets/logo-circle.jpeg";
 import { getPostLoginDestinationForUser, sanitizeAuthNextPath } from "@/lib/authRedirect";
-
-const WEBSITE_AUTH_NEXT_KEY = "mbd-auth-next";
-
-const rememberWebsiteAuthNext = (nextPath: string) => {
-  try {
-    sessionStorage.setItem(WEBSITE_AUTH_NEXT_KEY, nextPath);
-    localStorage.setItem(WEBSITE_AUTH_NEXT_KEY, nextPath);
-  } catch {
-    // Storage can be unavailable in some browsers; login still continues.
-  }
-};
-
-const getGoogleErrorMessage = (err: any) => {
-  const rawMessage = [err?.message, err?.code, err?.errorMessage, err]
-    .filter(Boolean)
-    .map(String)
-    .join(" ");
-  const lowerMessage = rawMessage.toLowerCase();
-  if (lowerMessage.includes("invalid_client") || lowerMessage.includes("client secret")) {
-    return "Google OAuth client settings are invalid. Please re-check the Google Client ID/Secret saved in backend auth settings.";
-  }
-  if (
-    lowerMessage.includes("developer_error") ||
-    /(^|\D)10($|\D)/.test(rawMessage) ||
-    lowerMessage.includes("api_exception") ||
-    lowerMessage.includes("package name") ||
-    lowerMessage.includes("sha")
-  ) {
-    return "Android Google Sign-In setup is incomplete for the Play Store release: add package com.merabharatdukaan.app2 with the Play App Signing SHA-1/SHA-256 in Google/Firebase, then rebuild the AAB.";
-  }
-  if (
-    lowerMessage.includes("redirect_uri_mismatch") ||
-    rawMessage.includes("28444") ||
-    /(^|\D)16($|\D)/.test(rawMessage) ||
-    lowerMessage.includes("developer console")
-  ) {
-    return "Google redirect mismatch: add this exact callback in Google OAuth Web Client: https://shop.mbdbusinesshub.in/~oauth/callback";
-  }
-  return rawMessage || "Google sign-in failed";
-};
 
 const getOAuthRedirectTo = (next: string, forceWebCallback = false) => {
   const params = new URLSearchParams({ next });
@@ -62,7 +23,7 @@ export default function Login() {
   const { user, loading, isSuperUser } = useAuth();
   const next = sanitizeAuthNextPath(searchParams.get("next"));
 
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -102,29 +63,23 @@ export default function Login() {
     };
   }, [loading, user, next, navigate, isSuperUser]);
 
-  const handleGoogle = async () => {
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Please enter your email");
+      return;
+    }
     setBusy(true);
-
     try {
-      rememberWebsiteAuthNext(next);
-
-      const result = await lovable.auth.signInWithOAuth("google", {
-        // Use the same managed browser flow on web and Capacitor Android. This
-        // avoids native plugin/SHA registration failures and the legacy Google
-        // client-secret configuration that returned invalid_client on Android.
-        redirect_uri: window.location.origin,
-        extraParams: { prompt: "select_account" },
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
-      if (result.error) throw result.error;
-      if (result.redirected) return;
-      // Wrapper already set the session; hard-replace so the app boots with it
-      // and ProtectedRoute doesn't briefly see an empty auth state.
-      const { data } = await supabase.auth.getSession();
-      const destination = getPostLoginDestinationForUser(data.session?.user ?? null, next, isSuperUser);
-      window.location.replace(destination);
+      if (error) throw error;
+      toast.success("Password reset link sent to your email");
+      setMode("signin");
     } catch (err: any) {
-      const message = getGoogleErrorMessage(err);
-      toast.error(message);
+      toast.error(err?.message || "Could not send reset link");
+    } finally {
       setBusy(false);
     }
   };
@@ -176,80 +131,107 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-md space-y-6 rounded-2xl border border-border bg-card p-8 shadow-lg">
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold text-foreground">
-            {mode === "signin" ? "Sign in" : "Create account"}
-          </h1>
-          <p className="text-sm text-muted-foreground">मेरा भारत दुकान</p>
-        </div>
-
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={handleGoogle}
-          disabled={busy}
-        >
-          Continue with Google
-        </Button>
-
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <div className="h-px flex-1 bg-border" />
-          <span>OR</span>
-          <div className="h-px flex-1 bg-border" />
-        </div>
-
-        <form onSubmit={handleEmail} className="space-y-4">
-          {mode === "signup" && (
-            <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-accent/20 via-background to-secondary/20 px-4 py-10">
+      <div className="w-full max-w-md rounded-[28px] p-[3px] bg-[linear-gradient(160deg,hsl(var(--accent))_0%,hsl(var(--card))_45%,hsl(var(--primary))_100%)] shadow-2xl">
+        <div className="rounded-[25px] bg-card px-6 py-8 sm:px-8">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <img
+              src={logoCircle}
+              alt="मेरा भारत दुकान logo"
+              className="h-20 w-20 rounded-full border-4 border-background object-cover shadow-lg"
+            />
+            <h1 className="text-2xl font-bold text-foreground">मेरा भारत दुकान</h1>
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+              Mera Bharat Dukaan
+            </p>
+            <div className="flex items-center gap-1.5">
+              <span className="h-1.5 w-8 rounded-full bg-accent" />
+              <span className="h-1.5 w-8 rounded-full bg-muted" />
+              <span className="h-1.5 w-8 rounded-full bg-primary" />
             </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+            <p className="pt-1 text-sm font-medium text-foreground">
+              {mode === "signin" ? "Sign in to your account" : mode === "signup" ? "Create a new account" : "Reset your password"}
+            </p>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-            />
+
+          <form onSubmit={mode === "forgot" ? handleForgot : handleEmail} className="mt-6 space-y-4">
+            {mode === "signup" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="name">Full Name</Label>
+                <div className="relative">
+                  <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input id="name" className="h-12 pl-10" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email</Label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  className="h-12 pl-10"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            {mode !== "forgot" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    className="h-12 pl-10"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                  />
+                </div>
+              </div>
+            )}
+
+            <Button type="submit" className="h-12 w-full rounded-xl text-base font-semibold" disabled={busy}>
+              {busy ? (
+                <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Please wait…</span>
+              ) : mode === "signin" ? "Sign In" : mode === "signup" ? "Create Account" : "Send Reset Link"}
+            </Button>
+          </form>
+
+          <div className="mt-5 flex flex-col items-center gap-2 text-sm">
+            {mode === "signin" && (
+              <>
+                <button type="button" onClick={() => setMode("forgot")} className="text-muted-foreground hover:text-foreground">
+                  Forgot Password?
+                </button>
+                <button type="button" onClick={() => setMode("signup")} className="font-semibold text-primary hover:underline">
+                  Create a new account
+                </button>
+              </>
+            )}
+            {mode !== "signin" && (
+              <button type="button" onClick={() => setMode("signin")} className="font-semibold text-primary hover:underline">
+                Back to Sign In
+              </button>
+            )}
           </div>
-          <Button type="submit" className="w-full" disabled={busy}>
-            {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
-          </Button>
-        </form>
 
-        <div className="text-center text-sm text-muted-foreground">
-          {mode === "signin" ? (
-            <button type="button" onClick={() => setMode("signup")} className="text-primary underline">
-              Need an account? Create one
-            </button>
-          ) : (
-            <button type="button" onClick={() => setMode("signin")} className="text-primary underline">
-              Already have an account? Sign in
-            </button>
-          )}
-        </div>
-
-        <div className="text-center">
-          <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">
-            ← Back to home
-          </Link>
+          <p className="mt-6 text-center text-[11px] leading-relaxed text-muted-foreground">
+            By continuing, you agree to our{" "}
+            <Link to="/terms" className="underline">Terms of Service &amp; Privacy Policy</Link>
+          </p>
+          <div className="mt-3 text-center">
+            <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">← Back to home</Link>
+          </div>
         </div>
       </div>
     </div>
