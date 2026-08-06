@@ -180,18 +180,77 @@ export type Database = {
           },
         ]
       }
+      agent_withdrawals: {
+        Row: {
+          account_holder_name: string | null
+          admin_notes: string
+          agent_id: string
+          amount: number
+          bank_account_number: string | null
+          created_at: string
+          id: string
+          ifsc_code: string | null
+          paid_at: string | null
+          status: string
+          updated_at: string
+          upi_id: string | null
+          user_id: string
+        }
+        Insert: {
+          account_holder_name?: string | null
+          admin_notes?: string
+          agent_id: string
+          amount: number
+          bank_account_number?: string | null
+          created_at?: string
+          id?: string
+          ifsc_code?: string | null
+          paid_at?: string | null
+          status?: string
+          updated_at?: string
+          upi_id?: string | null
+          user_id: string
+        }
+        Update: {
+          account_holder_name?: string | null
+          admin_notes?: string
+          agent_id?: string
+          amount?: number
+          bank_account_number?: string | null
+          created_at?: string
+          id?: string
+          ifsc_code?: string | null
+          paid_at?: string | null
+          status?: string
+          updated_at?: string
+          upi_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_withdrawals_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agents: {
         Row: {
           aadhaar_back_url: string | null
           aadhaar_front_url: string | null
           aadhaar_number: string | null
+          account_holder_name: string | null
           address: string | null
           admin_notes: string
           agent_code: string
+          bank_account_number: string | null
           city: string | null
           created_at: string
           email: string | null
           id: string
+          ifsc_code: string | null
           mobile: string
           name: string
           pan_number: string | null
@@ -199,6 +258,7 @@ export type Database = {
           photo_url: string | null
           status: string
           updated_at: string
+          upi_id: string | null
           user_id: string
           wallet_balance: number
         }
@@ -206,13 +266,16 @@ export type Database = {
           aadhaar_back_url?: string | null
           aadhaar_front_url?: string | null
           aadhaar_number?: string | null
+          account_holder_name?: string | null
           address?: string | null
           admin_notes?: string
           agent_code?: string
+          bank_account_number?: string | null
           city?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          ifsc_code?: string | null
           mobile: string
           name: string
           pan_number?: string | null
@@ -220,6 +283,7 @@ export type Database = {
           photo_url?: string | null
           status?: string
           updated_at?: string
+          upi_id?: string | null
           user_id: string
           wallet_balance?: number
         }
@@ -227,13 +291,16 @@ export type Database = {
           aadhaar_back_url?: string | null
           aadhaar_front_url?: string | null
           aadhaar_number?: string | null
+          account_holder_name?: string | null
           address?: string | null
           admin_notes?: string
           agent_code?: string
+          bank_account_number?: string | null
           city?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          ifsc_code?: string | null
           mobile?: string
           name?: string
           pan_number?: string | null
@@ -241,6 +308,7 @@ export type Database = {
           photo_url?: string | null
           status?: string
           updated_at?: string
+          upi_id?: string | null
           user_id?: string
           wallet_balance?: number
         }
