@@ -340,15 +340,18 @@ const AgentRegistrationForm = ({
 const AgentDashboard = ({ agent }: { agent: AgentRow }) => {
   const [referrals, setReferrals] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const referralLink = useMemo(() => buildAgentReferralLink(agent.agent_code), [agent.agent_code]);
 
   const load = async () => {
-    const [{ data: refs }, { data: comms }] = await Promise.all([
+    const [{ data: refs }, { data: comms }, { data: wds }] = await Promise.all([
       supabase.from("agent_referrals").select("*").eq("agent_id", agent.id).order("created_at", { ascending: false }),
       supabase.from("agent_commissions").select("*").eq("agent_id", agent.id).order("created_at", { ascending: false }),
+      supabase.from("agent_withdrawals").select("*").eq("agent_id", agent.id).order("created_at", { ascending: false }),
     ]);
     setReferrals(refs || []);
     setCommissions(comms || []);
+    setWithdrawals(wds || []);
   };
 
   useEffect(() => {
@@ -405,6 +408,10 @@ const AgentDashboard = ({ agent }: { agent: AgentRow }) => {
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Paid Subscriptions</p><p className="text-2xl font-bold">{commissions.length}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Total Earned</p><p className="text-2xl font-bold">{inr(agent.wallet_balance)}</p></CardContent></Card>
       </div>
+
+      <WithdrawalCard agent={agent} commissions={commissions} withdrawals={withdrawals} onDone={load} />
+
+      <BankDetailsCard agent={agent} />
 
       <Card>
         <CardHeader><CardTitle className="text-base">Your Referral Link</CardTitle></CardHeader>
