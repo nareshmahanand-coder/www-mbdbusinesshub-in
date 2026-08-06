@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { buildAgentReferralLink } from "@/lib/agentReferral";
 import {
   BadgeCheck, Copy, IndianRupee, LogIn, Share2, UserPlus, Users, Wallet, Loader2, Store, Clock,
+  Landmark, Banknote,
 } from "lucide-react";
 
 type AgentRow = {
@@ -30,7 +31,14 @@ type AgentRow = {
   admin_notes: string;
   wallet_balance: number;
   created_at: string;
+  account_holder_name?: string | null;
+  bank_account_number?: string | null;
+  ifsc_code?: string | null;
+  upi_id?: string | null;
 };
+
+const MIN_WITHDRAWAL = 1000;
+const HOLD_DAYS = 7;
 
 const inr = (n: number | null | undefined) =>
   "₹" + Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
@@ -182,6 +190,7 @@ const AgentRegistrationForm = ({
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [form, setForm] = useState({
     name: "", mobile: "", email, city: "", address: "", aadhaarNumber: "", panNumber: "",
+    accountHolderName: "", accountNumber: "", confirmAccountNumber: "", ifsc: "", upiId: "",
   });
   const [photoUrl, setPhotoUrl] = useState("");
   const [aadhaarFrontUrl, setAadhaarFrontUrl] = useState("");
@@ -219,6 +228,13 @@ const AgentRegistrationForm = ({
     if (mobile.length < 10) { toast.error("मान्य मोबाइल नंबर दर्ज करें"); return; }
     if (!photoUrl) { toast.error("अपनी फ़ोटो अपलोड करें"); return; }
     if (!aadhaarFrontUrl || !aadhaarBackUrl) { toast.error("आधार के दोनों फ़ोटो अपलोड करें"); return; }
+    const acc = form.accountNumber.replace(/\s/g, "");
+    const confirmAcc = form.confirmAccountNumber.replace(/\s/g, "");
+    const ifsc = form.ifsc.replace(/\s/g, "").toUpperCase();
+    if (!form.accountHolderName.trim()) { toast.error("खाताधारक का नाम दर्ज करें"); return; }
+    if (acc.length < 8) { toast.error("मान्य बैंक खाता नंबर दर्ज करें"); return; }
+    if (acc !== confirmAcc) { toast.error("खाता नंबर मेल नहीं खा रहे हैं"); return; }
+    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) { toast.error("मान्य IFSC कोड दर्ज करें"); return; }
     if (!acceptedTerms) { toast.error("कृपया एजेंट नियम और शर्तें स्वीकार करें"); return; }
 
     setSaving(true);
@@ -235,6 +251,10 @@ const AgentRegistrationForm = ({
       aadhaar_back_url: aadhaarBackUrl,
       pan_number: form.panNumber.toUpperCase() || null,
       pan_url: panDocUrl || null,
+      account_holder_name: form.accountHolderName.trim(),
+      bank_account_number: acc,
+      ifsc_code: ifsc,
+      upi_id: form.upiId.trim() || null,
     });
     setSaving(false);
     if (error) { toast.error(error.message || "Registration failed"); return; }
@@ -276,6 +296,17 @@ const AgentRegistrationForm = ({
           </div>
           <div><Label>Address</Label><Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} maxLength={500} /></div>
 
+          <div className="rounded-lg border bg-muted/20 p-4">
+            <p className="mb-3 flex items-center gap-2 text-sm font-semibold"><Landmark className="h-4 w-4 text-primary" /> Bank & UPI Details (कमीशन भुगतान हेतु)</p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div><Label>Account Holder Name *</Label><Input value={form.accountHolderName} onChange={(e) => setForm({ ...form, accountHolderName: e.target.value })} maxLength={100} /></div>
+              <div><Label>Bank Account Number *</Label><Input value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value })} maxLength={20} inputMode="numeric" /></div>
+              <div><Label>Confirm Account Number *</Label><Input value={form.confirmAccountNumber} onChange={(e) => setForm({ ...form, confirmAccountNumber: e.target.value })} maxLength={20} inputMode="numeric" /></div>
+              <div><Label>IFSC Code *</Label><Input value={form.ifsc} onChange={(e) => setForm({ ...form, ifsc: e.target.value.toUpperCase() })} maxLength={11} /></div>
+              <div className="md:col-span-2"><Label>UPI ID (Optional)</Label><Input value={form.upiId} onChange={(e) => setForm({ ...form, upiId: e.target.value })} maxLength={80} placeholder="name@bank" /></div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <UploadTile label="Photo *" url={photoUrl} folder="photo" onPick={() => photoRef.current?.click()} />
             <UploadTile label="Aadhaar Front *" url={aadhaarFrontUrl} folder="aadhaar-front" onPick={() => frontRef.current?.click()} />
@@ -307,17 +338,153 @@ const AgentRegistrationForm = ({
 };
 
 const AgentDashboard = ({ agent }: { agent: AgentRow }) => {
+  return <AgentDashboardInner agent={agent} />;
+};
+
+const WithdrawalCard = ({
+  agent, commissions, withdrawals, onDone,
+}: { agent: AgentRow; commissions: any[]; withdrawals: any[]; onDone: () => void | Promise<void> }) => {
+  const [amount, setAmount] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const holdCutoff = Date.now() - HOLD_DAYS * 24 * 60 * 60 * 1000;
+  const heldAmount = commissions
+    .filter((c) => new Date(c.created_at).getTime() > holdCutoff)
+    .reduce((s, c) => s + Number(c.amount || 0), 0);
+  const balance = Number(agent.wallet_balance || 0);
+  const eligible = Math.max(0, balance - heldAmount);
+  const hasBank = !!(agent.bank_account_number && agent.ifsc_code);
+  const canWithdraw = eligible >= MIN_WITHDRAWAL && hasBank;
+
+  const submit = async () => {
+    const amt = Number(amount || eligible);
+    if (!hasBank) { toast.error("पहले बैंक विवरण भरें"); return; }
+    if (amt < MIN_WITHDRAWAL) { toast.error(`न्यूनतम निकासी ${inr(MIN_WITHDRAWAL)} है`); return; }
+    if (amt > eligible) { toast.error("उपलब्ध eligible बैलेंस से अधिक राशि नहीं निकाल सकते"); return; }
+    setSubmitting(true);
+    const { error } = await supabase.from("agent_withdrawals").insert({
+      agent_id: agent.id,
+      user_id: (await supabase.auth.getUser()).data.user?.id as string,
+      amount: amt,
+      account_holder_name: agent.account_holder_name ?? null,
+      bank_account_number: agent.bank_account_number ?? null,
+      ifsc_code: agent.ifsc_code ?? null,
+      upi_id: agent.upi_id ?? null,
+    });
+    setSubmitting(false);
+    if (error) { toast.error(error.message || "Withdrawal request failed"); return; }
+    toast.success("निकासी अनुरोध भेज दिया गया — एडमिन अप्रूवल की प्रतीक्षा करें।");
+    setAmount("");
+    await onDone();
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Banknote className="h-4 w-4" /> Withdrawal</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid gap-3 sm:grid-cols-3 text-sm">
+          <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Wallet Balance</p><p className="font-bold">{inr(balance)}</p></div>
+          <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">On Hold ({HOLD_DAYS} days)</p><p className="font-bold text-amber-600">{inr(heldAmount)}</p></div>
+          <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Eligible</p><p className="font-bold text-emerald-600">{inr(eligible)}</p></div>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input
+            inputMode="numeric"
+            placeholder={`Amount (min ${MIN_WITHDRAWAL})`}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
+          />
+          <Button onClick={submit} disabled={!canWithdraw || submitting}>
+            {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Banknote className="mr-2 h-4 w-4" />}
+            Request Withdrawal
+          </Button>
+        </div>
+        {!hasBank && <p className="font-hindi text-xs text-destructive">निकासी से पहले बैंक विवरण भरना अनिवार्य है।</p>}
+        {hasBank && eligible < MIN_WITHDRAWAL && (
+          <p className="font-hindi text-xs text-muted-foreground">
+            न्यूनतम निकासी राशि {inr(MIN_WITHDRAWAL)} है। कमीशन {HOLD_DAYS} दिन के होल्डिंग पीरियड के बाद eligible होता है।
+          </p>
+        )}
+
+        {withdrawals.length > 0 && (
+          <div className="space-y-2 pt-2">
+            {withdrawals.map((w) => (
+              <div key={w.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
+                <div>
+                  <p className="font-medium">{inr(w.amount)}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(w.created_at).toLocaleString("en-IN")}</p>
+                </div>
+                <Badge variant={w.status === "paid" ? "default" : w.status === "rejected" ? "destructive" : "secondary"} className="capitalize">{w.status}</Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+const BankDetailsCard = ({ agent }: { agent: AgentRow }) => {
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    accountHolderName: agent.account_holder_name || "",
+    accountNumber: agent.bank_account_number || "",
+    confirmAccountNumber: agent.bank_account_number || "",
+    ifsc: agent.ifsc_code || "",
+    upiId: agent.upi_id || "",
+  });
+
+  const save = async () => {
+    const acc = form.accountNumber.replace(/\s/g, "");
+    const ifsc = form.ifsc.replace(/\s/g, "").toUpperCase();
+    if (!form.accountHolderName.trim()) { toast.error("खाताधारक का नाम दर्ज करें"); return; }
+    if (acc.length < 8) { toast.error("मान्य बैंक खाता नंबर दर्ज करें"); return; }
+    if (acc !== form.confirmAccountNumber.replace(/\s/g, "")) { toast.error("खाता नंबर मेल नहीं खा रहे हैं"); return; }
+    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) { toast.error("मान्य IFSC कोड दर्ज करें"); return; }
+    setSaving(true);
+    const { error } = await supabase.from("agents").update({
+      account_holder_name: form.accountHolderName.trim(),
+      bank_account_number: acc,
+      ifsc_code: ifsc,
+      upi_id: form.upiId.trim() || null,
+    }).eq("id", agent.id);
+    setSaving(false);
+    if (error) { toast.error(error.message || "Save failed"); return; }
+    toast.success("बैंक विवरण सुरक्षित हो गया");
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Landmark className="h-4 w-4" /> Bank & UPI Details</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid gap-3 md:grid-cols-2">
+          <div><Label>Account Holder Name</Label><Input value={form.accountHolderName} onChange={(e) => setForm({ ...form, accountHolderName: e.target.value })} maxLength={100} /></div>
+          <div><Label>Bank Account Number</Label><Input value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value })} maxLength={20} inputMode="numeric" /></div>
+          <div><Label>Confirm Account Number</Label><Input value={form.confirmAccountNumber} onChange={(e) => setForm({ ...form, confirmAccountNumber: e.target.value })} maxLength={20} inputMode="numeric" /></div>
+          <div><Label>IFSC Code</Label><Input value={form.ifsc} onChange={(e) => setForm({ ...form, ifsc: e.target.value.toUpperCase() })} maxLength={11} /></div>
+          <div className="md:col-span-2"><Label>UPI ID (Optional)</Label><Input value={form.upiId} onChange={(e) => setForm({ ...form, upiId: e.target.value })} maxLength={80} placeholder="name@bank" /></div>
+        </div>
+        <Button onClick={save} disabled={saving}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Save Details</Button>
+      </CardContent>
+    </Card>
+  );
+};
+
+const AgentDashboardInner = ({ agent }: { agent: AgentRow }) => {
   const [referrals, setReferrals] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
+  const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const referralLink = useMemo(() => buildAgentReferralLink(agent.agent_code), [agent.agent_code]);
 
   const load = async () => {
-    const [{ data: refs }, { data: comms }] = await Promise.all([
+    const [{ data: refs }, { data: comms }, { data: wds }] = await Promise.all([
       supabase.from("agent_referrals").select("*").eq("agent_id", agent.id).order("created_at", { ascending: false }),
       supabase.from("agent_commissions").select("*").eq("agent_id", agent.id).order("created_at", { ascending: false }),
+      supabase.from("agent_withdrawals").select("*").eq("agent_id", agent.id).order("created_at", { ascending: false }),
     ]);
     setReferrals(refs || []);
     setCommissions(comms || []);
+    setWithdrawals(wds || []);
   };
 
   useEffect(() => {
@@ -374,6 +541,10 @@ const AgentDashboard = ({ agent }: { agent: AgentRow }) => {
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Paid Subscriptions</p><p className="text-2xl font-bold">{commissions.length}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Total Earned</p><p className="text-2xl font-bold">{inr(agent.wallet_balance)}</p></CardContent></Card>
       </div>
+
+      <WithdrawalCard agent={agent} commissions={commissions} withdrawals={withdrawals} onDone={load} />
+
+      <BankDetailsCard agent={agent} />
 
       <Card>
         <CardHeader><CardTitle className="text-base">Your Referral Link</CardTitle></CardHeader>

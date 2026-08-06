@@ -1719,6 +1719,79 @@ const DeleteRequestsSection = () => {
   );
 };
 
+const AgentWithdrawalsCard = () => {
+  const [rows, setRows] = useState<any[]>([]);
+
+  const load = async () => {
+    const { data } = await supabase
+      .from("agent_withdrawals")
+      .select("*, agents(name, agent_code, mobile)")
+      .order("created_at", { ascending: false });
+    setRows(data || []);
+  };
+  useAutoRefresh(load, 15000, []);
+
+  const setStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from("agent_withdrawals").update({ status }).eq("id", id);
+    if (error) { toast.error(error.message || "Update failed"); return; }
+    toast.success(`Withdrawal ${status}`);
+    await load();
+  };
+
+  return (
+    <Card className="mb-4">
+      <CardHeader className="flex flex-row items-center justify-between gap-3">
+        <CardTitle className="text-base">Agent Withdrawal Requests ({rows.filter((r) => r.status === "pending").length} pending)</CardTitle>
+        <Button size="sm" variant="outline" onClick={load}><RefreshCw className="h-4 w-4" /></Button>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Agent</TableHead><TableHead>Amount</TableHead><TableHead>Bank / UPI</TableHead>
+              <TableHead>Requested</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((w) => (
+              <TableRow key={w.id}>
+                <TableCell className="text-xs">
+                  <p className="font-medium">{w.agents?.name || "—"}</p>
+                  <p className="font-mono text-muted-foreground">{w.agents?.agent_code} · {w.agents?.mobile}</p>
+                </TableCell>
+                <TableCell className="font-semibold">{inr(w.amount)}</TableCell>
+                <TableCell className="text-xs">
+                  <p>{w.account_holder_name || "—"}</p>
+                  <p className="font-mono">{w.bank_account_number || "—"} · {w.ifsc_code || "—"}</p>
+                  <p className="text-muted-foreground">{w.upi_id || ""}</p>
+                </TableCell>
+                <TableCell className="text-xs">{new Date(w.created_at).toLocaleString("en-IN")}</TableCell>
+                <TableCell>
+                  <Badge variant={w.status === "paid" ? "default" : w.status === "rejected" ? "destructive" : "secondary"} className="capitalize">{w.status}</Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex flex-wrap justify-end gap-1">
+                    {w.status === "pending" && (
+                      <Button size="sm" variant="outline" onClick={() => setStatus(w.id, "approved")}><CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Approve</Button>
+                    )}
+                    {w.status !== "paid" && w.status !== "rejected" && (
+                      <Button size="sm" className="bg-green-600 text-white hover:bg-green-700" onClick={() => setStatus(w.id, "paid")}>Mark Paid</Button>
+                    )}
+                    {w.status === "pending" && (
+                      <Button size="sm" variant="destructive" onClick={() => setStatus(w.id, "rejected")}><XCircle className="mr-1 h-3.5 w-3.5" /> Reject</Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {!rows.length && <p className="py-6 text-center text-sm text-muted-foreground">No withdrawal requests</p>}
+      </CardContent>
+    </Card>
+  );
+};
+
 const AgentsSection = () => {
   const [rows, setRows] = useState<any[]>([]);
   const [refCounts, setRefCounts] = useState<Record<string, number>>({});
@@ -1756,6 +1829,8 @@ const AgentsSection = () => {
   );
 
   return (
+    <>
+    <AgentWithdrawalsCard />
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-3">
         <CardTitle className="text-base">Agent Management ({rows.length})</CardTitle>
@@ -1901,6 +1976,7 @@ const AgentsSection = () => {
         </DialogContent>
       </Dialog>
     </Card>
+    </>
   );
 };
 
