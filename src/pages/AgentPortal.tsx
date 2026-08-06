@@ -190,6 +190,7 @@ const AgentRegistrationForm = ({
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [form, setForm] = useState({
     name: "", mobile: "", email, city: "", address: "", aadhaarNumber: "", panNumber: "",
+    accountHolderName: "", accountNumber: "", confirmAccountNumber: "", ifsc: "", upiId: "",
   });
   const [photoUrl, setPhotoUrl] = useState("");
   const [aadhaarFrontUrl, setAadhaarFrontUrl] = useState("");
@@ -227,6 +228,13 @@ const AgentRegistrationForm = ({
     if (mobile.length < 10) { toast.error("मान्य मोबाइल नंबर दर्ज करें"); return; }
     if (!photoUrl) { toast.error("अपनी फ़ोटो अपलोड करें"); return; }
     if (!aadhaarFrontUrl || !aadhaarBackUrl) { toast.error("आधार के दोनों फ़ोटो अपलोड करें"); return; }
+    const acc = form.accountNumber.replace(/\s/g, "");
+    const confirmAcc = form.confirmAccountNumber.replace(/\s/g, "");
+    const ifsc = form.ifsc.replace(/\s/g, "").toUpperCase();
+    if (!form.accountHolderName.trim()) { toast.error("खाताधारक का नाम दर्ज करें"); return; }
+    if (acc.length < 8) { toast.error("मान्य बैंक खाता नंबर दर्ज करें"); return; }
+    if (acc !== confirmAcc) { toast.error("खाता नंबर मेल नहीं खा रहे हैं"); return; }
+    if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) { toast.error("मान्य IFSC कोड दर्ज करें"); return; }
     if (!acceptedTerms) { toast.error("कृपया एजेंट नियम और शर्तें स्वीकार करें"); return; }
 
     setSaving(true);
@@ -243,6 +251,10 @@ const AgentRegistrationForm = ({
       aadhaar_back_url: aadhaarBackUrl,
       pan_number: form.panNumber.toUpperCase() || null,
       pan_url: panDocUrl || null,
+      account_holder_name: form.accountHolderName.trim(),
+      bank_account_number: acc,
+      ifsc_code: ifsc,
+      upi_id: form.upiId.trim() || null,
     });
     setSaving(false);
     if (error) { toast.error(error.message || "Registration failed"); return; }
@@ -283,6 +295,17 @@ const AgentRegistrationForm = ({
             <div><Label>PAN Number</Label><Input value={form.panNumber} onChange={(e) => setForm({ ...form, panNumber: e.target.value })} maxLength={10} /></div>
           </div>
           <div><Label>Address</Label><Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} maxLength={500} /></div>
+
+          <div className="rounded-lg border bg-muted/20 p-4">
+            <p className="mb-3 flex items-center gap-2 text-sm font-semibold"><Landmark className="h-4 w-4 text-primary" /> Bank & UPI Details (कमीशन भुगतान हेतु)</p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div><Label>Account Holder Name *</Label><Input value={form.accountHolderName} onChange={(e) => setForm({ ...form, accountHolderName: e.target.value })} maxLength={100} /></div>
+              <div><Label>Bank Account Number *</Label><Input value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value })} maxLength={20} inputMode="numeric" /></div>
+              <div><Label>Confirm Account Number *</Label><Input value={form.confirmAccountNumber} onChange={(e) => setForm({ ...form, confirmAccountNumber: e.target.value })} maxLength={20} inputMode="numeric" /></div>
+              <div><Label>IFSC Code *</Label><Input value={form.ifsc} onChange={(e) => setForm({ ...form, ifsc: e.target.value.toUpperCase() })} maxLength={11} /></div>
+              <div className="md:col-span-2"><Label>UPI ID (Optional)</Label><Input value={form.upiId} onChange={(e) => setForm({ ...form, upiId: e.target.value })} maxLength={80} placeholder="name@bank" /></div>
+            </div>
+          </div>
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <UploadTile label="Photo *" url={photoUrl} folder="photo" onPick={() => photoRef.current?.click()} />
