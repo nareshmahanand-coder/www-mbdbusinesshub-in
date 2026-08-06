@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { buildAgentReferralLink } from "@/lib/agentReferral";
 import {
   BadgeCheck, Copy, IndianRupee, LogIn, Share2, UserPlus, Users, Wallet, Loader2, Store, Clock,
+  Landmark, Banknote,
 } from "lucide-react";
 
 type AgentRow = {
@@ -30,7 +31,14 @@ type AgentRow = {
   admin_notes: string;
   wallet_balance: number;
   created_at: string;
+  account_holder_name?: string | null;
+  bank_account_number?: string | null;
+  ifsc_code?: string | null;
+  upi_id?: string | null;
 };
+
+const MIN_WITHDRAWAL = 1000;
+const HOLD_DAYS = 7;
 
 const inr = (n: number | null | undefined) =>
   "₹" + Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 });
