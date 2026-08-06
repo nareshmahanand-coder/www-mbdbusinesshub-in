@@ -179,6 +179,7 @@ const AgentRegistrationForm = ({
 }: { userId: string; email: string; onDone: () => void | Promise<void> }) => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [form, setForm] = useState({
     name: "", mobile: "", email, city: "", address: "", aadhaarNumber: "", panNumber: "",
   });
@@ -218,6 +219,7 @@ const AgentRegistrationForm = ({
     if (mobile.length < 10) { toast.error("मान्य मोबाइल नंबर दर्ज करें"); return; }
     if (!photoUrl) { toast.error("अपनी फ़ोटो अपलोड करें"); return; }
     if (!aadhaarFrontUrl || !aadhaarBackUrl) { toast.error("आधार के दोनों फ़ोटो अपलोड करें"); return; }
+    if (!acceptedTerms) { toast.error("कृपया एजेंट नियम और शर्तें स्वीकार करें"); return; }
 
     setSaving(true);
     const { error } = await supabase.from("agents").insert({
@@ -285,7 +287,16 @@ const AgentRegistrationForm = ({
           <input ref={backRef} type="file" accept="image/*" hidden onChange={(e) => pick(e, "aadhaar-back", setAadhaarBackUrl)} />
           <input ref={panRef} type="file" accept="image/*" hidden onChange={(e) => pick(e, "pan", setPanDocUrl)} />
 
-          <Button type="submit" className="w-full" disabled={saving}>
+          <AgentTerms compact />
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-lg border bg-muted/30 p-3">
+            <Checkbox checked={acceptedTerms} onCheckedChange={(v) => setAcceptedTerms(v === true)} className="mt-0.5" />
+            <span className="font-hindi text-sm">
+              मैंने ऊपर दी गई एजेंट नियम और शर्तें पढ़ ली हैं और मैं इन्हें पूरी तरह स्वीकार करता/करती हूँ।
+            </span>
+          </label>
+
+          <Button type="submit" className="w-full" disabled={saving || !acceptedTerms}>
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BadgeCheck className="mr-2 h-4 w-4" />}
             Submit Application
           </Button>
