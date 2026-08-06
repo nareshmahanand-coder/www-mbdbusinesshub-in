@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import AgentTerms from "@/components/AgentTerms";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -108,6 +110,10 @@ const AgentPortal = () => {
         {user && agent && agent.status !== "approved" && <AgentStatusCard agent={agent} />}
 
         {user && agent && agent.status === "approved" && <AgentDashboard agent={agent} />}
+
+        <div className="mt-6">
+          <AgentTerms />
+        </div>
       </main>
     </div>
   );
