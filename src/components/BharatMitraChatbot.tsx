@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
-import { X, Send, HelpCircle, AlertTriangle, ShoppingBag, Heart, Shield, Volume2, Droplets, Megaphone, PhoneCall, Mic, MicOff, Maximize2, Minimize2 } from "lucide-react";
+import { X, Send, HelpCircle, AlertTriangle, ShoppingBag, Heart, Shield, Volume2, VolumeX, Square, Droplets, Megaphone, PhoneCall, Mic, MicOff, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,6 +99,8 @@ const BharatMitraChatbot = () => {
   const [complaintLoading, setComplaintLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
+  const [voiceMuted, setVoiceMuted] = useState(false);
+  const voiceMutedRef = useRef(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [safetyActivated, setSafetyActivated] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -164,6 +166,7 @@ const BharatMitraChatbot = () => {
 
   // TTS — speak a specific message in a given language
   const speakText = useCallback((text: string, msgId?: string, langCode?: string) => {
+    if (voiceMutedRef.current) return;
     const hasWebSpeech = typeof window !== "undefined" && "speechSynthesis" in window;
     if (!isNativeTtsPlatform() && !hasWebSpeech) return;
     // Strip markdown/special characters so TTS reads only the actual words.
@@ -221,6 +224,27 @@ const BharatMitraChatbot = () => {
       },
     });
   }, [isPremium]);
+
+  // Stop any ongoing speech immediately
+  const stopSpeaking = useCallback(() => {
+    try { void cancelSpeech(); } catch {}
+    setIsSpeaking(false);
+    setSpeakingMsgId(null);
+  }, []);
+
+  // Mute = text-only mode (stops current audio and blocks future auto-speech)
+  const toggleMute = useCallback(() => {
+    setVoiceMuted((prev) => {
+      const next = !prev;
+      voiceMutedRef.current = next;
+      if (next) {
+        try { void cancelSpeech(); } catch {}
+        setIsSpeaking(false);
+        setSpeakingMsgId(null);
+      }
+      return next;
+    });
+  }, []);
 
   // STT — Web Speech API. Hands-free: auto-submits on stop and interrupts AI speech if currently speaking.
   const toggleListening = useCallback(() => {
@@ -804,6 +828,18 @@ const BharatMitraChatbot = () => {
           </p>
         </div>
         <div className="flex items-center gap-1" style={{ pointerEvents: "auto" }}>
+          {isSpeaking && (
+            <button onClick={stopSpeaking}
+              className="rounded-full bg-accent p-1.5 text-accent-foreground animate-pulse transition-colors"
+              title="आवाज़ बंद करें">
+              <Square className="h-4 w-4" />
+            </button>
+          )}
+          <button onClick={toggleMute}
+            className={`rounded-full p-1.5 transition-colors ${voiceMuted ? "bg-destructive/20 text-destructive" : "text-primary-foreground/50 hover:text-primary-foreground"}`}
+            title={voiceMuted ? "आवाज़ चालू करें" : "म्यूट करें (सिर्फ पढ़ें)"}>
+            {voiceMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+          </button>
           <button onClick={toggleSafeWalk}
             className={`rounded-full p-1.5 transition-colors ${safeWalkActive ? "bg-accent text-accent-foreground animate-pulse" : "text-primary-foreground/50 hover:text-primary-foreground"}`}
             title="Safe Walk">
@@ -879,13 +915,17 @@ const BharatMitraChatbot = () => {
                   </div>
                   {m.sender === "bot" && m.id !== "welcome" && (
                     <button
-                      onClick={() => speakText(m.text, m.id)}
+                      onClick={() => {
+                        if (speakingMsgId === m.id) { stopSpeaking(); return; }
+                        if (voiceMuted) { setVoiceMuted(false); voiceMutedRef.current = false; }
+                        speakText(m.text, m.id);
+                      }}
                       className={`ml-1 mt-1 flex-shrink-0 self-start rounded-full p-1 transition-colors ${
                         speakingMsgId === m.id ? "bg-accent text-accent-foreground animate-pulse" : "text-muted-foreground hover:text-accent hover:bg-accent/10"
                       }`}
-                      title="सुनें"
+                      title={speakingMsgId === m.id ? "रोकें" : "सुनें"}
                     >
-                      <Volume2 className="h-3.5 w-3.5" />
+                      {speakingMsgId === m.id ? <Square className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
                     </button>
                   )}
                 </div>
