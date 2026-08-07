@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
-import { X, Send, HelpCircle, AlertTriangle, ShoppingBag, Heart, Shield, Volume2, Droplets, Megaphone, PhoneCall, Mic, MicOff, Maximize2, Minimize2 } from "lucide-react";
+import { X, Send, HelpCircle, AlertTriangle, ShoppingBag, Heart, Shield, Volume2, VolumeX, Square, Droplets, Megaphone, PhoneCall, Mic, MicOff, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,6 +99,8 @@ const BharatMitraChatbot = () => {
   const [complaintLoading, setComplaintLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
+  const [voiceMuted, setVoiceMuted] = useState(false);
+  const voiceMutedRef = useRef(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [safetyActivated, setSafetyActivated] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -164,6 +166,7 @@ const BharatMitraChatbot = () => {
 
   // TTS — speak a specific message in a given language
   const speakText = useCallback((text: string, msgId?: string, langCode?: string) => {
+    if (voiceMutedRef.current) return;
     const hasWebSpeech = typeof window !== "undefined" && "speechSynthesis" in window;
     if (!isNativeTtsPlatform() && !hasWebSpeech) return;
     // Strip markdown/special characters so TTS reads only the actual words.
