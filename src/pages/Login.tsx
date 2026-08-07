@@ -93,18 +93,48 @@ export default function Login() {
     setBusy(true);
     try {
       if (mode === "signup") {
+        const fullName = name || email.split("@")[0];
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: getOAuthRedirectTo(next),
-            data: { full_name: name || email.split("@")[0] },
+            data: { full_name: fullName },
           },
         });
         if (error) throw error;
-        if (!data.session) {
+
+        // Auto-confirm is enabled, so sign the user in right away.
+        let activeSession = data.session ?? null;
+        if (!activeSession) {
+          const { data: signInData, error: signInError } =
+            await supabase.auth.signInWithPassword({ email, password });
+          if (signInError) throw signInError;
+          activeSession = signInData.session ?? null;
+        }
+
+        if (!activeSession?.user) {
           toast.success("Account created. Please sign in.");
           setMode("signin");
+          return;
+        }
+
+        // Make sure the profile row carries the details entered at signup.
+        await supabase.from("profiles").upsert(
+          {
+            id: activeSession.user.id,
+            email: activeSession.user.email ?? email,
+            display_name: fullName,
+            provider: "email",
+          },
+          { onConflict: "id" }
+        );
+
+        toast.success("Account created successfully");
+        if (!Capacitor.isNativePlatform()) {
+          const destination = getPostLoginDestinationForUser(activeSession.user, next, isSuperUser);
+          window.location.replace(destination);
+          return;
         }
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
