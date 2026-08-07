@@ -225,6 +225,27 @@ const BharatMitraChatbot = () => {
     });
   }, [isPremium]);
 
+  // Stop any ongoing speech immediately
+  const stopSpeaking = useCallback(() => {
+    try { void cancelSpeech(); } catch {}
+    setIsSpeaking(false);
+    setSpeakingMsgId(null);
+  }, []);
+
+  // Mute = text-only mode (stops current audio and blocks future auto-speech)
+  const toggleMute = useCallback(() => {
+    setVoiceMuted((prev) => {
+      const next = !prev;
+      voiceMutedRef.current = next;
+      if (next) {
+        try { void cancelSpeech(); } catch {}
+        setIsSpeaking(false);
+        setSpeakingMsgId(null);
+      }
+      return next;
+    });
+  }, []);
+
   // STT — Web Speech API. Hands-free: auto-submits on stop and interrupts AI speech if currently speaking.
   const toggleListening = useCallback(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
