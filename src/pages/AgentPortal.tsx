@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { buildAgentReferralLink } from "@/lib/agentReferral";
 import {
   BadgeCheck, Copy, IndianRupee, LogIn, Share2, UserPlus, Users, Wallet, Loader2, Store, Clock,
-  Landmark, Banknote,
+  Landmark, Banknote, Camera, Image as ImageIcon,
 } from "lucide-react";
 
 type AgentRow = {
