@@ -30,6 +30,48 @@ function isAmountMatch(actualPaise: number, baseRupees: number) {
   return Math.abs(actualPaise - basePaise) <= 2 || Math.abs(actualPaise - taxedPaise) <= 2;
 }
 
+async function creditAgentCommission(admin: any, order: any, paymentId: string) {
+  const base = Number(order.amount || 0);
+  if (!(base > 0)) return;
+  const amount = Math.round(base * 0.1 * 100) / 100;
+
+  const { data: referral } = await admin
+    .from("agent_referrals")
+    .select("agent_id")
+    .eq("merchant_user_id", order.user_id)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!referral?.agent_id) return;
+
+  const { data: agent } = await admin
+    .from("agents")
+    .select("id, status")
+    .eq("id", referral.agent_id)
+    .maybeSingle();
+  if (!agent || agent.status !== "approved") return;
+
+  if (paymentId) {
+    const { data: dup } = await admin
+      .from("agent_commissions")
+      .select("id")
+      .eq("razorpay_payment_id", paymentId)
+      .maybeSingle();
+    if (dup) return;
+  }
+
+  const { error } = await admin.from("agent_commissions").insert({
+    agent_id: agent.id,
+    merchant_user_id: order.user_id,
+    payment_order_id: order.id,
+    razorpay_payment_id: paymentId || null,
+    plan: order.plan,
+    amount,
+    note: `10% commission on ${order.module} ${order.plan} (₹${base})`,
+  });
+  if (error) console.error("agent commission insert failed", error);
+}
+
 async function unlock(admin: any, order: any, paymentId: string, signature: string, source: string) {
   if (order.status === "paid" && order.unlocked_at) return;
   const days = Number(order.metadata?.days || (order.plan === "yearly" ? 365 : 30));
@@ -84,6 +126,12 @@ async function unlock(admin: any, order: any, paymentId: string, signature: stri
     },
   }).eq("id", order.id);
   if (error) throw error;
+
+  try {
+    await creditAgentCommission(admin, order, paymentId);
+  } catch (e) {
+    console.error("agent commission error", e);
+  }
 }
 
 async function fetchRazorpayPayment(paymentId: string, keyId: string, keySecret: string) {

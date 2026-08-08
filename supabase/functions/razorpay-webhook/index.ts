@@ -215,8 +215,9 @@ async function findSubscriptionChargeOrder(admin: any, subscription: any, paymen
 }
 
 async function creditAgentCommission(admin: any, order: any, paymentId: string) {
-  if (order.module !== "merchant_premium") return;
-  const amount = order.plan === "yearly" ? 100 : 10;
+  const base = Number(order.amount || 0);
+  if (!(base > 0)) return;
+  const amount = Math.round(base * 0.1 * 100) / 100;
 
   const { data: referral } = await admin
     .from("agent_referrals")
@@ -250,7 +251,7 @@ async function creditAgentCommission(admin: any, order: any, paymentId: string) 
     razorpay_payment_id: paymentId || null,
     plan: order.plan,
     amount,
-    note: `Merchant ${order.plan} plan commission`,
+    note: `10% commission on ${order.module} ${order.plan} (₹${base})`,
   });
   if (error) console.error("agent commission insert failed", error);
 }

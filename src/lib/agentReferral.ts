@@ -17,13 +17,39 @@ export const getStoredAgentReferral = () =>
 
 export const clearStoredAgentReferral = () => localStorage.removeItem(AGENT_REF_KEY);
 
-/** Build the public referral link an agent can share. */
-export const buildAgentReferralLink = (code: string) => {
-  const origin =
-    typeof window !== "undefined" && window.location.origin.startsWith("http")
-      ? window.location.origin
-      : "https://shop.mbdbusinesshub.in";
-  return `${origin}/merchant?ref=${encodeURIComponent(code)}`;
+/** Look up an approved agent by their public Agent ID code. */
+export const lookupAgentByCode = async (code: string) => {
+  const clean = (code || "").trim().toUpperCase();
+  if (!clean) return null;
+  const { data } = await supabase.rpc("lookup_agent_by_code", { p_code: clean });
+  const match = Array.isArray(data) ? data[0] : data;
+  return match?.id ? match : null;
+};
+
+/**
+ * Link a freshly logged-in / registered user to the agent whose Agent ID they
+ * entered on the login screen. No-ops when the code is invalid or a link exists.
+ */
+export const linkUserToAgentCode = async (userId: string, code: string) => {
+  const match = await lookupAgentByCode(code);
+  if (!match) return { ok: false as const, reason: "invalid" as const };
+
+  const { data: existing } = await supabase
+    .from("agent_referrals")
+    .select("id")
+    .eq("merchant_user_id", userId)
+    .limit(1)
+    .maybeSingle();
+  if (existing) return { ok: true as const, agent: match };
+
+  const { error } = await supabase.from("agent_referrals").insert({
+    agent_id: match.id,
+    merchant_user_id: userId,
+    source: "login_agent_id",
+  });
+  if (error) return { ok: false as const, reason: "insert" as const };
+  clearStoredAgentReferral();
+  return { ok: true as const, agent: match };
 };
 
 /**

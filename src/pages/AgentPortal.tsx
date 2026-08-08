@@ -12,9 +12,8 @@ import AgentTerms from "@/components/AgentTerms";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { buildAgentReferralLink } from "@/lib/agentReferral";
 import {
-  BadgeCheck, Copy, IndianRupee, LogIn, Share2, UserPlus, Users, Wallet, Loader2, Store, Clock,
+  BadgeCheck, IndianRupee, LogIn, UserPlus, Users, Wallet, Loader2, Store, Clock, Info,
   Landmark, Banknote, Camera, Image as ImageIcon,
 } from "lucide-react";
 
@@ -488,7 +487,6 @@ const AgentDashboardInner = ({ agent }: { agent: AgentRow }) => {
   const [referrals, setReferrals] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
-  const referralLink = useMemo(() => buildAgentReferralLink(agent.agent_code), [agent.agent_code]);
 
   const load = async () => {
     const [{ data: refs }, { data: comms }, { data: wds }] = await Promise.all([
@@ -514,19 +512,6 @@ const AgentDashboardInner = ({ agent }: { agent: AgentRow }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agent.id]);
 
-  const copyLink = async () => {
-    await navigator.clipboard.writeText(referralLink);
-    toast.success("Referral link copied!");
-  };
-
-  const share = async () => {
-    const text = `मेरा भारत दुकान पर अपनी दुकान रजिस्टर करें: ${referralLink}`;
-    if (navigator.share) {
-      try { await navigator.share({ title: "Mera Bharat Dukaan", text, url: referralLink }); return; } catch { /* ignore */ }
-    }
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
-  };
-
   return (
     <div className="space-y-5">
       <Card className="overflow-hidden border-2 border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent">
@@ -539,7 +524,7 @@ const AgentDashboardInner = ({ agent }: { agent: AgentRow }) => {
               <IndianRupee className="h-7 w-7" />{Number(agent.wallet_balance || 0).toLocaleString("en-IN")}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              ₹10 per ₹99 monthly plan • ₹100 per ₹999 yearly plan
+              हर सब्सक्रिप्शन (₹10 / ₹99 / ₹999) और उसके रिन्यूअल पर 10% कमीशन
             </p>
           </div>
           <div className="text-right">
@@ -560,33 +545,34 @@ const AgentDashboardInner = ({ agent }: { agent: AgentRow }) => {
 
       <BankDetailsCard agent={agent} />
 
-      <Card>
-        <CardHeader><CardTitle className="text-base">Your Referral Link</CardTitle></CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Input readOnly value={referralLink} className="font-mono text-xs" />
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={copyLink}><Copy className="mr-1.5 h-4 w-4" /> Copy</Button>
-              <Button onClick={share}><Share2 className="mr-1.5 h-4 w-4" /> Share</Button>
-            </div>
-          </div>
+      <Card className="border-2 border-primary/25 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Info className="h-4 w-4 text-primary" /> रजिस्ट्रेशन कैसे करवाएँ
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <p className="font-hindi text-sm font-medium">
+            मर्चेंट पोर्टल का रजिस्ट्रेशन करवाने के लिए आपको लॉगिन करते समय अपना एजेंट आईडी दर्ज करना होगा।
+          </p>
           <p className="font-hindi text-xs text-muted-foreground">
-            इस लिंक से दुकानदार रजिस्टर करेंगे तो वे स्वतः आपके नाम जुड़ जाएँगे।
+            लॉगिन/रजिस्ट्रेशन स्क्रीन पर “Agent” विकल्प चुनकर यह Agent ID डालें:{" "}
+            <span className="font-mono font-bold text-foreground">{agent.agent_code}</span>
           </p>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Store className="h-4 w-4" /> Merchants Under You</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Store className="h-4 w-4" /> आपके द्वारा जोड़े गए लॉगिन</CardTitle></CardHeader>
         <CardContent>
           {referrals.length === 0 ? (
-            <p className="text-sm text-muted-foreground">अभी कोई रेफरल नहीं। अपना लिंक शेयर करें।</p>
+            <p className="font-hindi text-sm text-muted-foreground">अभी कोई रजिस्ट्रेशन नहीं। यूज़र को लॉगिन के समय अपना Agent ID दर्ज करने को कहें।</p>
           ) : (
             <div className="space-y-2">
               {referrals.map((r) => (
                 <div key={r.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
                   <div>
-                    <p className="font-medium">{r.shop_name || "Shop"}</p>
+                    <p className="font-medium">{r.shop_name || (r.source === "login_agent_id" ? "Login (Agent ID)" : "User")}</p>
                     <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("en-IN")}</p>
                   </div>
                   <Badge variant="secondary">Joined</Badge>
@@ -598,7 +584,7 @@ const AgentDashboardInner = ({ agent }: { agent: AgentRow }) => {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" /> Commission History</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" /> Commission History (10%)</CardTitle></CardHeader>
         <CardContent>
           {commissions.length === 0 ? (
             <p className="text-sm text-muted-foreground">अभी कोई कमीशन नहीं मिला है।</p>
