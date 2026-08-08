@@ -10,6 +10,7 @@ import { Capacitor } from "@capacitor/core";
 import { Mail, Lock, User, Loader2 } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { getPostLoginDestinationForUser, sanitizeAuthNextPath } from "@/lib/authRedirect";
+import { linkUserToAgentCode } from "@/lib/agentReferral";
 
 const getOAuthRedirectTo = (next: string, forceWebCallback = false) => {
   const params = new URLSearchParams({ next });
@@ -28,6 +29,17 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [regType, setRegType] = useState<"self" | "agent">("self");
+  const [agentId, setAgentId] = useState("");
+
+  const linkAgentIfNeeded = async (userId: string) => {
+    if (regType !== "agent") return;
+    const code = agentId.trim().toUpperCase();
+    if (!code) return;
+    const res = await linkUserToAgentCode(userId, code);
+    if (res.ok) toast.success(`Agent ${code} से जुड़ गए`);
+    else toast.error("Agent ID अमान्य है — रजिस्ट्रेशन self के रूप में हुआ");
+  };
 
   // If already authenticated, leave the login page.
   useEffect(() => {
@@ -90,6 +102,10 @@ export default function Login() {
       toast.error("Email and password required");
       return;
     }
+    if (regType === "agent" && !agentId.trim()) {
+      toast.error("कृपया Agent ID दर्ज करें");
+      return;
+    }
     setBusy(true);
     try {
       if (mode === "signup") {
@@ -131,6 +147,7 @@ export default function Login() {
         );
 
         toast.success("Account created successfully");
+        await linkAgentIfNeeded(activeSession.user.id);
         if (!Capacitor.isNativePlatform()) {
           const destination = getPostLoginDestinationForUser(activeSession.user, next, isSuperUser);
           window.location.replace(destination);
@@ -148,10 +165,12 @@ export default function Login() {
           const { data: verifiedAuth } = await supabase.auth.getSession();
           const activeUser = verifiedAuth.session?.user ?? data.session?.user ?? null;
           if (!activeUser) throw new Error("No active session after sign in");
+          await linkAgentIfNeeded(activeUser.id);
           const destination = getPostLoginDestinationForUser(activeUser, next, isSuperUser);
           window.location.replace(destination);
           return;
         }
+        if (data.session?.user) await linkAgentIfNeeded(data.session.user.id);
       }
     } catch (err: any) {
       toast.error(err?.message || "Authentication failed");
@@ -185,6 +204,47 @@ export default function Login() {
           </div>
 
           <form onSubmit={mode === "forgot" ? handleForgot : handleEmail} className="mt-6 space-y-4">
+            {mode !== "forgot" && (
+              <div className="space-y-2">
+                <Label>रजिस्ट्रेशन प्रकार / Registration type</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRegType("self")}
+                    className={`rounded-xl border-2 px-3 py-3 text-sm font-semibold transition-colors ${
+                      regType === "self" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                    }`}
+                  >
+                    Self
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRegType("agent")}
+                    className={`rounded-xl border-2 px-3 py-3 text-sm font-semibold transition-colors ${
+                      regType === "agent" ? "border-accent bg-accent/10 text-accent-foreground" : "border-border text-muted-foreground"
+                    }`}
+                  >
+                    Agent
+                  </button>
+                </div>
+                {regType === "agent" && (
+                  <div className="space-y-1.5 pt-1">
+                    <Label htmlFor="agentId">Agent ID</Label>
+                    <Input
+                      id="agentId"
+                      className="h-12 font-mono uppercase"
+                      placeholder="AG123ABC"
+                      value={agentId}
+                      onChange={(e) => setAgentId(e.target.value.toUpperCase())}
+                    />
+                    <p className="font-hindi text-[11px] text-muted-foreground">
+                      एजेंट के माध्यम से रजिस्ट्रेशन के लिए उनका Agent ID दर्ज करें।
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {mode === "signup" && (
               <div className="space-y-1.5">
                 <Label htmlFor="name">Full Name</Label>
