@@ -1960,6 +1960,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      agent_transaction_log: {
+        Args: {
+          p_agent_id?: string
+          p_from?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_to?: string
+        }
+        Returns: {
+          agent_code: string
+          agent_id: string
+          agent_name: string
+          amount: number
+          created_at: string
+          id: string
+          merchant_name: string
+          merchant_user_id: string
+          module: string
+          plan: string
+          razorpay_payment_id: string
+          shop_name: string
+          total_count: number
+        }[]
+      }
       check_kyc_duplicate: {
         Args: { p_aadhaar: string; p_mobile: string }
         Returns: Json
