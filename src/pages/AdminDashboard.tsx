@@ -1793,6 +1793,101 @@ const AgentWithdrawalsCard = () => {
 };
 
 const AgentsSection = () => {
+  return (
+    <>
+      <AgentTransactionLogCard />
+      <AgentsManagementSection />
+    </>
+  );
+};
+
+const AgentTransactionLogCard = () => {
+  const [rows, setRows] = useState<any[]>([]);
+  const [total, setTotal] = useState(0);
+  const [q, setQ] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const d = await adminFetch("agent_transactions", { search: q, from, to });
+    setLoading(false);
+    if (!d) { toast.error("Failed to load transactions"); return; }
+    setRows(d.rows || []);
+    setTotal(Number(d.total || 0));
+  };
+
+  useEffect(() => { void load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  const exportCsv = () => {
+    const head = ["Date/Time", "Agent ID", "Agent Name", "Merchant Name", "Shop Name", "Plan", "Module", "Commission"];
+    const body = rows.map((r) => [
+      new Date(r.created_at).toLocaleString("en-IN"), r.agent_code, r.agent_name,
+      r.merchant_name, r.shop_name, r.plan, r.module, r.amount,
+    ]);
+    const csv = [head, ...body].map((line) => line.map((c: any) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = `agent-transactions-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <Card className="mb-4">
+      <CardHeader className="gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <CardTitle className="text-base">Transaction & Commission Log ({rows.length}) · Total {inr(total)}</CardTitle>
+          <div className="flex flex-wrap items-center gap-2">
+            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="h-9 w-40" />
+            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="h-9 w-40" />
+            <Input
+              placeholder="Agent ID / Agent / Merchant / Shop…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") void load(); }}
+              className="h-9 w-64"
+            />
+            <Button size="sm" onClick={load} disabled={loading}><Search className="mr-1 h-4 w-4" /> Search</Button>
+            <Button size="sm" variant="outline" onClick={() => { setQ(""); setFrom(""); setTo(""); setTimeout(() => void load(), 0); }}>Reset</Button>
+            <Button size="sm" variant="outline" onClick={exportCsv}>CSV</Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date / Time</TableHead><TableHead>Agent</TableHead><TableHead>Merchant</TableHead>
+              <TableHead>Shop Name</TableHead><TableHead>Plan</TableHead><TableHead className="text-right">Commission</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell className="whitespace-nowrap text-xs">{new Date(r.created_at).toLocaleString("en-IN")}</TableCell>
+                <TableCell className="text-xs">
+                  <p className="font-medium">{r.agent_name}</p>
+                  <p className="font-mono text-muted-foreground">{r.agent_code}</p>
+                </TableCell>
+                <TableCell className="text-xs">
+                  <p className="font-medium">{r.merchant_name}</p>
+                  <p className="text-muted-foreground">{r.merchant_phone || "—"}</p>
+                </TableCell>
+                <TableCell className="text-xs">{r.shop_name}{r.city ? ` · ${r.city}` : ""}</TableCell>
+                <TableCell className="text-xs capitalize">{r.plan}{r.module ? ` · ${String(r.module).replace(/_/g, " ")}` : ""}</TableCell>
+                <TableCell className="text-right text-xs font-semibold text-emerald-600">+{inr(r.amount)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {!rows.length && <p className="py-8 text-center text-sm text-muted-foreground">No transactions found</p>}
+      </CardContent>
+    </Card>
+  );
+};
+
+const AgentsManagementSection = () => {
   const [rows, setRows] = useState<any[]>([]);
   const [refCounts, setRefCounts] = useState<Record<string, number>>({});
   const [commTotals, setCommTotals] = useState<Record<string, number>>({});

@@ -215,6 +215,69 @@ Deno.serve(async (req) => {
         if (error) return json({ error: error.message }, 400);
         return json({ ok: true });
       }
+      case "agent_transactions": {
+        const search = String(body.search || "").trim().toLowerCase();
+        const agentId = body.agent_id ? String(body.agent_id) : "";
+        const from = body.from ? new Date(String(body.from)).toISOString() : "";
+        const to = body.to ? new Date(String(body.to) + "T23:59:59.999Z").toISOString() : "";
+
+        let q = sb.from("agent_commissions").select("*").order("created_at", { ascending: false }).limit(5000);
+        if (agentId) q = q.eq("agent_id", agentId);
+        if (from) q = q.gte("created_at", from);
+        if (to) q = q.lte("created_at", to);
+        const { data: comms, error } = await q;
+        if (error) return json({ error: error.message }, 400);
+
+        const agentIds = Array.from(new Set((comms || []).map((c: any) => c.agent_id).filter(Boolean)));
+        const userIds = Array.from(new Set((comms || []).map((c: any) => c.merchant_user_id).filter(Boolean)));
+        const orderIds = Array.from(new Set((comms || []).map((c: any) => c.payment_order_id).filter(Boolean)));
+
+        const [{ data: agents }, { data: profiles }, { data: shops }, { data: orders }] = await Promise.all([
+          agentIds.length ? sb.from("agents").select("id,name,agent_code,mobile").in("id", agentIds) : Promise.resolve({ data: [] } as any),
+          userIds.length ? sb.from("profiles").select("id,display_name,email,phone").in("id", userIds) : Promise.resolve({ data: [] } as any),
+          userIds.length ? sb.from("merchant_profiles").select("user_id,shop_name,city").in("user_id", userIds) : Promise.resolve({ data: [] } as any),
+          orderIds.length ? sb.from("payment_orders").select("id,module,plan,amount").in("id", orderIds) : Promise.resolve({ data: [] } as any),
+        ]);
+
+        const agentMap = new Map((agents || []).map((a: any) => [a.id, a]));
+        const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+        const shopMap = new Map((shops || []).map((s: any) => [s.user_id, s]));
+        const orderMap = new Map((orders || []).map((o: any) => [o.id, o]));
+
+        let rows = (comms || []).map((c: any) => {
+          const a: any = agentMap.get(c.agent_id) || {};
+          const p: any = profileMap.get(c.merchant_user_id) || {};
+          const s: any = shopMap.get(c.merchant_user_id) || {};
+          const o: any = orderMap.get(c.payment_order_id) || {};
+          return {
+            id: c.id,
+            created_at: c.created_at,
+            agent_id: c.agent_id,
+            agent_name: a.name || "—",
+            agent_code: a.agent_code || "—",
+            merchant_user_id: c.merchant_user_id,
+            merchant_name: p.display_name || p.email || "—",
+            merchant_phone: p.phone || "",
+            shop_name: s.shop_name || "—",
+            city: s.city || "",
+            plan: c.plan,
+            module: o.module || "",
+            base_amount: o.amount ?? null,
+            amount: Number(c.amount || 0),
+            razorpay_payment_id: c.razorpay_payment_id || "",
+          };
+        });
+
+        if (search) {
+          rows = rows.filter((r: any) =>
+            [r.agent_name, r.agent_code, r.merchant_name, r.merchant_phone, r.shop_name, r.city, r.plan, r.module, r.razorpay_payment_id]
+              .some((v: string) => String(v || "").toLowerCase().includes(search)),
+          );
+        }
+
+        const total = rows.reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0);
+        return json({ rows, total, count: rows.length });
+      }
       case "audit": {
         const filter = body.filter || "all";
         let q = sb.from("payment_orders").select("*").order("created_at", { ascending: false }).limit(500);

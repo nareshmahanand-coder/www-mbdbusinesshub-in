@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   BadgeCheck, IndianRupee, LogIn, UserPlus, Users, Wallet, Loader2, Store, Clock, Info,
-  Landmark, Banknote, Camera, Image as ImageIcon,
+  Landmark, Banknote, Camera, Image as ImageIcon, Search, Receipt,
 } from "lucide-react";
 
 type AgentRow = {
@@ -583,31 +583,99 @@ const AgentDashboardInner = ({ agent }: { agent: AgentRow }) => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Users className="h-4 w-4" /> Commission History (10%)</CardTitle></CardHeader>
-        <CardContent>
-          {commissions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">अभी कोई कमीशन नहीं मिला है।</p>
-          ) : (
-            <div className="space-y-2">
-              {commissions.map((c) => (
-                <div key={c.id} className="flex items-center justify-between rounded-lg border p-3 text-sm">
-                  <div>
-                    <p className="font-medium capitalize">{c.plan} plan</p>
-                    <p className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString("en-IN")}</p>
-                  </div>
-                  <span className="font-semibold text-emerald-600">+{inr(c.amount)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <AgentTransactionLog agentId={agent.id} />
 
       <p className="text-center text-xs text-muted-foreground">
         सवाल? <Link to="/help" className="underline">Help Desk</Link>
       </p>
     </div>
+  );
+};
+
+type TxRow = {
+  id: string;
+  created_at: string;
+  merchant_name: string | null;
+  shop_name: string | null;
+  plan: string | null;
+  module: string | null;
+  amount: number;
+};
+
+const AgentTransactionLog = ({ agentId }: { agentId: string }) => {
+  const [rows, setRows] = useState<TxRow[]>([]);
+  const [q, setQ] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    setBusy(true);
+    const { data, error } = await supabase.rpc("agent_transaction_log", {
+      p_agent_id: agentId,
+      p_search: q.trim() || null,
+      p_from: from ? new Date(`${from}T00:00:00`).toISOString() : null,
+      p_to: to ? new Date(`${to}T23:59:59`).toISOString() : null,
+      p_limit: 500,
+      p_offset: 0,
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message || "Load failed"); return; }
+    setRows((data as unknown as TxRow[]) || []);
+  };
+
+  useEffect(() => { void load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [agentId]);
+
+  const total = useMemo(() => rows.reduce((s, r) => s + Number(r.amount || 0), 0), [rows]);
+
+  return (
+    <Card>
+      <CardHeader className="space-y-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Receipt className="h-4 w-4" /> Transaction Log — कमीशन इतिहास (10%)
+        </CardTitle>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <Input
+            placeholder="दुकान / मर्चेंट / प्लान खोजें"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") void load(); }}
+          />
+          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          <div className="flex gap-2">
+            <Button className="flex-1" onClick={load} disabled={busy}>
+              {busy ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Search className="mr-1 h-4 w-4" />} खोजें
+            </Button>
+            <Button variant="outline" onClick={() => { setQ(""); setFrom(""); setTo(""); setTimeout(() => void load(), 0); }}>Reset</Button>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {rows.length} transactions · कुल कमीशन <span className="font-semibold text-emerald-600">{inr(total)}</span>
+        </p>
+      </CardHeader>
+      <CardContent>
+        {rows.length === 0 ? (
+          <p className="font-hindi text-sm text-muted-foreground">इस फ़िल्टर में कोई कमीशन ट्रांज़ैक्शन नहीं मिला।</p>
+        ) : (
+          <div className="space-y-2">
+            {rows.map((r) => (
+              <div key={r.id} className="flex items-start justify-between gap-3 rounded-lg border p-3 text-sm">
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{r.shop_name || r.merchant_name || "—"}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {r.merchant_name || "—"} · <span className="capitalize">{r.plan}</span>
+                    {r.module ? ` · ${String(r.module).replace(/_/g, " ")}` : ""}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString("en-IN")}</p>
+                </div>
+                <span className="whitespace-nowrap font-semibold text-emerald-600">+{inr(r.amount)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
