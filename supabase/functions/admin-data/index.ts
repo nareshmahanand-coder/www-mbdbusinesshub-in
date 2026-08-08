@@ -207,6 +207,7 @@ Deno.serve(async (req) => {
         return json({ agent: agent || null, referrals: referrals || [], commissions: commissions || [], merchants, profiles, orders });
       }
       case "agent_status": {
+        const _unused_marker = null;
         const { id, status, admin_notes } = body;
         if (!id || !["pending", "approved", "rejected", "suspended"].includes(status)) {
           return json({ error: "invalid status" }, 400);
