@@ -1960,6 +1960,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      agent_binding_for_email: {
+        Args: { p_email: string }
+        Returns: {
+          agent_code: string
+          bound: boolean
+        }[]
+      }
+      agent_binding_for_user: {
+        Args: { p_user_id: string }
+        Returns: {
+          agent_code: string
+          bound: boolean
+        }[]
+      }
       agent_transaction_log: {
         Args: {
           p_agent_id?: string
