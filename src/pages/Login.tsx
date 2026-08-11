@@ -275,7 +275,15 @@ export default function Login() {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    onClick={() => setRegType("self")}
+                    onClick={() => {
+                      if (lockedAgentCode) {
+                        setBlockDialog(
+                          "This email is already registered via an Agent. You must use the agent-linked access."
+                        );
+                        return;
+                      }
+                      setRegType("self");
+                    }}
                     className={`rounded-xl border-2 px-3 py-3 text-sm font-semibold transition-colors ${
                       regType === "self" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
                     }`}
@@ -292,6 +300,11 @@ export default function Login() {
                     Agent
                   </button>
                 </div>
+                {!regType && (
+                  <p className="font-hindi text-[11px] text-destructive">
+                    आगे बढ़ने के लिए Self या Agent चुनना अनिवार्य है।
+                  </p>
+                )}
                 {regType === "agent" && (
                   <div className="space-y-1.5 pt-1">
                     <Label htmlFor="agentId">Agent ID</Label>
@@ -301,9 +314,13 @@ export default function Login() {
                       placeholder="AG123ABC"
                       value={agentId}
                       onChange={(e) => setAgentId(e.target.value.toUpperCase())}
+                      readOnly={!!lockedAgentCode}
+                      required
                     />
                     <p className="font-hindi text-[11px] text-muted-foreground">
-                      एजेंट के माध्यम से रजिस्ट्रेशन के लिए उनका Agent ID दर्ज करें।
+                      {lockedAgentCode
+                        ? "यह खाता पहले से इसी Agent से जुड़ा है — इसे बदला नहीं जा सकता।"
+                        : "एजेंट के माध्यम से रजिस्ट्रेशन के लिए उनका Agent ID दर्ज करें।"}
                     </p>
                   </div>
                 )}
