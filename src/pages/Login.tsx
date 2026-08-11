@@ -406,6 +406,18 @@ export default function Login() {
           </div>
         </div>
       </div>
+
+      <AlertDialog open={!!blockDialog} onOpenChange={(open) => !open && setBlockDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Agent-linked account</AlertDialogTitle>
+            <AlertDialogDescription>{blockDialog}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setBlockDialog(null)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
