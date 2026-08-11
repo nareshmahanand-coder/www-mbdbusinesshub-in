@@ -11,6 +11,15 @@ import { Mail, Lock, User, Loader2 } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { getPostLoginDestinationForUser, sanitizeAuthNextPath } from "@/lib/authRedirect";
 import { linkUserToAgentCode } from "@/lib/agentReferral";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const getOAuthRedirectTo = (next: string, forceWebCallback = false) => {
   const params = new URLSearchParams({ next });
@@ -29,8 +38,17 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const [regType, setRegType] = useState<"self" | "agent">("self");
+  const [regType, setRegType] = useState<"self" | "agent" | null>(null);
   const [agentId, setAgentId] = useState("");
+  const [blockDialog, setBlockDialog] = useState<string | null>(null);
+  const [lockedAgentCode, setLockedAgentCode] = useState<string | null>(null);
+
+  /** Look up whether this email is permanently bound to an agent. */
+  const fetchAgentBinding = async (targetEmail: string) => {
+    const { data } = await supabase.rpc("agent_binding_for_email", { p_email: targetEmail });
+    const row = Array.isArray(data) ? data[0] : data;
+    return { bound: !!row?.bound, agentCode: (row?.agent_code as string | null) ?? null };
+  };
 
   const linkAgentIfNeeded = async (userId: string) => {
     if (regType !== "agent") return;
@@ -40,6 +58,32 @@ export default function Login() {
     if (res.ok) toast.success(`Agent ${code} से जुड़ गए`);
     else toast.error("Agent ID अमान्य है — रजिस्ट्रेशन self के रूप में हुआ");
   };
+
+  // When the email is already agent-bound, force the Agent option and lock the code.
+  useEffect(() => {
+    if (mode === "forgot") return;
+    const value = email.trim();
+    if (!value || !value.includes("@")) {
+      setLockedAgentCode(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      const { bound, agentCode } = await fetchAgentBinding(value);
+      if (cancelled) return;
+      if (bound && agentCode) {
+        setLockedAgentCode(agentCode);
+        setRegType("agent");
+        setAgentId(agentCode);
+      } else {
+        setLockedAgentCode(null);
+      }
+    }, 500);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [email, mode]);
 
   // If already authenticated, leave the login page.
   useEffect(() => {
@@ -102,12 +146,33 @@ export default function Login() {
       toast.error("Email and password required");
       return;
     }
+    if (!regType) {
+      toast.error("कृपया पहले Self या Agent चुनें / Please select Self or Agent");
+      return;
+    }
     if (regType === "agent" && !agentId.trim()) {
       toast.error("कृपया Agent ID दर्ज करें");
       return;
     }
     setBusy(true);
     try {
+      // Enforce permanent agent binding — no bypass, even after re-install.
+      const { bound, agentCode } = await fetchAgentBinding(email.trim());
+      if (bound && agentCode) {
+        setLockedAgentCode(agentCode);
+        setRegType("agent");
+        setAgentId(agentCode);
+        if (regType === "self") {
+          setBlockDialog(
+            "This email is already registered via an Agent. You must use the agent-linked access."
+          );
+          return;
+        }
+        if (agentId.trim().toUpperCase() !== agentCode.toUpperCase()) {
+          setBlockDialog("Already registered with an agent. Agent cannot be changed.");
+          return;
+        }
+      }
       if (mode === "signup") {
         const fullName = name || email.split("@")[0];
         const { data, error } = await supabase.auth.signUp({
