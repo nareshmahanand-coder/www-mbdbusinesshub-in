@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Capacitor } from "@capacitor/core";
-import { Mail, Lock, User, Loader2 } from "lucide-react";
+import { Mail, Lock, User, Loader2, Phone } from "lucide-react";
 import logoCircle from "@/assets/logo-circle.jpeg";
 import { getPostLoginDestinationForUser, sanitizeAuthNextPath } from "@/lib/authRedirect";
 import { linkUserToAgentCode } from "@/lib/agentReferral";
@@ -37,6 +37,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [mobile, setMobile] = useState("");
   const [busy, setBusy] = useState(false);
   const [regType, setRegType] = useState<"self" | "agent" | null>(null);
   const [agentId, setAgentId] = useState("");
@@ -127,7 +128,7 @@ export default function Login() {
     }
     setBusy(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
@@ -142,9 +143,29 @@ export default function Login() {
 
   const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanMobile = mobile.replace(/\D/g, "");
+    if (!cleanEmail || !password) {
       toast.error("Email and password required");
       return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(cleanEmail)) {
+      toast.error("कृपया सही ईमेल दर्ज करें / Please enter a valid email");
+      return;
+    }
+    if (mode === "signup") {
+      if (!name.trim()) {
+        toast.error("कृपया पूरा नाम दर्ज करें / Full name is required");
+        return;
+      }
+      if (cleanMobile.length !== 10) {
+        toast.error("कृपया 10 अंकों का मोबाइल नंबर दर्ज करें / Enter a valid 10-digit mobile number");
+        return;
+      }
+      if (password.length < 6) {
+        toast.error("पासवर्ड कम से कम 6 अक्षर का होना चाहिए / Password must be at least 6 characters");
+        return;
+      }
     }
     if (!regType) {
       toast.error("कृपया पहले Self या Agent चुनें / Please select Self or Agent");
@@ -157,7 +178,7 @@ export default function Login() {
     setBusy(true);
     try {
       // Enforce permanent agent binding — no bypass, even after re-install.
-      const { bound, agentCode } = await fetchAgentBinding(email.trim());
+      const { bound, agentCode } = await fetchAgentBinding(cleanEmail);
       if (bound && agentCode) {
         setLockedAgentCode(agentCode);
         setRegType("agent");
@@ -174,13 +195,13 @@ export default function Login() {
         }
       }
       if (mode === "signup") {
-        const fullName = name || email.split("@")[0];
+        const fullName = name.trim() || cleanEmail.split("@")[0];
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: cleanEmail,
           password,
           options: {
             emailRedirectTo: getOAuthRedirectTo(next),
-            data: { full_name: fullName },
+            data: { full_name: fullName, phone: cleanMobile },
           },
         });
         if (error) throw error;
@@ -189,7 +210,7 @@ export default function Login() {
         let activeSession = data.session ?? null;
         if (!activeSession) {
           const { data: signInData, error: signInError } =
-            await supabase.auth.signInWithPassword({ email, password });
+            await supabase.auth.signInWithPassword({ email: cleanEmail, password });
           if (signInError) throw signInError;
           activeSession = signInData.session ?? null;
         }
@@ -204,8 +225,9 @@ export default function Login() {
         await supabase.from("profiles").upsert(
           {
             id: activeSession.user.id,
-            email: activeSession.user.email ?? email,
+            email: activeSession.user.email ?? cleanEmail,
             display_name: fullName,
+            phone: cleanMobile,
             provider: "email",
           },
           { onConflict: "id" }
@@ -219,7 +241,7 @@ export default function Login() {
           return;
         }
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
         if (error) throw error;
 
         // Website-only hard redirect after password login. Relying only on the
@@ -332,7 +354,27 @@ export default function Login() {
                 <Label htmlFor="name">Full Name</Label>
                 <div className="relative">
                   <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input id="name" className="h-12 pl-10" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />
+                  <Input id="name" className="h-12 pl-10" placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required />
+                </div>
+              </div>
+            )}
+
+            {mode === "signup" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="mobile">Mobile Number</Label>
+                <div className="relative">
+                  <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="mobile"
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={10}
+                    className="h-12 pl-10"
+                    placeholder="10-digit mobile number"
+                    value={mobile}
+                    onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                    required
+                  />
                 </div>
               </div>
             )}
