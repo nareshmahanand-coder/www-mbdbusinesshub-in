@@ -14,32 +14,69 @@ export default function ResetPasswordPage() {
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
     });
     void (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) { setReady(true); return; }
-      const url = new URL(window.location.href);
-      const tokenHash = url.searchParams.get("token_hash") ?? url.searchParams.get("token");
-      const code = url.searchParams.get("code");
-      const errDesc = url.searchParams.get("error_description");
-      if (errDesc) { console.error("[reset-password] link error", errDesc); toast.error(errDesc); return; }
       try {
+        const url = new URL(window.location.href);
+        const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+        const param = (k: string) => url.searchParams.get(k) ?? hash.get(k);
+
+        const errDesc = param("error_description") ?? param("error");
+        const accessToken = hash.get("access_token");
+        const refreshToken = hash.get("refresh_token");
+        const tokenHash = param("token_hash") ?? param("token");
+        const code = param("code");
+
+        // 1) Implicit flow: tokens delivered in the URL hash
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) throw error;
+          window.history.replaceState({}, "", "/reset-password");
+          setReady(true);
+          return;
+        }
+
+        // 2) PKCE flow
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          window.history.replaceState({}, "", "/reset-password");
+          setReady(true);
+          return;
+        }
+
+        // 3) OTP token hash flow
         if (tokenHash) {
           const { error } = await supabase.auth.verifyOtp({ type: "recovery", token_hash: tokenHash });
           if (error) throw error;
+          window.history.replaceState({}, "", "/reset-password");
           setReady(true);
-        } else if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) throw error;
-          setReady(true);
+          return;
         }
+
+        // 4) Already-authenticated recovery session
+        const { data } = await supabase.auth.getSession();
+        if (data.session) { setReady(true); return; }
+
+        if (errDesc) {
+          setLinkError(decodeURIComponent(errDesc.replace(/\+/g, " ")));
+          return;
+        }
+        setLinkError("Open this page from the password reset link sent to your email.");
       } catch (e: any) {
         console.error("[reset-password] token exchange failed", e);
-        toast.error(e?.message || "Reset link is invalid or expired. Request a new one.");
+        setLinkError(e?.message || "Reset link is invalid or expired. Request a new one.");
+      } finally {
+        setChecking(false);
       }
     })();
     return () => subscription.unsubscribe();
@@ -72,10 +109,17 @@ export default function ResetPasswordPage() {
             <h1 className="text-xl font-bold text-foreground">Set a new password</h1>
           </div>
 
-          {!ready ? (
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              Open this page from the password reset link sent to your email.
+          {checking && !ready ? (
+            <p className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Verifying your reset link…
             </p>
+          ) : !ready ? (
+            <div className="mt-6 space-y-3 text-center">
+              <p className="text-sm text-destructive">{linkError}</p>
+              <Link to="/login" className="inline-block text-sm font-semibold text-primary hover:underline">
+                Request a new reset link
+              </Link>
+            </div>
           ) : (
             <form onSubmit={submit} className="mt-6 space-y-4">
               <div className="space-y-1.5">
