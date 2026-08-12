@@ -19,9 +19,29 @@ export default function ResetPasswordPage() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
     });
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
-    });
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) { setReady(true); return; }
+      const url = new URL(window.location.href);
+      const tokenHash = url.searchParams.get("token_hash") ?? url.searchParams.get("token");
+      const code = url.searchParams.get("code");
+      const errDesc = url.searchParams.get("error_description");
+      if (errDesc) { console.error("[reset-password] link error", errDesc); toast.error(errDesc); return; }
+      try {
+        if (tokenHash) {
+          const { error } = await supabase.auth.verifyOtp({ type: "recovery", token_hash: tokenHash });
+          if (error) throw error;
+          setReady(true);
+        } else if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+          setReady(true);
+        }
+      } catch (e: any) {
+        console.error("[reset-password] token exchange failed", e);
+        toast.error(e?.message || "Reset link is invalid or expired. Request a new one.");
+      }
+    })();
     return () => subscription.unsubscribe();
   }, []);
 

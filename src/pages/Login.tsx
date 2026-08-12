@@ -122,19 +122,29 @@ export default function Login() {
 
   const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
       toast.error("Please enter your email");
       return;
     }
     setBusy(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      if (error) throw error;
-      toast.success("Password reset link sent to your email");
+      const redirectTo = `${window.location.origin}/reset-password`;
+      console.log("[forgot-password] requesting reset", { email: cleanEmail, redirectTo });
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, { redirectTo });
+      if (error) {
+        console.error("[forgot-password] failed", error);
+        if ((error as any).status === 429 || /rate limit|only request this after/i.test(error.message)) {
+          toast.error("बहुत ज़्यादा प्रयास / Too many requests. Please wait a minute and try again.");
+        } else {
+          toast.error(`Reset failed: ${error.message}`);
+        }
+        return;
+      }
+      toast.success("Reset link sent. Check inbox and Spam/Promotions folder.");
       setMode("signin");
     } catch (err: any) {
+      console.error("[forgot-password] unexpected error", err);
       toast.error(err?.message || "Could not send reset link");
     } finally {
       setBusy(false);

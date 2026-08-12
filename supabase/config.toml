@@ -4,8 +4,10 @@ project_id = "tkenjzcyvnqnhgntmmen"
 additional_redirect_urls = [
   "https://shop.mbdbusinesshub.in/auth/continue",
   "https://shop.mbdbusinesshub.in/dashboard",
+  "https://shop.mbdbusinesshub.in/reset-password",
   "https://merabharatdukaan.lovable.app/auth/continue",
-  "https://merabharatdukaan.lovable.app/dashboard"
+  "https://merabharatdukaan.lovable.app/dashboard",
+  "https://merabharatdukaan.lovable.app/reset-password"
 ]
 
 [functions.translate-quiz]
