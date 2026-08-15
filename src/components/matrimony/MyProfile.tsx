@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Crown, Image, Loader2, Upload, X, CheckCircle2 } from "lucide-react";
+import { User, Crown, Image, Loader2, Upload, X, CheckCircle2, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import type { MatrimonyProfile } from "@/pages/MatrimonyPage";
@@ -31,6 +31,10 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
   const aadhaarFrontRef = useRef<HTMLInputElement>(null);
   const aadhaarBackRef = useRef<HTMLInputElement>(null);
   const panRef = useRef<HTMLInputElement>(null);
+  const aadhaarFrontCamRef = useRef<HTMLInputElement>(null);
+  const aadhaarBackCamRef = useRef<HTMLInputElement>(null);
+  const panCamRef = useRef<HTMLInputElement>(null);
+  const photoCamRef = useRef<HTMLInputElement>(null);
   const [aadhaarFrontUrl, setAadhaarFrontUrl] = useState<string>("");
   const [aadhaarBackUrl, setAadhaarBackUrl] = useState<string>("");
   const [panUrl, setPanUrl] = useState<string>("");
@@ -180,8 +184,8 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
   };
 
   const KycTile = ({
-    label, hindi, url, onPick, onClear,
-  }: { label: string; hindi: string; url: string; onPick: () => void; onClear: () => void; }) => (
+    label, hindi, url, onPick, onCamera, onClear,
+  }: { label: string; hindi: string; url: string; onPick: () => void; onCamera?: () => void; onClear: () => void; }) => (
     <div className="rounded-xl border-2 border-dashed border-border p-2 bg-white/60">
       <div className="mb-1.5">
         <p className="text-xs font-semibold">{label} <span className="text-destructive">*</span></p>
@@ -195,13 +199,22 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
           </button>
         </div>
       ) : (
-        <button type="button" onClick={onPick} disabled={kycUploading}
-          className="flex h-20 w-full items-center justify-center rounded-lg border border-dashed border-[#FF9933]/50 bg-[#FF9933]/5 hover:bg-[#FF9933]/10">
-          <div className="text-center">
-            <Upload className="mx-auto h-4 w-4 text-[#FF9933]" />
-            <p className="mt-0.5 text-[10px] font-semibold text-[#1a237e]">{kycUploading ? "Uploading..." : "Upload"}</p>
-          </div>
-        </button>
+        <div className="space-y-1.5">
+          <button type="button" onClick={onPick} disabled={kycUploading}
+            className="flex h-14 w-full items-center justify-center rounded-lg border border-dashed border-[#FF9933]/50 bg-[#FF9933]/5 hover:bg-[#FF9933]/10">
+            <div className="text-center">
+              <Upload className="mx-auto h-4 w-4 text-[#FF9933]" />
+              <p className="mt-0.5 text-[10px] font-semibold text-[#1a237e]">{kycUploading ? "..." : "गैलरी"}</p>
+            </div>
+          </button>
+          <button type="button" onClick={onCamera} disabled={kycUploading}
+            className="flex h-14 w-full items-center justify-center rounded-lg border border-dashed border-[hsl(140,60%,35%)]/50 bg-[hsl(140,60%,35%)]/5 hover:bg-[hsl(140,60%,35%)]/10">
+            <div className="text-center">
+              <Camera className="mx-auto h-4 w-4 text-[hsl(140,60%,35%)]" />
+              <p className="mt-0.5 text-[10px] font-semibold text-[#1a237e]">{kycUploading ? "..." : "कैमरा"}</p>
+            </div>
+          </button>
+        </div>
       )}
     </div>
   );
@@ -263,10 +276,13 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
           <input type="file" accept="image/*" ref={aadhaarFrontRef} className="hidden" onChange={(e) => handleKycUpload(e, "aadhaar-front", setAadhaarFrontUrl)} />
           <input type="file" accept="image/*" ref={aadhaarBackRef} className="hidden" onChange={(e) => handleKycUpload(e, "aadhaar-back", setAadhaarBackUrl)} />
           <input type="file" accept="image/*" ref={panRef} className="hidden" onChange={(e) => handleKycUpload(e, "pan", setPanUrl)} />
+          <input type="file" accept="image/*" capture="environment" ref={aadhaarFrontCamRef} className="hidden" onChange={(e) => handleKycUpload(e, "aadhaar-front", setAadhaarFrontUrl)} />
+          <input type="file" accept="image/*" capture="environment" ref={aadhaarBackCamRef} className="hidden" onChange={(e) => handleKycUpload(e, "aadhaar-back", setAadhaarBackUrl)} />
+          <input type="file" accept="image/*" capture="environment" ref={panCamRef} className="hidden" onChange={(e) => handleKycUpload(e, "pan", setPanUrl)} />
           <div className="grid gap-2 grid-cols-3">
-            <KycTile label="Aadhaar Front" hindi="आधार फ्रंट" url={aadhaarFrontUrl} onPick={() => aadhaarFrontRef.current?.click()} onClear={() => setAadhaarFrontUrl("")} />
-            <KycTile label="Aadhaar Back" hindi="आधार बैक" url={aadhaarBackUrl} onPick={() => aadhaarBackRef.current?.click()} onClear={() => setAadhaarBackUrl("")} />
-            <KycTile label="PAN Card" hindi="पैन कार्ड" url={panUrl} onPick={() => panRef.current?.click()} onClear={() => setPanUrl("")} />
+            <KycTile label="Aadhaar Front" hindi="आधार फ्रंट" url={aadhaarFrontUrl} onPick={() => aadhaarFrontRef.current?.click()} onCamera={() => aadhaarFrontCamRef.current?.click()} onClear={() => setAadhaarFrontUrl("")} />
+            <KycTile label="Aadhaar Back" hindi="आधार बैक" url={aadhaarBackUrl} onPick={() => aadhaarBackRef.current?.click()} onCamera={() => aadhaarBackCamRef.current?.click()} onClear={() => setAadhaarBackUrl("")} />
+            <KycTile label="PAN Card" hindi="पैन कार्ड" url={panUrl} onPick={() => panRef.current?.click()} onCamera={() => panCamRef.current?.click()} onClear={() => setPanUrl("")} />
           </div>
           {!kycReady && (
             <p className="text-center text-[11px] font-semibold text-destructive font-hindi">
@@ -286,10 +302,17 @@ const MatrimonyMyProfile = ({ user, myProfile, onReload }: Props) => {
             </div>
           )}
           <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handlePhotoUpload} />
-          <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading || !myProfile}>
-            <Image className="mr-1.5 h-4 w-4" />
-            {uploading ? "Uploading..." : "Upload Photo"}
-          </Button>
+          <input type="file" accept="image/*" capture="user" ref={photoCamRef} className="hidden" onChange={handlePhotoUpload} />
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading || !myProfile}>
+              <Image className="mr-1.5 h-4 w-4" />
+              {uploading ? "Uploading..." : "गैलरी / Gallery"}
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => photoCamRef.current?.click()} disabled={uploading || !myProfile}>
+              <Camera className="mr-1.5 h-4 w-4" />
+              {uploading ? "Uploading..." : "कैमरा / Camera"}
+            </Button>
+          </div>
           {!myProfile && <p className="text-[10px] text-muted-foreground mt-1">Create profile first to upload photos</p>}
         </div>
 
