@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { shopCategories } from "@/data/sampleShops";
-import { Store, CheckCircle, HelpCircle, Image, Upload, X, Crown, ShieldCheck, Eye } from "lucide-react";
+import { Store, CheckCircle, HelpCircle, Image, Upload, X, Crown, ShieldCheck, Eye, Camera } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
