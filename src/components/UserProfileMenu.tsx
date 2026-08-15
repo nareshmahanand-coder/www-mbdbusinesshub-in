@@ -242,19 +242,16 @@ const UserProfileMenu = () => {
             <span>Account Settings</span>
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem
-          onSelect={async (e) => {
-            e.preventDefault();
-            if (canInstall) {
-              const outcome = await promptInstall();
-              if (outcome === "accepted") return;
-            }
-            await shareApp();
-          }}
-          className="cursor-pointer"
-        >
-          {canInstall ? <Download className="mr-2 h-4 w-4" /> : <Share2 className="mr-2 h-4 w-4" />}
-          <span>{canInstall ? "Install App" : "Share App"}</span>
+        <DropdownMenuItem asChild>
+          <a
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            <Share2 className="h-4 w-4" />
+            <span>Share App</span>
+          </a>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
