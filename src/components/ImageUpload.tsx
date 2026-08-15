@@ -15,6 +15,7 @@ interface ImageUploadProps {
 const ImageUpload = ({ images, onImagesChange, maxImages = 1, folder, label }: ImageUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   const upload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -58,15 +59,26 @@ const ImageUpload = ({ images, onImagesChange, maxImages = 1, folder, label }: I
           </div>
         ))}
         {images.length < maxImages && (
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            disabled={uploading}
-            className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
-          >
-            {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
-            <span className="text-[9px]">{uploading ? "Uploading…" : "Add Photo"}</span>
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={uploading}
+              className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+            >
+              {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageIcon className="h-5 w-5" />}
+              <span className="text-[9px]">{uploading ? "Uploading…" : "गैलरी / Gallery"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => cameraRef.current?.click()}
+              disabled={uploading}
+              className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border bg-muted/50 text-muted-foreground hover:border-primary hover:text-primary transition-colors"
+            >
+              {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+              <span className="text-[9px]">{uploading ? "Uploading…" : "कैमरा / Camera"}</span>
+            </button>
+          </>
         )}
       </div>
       <input
@@ -74,6 +86,14 @@ const ImageUpload = ({ images, onImagesChange, maxImages = 1, folder, label }: I
         type="file"
         accept="image/*"
         multiple={maxImages > 1}
+        className="hidden"
+        onChange={e => upload(e.target.files)}
+      />
+      <input
+        ref={cameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
         className="hidden"
         onChange={e => upload(e.target.files)}
       />

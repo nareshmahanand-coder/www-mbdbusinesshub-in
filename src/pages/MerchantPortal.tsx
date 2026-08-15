@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { shopCategories } from "@/data/sampleShops";
-import { Store, CheckCircle, HelpCircle, Image, Upload, X, Crown, ShieldCheck, Eye } from "lucide-react";
+import { Store, CheckCircle, HelpCircle, Image, Upload, X, Crown, ShieldCheck, Eye, Camera } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,6 +40,12 @@ const MerchantPortal = () => {
   const panRef = useRef<HTMLInputElement>(null);
   const gstRef = useRef<HTMLInputElement>(null);
   const foodRef = useRef<HTMLInputElement>(null);
+  const aadhaarFrontCamRef = useRef<HTMLInputElement>(null);
+  const aadhaarBackCamRef = useRef<HTMLInputElement>(null);
+  const panCamRef = useRef<HTMLInputElement>(null);
+  const gstCamRef = useRef<HTMLInputElement>(null);
+  const foodCamRef = useRef<HTMLInputElement>(null);
+  const shopPhotoCamRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
     shopName: "", shopNameHindi: "", category: "", address: "",
@@ -131,8 +137,8 @@ const MerchantPortal = () => {
   };
 
   const KycUploadTile = ({
-    label, hindi, url, onPick, onClear, optional, skipped, onSkipToggle,
-  }: { label: string; hindi: string; url: string; onPick: () => void; onClear: () => void; optional?: boolean; skipped?: boolean; onSkipToggle?: () => void; }) => (
+    label, hindi, url, onPick, onCamera, onClear, optional, skipped, onSkipToggle,
+  }: { label: string; hindi: string; url: string; onPick: () => void; onCamera?: () => void; onClear: () => void; optional?: boolean; skipped?: boolean; onSkipToggle?: () => void; }) => (
     <div className="rounded-xl border-2 border-dashed border-border p-3 bg-white/50">
       <div className="flex items-center justify-between mb-2">
         <Label className="text-sm">
@@ -155,13 +161,22 @@ const MerchantPortal = () => {
       ) : skipped ? (
         <p className="text-center text-xs text-muted-foreground py-6">Skipped</p>
       ) : (
-        <button type="button" onClick={onPick} disabled={uploading}
-          className="flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-[#FF9933]/50 bg-[#FF9933]/5 hover:bg-[#FF9933]/10 transition-colors">
-          <div className="text-center">
-            <Upload className="mx-auto h-5 w-5 text-[#FF9933]" />
-            <p className="mt-1 text-[11px] font-semibold text-[#1a237e]">{uploading ? "Uploading..." : "Upload"}</p>
-          </div>
-        </button>
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" onClick={onPick} disabled={uploading}
+            className="flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-[#FF9933]/50 bg-[#FF9933]/5 hover:bg-[#FF9933]/10 transition-colors">
+            <div className="text-center">
+              <Upload className="mx-auto h-5 w-5 text-[#FF9933]" />
+              <p className="mt-1 text-[11px] font-semibold text-[#1a237e]">{uploading ? "Uploading..." : "गैलरी"}</p>
+            </div>
+          </button>
+          <button type="button" onClick={onCamera} disabled={uploading}
+            className="flex h-24 w-full items-center justify-center rounded-lg border border-dashed border-[#138808]/50 bg-[#138808]/5 hover:bg-[#138808]/10 transition-colors">
+            <div className="text-center">
+              <Camera className="mx-auto h-5 w-5 text-[#138808]" />
+              <p className="mt-1 text-[11px] font-semibold text-[#1a237e]">{uploading ? "Uploading..." : "कैमरा"}</p>
+            </div>
+          </button>
+        </div>
       )}
     </div>
   );
@@ -291,14 +306,19 @@ const MerchantPortal = () => {
                 <input type="file" accept="image/*" ref={panRef} className="hidden" onChange={(e) => handleKycUpload(e, "kyc-pan", setPanUrl)} />
                 <input type="file" accept="image/*" ref={gstRef} className="hidden" onChange={(e) => handleKycUpload(e, "kyc-gst", setGstUrl)} />
                 <input type="file" accept="image/*" ref={foodRef} className="hidden" onChange={(e) => handleKycUpload(e, "kyc-food", setFoodLicenseUrl)} />
+                <input type="file" accept="image/*" capture="environment" ref={aadhaarFrontCamRef} className="hidden" onChange={(e) => handleKycUpload(e, "kyc-aadhaar-front", setAadhaarFrontUrl)} />
+                <input type="file" accept="image/*" capture="environment" ref={aadhaarBackCamRef} className="hidden" onChange={(e) => handleKycUpload(e, "kyc-aadhaar-back", setAadhaarBackUrl)} />
+                <input type="file" accept="image/*" capture="environment" ref={panCamRef} className="hidden" onChange={(e) => handleKycUpload(e, "kyc-pan", setPanUrl)} />
+                <input type="file" accept="image/*" capture="environment" ref={gstCamRef} className="hidden" onChange={(e) => handleKycUpload(e, "kyc-gst", setGstUrl)} />
+                <input type="file" accept="image/*" capture="environment" ref={foodCamRef} className="hidden" onChange={(e) => handleKycUpload(e, "kyc-food", setFoodLicenseUrl)} />
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <KycUploadTile label="Aadhaar Front" hindi="आधार फ्रंट फ़ोटो" url={aadhaarFrontUrl} onPick={() => aadhaarFrontRef.current?.click()} onClear={() => setAadhaarFrontUrl("")} />
-                  <KycUploadTile label="Aadhaar Back" hindi="आधार बैक फ़ोटो" url={aadhaarBackUrl} onPick={() => aadhaarBackRef.current?.click()} onClear={() => setAadhaarBackUrl("")} />
-                  <KycUploadTile label="PAN Card" hindi="पैन कार्ड फ़ोटो" url={panUrl} onPick={() => panRef.current?.click()} onClear={() => setPanUrl("")} />
+                  <KycUploadTile label="Aadhaar Front" hindi="आधार फ्रंट फ़ोटो" url={aadhaarFrontUrl} onPick={() => aadhaarFrontRef.current?.click()} onCamera={() => aadhaarFrontCamRef.current?.click()} onClear={() => setAadhaarFrontUrl("")} />
+                  <KycUploadTile label="Aadhaar Back" hindi="आधार बैक फ़ोटो" url={aadhaarBackUrl} onPick={() => aadhaarBackRef.current?.click()} onCamera={() => aadhaarBackCamRef.current?.click()} onClear={() => setAadhaarBackUrl("")} />
+                  <KycUploadTile label="PAN Card" hindi="पैन कार्ड फ़ोटो" url={panUrl} onPick={() => panRef.current?.click()} onCamera={() => panCamRef.current?.click()} onClear={() => setPanUrl("")} />
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <KycUploadTile label="GST Certificate" hindi="GST प्रमाणपत्र" url={gstUrl} onPick={() => gstRef.current?.click()} onClear={() => setGstUrl("")} optional skipped={skipGst} onSkipToggle={() => { setSkipGst((s) => !s); if (!skipGst) setGstUrl(""); }} />
-                  <KycUploadTile label="Food License" hindi="फ़ूड लाइसेंस" url={foodLicenseUrl} onPick={() => foodRef.current?.click()} onClear={() => setFoodLicenseUrl("")} optional skipped={skipFood} onSkipToggle={() => { setSkipFood((s) => !s); if (!skipFood) setFoodLicenseUrl(""); }} />
+                  <KycUploadTile label="GST Certificate" hindi="GST प्रमाणपत्र" url={gstUrl} onPick={() => gstRef.current?.click()} onCamera={() => gstCamRef.current?.click()} onClear={() => setGstUrl("")} optional skipped={skipGst} onSkipToggle={() => { setSkipGst((s) => !s); if (!skipGst) setGstUrl(""); }} />
+                  <KycUploadTile label="Food License" hindi="फ़ूड लाइसेंस" url={foodLicenseUrl} onPick={() => foodRef.current?.click()} onCamera={() => foodCamRef.current?.click()} onClear={() => setFoodLicenseUrl("")} optional skipped={skipFood} onSkipToggle={() => { setSkipFood((s) => !s); if (!skipFood) setFoodLicenseUrl(""); }} />
                 </div>
                 {!kycReady && (
                   <p className="text-center text-[11px] font-semibold text-destructive font-hindi">
@@ -317,13 +337,23 @@ const MerchantPortal = () => {
                   </div>
                 )}
                 <input type="file" accept="image/*" ref={shopPhotoRef} className="hidden" onChange={handleShopPhotoUpload} />
-                <button type="button" onClick={() => shopPhotoRef.current?.click()} disabled={uploading}
-                  className="mt-1 flex h-24 w-full cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-border transition-colors hover:border-primary">
-                  <div className="text-center">
-                    <Image className="mx-auto h-6 w-6 text-muted-foreground" />
-                    <p className="mt-1 text-xs text-muted-foreground">{uploading ? "Uploading..." : "Click to upload photos"}</p>
-                  </div>
-                </button>
+                <input type="file" accept="image/*" capture="environment" ref={shopPhotoCamRef} className="hidden" onChange={handleShopPhotoUpload} />
+                <div className="mt-1 grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => shopPhotoRef.current?.click()} disabled={uploading}
+                    className="flex h-24 w-full cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-border transition-colors hover:border-primary">
+                    <div className="text-center">
+                      <Image className="mx-auto h-6 w-6 text-muted-foreground" />
+                      <p className="mt-1 text-xs text-muted-foreground">{uploading ? "Uploading..." : "गैलरी / Gallery"}</p>
+                    </div>
+                  </button>
+                  <button type="button" onClick={() => shopPhotoCamRef.current?.click()} disabled={uploading}
+                    className="flex h-24 w-full cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-border transition-colors hover:border-primary">
+                    <div className="text-center">
+                      <Camera className="mx-auto h-6 w-6 text-muted-foreground" />
+                      <p className="mt-1 text-xs text-muted-foreground">{uploading ? "Uploading..." : "कैमरा / Camera"}</p>
+                    </div>
+                  </button>
+                </div>
               </div>
 
               <Button

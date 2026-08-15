@@ -240,16 +240,30 @@ const KisanRegistration = () => {
               {/* Photo */}
               <div>
                 <Label className="font-hindi font-semibold">📸 फार्म की फोटो</Label>
-                <label className="mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[hsl(140,60%,30%)]/30 bg-[hsl(140,60%,30%)]/5 px-4 py-6 text-sm text-muted-foreground transition-colors hover:border-[hsl(140,60%,30%)]/50">
-                  <Camera className="h-5 w-5" />
-                  {photo ? photo.name : "फोटो अपलोड करें (optional)"}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => setPhoto(e.target.files?.[0] || null)}
-                  />
-                </label>
+                <div className="mt-1 grid grid-cols-2 gap-2">
+                  <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[hsl(140,60%,30%)]/30 bg-[hsl(140,60%,30%)]/5 px-3 py-5 text-sm text-muted-foreground transition-colors hover:border-[hsl(140,60%,30%)]/50">
+                    <Camera className="h-5 w-5" />
+                    गैलरी
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => setPhoto(e.target.files?.[0] || null)}
+                    />
+                  </label>
+                  <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-[hsl(140,60%,30%)]/30 bg-[hsl(140,60%,30%)]/5 px-3 py-5 text-sm text-muted-foreground transition-colors hover:border-[hsl(140,60%,30%)]/50">
+                    <Camera className="h-5 w-5" />
+                    कैमरा
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => setPhoto(e.target.files?.[0] || null)}
+                    />
+                  </label>
+                </div>
+                {photo && <p className="mt-1 text-xs text-muted-foreground">{photo.name}</p>}
               </div>
 
               {/* Premium Toggle */}

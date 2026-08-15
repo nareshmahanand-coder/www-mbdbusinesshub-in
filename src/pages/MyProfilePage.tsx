@@ -142,7 +142,7 @@ const MyProfilePage = () => {
                   </AvatarFallback>
                 </Avatar>
                 <label
-                  htmlFor="avatar-upload"
+                  htmlFor="avatar-camera"
                   className="absolute bottom-0 right-0 rounded-full bg-primary p-2 cursor-pointer shadow-lg hover:bg-primary/90 transition"
                 >
                   {uploading ? (
@@ -159,8 +159,30 @@ const MyProfilePage = () => {
                   onChange={handlePhotoUpload}
                   disabled={uploading}
                 />
+                <input
+                  id="avatar-camera"
+                  type="file"
+                  accept="image/*"
+                  capture="user"
+                  className="hidden"
+                  onChange={handlePhotoUpload}
+                  disabled={uploading}
+                />
               </div>
-              <p className="text-xs text-muted-foreground">Tap camera to change photo</p>
+              <div className="flex gap-2">
+                <label
+                  htmlFor="avatar-upload"
+                  className="cursor-pointer rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:border-primary"
+                >
+                  गैलरी / Gallery
+                </label>
+                <label
+                  htmlFor="avatar-camera"
+                  className="cursor-pointer rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:border-primary"
+                >
+                  कैमरा / Take Photo
+                </label>
+              </div>
             </div>
 
             {/* Fields */}
