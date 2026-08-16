@@ -247,6 +247,7 @@ export type Database = {
           agent_code: string
           bank_account_number: string | null
           city: string | null
+          coordinator_id: string | null
           created_at: string
           email: string | null
           id: string
@@ -256,6 +257,7 @@ export type Database = {
           pan_number: string | null
           pan_url: string | null
           photo_url: string | null
+          registration_type: string
           status: string
           updated_at: string
           upi_id: string | null
@@ -272,6 +274,7 @@ export type Database = {
           agent_code?: string
           bank_account_number?: string | null
           city?: string | null
+          coordinator_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -281,6 +284,7 @@ export type Database = {
           pan_number?: string | null
           pan_url?: string | null
           photo_url?: string | null
+          registration_type?: string
           status?: string
           updated_at?: string
           upi_id?: string | null
@@ -297,6 +301,7 @@ export type Database = {
           agent_code?: string
           bank_account_number?: string | null
           city?: string | null
+          coordinator_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -306,13 +311,22 @@ export type Database = {
           pan_number?: string | null
           pan_url?: string | null
           photo_url?: string | null
+          registration_type?: string
           status?: string
           updated_at?: string
           upi_id?: string | null
           user_id?: string
           wallet_balance?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "agents_coordinator_id_fkey"
+            columns: ["coordinator_id"]
+            isOneToOne: false
+            referencedRelation: "coordinators"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bharat_gaurav_memberships: {
         Row: {
@@ -795,6 +809,209 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      coordinator_commissions: {
+        Row: {
+          agent_id: string | null
+          amount: number
+          coordinator_id: string
+          created_at: string
+          id: string
+          merchant_user_id: string
+          note: string
+          payment_order_id: string | null
+          plan: string
+          razorpay_payment_id: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          amount: number
+          coordinator_id: string
+          created_at?: string
+          id?: string
+          merchant_user_id: string
+          note?: string
+          payment_order_id?: string | null
+          plan: string
+          razorpay_payment_id?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          amount?: number
+          coordinator_id?: string
+          created_at?: string
+          id?: string
+          merchant_user_id?: string
+          note?: string
+          payment_order_id?: string | null
+          plan?: string
+          razorpay_payment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coordinator_commissions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coordinator_commissions_coordinator_id_fkey"
+            columns: ["coordinator_id"]
+            isOneToOne: false
+            referencedRelation: "coordinators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coordinator_withdrawals: {
+        Row: {
+          account_holder_name: string | null
+          admin_notes: string
+          amount: number
+          bank_account_number: string | null
+          coordinator_id: string
+          created_at: string
+          id: string
+          ifsc_code: string | null
+          paid_at: string | null
+          status: string
+          updated_at: string
+          upi_id: string | null
+          user_id: string
+        }
+        Insert: {
+          account_holder_name?: string | null
+          admin_notes?: string
+          amount: number
+          bank_account_number?: string | null
+          coordinator_id: string
+          created_at?: string
+          id?: string
+          ifsc_code?: string | null
+          paid_at?: string | null
+          status?: string
+          updated_at?: string
+          upi_id?: string | null
+          user_id: string
+        }
+        Update: {
+          account_holder_name?: string | null
+          admin_notes?: string
+          amount?: number
+          bank_account_number?: string | null
+          coordinator_id?: string
+          created_at?: string
+          id?: string
+          ifsc_code?: string | null
+          paid_at?: string | null
+          status?: string
+          updated_at?: string
+          upi_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coordinator_withdrawals_coordinator_id_fkey"
+            columns: ["coordinator_id"]
+            isOneToOne: false
+            referencedRelation: "coordinators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coordinators: {
+        Row: {
+          aadhaar_back_url: string | null
+          aadhaar_front_url: string | null
+          aadhaar_number: string | null
+          account_holder_name: string | null
+          address: string | null
+          admin_notes: string
+          auto_debit: boolean
+          bank_account_number: string | null
+          city: string | null
+          coordinator_code: string
+          created_at: string
+          email: string | null
+          id: string
+          ifsc_code: string | null
+          mobile: string
+          name: string
+          pan_number: string | null
+          pan_url: string | null
+          photo_url: string | null
+          status: string
+          subscription_expires_at: string | null
+          subscription_plan: string | null
+          subscription_started_at: string | null
+          subscription_status: string
+          updated_at: string
+          upi_id: string | null
+          user_id: string
+          wallet_balance: number
+        }
+        Insert: {
+          aadhaar_back_url?: string | null
+          aadhaar_front_url?: string | null
+          aadhaar_number?: string | null
+          account_holder_name?: string | null
+          address?: string | null
+          admin_notes?: string
+          auto_debit?: boolean
+          bank_account_number?: string | null
+          city?: string | null
+          coordinator_code: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          ifsc_code?: string | null
+          mobile: string
+          name: string
+          pan_number?: string | null
+          pan_url?: string | null
+          photo_url?: string | null
+          status?: string
+          subscription_expires_at?: string | null
+          subscription_plan?: string | null
+          subscription_started_at?: string | null
+          subscription_status?: string
+          updated_at?: string
+          upi_id?: string | null
+          user_id: string
+          wallet_balance?: number
+        }
+        Update: {
+          aadhaar_back_url?: string | null
+          aadhaar_front_url?: string | null
+          aadhaar_number?: string | null
+          account_holder_name?: string | null
+          address?: string | null
+          admin_notes?: string
+          auto_debit?: boolean
+          bank_account_number?: string | null
+          city?: string | null
+          coordinator_code?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          ifsc_code?: string | null
+          mobile?: string
+          name?: string
+          pan_number?: string | null
+          pan_url?: string | null
+          photo_url?: string | null
+          status?: string
+          subscription_expires_at?: string | null
+          subscription_plan?: string | null
+          subscription_started_at?: string | null
+          subscription_status?: string
+          updated_at?: string
+          upi_id?: string | null
+          user_id?: string
+          wallet_balance?: number
+        }
+        Relationships: []
       }
       device_push_tokens: {
         Row: {
@@ -2007,7 +2224,24 @@ export type Database = {
         Args: { p_email: string; p_phone: string }
         Returns: Json
       }
+      coordinator_team_overview: {
+        Args: { p_coordinator_id?: string }
+        Returns: {
+          agent_city: string
+          agent_code: string
+          agent_commission_total: number
+          agent_id: string
+          agent_mobile: string
+          agent_name: string
+          agent_status: string
+          coordinator_earned: number
+          joined_at: string
+          merchant_subscriptions: number
+          shops_count: number
+        }[]
+      }
       generate_agent_code: { Args: never; Returns: string }
+      generate_coordinator_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2044,6 +2278,15 @@ export type Database = {
         Args: { p_code: string }
         Returns: {
           agent_code: string
+          id: string
+          name: string
+          status: string
+        }[]
+      }
+      lookup_coordinator_by_code: {
+        Args: { p_code: string }
+        Returns: {
+          coordinator_code: string
           id: string
           name: string
           status: string
