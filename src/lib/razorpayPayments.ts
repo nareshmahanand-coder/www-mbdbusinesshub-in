@@ -7,7 +7,7 @@ declare global {
   }
 }
 
-export type PaymentModule = "merchant_premium" | "marriage_bureau" | "bharat_gaurav";
+export type PaymentModule = "merchant_premium" | "marriage_bureau" | "bharat_gaurav" | "coordinator";
 export type PaymentPlan = "monthly" | "yearly";
 
 const PAYMENT_LINKS: Record<PaymentModule, Record<PaymentPlan, { url: string; amount: number; planName: string; subscriptionId: string }>> = {
@@ -22,6 +22,10 @@ const PAYMENT_LINKS: Record<PaymentModule, Record<PaymentPlan, { url: string; am
   bharat_gaurav: {
     monthly: { url: "https://rzp.io/rzp/ac464WeK", amount: 10, planName: "Bharat Gaurav Membership Monthly ₹10 (Auto-Debit)", subscriptionId: "" },
     yearly: { url: "https://rzp.io/rzp/VrxgoWxx", amount: 100, planName: "Bharat Gaurav Membership Yearly ₹100 (Auto-Debit)", subscriptionId: "" },
+  },
+  coordinator: {
+    monthly: { url: "", amount: 100, planName: "Coordinator Monthly Subscription ₹100 (Auto-Debit)", subscriptionId: "" },
+    yearly: { url: "", amount: 1000, planName: "Coordinator Yearly Subscription ₹1000", subscriptionId: "" },
   },
 };
 
