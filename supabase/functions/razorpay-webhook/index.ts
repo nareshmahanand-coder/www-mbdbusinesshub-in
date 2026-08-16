@@ -9,7 +9,7 @@ const corsHeaders = {
 const enc = new TextEncoder();
 const toHex = (buffer: ArrayBuffer) => Array.from(new Uint8Array(buffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
 
-type ModuleName = "merchant_premium" | "marriage_bureau" | "bharat_gaurav";
+type ModuleName = "merchant_premium" | "marriage_bureau" | "bharat_gaurav" | "coordinator";
 type PlanName = "monthly" | "yearly";
 type LinkPlan = { module: ModuleName; plan: PlanName; amount: number; days: number; label: string };
 
@@ -230,7 +230,7 @@ async function creditAgentCommission(admin: any, order: any, paymentId: string) 
 
   const { data: agent } = await admin
     .from("agents")
-    .select("id, status")
+    .select("id, status, coordinator_id")
     .eq("id", referral.agent_id)
     .maybeSingle();
   if (!agent || agent.status !== "approved") return;
@@ -241,7 +241,10 @@ async function creditAgentCommission(admin: any, order: any, paymentId: string) 
       .select("id")
       .eq("razorpay_payment_id", paymentId)
       .maybeSingle();
-    if (dup) return;
+    if (dup) {
+      await creditCoordinatorCommission(admin, order, paymentId, agent, base);
+      return;
+    }
   }
 
   const { error } = await admin.from("agent_commissions").insert({
@@ -254,6 +257,46 @@ async function creditAgentCommission(admin: any, order: any, paymentId: string) 
     note: `10% commission on ${order.module} ${order.plan} (₹${base})`,
   });
   if (error) console.error("agent commission insert failed", error);
+
+  await creditCoordinatorCommission(admin, order, paymentId, agent, base);
+}
+
+async function creditCoordinatorCommission(admin: any, order: any, paymentId: string, agent: any, base: number) {
+  if (!agent?.coordinator_id || !(base > 0)) return;
+
+  const { data: coordinator } = await admin
+    .from("coordinators")
+    .select("id, status, subscription_status, subscription_expires_at")
+    .eq("id", agent.coordinator_id)
+    .maybeSingle();
+  if (!coordinator || coordinator.status !== "approved") return;
+  const active =
+    coordinator.subscription_status === "active" &&
+    (!coordinator.subscription_expires_at || new Date(coordinator.subscription_expires_at).getTime() > Date.now());
+  if (!active) return;
+
+  if (paymentId) {
+    const { data: dup } = await admin
+      .from("coordinator_commissions")
+      .select("id")
+      .eq("razorpay_payment_id", paymentId)
+      .eq("coordinator_id", coordinator.id)
+      .maybeSingle();
+    if (dup) return;
+  }
+
+  const amount = Math.round(base * 0.02 * 100) / 100;
+  const { error } = await admin.from("coordinator_commissions").insert({
+    coordinator_id: coordinator.id,
+    agent_id: agent.id,
+    merchant_user_id: order.user_id,
+    payment_order_id: order.id,
+    razorpay_payment_id: paymentId || null,
+    plan: order.plan,
+    amount,
+    note: `2% passive commission on ${order.module} ${order.plan} (₹${base})`,
+  });
+  if (error) console.error("coordinator commission insert failed", error);
 }
 
 async function unlock(admin: any, order: any, paymentId: string, signature: string, source = "razorpay_webhook") {
@@ -294,6 +337,19 @@ async function unlock(admin: any, order: any, paymentId: string, signature: stri
       started_at: startedAt.toISOString(),
       expires_at: expiresAt.toISOString(),
     });
+    if (error) throw error;
+  } else if (order.module === "coordinator") {
+    const startedAt = new Date();
+    const expiresAt = new Date(startedAt);
+    expiresAt.setDate(expiresAt.getDate() + days);
+    const { error } = await admin.from("coordinators").update({
+      status: "approved",
+      subscription_status: "active",
+      subscription_plan: order.plan,
+      subscription_started_at: startedAt.toISOString(),
+      subscription_expires_at: expiresAt.toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq("user_id", order.user_id);
     if (error) throw error;
   }
 
