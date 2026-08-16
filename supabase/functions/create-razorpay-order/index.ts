@@ -19,6 +19,10 @@ const PRODUCTS = {
     monthly: { amount: 10, amountPaise: 1000, days: 30, label: "Bharat Gaurav Membership Monthly ₹10" },
     yearly: { amount: 100, amountPaise: 10000, days: 365, label: "Bharat Gaurav Membership Yearly ₹100" },
   },
+  coordinator: {
+    monthly: { amount: 100, amountPaise: 10000, days: 30, label: "Coordinator Monthly Subscription ₹100 (Auto-Debit)" },
+    yearly: { amount: 1000, amountPaise: 100000, days: 365, label: "Coordinator Yearly Subscription ₹1000" },
+  },
 } as const;
 
 type ModuleName = keyof typeof PRODUCTS;
