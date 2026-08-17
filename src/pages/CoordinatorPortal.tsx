@@ -373,13 +373,29 @@ const CoordinatorDashboard = ({
   useEffect(() => {
     void load();
     const channel = supabase
-      .channel(`coordinator-commissions-${coordinator.id}`)
+      .channel(`coordinator-live-${coordinator.id}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "coordinator_commissions", filter: `coordinator_id=eq.${coordinator.id}` }, () => {
         void load();
         toast.success("नया 2% कमीशन आपके वॉलेट में जुड़ा!");
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "agents", filter: `coordinator_id=eq.${coordinator.id}` }, () => {
+        void load();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "agent_referrals" }, () => {
+        void load();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "coordinator_withdrawals", filter: `coordinator_id=eq.${coordinator.id}` }, () => {
+        void load();
+      })
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    const poll = window.setInterval(() => void load(), 20000);
+    const onFocus = () => void load();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      void supabase.removeChannel(channel);
+      window.clearInterval(poll);
+      window.removeEventListener("focus", onFocus);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [coordinator.id]);
 
