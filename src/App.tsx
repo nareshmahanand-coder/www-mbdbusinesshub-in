@@ -31,6 +31,7 @@ import FamilySafetyPage from "./pages/FamilySafetyPage";
 import FamilyInvitePage from "./pages/FamilyInvitePage";
 import EkycPage from "./pages/EkycPage";
 import AgentPortal from "./pages/AgentPortal";
+import CoordinatorPortal from "./pages/CoordinatorPortal";
 import BharatGauravMembershipPage from "./pages/BharatGauravMembershipPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
@@ -217,6 +218,7 @@ const AppShell = () => {
         <Route path="/" element={<PublicHomeRoute />} />
         <Route path="/merchant" element={<KycRequiredRoute><MerchantPortal /></KycRequiredRoute>} />
         <Route path="/agent" element={<AgentPortal />} />
+        <Route path="/coordinator" element={<CoordinatorPortal />} />
         <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
         <Route path="/settings" element={<KycRequiredRoute><Navigate to="/dashboard?tab=settings" replace /></KycRequiredRoute>} />
         <Route path="/kisan" element={<KycRequiredRoute><KisanRegistration /></KycRequiredRoute>} />
