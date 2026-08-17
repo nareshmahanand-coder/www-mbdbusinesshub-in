@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   BadgeCheck, IndianRupee, LogIn, UserPlus, Users, Wallet, Loader2, Store, Clock, Info,
-  Landmark, Banknote, Camera, Image as ImageIcon, Search, Receipt,
+  Landmark, Banknote, Camera, Image as ImageIcon, Search, Receipt, Crown, ShieldCheck,
 } from "lucide-react";
 
 type AgentRow = {
@@ -34,6 +34,8 @@ type AgentRow = {
   bank_account_number?: string | null;
   ifsc_code?: string | null;
   upi_id?: string | null;
+  coordinator_id?: string | null;
+  registration_type?: string | null;
 };
 
 const MIN_WITHDRAWAL = 1000;
@@ -187,6 +189,10 @@ const AgentRegistrationForm = ({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [regType, setRegType] = useState<"" | "self" | "coordinator">("");
+  const [coordinatorCode, setCoordinatorCode] = useState("");
+  const [coordinatorInfo, setCoordinatorInfo] = useState<{ id: string; name: string; coordinator_code: string } | null>(null);
+  const [checkingCoordinator, setCheckingCoordinator] = useState(false);
   const [form, setForm] = useState({
     name: "", mobile: "", email, city: "", address: "", aadhaarNumber: "", panNumber: "",
     accountHolderName: "", accountNumber: "", confirmAccountNumber: "", ifsc: "", upiId: "",
@@ -224,6 +230,23 @@ const AgentRegistrationForm = ({
     if (file) void upload(file, folder, setter);
   };
 
+  const verifyCoordinator = async () => {
+    const code = coordinatorCode.trim().toUpperCase();
+    if (!code) { toast.error("Coordinator ID दर्ज करें"); return null; }
+    setCheckingCoordinator(true);
+    const { data, error } = await supabase.rpc("lookup_coordinator_by_code", { p_code: code });
+    setCheckingCoordinator(false);
+    const row = Array.isArray(data) ? data[0] : null;
+    if (error || !row) {
+      setCoordinatorInfo(null);
+      toast.error("यह Coordinator ID मान्य नहीं है या सक्रिय नहीं है");
+      return null;
+    }
+    setCoordinatorInfo({ id: row.id, name: row.name, coordinator_code: row.coordinator_code });
+    toast.success(`Coordinator सत्यापित: ${row.name}`);
+    return row;
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const mobile = form.mobile.replace(/\D/g, "");
@@ -238,6 +261,15 @@ const AgentRegistrationForm = ({
     if (acc.length < 8) { toast.error("मान्य बैंक खाता नंबर दर्ज करें"); return; }
     if (acc !== confirmAcc) { toast.error("खाता नंबर मेल नहीं खा रहे हैं"); return; }
     if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) { toast.error("मान्य IFSC कोड दर्ज करें"); return; }
+    if (!regType) { toast.error("कृपया 'Self' या 'Coordinator ID' विकल्प चुनें"); return; }
+    let coordinatorId: string | null = null;
+    if (regType === "coordinator") {
+      const verified = coordinatorInfo && coordinatorInfo.coordinator_code === coordinatorCode.trim().toUpperCase()
+        ? coordinatorInfo
+        : await verifyCoordinator();
+      if (!verified) return;
+      coordinatorId = verified.id;
+    }
     if (!acceptedTerms) { toast.error("कृपया एजेंट नियम और शर्तें स्वीकार करें"); return; }
 
     setSaving(true);
@@ -258,6 +290,8 @@ const AgentRegistrationForm = ({
       bank_account_number: acc,
       ifsc_code: ifsc,
       upi_id: form.upiId.trim() || null,
+      registration_type: regType,
+      coordinator_id: coordinatorId,
     });
     setSaving(false);
     if (error) { toast.error(error.message || "Registration failed"); return; }
@@ -304,6 +338,55 @@ const AgentRegistrationForm = ({
             <div><Label>PAN Number</Label><Input value={form.panNumber} onChange={(e) => setForm({ ...form, panNumber: e.target.value })} maxLength={10} /></div>
           </div>
           <div><Label>Address</Label><Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} maxLength={500} /></div>
+
+          <div className="rounded-lg border-2 border-primary/25 bg-primary/5 p-4">
+            <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
+              <ShieldCheck className="h-4 w-4 text-primary" /> रजिस्ट्रेशन प्रकार चुनें * (अनिवार्य)
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => { setRegType("self"); setCoordinatorInfo(null); }}
+                className={`rounded-xl border-2 p-3 text-left transition ${regType === "self" ? "border-primary bg-background shadow" : "border-border bg-background/60"}`}
+              >
+                <p className="flex items-center gap-2 text-sm font-semibold"><UserPlus className="h-4 w-4" /> Self Registration</p>
+                <p className="font-hindi text-xs text-muted-foreground">मैं स्वयं एजेंट बन रहा/रही हूँ (निःशुल्क)</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRegType("coordinator")}
+                className={`rounded-xl border-2 p-3 text-left transition ${regType === "coordinator" ? "border-amber-500 bg-background shadow" : "border-border bg-background/60"}`}
+              >
+                <p className="flex items-center gap-2 text-sm font-semibold"><Crown className="h-4 w-4 text-amber-600" /> Coordinator ID से</p>
+                <p className="font-hindi text-xs text-muted-foreground">किसी कोऑर्डिनेटर के अंतर्गत जुड़ रहा/रही हूँ</p>
+              </button>
+            </div>
+
+            {regType === "coordinator" && (
+              <div className="mt-3 space-y-2">
+                <Label>Coordinator ID *</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={coordinatorCode}
+                    onChange={(e) => { setCoordinatorCode(e.target.value.toUpperCase()); setCoordinatorInfo(null); }}
+                    placeholder="CO123456"
+                    maxLength={12}
+                  />
+                  <Button type="button" variant="secondary" onClick={() => void verifyCoordinator()} disabled={checkingCoordinator}>
+                    {checkingCoordinator ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify"}
+                  </Button>
+                </div>
+                {coordinatorInfo && (
+                  <p className="font-hindi text-xs text-emerald-600">
+                    सत्यापित: {coordinatorInfo.name} ({coordinatorInfo.coordinator_code}) — यह लिंक स्थायी रूप से लॉक हो जाएगा।
+                  </p>
+                )}
+                <p className="font-hindi text-[11px] text-muted-foreground">
+                  एक बार जुड़ने के बाद Coordinator ID बदला नहीं जा सकता।
+                </p>
+              </div>
+            )}
+          </div>
 
           <div className="rounded-lg border bg-muted/20 p-4">
             <p className="mb-3 flex items-center gap-2 text-sm font-semibold"><Landmark className="h-4 w-4 text-primary" /> Bank & UPI Details (कमीशन भुगतान हेतु)</p>
