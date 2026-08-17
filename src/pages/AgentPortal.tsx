@@ -585,13 +585,27 @@ const AgentDashboardInner = ({ agent }: { agent: AgentRow }) => {
   useEffect(() => {
     void load();
     const channel = supabase
-      .channel(`agent-commissions-${agent.id}`)
+      .channel(`agent-live-${agent.id}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "agent_commissions", filter: `agent_id=eq.${agent.id}` }, () => {
         void load();
         toast.success("नया कमीशन आपके वॉलेट में जुड़ गया!");
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "agent_referrals", filter: `agent_id=eq.${agent.id}` }, () => {
+        void load();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "agent_withdrawals", filter: `agent_id=eq.${agent.id}` }, () => {
+        void load();
+      })
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    // Safety net if the realtime socket drops (mobile WebView / background).
+    const poll = window.setInterval(() => void load(), 20000);
+    const onFocus = () => void load();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      void supabase.removeChannel(channel);
+      window.clearInterval(poll);
+      window.removeEventListener("focus", onFocus);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agent.id]);
 
