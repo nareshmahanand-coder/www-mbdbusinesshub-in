@@ -232,6 +232,7 @@ const CoordinatorRegistrationForm = ({
     if (acc.length < 8) { toast.error("मान्य बैंक खाता नंबर दर्ज करें"); return; }
     if (acc !== form.confirmAccountNumber.replace(/\s/g, "")) { toast.error("खाता नंबर मेल नहीं खा रहे हैं"); return; }
     if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) { toast.error("मान्य IFSC कोड दर्ज करें"); return; }
+    if (!acceptedTerms) { toast.error("कृपया नियम और शर्तें स्वीकार करें"); return; }
 
     setSaving(true);
     const { error } = await supabase.from("coordinators").insert({
