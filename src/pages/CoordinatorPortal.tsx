@@ -165,6 +165,7 @@ const CoordinatorRegistrationForm = ({
   userId, email, onDone,
 }: { userId: string; email: string; onDone: () => void | Promise<void> }) => {
   const [saving, setSaving] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [uploading, setUploading] = useState("");
   const [form, setForm] = useState({
     name: "", mobile: "", email, city: "", address: "", aadhaarNumber: "", panNumber: "",
