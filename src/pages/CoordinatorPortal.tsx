@@ -7,11 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useKycStatus } from "@/hooks/useKycStatus";
 import { startCoordinatorPaymentLink } from "@/lib/razorpayPayments";
+import CoordinatorTerms from "@/components/CoordinatorTerms";
 import {
   BadgeCheck, IndianRupee, Users, Wallet, Loader2, Store, ShieldCheck, Camera,
   Image as ImageIcon, Landmark, Banknote, Crown, TrendingUp, UserPlus, Activity,
@@ -163,6 +165,7 @@ const CoordinatorRegistrationForm = ({
   userId, email, onDone,
 }: { userId: string; email: string; onDone: () => void | Promise<void> }) => {
   const [saving, setSaving] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [uploading, setUploading] = useState("");
   const [form, setForm] = useState({
     name: "", mobile: "", email, city: "", address: "", aadhaarNumber: "", panNumber: "",
@@ -229,6 +232,7 @@ const CoordinatorRegistrationForm = ({
     if (acc.length < 8) { toast.error("मान्य बैंक खाता नंबर दर्ज करें"); return; }
     if (acc !== form.confirmAccountNumber.replace(/\s/g, "")) { toast.error("खाता नंबर मेल नहीं खा रहे हैं"); return; }
     if (!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc)) { toast.error("मान्य IFSC कोड दर्ज करें"); return; }
+    if (!acceptedTerms) { toast.error("कृपया नियम और शर्तें स्वीकार करें"); return; }
 
     setSaving(true);
     const { error } = await supabase.from("coordinators").insert({
@@ -296,6 +300,19 @@ const CoordinatorRegistrationForm = ({
           <input ref={frontCamRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => pick(e, "aadhaar-front", setAadhaarFrontUrl)} />
           <input ref={backCamRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => pick(e, "aadhaar-back", setAadhaarBackUrl)} />
           <input ref={panCamRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => pick(e, "pan", setPanDocUrl)} />
+
+          <CoordinatorTerms compact />
+
+          <div className="flex items-start gap-3 rounded-lg border bg-muted/20 p-3">
+            <Checkbox
+              id="coordinator-terms"
+              checked={acceptedTerms}
+              onCheckedChange={(v) => setAcceptedTerms(v === true)}
+            />
+            <label htmlFor="coordinator-terms" className="font-hindi cursor-pointer text-sm leading-relaxed">
+              मैंने कोऑर्डिनेटर नियम और शर्तें को ध्यानपूर्वक पढ़ लिया है और मैं उन सभी नियमों और शर्तों को मानने के लिए सहमत हूँ।
+            </label>
+          </div>
 
           <Button type="submit" className="w-full" disabled={saving}>
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BadgeCheck className="mr-2 h-4 w-4" />}
@@ -503,6 +520,8 @@ const CoordinatorDashboard = ({
           )}
         </CardContent>
       </Card>
+
+      <CoordinatorTerms />
     </div>
   );
 };
