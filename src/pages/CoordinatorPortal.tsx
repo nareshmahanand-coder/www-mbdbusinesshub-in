@@ -520,6 +520,8 @@ const CoordinatorDashboard = ({
           )}
         </CardContent>
       </Card>
+
+      <CoordinatorTerms />
     </div>
   );
 };
