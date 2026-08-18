@@ -246,11 +246,16 @@ const EkycPage = () => {
   const goToMembership = useCallback(() => {
     if (redirectingToMembershipRef.current) return;
     redirectingToMembershipRef.current = true;
-    try { navigate("/dashboard", { replace: true }); } catch {}
+    const rawNext = new URLSearchParams(location.search).get("next") || "";
+    // Only allow same-app relative paths — never an external redirect.
+    const target = /^\/[A-Za-z0-9\-_/?=&.]*$/.test(rawNext) && !rawNext.startsWith("//")
+      ? rawNext
+      : "/dashboard";
+    try { navigate(target, { replace: true }); } catch {}
     window.setTimeout(() => {
-      if (window.location.pathname !== "/dashboard") window.location.replace("/dashboard");
+      if (!window.location.pathname.startsWith(target.split("?")[0])) window.location.replace(target);
     }, 120);
-  }, [navigate]);
+  }, [navigate, location.search]);
 
   const scheduleMembershipRedirect = useCallback((delay = 2200) => {
     if (membershipRedirectTimerRef.current) window.clearTimeout(membershipRedirectTimerRef.current);
