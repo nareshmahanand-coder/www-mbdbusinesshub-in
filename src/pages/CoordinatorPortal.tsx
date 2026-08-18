@@ -133,7 +133,14 @@ const CoordinatorPortal = () => {
               <p className="font-hindi text-sm text-muted-foreground">
                 कोऑर्डिनेटर रजिस्ट्रेशन के लिए e-KYC पूरा करना अनिवार्य है। KYC पूरा करने के बाद यहाँ वापस आएँ।
               </p>
-              <Button onClick={() => navigate("/ekyc?next=/coordinator")}>Complete e-KYC</Button>
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={() => navigate("/ekyc?mode=upload&next=%2Fcoordinator")}>
+                  <ShieldCheck className="mr-2 h-4 w-4" /> e-KYC शुरू करें (आधार + PAN अपलोड)
+                </Button>
+                <Button variant="outline" onClick={() => window.location.reload()}>
+                  मैंने e-KYC कर लिया — Refresh
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
