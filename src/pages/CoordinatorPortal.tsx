@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useKycStatus } from "@/hooks/useKycStatus";
-import { startInstantRazorpayPayment } from "@/lib/razorpayPayments";
+import { startCoordinatorPaymentLink } from "@/lib/razorpayPayments";
 import {
   BadgeCheck, IndianRupee, Users, Wallet, Loader2, Store, ShieldCheck, Camera,
   Image as ImageIcon, Landmark, Banknote, Crown, TrendingUp, UserPlus, Activity,
@@ -315,8 +315,7 @@ const SubscriptionCard = ({
   const pay = async () => {
     setPaying(true);
     try {
-      await startInstantRazorpayPayment({
-        module: "coordinator",
+      await startCoordinatorPaymentLink({
         plan: "monthly",
         onSuccess: () => {
           toast.success("सब्सक्रिप्शन सक्रिय! आपका Coordinator ID अब चालू है।");

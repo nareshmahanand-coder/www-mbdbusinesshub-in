@@ -24,7 +24,7 @@ const PAYMENT_LINKS: Record<PaymentModule, Record<PaymentPlan, { url: string; am
     yearly: { url: "https://rzp.io/rzp/VrxgoWxx", amount: 100, planName: "Bharat Gaurav Membership Yearly ₹100 (Auto-Debit)", subscriptionId: "" },
   },
   coordinator: {
-    monthly: { url: "", amount: 100, planName: "Coordinator Monthly Subscription ₹100 (Auto-Debit)", subscriptionId: "" },
+    monthly: { url: "https://rzp.io/rzp/F9VNIpQ", amount: 100, planName: "Coordinator Monthly Subscription ₹100 (Auto-Debit)", subscriptionId: "" },
     yearly: { url: "", amount: 1000, planName: "Coordinator Yearly Subscription ₹1000", subscriptionId: "" },
   },
 };
@@ -194,6 +194,10 @@ export const startMarriageBureauPaymentLink = async (options: Omit<StartPaymentO
 
 export const startBharatGauravPaymentLink = async (options: Omit<StartPaymentOptions, "module">) => {
   await startPaymentLink({ ...options, module: "bharat_gaurav" });
+};
+
+export const startCoordinatorPaymentLink = async (options: Omit<StartPaymentOptions, "module">) => {
+  await startPaymentLink({ ...options, module: "coordinator" });
 };
 
 export const startInstantRazorpayPayment = async ({ module, plan, onSuccess, onFailure }: StartPaymentOptions) => {
