@@ -7,11 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useKycStatus } from "@/hooks/useKycStatus";
 import { startCoordinatorPaymentLink } from "@/lib/razorpayPayments";
+import CoordinatorTerms from "@/components/CoordinatorTerms";
 import {
   BadgeCheck, IndianRupee, Users, Wallet, Loader2, Store, ShieldCheck, Camera,
   Image as ImageIcon, Landmark, Banknote, Crown, TrendingUp, UserPlus, Activity,
