@@ -301,6 +301,19 @@ const CoordinatorRegistrationForm = ({
           <input ref={backCamRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => pick(e, "aadhaar-back", setAadhaarBackUrl)} />
           <input ref={panCamRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => pick(e, "pan", setPanDocUrl)} />
 
+          <CoordinatorTerms compact />
+
+          <div className="flex items-start gap-3 rounded-lg border bg-muted/20 p-3">
+            <Checkbox
+              id="coordinator-terms"
+              checked={acceptedTerms}
+              onCheckedChange={(v) => setAcceptedTerms(v === true)}
+            />
+            <label htmlFor="coordinator-terms" className="font-hindi cursor-pointer text-sm leading-relaxed">
+              मैंने कोऑर्डिनेटर नियम और शर्तें को ध्यानपूर्वक पढ़ लिया है और मैं उन सभी नियमों और शर्तों को मानने के लिए सहमत हूँ।
+            </label>
+          </div>
+
           <Button type="submit" className="w-full" disabled={saving}>
             {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BadgeCheck className="mr-2 h-4 w-4" />}
             Submit & Continue to ₹100 Subscription
