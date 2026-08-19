@@ -87,6 +87,18 @@ const Scanner = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [ready, setReady] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const pickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 12 * 1024 * 1024) { toast.error("फ़ाइल बहुत बड़ी है (max 12MB)"); return; }
+    const reader = new FileReader();
+    reader.onload = () => onCapture(String(reader.result));
+    reader.onerror = () => toast.error("फ़ाइल पढ़ी नहीं जा सकी");
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     if (preview) return; // don't run camera while previewing
@@ -205,6 +217,20 @@ const Scanner = ({
         <p className="text-xs font-semibold text-white">
           फ़ोटो खींचें / Tap to capture
         </p>
+        {mode === "document" && (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="bg-white/10 text-white hover:bg-white/20"
+              onClick={() => fileRef.current?.click()}
+            >
+              गैलरी से अपलोड करें / Upload file
+            </Button>
+            <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickFile} />
+          </>
+        )}
       </div>
     </div>
   );
