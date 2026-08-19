@@ -36,7 +36,7 @@ import { toast } from "sonner";
 type Section =
   | "overview" | "users" | "merchants" | "matrimony" | "subscriptions"
   | "kyc" | "complaints" | "delete_requests" | "duplicates" | "messaging" | "audit" | "analytics" | "settings"
-  | "agents";
+  | "agents" | "coordinators";
 
 const NAV: { id: Section; label: string; icon: any }[] = [
   { id: "overview", label: "Dashboard", icon: LayoutDashboard },
@@ -44,6 +44,7 @@ const NAV: { id: Section; label: string; icon: any }[] = [
   { id: "merchants", label: "Merchants / Shops", icon: Store },
   { id: "matrimony", label: "Matrimony Profiles", icon: Heart },
   { id: "agents", label: "Agent Management", icon: UserCog },
+  { id: "coordinators", label: "Coordinator Management", icon: UserCog },
   { id: "subscriptions", label: "Subscriptions & Plans", icon: CreditCard },
   { id: "kyc", label: "KYC Verification", icon: ShieldCheck },
   { id: "complaints", label: "Complaints & Reports", icon: MessageSquareWarning },
@@ -259,6 +260,7 @@ const AdminDashboard = () => {
           {section === "merchants" && <MerchantsSection />}
           {section === "matrimony" && <MatrimonySection />}
           {section === "agents" && <AgentsSection />}
+          {section === "coordinators" && <CoordinatorsSection />}
           {section === "subscriptions" && <SubscriptionsSection />}
           {section === "kyc" && <KycSection />}
           {section === "complaints" && <ComplaintsSection />}
@@ -1797,6 +1799,256 @@ const AgentsSection = () => {
     <>
       <AgentTransactionLogCard />
       <AgentsManagementSection />
+    </>
+  );
+};
+
+const CoordinatorWithdrawalsCard = () => {
+  const [rows, setRows] = useState<any[]>([]);
+
+  const load = async () => {
+    const d = await adminFetch("coordinator_withdrawals");
+    setRows(d?.rows || []);
+  };
+  useAutoRefresh(load, 15000, []);
+
+  const setStatus = async (id: string, status: string) => {
+    const d = await adminFetch("coordinator_withdrawal_status", { id, status });
+    if (!d?.ok) { toast.error("Update failed"); return; }
+    toast.success(`Withdrawal ${status}`);
+    await load();
+  };
+
+  return (
+    <Card className="mb-4">
+      <CardHeader className="flex flex-row items-center justify-between gap-3">
+        <CardTitle className="text-base">
+          Coordinator Withdrawal Requests ({rows.filter((r) => r.status === "pending").length} pending)
+        </CardTitle>
+        <Button size="sm" variant="outline" onClick={load}><RefreshCw className="h-4 w-4" /></Button>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Coordinator</TableHead><TableHead>Amount</TableHead><TableHead>Bank / UPI</TableHead>
+              <TableHead>Requested</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((w) => (
+              <TableRow key={w.id}>
+                <TableCell className="text-xs">
+                  <p className="font-medium">{w.coordinators?.name || "—"}</p>
+                  <p className="font-mono text-muted-foreground">{w.coordinators?.coordinator_code} · {w.coordinators?.mobile}</p>
+                </TableCell>
+                <TableCell className="font-semibold">{inr(w.amount)}</TableCell>
+                <TableCell className="text-xs">
+                  <p>{w.account_holder_name || "—"}</p>
+                  <p className="font-mono">{w.bank_account_number || "—"} · {w.ifsc_code || "—"}</p>
+                  <p className="text-muted-foreground">{w.upi_id || ""}</p>
+                </TableCell>
+                <TableCell className="text-xs">{new Date(w.created_at).toLocaleString("en-IN")}</TableCell>
+                <TableCell>
+                  <Badge variant={w.status === "paid" ? "default" : w.status === "rejected" ? "destructive" : "secondary"} className="capitalize">{w.status}</Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex flex-wrap justify-end gap-1">
+                    {w.status === "pending" && (
+                      <Button size="sm" variant="outline" onClick={() => setStatus(w.id, "approved")}><CheckCircle2 className="mr-1 h-3.5 w-3.5" /> Approve</Button>
+                    )}
+                    {w.status !== "paid" && w.status !== "rejected" && (
+                      <Button size="sm" className="bg-green-600 text-white hover:bg-green-700" onClick={() => setStatus(w.id, "paid")}>Mark Paid</Button>
+                    )}
+                    {w.status === "pending" && (
+                      <Button size="sm" variant="destructive" onClick={() => setStatus(w.id, "rejected")}><XCircle className="mr-1 h-3.5 w-3.5" /> Reject</Button>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        {!rows.length && <p className="py-6 text-center text-sm text-muted-foreground">No withdrawal requests</p>}
+      </CardContent>
+    </Card>
+  );
+};
+
+const CoordinatorsSection = () => {
+  const [rows, setRows] = useState<any[]>([]);
+  const [agentCounts, setAgentCounts] = useState<Record<string, number>>({});
+  const [commTotals, setCommTotals] = useState<Record<string, number>>({});
+  const [q, setQ] = useState("");
+  const [detail, setDetail] = useState<any>(null);
+  const [notes, setNotes] = useState("");
+
+  const load = async () => {
+    const d = await adminFetch("coordinators");
+    if (!d) return;
+    setRows(d.rows || []);
+    setAgentCounts(d.agentCounts || {});
+    setCommTotals(d.commTotals || {});
+  };
+  useAutoRefresh(load, 10000, []);
+
+  const openDetail = async (id: string) => {
+    const d = await adminFetch("coordinator_detail", { id });
+    if (!d) { toast.error("Failed to load coordinator"); return; }
+    setNotes(d.coordinator?.admin_notes || "");
+    setDetail(d);
+  };
+
+  const setStatus = async (id: string, status: string) => {
+    const d = await adminFetch("coordinator_status", { id, status, admin_notes: notes });
+    if (!d?.ok) { toast.error("Update failed"); return; }
+    toast.success(`Coordinator ${status}`);
+    await load();
+    if (detail?.coordinator?.id === id) await openDetail(id);
+  };
+
+  const filtered = rows.filter((r) =>
+    !q || [r.name, r.mobile, r.coordinator_code, r.city, r.email].some((v: string) => (v || "").toLowerCase().includes(q.toLowerCase()))
+  );
+
+  return (
+    <>
+      <CoordinatorWithdrawalsCard />
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between gap-3">
+          <CardTitle className="text-base">Coordinator Management ({rows.length})</CardTitle>
+          <div className="flex items-center gap-2">
+            <Input placeholder="Search coordinator…" value={q} onChange={(e) => setQ(e.target.value)} className="h-9 w-48" />
+            <Button size="sm" variant="outline" onClick={load}><RefreshCw className="h-4 w-4" /></Button>
+          </div>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Coordinator</TableHead><TableHead>Code</TableHead><TableHead>City</TableHead>
+                <TableHead>Agents</TableHead><TableHead>Commission</TableHead><TableHead>Wallet</TableHead>
+                <TableHead>Subscription</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((c) => {
+                const subActive = c.subscription_status === "active"
+                  && (!c.subscription_expires_at || new Date(c.subscription_expires_at) > new Date());
+                return (
+                  <TableRow key={c.id}>
+                    <TableCell className="text-xs">
+                      <p className="font-medium">{c.name}</p>
+                      <p className="text-muted-foreground">{c.mobile} · {c.email || "—"}</p>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{c.coordinator_code || "—"}</TableCell>
+                    <TableCell className="text-xs">{c.city || "—"}</TableCell>
+                    <TableCell className="text-xs font-semibold">{agentCounts[c.id] || 0}</TableCell>
+                    <TableCell className="text-xs font-semibold text-emerald-600">{inr(commTotals[c.id] || 0)}</TableCell>
+                    <TableCell className="text-xs">{inr(c.wallet_balance)}</TableCell>
+                    <TableCell className="text-xs">
+                      <Badge variant={subActive ? "default" : "secondary"}>{subActive ? "Active" : "Inactive"}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={c.status === "approved" ? "default" : c.status === "rejected" ? "destructive" : "secondary"} className="capitalize">{c.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="outline" onClick={() => openDetail(c.id)}>View</Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+          {!filtered.length && <p className="py-8 text-center text-sm text-muted-foreground">No coordinators</p>}
+        </CardContent>
+
+        <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+          <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+            <DialogHeader><DialogTitle>{detail?.coordinator?.name} — {detail?.coordinator?.coordinator_code}</DialogTitle></DialogHeader>
+            {detail?.coordinator && (
+              <div className="space-y-4 text-sm">
+                <div className="flex flex-wrap gap-4">
+                  {detail.coordinator.photo_url && <img src={detail.coordinator.photo_url} alt="coordinator" className="h-24 w-24 rounded-lg border object-cover" />}
+                  <div className="space-y-1">
+                    <p><Phone className="mr-1 inline h-3.5 w-3.5" />{detail.coordinator.mobile}</p>
+                    <p><Mail className="mr-1 inline h-3.5 w-3.5" />{detail.coordinator.email || "—"}</p>
+                    <p><MapPin className="mr-1 inline h-3.5 w-3.5" />{detail.coordinator.city || "—"} · {detail.coordinator.address || "—"}</p>
+                    <p>Aadhaar: {detail.coordinator.aadhaar_number || "—"} · PAN: {detail.coordinator.pan_number || "—"}</p>
+                    <p>Bank: {detail.coordinator.account_holder_name || "—"} · {detail.coordinator.bank_account_number || "—"} · {detail.coordinator.ifsc_code || "—"}</p>
+                    <p className="flex items-center gap-1 font-semibold text-emerald-600"><Wallet className="h-4 w-4" /> Wallet {inr(detail.coordinator.wallet_balance)}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {[["Aadhaar Front", detail.coordinator.aadhaar_front_url], ["Aadhaar Back", detail.coordinator.aadhaar_back_url], ["PAN", detail.coordinator.pan_url]].map(([label, url]: any) => (
+                    url ? (
+                      <a key={label} href={url} target="_blank" rel="noreferrer" className="block">
+                        <img src={url} alt={label} className="h-24 w-full rounded border object-cover" />
+                        <span className="text-[11px] text-muted-foreground">{label}</span>
+                      </a>
+                    ) : <div key={label} className="flex h-24 items-center justify-center rounded border text-[11px] text-muted-foreground">{label}: —</div>
+                  ))}
+                </div>
+
+                <div>
+                  <p className="mb-2 font-semibold">Agents under this coordinator ({detail.agents.length})</p>
+                  <div className="overflow-x-auto rounded border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">Agent</TableHead>
+                          <TableHead className="text-xs">Code</TableHead>
+                          <TableHead className="text-xs">City</TableHead>
+                          <TableHead className="text-xs">Status</TableHead>
+                          <TableHead className="text-xs">Joined</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {detail.agents.map((a: any) => (
+                          <TableRow key={a.id}>
+                            <TableCell className="text-xs">
+                              <span className="font-medium">{a.name}</span>
+                              <span className="block text-[11px] text-muted-foreground">{a.mobile}</span>
+                            </TableCell>
+                            <TableCell className="font-mono text-xs">{a.agent_code}</TableCell>
+                            <TableCell className="text-xs">{a.city || "—"}</TableCell>
+                            <TableCell className="text-xs"><Badge variant={a.status === "approved" ? "default" : "secondary"} className="capitalize">{a.status}</Badge></TableCell>
+                            <TableCell className="text-xs">{new Date(a.created_at).toLocaleDateString("en-IN")}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    {!detail.agents.length && <p className="py-6 text-center text-xs text-muted-foreground">No agents yet</p>}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-1 font-semibold">Commission breakdown ({detail.commissions.length})</p>
+                  <div className="space-y-1">
+                    {detail.commissions.map((c: any) => (
+                      <div key={c.id} className="flex items-center justify-between rounded border p-2 text-xs">
+                        <span>{c.plan} · {new Date(c.created_at).toLocaleString("en-IN")}</span>
+                        <span className="font-semibold text-emerald-600">+{inr(c.amount)}</span>
+                      </div>
+                    ))}
+                    {!detail.commissions.length && <p className="text-xs text-muted-foreground">No commissions yet</p>}
+                  </div>
+                </div>
+
+                <Textarea placeholder="Admin notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button size="sm" className="bg-green-600 text-white hover:bg-green-700" onClick={() => setStatus(detail.coordinator.id, "approved")}>
+                    <CheckCircle2 className="mr-1 h-4 w-4" /> Approve
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setStatus(detail.coordinator.id, "suspended")}><ShieldOff className="mr-1 h-4 w-4" /> Suspend</Button>
+                  <Button size="sm" variant="destructive" onClick={() => setStatus(detail.coordinator.id, "rejected")}><XCircle className="mr-1 h-4 w-4" /> Reject</Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </Card>
     </>
   );
 };

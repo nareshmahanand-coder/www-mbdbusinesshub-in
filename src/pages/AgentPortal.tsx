@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   BadgeCheck, IndianRupee, LogIn, UserPlus, Users, Wallet, Loader2, Store, Clock, Info,
-  Landmark, Banknote, Camera, Image as ImageIcon, Search, Receipt, Crown, ShieldCheck,
+  Landmark, Banknote, Image as ImageIcon, Search, Receipt, Crown, ShieldCheck,
 } from "lucide-react";
 
 type AgentRow = {
@@ -206,10 +206,6 @@ const AgentRegistrationForm = ({
   const frontRef = useRef<HTMLInputElement>(null);
   const backRef = useRef<HTMLInputElement>(null);
   const panRef = useRef<HTMLInputElement>(null);
-  const photoCamRef = useRef<HTMLInputElement>(null);
-  const frontCamRef = useRef<HTMLInputElement>(null);
-  const backCamRef = useRef<HTMLInputElement>(null);
-  const panCamRef = useRef<HTMLInputElement>(null);
 
   const upload = async (file: File, folder: string, setter: (u: string) => void) => {
     setUploading(folder);
@@ -300,8 +296,8 @@ const AgentRegistrationForm = ({
   };
 
   const UploadTile = ({
-    label, url, onCamera, onGallery, folder,
-  }: { label: string; url: string; onCamera: () => void; onGallery: () => void; folder: string }) => (
+    label, url, onGallery, folder,
+  }: { label: string; url: string; onGallery: () => void; folder: string }) => (
     <div className="flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted/30 p-2 text-xs">
       <div className="flex h-16 w-16 items-center justify-center">
         {url ? (
@@ -314,11 +310,8 @@ const AgentRegistrationForm = ({
       </div>
       <span className="text-center font-medium">{label}</span>
       <div className="flex w-full gap-1">
-        <Button type="button" size="sm" variant="secondary" className="h-7 flex-1 px-1 text-[10px]" onClick={onCamera}>
-          <Camera className="mr-1 h-3 w-3" /> कैमरा
-        </Button>
         <Button type="button" size="sm" variant="outline" className="h-7 flex-1 px-1 text-[10px]" onClick={onGallery}>
-          <ImageIcon className="mr-1 h-3 w-3" /> गैलरी
+          <ImageIcon className="mr-1 h-3 w-3" /> {url ? "बदलें / Change" : "फ़ाइल चुनें"}
         </Button>
       </div>
     </div>
@@ -400,19 +393,18 @@ const AgentRegistrationForm = ({
           </div>
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <UploadTile label="Photo *" url={photoUrl} folder="photo" onGallery={() => photoRef.current?.click()} onCamera={() => photoCamRef.current?.click()} />
-            <UploadTile label="Aadhaar Front *" url={aadhaarFrontUrl} folder="aadhaar-front" onGallery={() => frontRef.current?.click()} onCamera={() => frontCamRef.current?.click()} />
-            <UploadTile label="Aadhaar Back *" url={aadhaarBackUrl} folder="aadhaar-back" onGallery={() => backRef.current?.click()} onCamera={() => backCamRef.current?.click()} />
-            <UploadTile label="PAN Card" url={panDocUrl} folder="pan" onGallery={() => panRef.current?.click()} onCamera={() => panCamRef.current?.click()} />
+            <UploadTile label="Photo *" url={photoUrl} folder="photo" onGallery={() => photoRef.current?.click()} />
+            <UploadTile label="Aadhaar Front *" url={aadhaarFrontUrl} folder="aadhaar-front" onGallery={() => frontRef.current?.click()} />
+            <UploadTile label="Aadhaar Back *" url={aadhaarBackUrl} folder="aadhaar-back" onGallery={() => backRef.current?.click()} />
+            <UploadTile label="PAN Card" url={panDocUrl} folder="pan" onGallery={() => panRef.current?.click()} />
           </div>
           <input ref={photoRef} type="file" accept="image/*" hidden onChange={(e) => pick(e, "photo", setPhotoUrl)} />
           <input ref={frontRef} type="file" accept="image/*" hidden onChange={(e) => pick(e, "aadhaar-front", setAadhaarFrontUrl)} />
           <input ref={backRef} type="file" accept="image/*" hidden onChange={(e) => pick(e, "aadhaar-back", setAadhaarBackUrl)} />
           <input ref={panRef} type="file" accept="image/*" hidden onChange={(e) => pick(e, "pan", setPanDocUrl)} />
-          <input ref={photoCamRef} type="file" accept="image/*" capture="user" hidden onChange={(e) => pick(e, "photo", setPhotoUrl)} />
-          <input ref={frontCamRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => pick(e, "aadhaar-front", setAadhaarFrontUrl)} />
-          <input ref={backCamRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => pick(e, "aadhaar-back", setAadhaarBackUrl)} />
-          <input ref={panCamRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => pick(e, "pan", setPanDocUrl)} />
+
+
+
 
           <AgentTerms compact />
 

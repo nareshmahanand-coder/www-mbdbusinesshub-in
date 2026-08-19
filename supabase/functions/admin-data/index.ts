@@ -215,6 +215,63 @@ Deno.serve(async (req) => {
         if (error) return json({ error: error.message }, 400);
         return json({ ok: true });
       }
+      case "coordinators": {
+        const { data: coordinators } = await sb.from("coordinators").select("*").order("created_at", { ascending: false }).limit(1000);
+        const ids = (coordinators || []).map((c: any) => c.id);
+        const agentCounts: Record<string, number> = {};
+        const commTotals: Record<string, number> = {};
+        if (ids.length) {
+          const [{ data: ags }, { data: comms }] = await Promise.all([
+            sb.from("agents").select("coordinator_id").in("coordinator_id", ids),
+            sb.from("coordinator_commissions").select("coordinator_id,amount").in("coordinator_id", ids),
+          ]);
+          (ags || []).forEach((a: any) => { agentCounts[a.coordinator_id] = (agentCounts[a.coordinator_id] || 0) + 1; });
+          (comms || []).forEach((c: any) => { commTotals[c.coordinator_id] = (commTotals[c.coordinator_id] || 0) + Number(c.amount || 0); });
+        }
+        return json({ rows: coordinators || [], agentCounts, commTotals });
+      }
+      case "coordinator_detail": {
+        const { id } = body;
+        if (!id) return json({ error: "id required" }, 400);
+        const [{ data: coordinator }, { data: agents }, { data: commissions }, { data: withdrawals }] = await Promise.all([
+          sb.from("coordinators").select("*").eq("id", id).maybeSingle(),
+          sb.from("agents").select("*").eq("coordinator_id", id).order("created_at", { ascending: false }),
+          sb.from("coordinator_commissions").select("*").eq("coordinator_id", id).order("created_at", { ascending: false }),
+          sb.from("coordinator_withdrawals").select("*").eq("coordinator_id", id).order("created_at", { ascending: false }),
+        ]);
+        return json({
+          coordinator: coordinator || null,
+          agents: agents || [],
+          commissions: commissions || [],
+          withdrawals: withdrawals || [],
+        });
+      }
+      case "coordinator_status": {
+        const { id, status, admin_notes } = body;
+        if (!id || !["pending", "approved", "rejected", "suspended"].includes(status)) {
+          return json({ error: "invalid status" }, 400);
+        }
+        const { error } = await sb.from("coordinators").update({ status, admin_notes: admin_notes ?? "" }).eq("id", id);
+        if (error) return json({ error: error.message }, 400);
+        return json({ ok: true });
+      }
+      case "coordinator_withdrawals": {
+        const { data } = await sb
+          .from("coordinator_withdrawals")
+          .select("*, coordinators(name, coordinator_code, mobile)")
+          .order("created_at", { ascending: false })
+          .limit(500);
+        return json({ rows: data || [] });
+      }
+      case "coordinator_withdrawal_status": {
+        const { id, status } = body;
+        if (!id || !["pending", "approved", "paid", "rejected"].includes(status)) {
+          return json({ error: "invalid status" }, 400);
+        }
+        const { error } = await sb.from("coordinator_withdrawals").update({ status }).eq("id", id);
+        if (error) return json({ error: error.message }, 400);
+        return json({ ok: true });
+      }
       case "agent_transactions": {
         const search = String(body.search || "").trim().toLowerCase();
         const agentId = body.agent_id ? String(body.agent_id) : "";
