@@ -199,8 +199,8 @@ const CoordinatorRegistrationForm = ({
   };
 
   const UploadTile = ({
-    label, url, onCamera, onGallery, folder,
-  }: { label: string; url: string; onCamera: () => void; onGallery: () => void; folder: string }) => (
+    label, url, onGallery, folder,
+  }: { label: string; url: string; onGallery: () => void; folder: string }) => (
     <div className="flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed border-border bg-muted/30 p-2 text-xs">
       <div className="flex h-16 w-16 items-center justify-center">
         {url ? <img src={url} alt={label} className="h-16 w-16 rounded-md object-cover" />
@@ -209,8 +209,9 @@ const CoordinatorRegistrationForm = ({
       </div>
       <span className="text-center font-medium">{label}</span>
       <div className="flex w-full gap-1">
-        <Button type="button" size="sm" variant="secondary" className="h-7 flex-1 px-1 text-[10px]" onClick={onCamera}><Camera className="mr-1 h-3 w-3" /> कैमरा</Button>
-        <Button type="button" size="sm" variant="outline" className="h-7 flex-1 px-1 text-[10px]" onClick={onGallery}><ImageIcon className="mr-1 h-3 w-3" /> गैलरी</Button>
+        <Button type="button" size="sm" variant="outline" className="h-7 flex-1 px-1 text-[10px]" onClick={onGallery}>
+          <ImageIcon className="mr-1 h-3 w-3" /> {url ? "बदलें / Change" : "फ़ाइल चुनें"}
+        </Button>
       </div>
     </div>
   );
