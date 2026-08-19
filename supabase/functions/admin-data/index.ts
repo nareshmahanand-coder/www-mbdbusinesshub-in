@@ -183,6 +183,7 @@ Deno.serve(async (req) => {
         return json({ rows: agents || [], refCounts, commTotals });
       }
       case "agent_detail": {
+        // fallthrough handled below
         const { id } = body;
         if (!id) return json({ error: "id required" }, 400);
         const [{ data: agent }, { data: referrals }, { data: commissions }] = await Promise.all([
