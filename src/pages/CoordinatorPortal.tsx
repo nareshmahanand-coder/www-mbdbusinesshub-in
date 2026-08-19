@@ -15,7 +15,7 @@ import { useKycStatus } from "@/hooks/useKycStatus";
 import { startCoordinatorPaymentLink } from "@/lib/razorpayPayments";
 import CoordinatorTerms from "@/components/CoordinatorTerms";
 import {
-  BadgeCheck, IndianRupee, Users, Wallet, Loader2, Store, ShieldCheck, Camera,
+  BadgeCheck, IndianRupee, Users, Wallet, Loader2, Store, ShieldCheck,
   Image as ImageIcon, Landmark, Banknote, Crown, TrendingUp, UserPlus, Activity,
 } from "lucide-react";
 

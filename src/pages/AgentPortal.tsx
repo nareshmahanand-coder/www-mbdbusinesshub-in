@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   BadgeCheck, IndianRupee, LogIn, UserPlus, Users, Wallet, Loader2, Store, Clock, Info,
-  Landmark, Banknote, Camera, Image as ImageIcon, Search, Receipt, Crown, ShieldCheck,
+  Landmark, Banknote, Image as ImageIcon, Search, Receipt, Crown, ShieldCheck,
 } from "lucide-react";
 
 type AgentRow = {
