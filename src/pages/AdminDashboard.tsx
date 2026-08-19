@@ -36,7 +36,7 @@ import { toast } from "sonner";
 type Section =
   | "overview" | "users" | "merchants" | "matrimony" | "subscriptions"
   | "kyc" | "complaints" | "delete_requests" | "duplicates" | "messaging" | "audit" | "analytics" | "settings"
-  | "agents";
+  | "agents" | "coordinators";
 
 const NAV: { id: Section; label: string; icon: any }[] = [
   { id: "overview", label: "Dashboard", icon: LayoutDashboard },
@@ -44,6 +44,7 @@ const NAV: { id: Section; label: string; icon: any }[] = [
   { id: "merchants", label: "Merchants / Shops", icon: Store },
   { id: "matrimony", label: "Matrimony Profiles", icon: Heart },
   { id: "agents", label: "Agent Management", icon: UserCog },
+  { id: "coordinators", label: "Coordinator Management", icon: UserCog },
   { id: "subscriptions", label: "Subscriptions & Plans", icon: CreditCard },
   { id: "kyc", label: "KYC Verification", icon: ShieldCheck },
   { id: "complaints", label: "Complaints & Reports", icon: MessageSquareWarning },
@@ -259,6 +260,7 @@ const AdminDashboard = () => {
           {section === "merchants" && <MerchantsSection />}
           {section === "matrimony" && <MatrimonySection />}
           {section === "agents" && <AgentsSection />}
+          {section === "coordinators" && <CoordinatorsSection />}
           {section === "subscriptions" && <SubscriptionsSection />}
           {section === "kyc" && <KycSection />}
           {section === "complaints" && <ComplaintsSection />}
