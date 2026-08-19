@@ -206,10 +206,6 @@ const AgentRegistrationForm = ({
   const frontRef = useRef<HTMLInputElement>(null);
   const backRef = useRef<HTMLInputElement>(null);
   const panRef = useRef<HTMLInputElement>(null);
-  const photoCamRef = useRef<HTMLInputElement>(null);
-  const frontCamRef = useRef<HTMLInputElement>(null);
-  const backCamRef = useRef<HTMLInputElement>(null);
-  const panCamRef = useRef<HTMLInputElement>(null);
 
   const upload = async (file: File, folder: string, setter: (u: string) => void) => {
     setUploading(folder);
@@ -397,19 +393,18 @@ const AgentRegistrationForm = ({
           </div>
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <UploadTile label="Photo *" url={photoUrl} folder="photo" onGallery={() => photoRef.current?.click()} onCamera={() => photoCamRef.current?.click()} />
-            <UploadTile label="Aadhaar Front *" url={aadhaarFrontUrl} folder="aadhaar-front" onGallery={() => frontRef.current?.click()} onCamera={() => frontCamRef.current?.click()} />
-            <UploadTile label="Aadhaar Back *" url={aadhaarBackUrl} folder="aadhaar-back" onGallery={() => backRef.current?.click()} onCamera={() => backCamRef.current?.click()} />
-            <UploadTile label="PAN Card" url={panDocUrl} folder="pan" onGallery={() => panRef.current?.click()} onCamera={() => panCamRef.current?.click()} />
+            <UploadTile label="Photo *" url={photoUrl} folder="photo" onGallery={() => photoRef.current?.click()} />
+            <UploadTile label="Aadhaar Front *" url={aadhaarFrontUrl} folder="aadhaar-front" onGallery={() => frontRef.current?.click()} />
+            <UploadTile label="Aadhaar Back *" url={aadhaarBackUrl} folder="aadhaar-back" onGallery={() => backRef.current?.click()} />
+            <UploadTile label="PAN Card" url={panDocUrl} folder="pan" onGallery={() => panRef.current?.click()} />
           </div>
           <input ref={photoRef} type="file" accept="image/*" hidden onChange={(e) => pick(e, "photo", setPhotoUrl)} />
           <input ref={frontRef} type="file" accept="image/*" hidden onChange={(e) => pick(e, "aadhaar-front", setAadhaarFrontUrl)} />
           <input ref={backRef} type="file" accept="image/*" hidden onChange={(e) => pick(e, "aadhaar-back", setAadhaarBackUrl)} />
           <input ref={panRef} type="file" accept="image/*" hidden onChange={(e) => pick(e, "pan", setPanDocUrl)} />
-          <input ref={photoCamRef} type="file" accept="image/*" capture="user" hidden onChange={(e) => pick(e, "photo", setPhotoUrl)} />
-          <input ref={frontCamRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => pick(e, "aadhaar-front", setAadhaarFrontUrl)} />
-          <input ref={backCamRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => pick(e, "aadhaar-back", setAadhaarBackUrl)} />
-          <input ref={panCamRef} type="file" accept="image/*" capture="environment" hidden onChange={(e) => pick(e, "pan", setPanDocUrl)} />
+
+
+
 
           <AgentTerms compact />
 
