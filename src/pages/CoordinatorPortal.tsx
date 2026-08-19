@@ -164,17 +164,39 @@ const CoordinatorPortal = () => {
 const CoordinatorRegistrationForm = ({
   userId, email, onDone,
 }: { userId: string; email: string; onDone: () => void | Promise<void> }) => {
+  const draftKey = `mbd-coordinator-draft-${userId}`;
+  const draft = (() => {
+    try { return JSON.parse(localStorage.getItem(draftKey) || "null") || null; } catch { return null; }
+  })();
   const [saving, setSaving] = useState(false);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState<boolean>(draft?.acceptedTerms ?? false);
   const [uploading, setUploading] = useState("");
-  const [form, setForm] = useState({
+  const [form, setForm] = useState(draft?.form ?? {
     name: "", mobile: "", email, city: "", address: "", aadhaarNumber: "", panNumber: "",
     accountHolderName: "", accountNumber: "", confirmAccountNumber: "", ifsc: "", upiId: "",
   });
-  const [photoUrl, setPhotoUrl] = useState("");
-  const [aadhaarFrontUrl, setAadhaarFrontUrl] = useState("");
-  const [aadhaarBackUrl, setAadhaarBackUrl] = useState("");
-  const [panDocUrl, setPanDocUrl] = useState("");
+  const [photoUrl, setPhotoUrl] = useState<string>(draft?.photoUrl ?? "");
+  const [aadhaarFrontUrl, setAadhaarFrontUrl] = useState<string>(draft?.aadhaarFrontUrl ?? "");
+  const [aadhaarBackUrl, setAadhaarBackUrl] = useState<string>(draft?.aadhaarBackUrl ?? "");
+  const [panDocUrl, setPanDocUrl] = useState<string>(draft?.panDocUrl ?? "");
+
+  // Persist the in-progress registration so nothing is lost on refresh / navigation.
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        draftKey,
+        JSON.stringify({ form, photoUrl, aadhaarFrontUrl, aadhaarBackUrl, panDocUrl, acceptedTerms }),
+      );
+    } catch { /* storage full — ignore */ }
+  }, [draftKey, form, photoUrl, aadhaarFrontUrl, aadhaarBackUrl, panDocUrl, acceptedTerms]);
+
+  useEffect(() => {
+    const warn = (e: BeforeUnloadEvent) => {
+      if (form.name || form.mobile) { e.preventDefault(); e.returnValue = ""; }
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [form.name, form.mobile]);
 
   const photoRef = useRef<HTMLInputElement>(null);
   const frontRef = useRef<HTMLInputElement>(null);
@@ -253,6 +275,7 @@ const CoordinatorRegistrationForm = ({
     });
     setSaving(false);
     if (error) { toast.error(error.message || "Registration failed"); return; }
+    try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
     toast.success("रजिस्ट्रेशन जमा हो गया! अब ₹100 मासिक सब्सक्रिप्शन पूरा करें।");
     await onDone();
   };
