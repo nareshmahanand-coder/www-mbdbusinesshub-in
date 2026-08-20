@@ -25,6 +25,5 @@ export const getPostLoginDestinationForUser = (
   requestedNext: string | null | undefined,
   isSuperUser = false,
 ): string => {
-  if (requiresPostLoginOnboarding(user, isSuperUser)) return "/ekyc";
   return sanitizeAuthNextPath(requestedNext);
 };
