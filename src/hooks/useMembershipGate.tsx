@@ -78,16 +78,17 @@ export const useMembershipGate = () => {
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle className="font-hindi">ई-केवाईसी और भारत गौरव सदस्यता आवश्यक है</AlertDialogTitle>
+          <AlertDialogTitle className="font-hindi">e-KYC आवश्यक है</AlertDialogTitle>
           <AlertDialogDescription className="font-hindi">
-            इन सुविधाओं का लाभ उठाने के लिए कृपया अपनी ई-केवाईसी पूरी करें और ₹10 की भारत गौरव मेंबरशिप लें।
-            देखना और ब्राउज़ करना हमेशा मुफ़्त है। ₹99 वाले मर्चेंट प्लान और एजेंट इससे मुक्त हैं।
+            कृपया इस सेवा का लाभ उठाने के लिए अपनी e-KYC पूरी करें।
+            {" "}इसके बाद ₹10 की भारत गौरव सदस्यता के साथ सभी सुविधाएँ हमेशा के लिए अनलॉक हो जाएँगी।
+            देखना और ब्राउज़ करना हमेशा मुफ़्त है।
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel className="font-hindi">बाद में</AlertDialogCancel>
           <AlertDialogAction className="font-hindi" onClick={() => navigate(hasKyc ? "/membership" : "/ekyc?next=/membership")}>
-            {hasKyc ? "₹10 सदस्यता लें" : "ई-केवाईसी करें"}
+            OK / आगे बढ़ें
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

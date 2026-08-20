@@ -1,8 +1,6 @@
 import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useKycStatus } from "@/hooks/useKycStatus";
-import { requiresPostLoginOnboarding } from "@/lib/authRedirect";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -22,8 +20,7 @@ export default function ProtectedRoute({
   allowDuringOnboarding = false,
 }: ProtectedRouteProps) {
   const location = useLocation();
-  const { user, loading: authLoading, isSuperUser } = useAuth();
-  const { hasKyc, loading: kycLoading } = useKycStatus();
+  const { user, loading: authLoading } = useAuth();
 
   // 1. Wait for Supabase session hydration before deciding anything.
   if (authLoading) {
@@ -36,40 +33,7 @@ export default function ProtectedRoute({
     return <Navigate to={`/login?next=${next}`} replace />;
   }
 
-  // Admins / super-users bypass onboarding entirely.
-  if (isSuperUser) {
-    return <>{children}</>;
-  }
-
-  // Existing users are allowed straight into the app. Only accounts created
-  // after the onboarding launch date must complete KYC/membership.
-  const onboardingRequired = requiresPostLoginOnboarding(user, isSuperUser);
-  if (!onboardingRequired) {
-    if (allowDuringOnboarding && ["/ekyc", "/membership"].includes(location.pathname)) {
-      return <Navigate to="/dashboard" replace />;
-    }
-    return <>{children}</>;
-  }
-
-  // 3. Wait for KYC status before enforcing onboarding redirects.
-  if (kycLoading) {
-    return <FullScreenLoader label="Checking your account…" />;
-  }
-
-  // Onboarding pages can render only when they are the correct next step.
-  // Membership is never forced — it is a purely optional page.
-  if (allowDuringOnboarding) {
-    if (location.pathname === "/ekyc" && hasKyc) {
-      return <Navigate to="/dashboard" replace />;
-    }
-    return <>{children}</>;
-  }
-
-  // 4. New / incomplete users → /ekyc → /dashboard
-  if (!hasKyc && location.pathname !== "/ekyc") {
-    return <Navigate to="/ekyc" replace />;
-  }
-
-  // 5. Fully onboarded → render the requested route.
+  // 3. Browsing is always free — e-KYC / membership are enforced only at the
+  // action level (see useMembershipGate), never as a route-level redirect.
   return <>{children}</>;
 }
