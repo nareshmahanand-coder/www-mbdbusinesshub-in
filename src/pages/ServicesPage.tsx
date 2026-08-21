@@ -25,6 +25,8 @@ interface NearbyShop {
   longitude?: number | null;
   is_premium?: boolean | null;
   is_verified?: boolean | null;
+  is_big_merchant?: boolean | null;
+
   distanceKm?: number | null;
   avgRating?: number;
   reviewCount?: number;
