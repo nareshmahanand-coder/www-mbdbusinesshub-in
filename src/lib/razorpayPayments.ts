@@ -7,7 +7,7 @@ declare global {
   }
 }
 
-export type PaymentModule = "merchant_premium" | "marriage_bureau" | "bharat_gaurav" | "coordinator";
+export type PaymentModule = "merchant_premium" | "marriage_bureau" | "bharat_gaurav" | "coordinator" | "big_merchant";
 export type PaymentPlan = "monthly" | "yearly";
 
 const PAYMENT_LINKS: Record<PaymentModule, Record<PaymentPlan, { url: string; amount: number; planName: string; subscriptionId: string }>> = {
@@ -27,7 +27,12 @@ const PAYMENT_LINKS: Record<PaymentModule, Record<PaymentPlan, { url: string; am
     monthly: { url: "https://rzp.io/rzp/F9VNIpQ", amount: 100, planName: "Coordinator Monthly Subscription ₹100 (Auto-Debit)", subscriptionId: "" },
     yearly: { url: "", amount: 1000, planName: "Coordinator Yearly Subscription ₹1000", subscriptionId: "" },
   },
+  big_merchant: {
+    monthly: { url: "", amount: 1500, planName: "Big Merchant Plus Monthly ₹1500", subscriptionId: "" },
+    yearly: { url: "", amount: 15000, planName: "Big Merchant Plus Yearly ₹15000", subscriptionId: "" },
+  },
 };
+
 
 let razorpayScriptPromise: Promise<void> | null = null;
 
@@ -199,6 +204,12 @@ export const startBharatGauravPaymentLink = async (options: Omit<StartPaymentOpt
 export const startCoordinatorPaymentLink = async (options: Omit<StartPaymentOptions, "module">) => {
   await startPaymentLink({ ...options, module: "coordinator" });
 };
+
+/** Big Merchant Plus (₹1500/month) uses in-app Razorpay checkout. */
+export const startBigMerchantPayment = async (options: Omit<StartPaymentOptions, "module">) => {
+  await startInstantRazorpayPayment({ ...options, module: "big_merchant" });
+};
+
 
 export const startInstantRazorpayPayment = async ({ module, plan, onSuccess, onFailure }: StartPaymentOptions) => {
   await loadRazorpay();

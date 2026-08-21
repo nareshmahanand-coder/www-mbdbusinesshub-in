@@ -25,6 +25,8 @@ interface NearbyShop {
   longitude?: number | null;
   is_premium?: boolean | null;
   is_verified?: boolean | null;
+  is_big_merchant?: boolean | null;
+
   distanceKm?: number | null;
   avgRating?: number;
   reviewCount?: number;
@@ -69,13 +71,19 @@ const ServicesPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("merchant_profiles")
-      .select("id, shop_name, shop_name_hindi, category, city, address, pincode, latitude, longitude, is_premium, is_verified")
+      .select("id, shop_name, shop_name_hindi, category, city, address, pincode, latitude, longitude, is_premium, is_verified, is_big_merchant")
+      // Priority: Big Merchant Plus (₹1500) → Premium (₹99) → everyone else.
+      .order("is_big_merchant", { ascending: false })
       .order("is_premium", { ascending: false })
       .order("created_at", { ascending: false });
 
     if (error) toast.error("Shops could not be loaded");
 
-    const registeredShops: NearbyShop[] = (data || []).map((shop) => ({ ...shop, is_premium: !!shop.is_premium }));
+    const registeredShops: NearbyShop[] = (data || []).map((shop) => ({
+      ...shop,
+      is_premium: !!shop.is_premium,
+      is_big_merchant: !!shop.is_big_merchant,
+    }));
     const flagshipShops: NearbyShop[] = sampleShops.map((shop) => ({
       id: shop.id,
       shop_name: shop.name,
@@ -90,9 +98,13 @@ const ServicesPage = () => {
       is_verified: shop.verified,
     }));
 
-    setShops([...flagshipShops, ...registeredShops]);
+    const bigMerchants = registeredShops.filter((s) => s.is_big_merchant);
+    const others = registeredShops.filter((s) => !s.is_big_merchant);
+
+    setShops([...bigMerchants, ...flagshipShops, ...others]);
     setLoading(false);
   };
+
 
   const loadRatings = async () => {
     const { data } = await supabase.from("shop_ratings" as any).select("id, shop_id, user_id, rating");
