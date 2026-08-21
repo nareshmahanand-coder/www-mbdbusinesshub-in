@@ -379,7 +379,10 @@ async function unlock(admin: any, order: any, paymentId: string, signature: stri
       updated_at: new Date().toISOString(),
     }).eq("user_id", order.user_id);
     if (error) throw error;
+  } else if (order.module === "big_merchant") {
+    await activateBigMerchant(admin, order, days);
   }
+
 
   const { error: paymentError } = await admin.from("payment_orders").update({
     status: "paid",
