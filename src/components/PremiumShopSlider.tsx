@@ -29,10 +29,13 @@ const PremiumShopSlider = ({ rotationSpeed = 5000 }: PremiumShopSliderProps) => 
     const load = async () => {
       const { data } = await supabase
         .from("merchant_profiles")
-        .select("id, shop_name, shop_name_hindi, category, city, whatsapp, phone, photos, description")
+        .select("id, shop_name, shop_name_hindi, category, city, whatsapp, phone, photos, description, is_big_merchant")
         .eq("is_premium", true)
         .eq("is_verified", true)
+        // Big Merchant Plus shops always lead the premium rotation.
+        .order("is_big_merchant", { ascending: false })
         .order("premium_start_date", { ascending: false });
+
       if (data) {
         setShops(data.map(d => ({ ...d, photos: (d.photos ?? []) as string[] })));
       }
