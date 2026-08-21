@@ -9,7 +9,7 @@ const corsHeaders = {
 const enc = new TextEncoder();
 const toHex = (buffer: ArrayBuffer) => Array.from(new Uint8Array(buffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
 
-type ModuleName = "merchant_premium" | "marriage_bureau" | "bharat_gaurav" | "coordinator";
+type ModuleName = "merchant_premium" | "marriage_bureau" | "bharat_gaurav" | "coordinator" | "big_merchant";
 type PlanName = "monthly" | "yearly";
 type LinkPlan = { module: ModuleName; plan: PlanName; amount: number; days: number; label: string };
 
