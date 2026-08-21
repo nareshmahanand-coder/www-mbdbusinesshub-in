@@ -299,7 +299,35 @@ async function creditCoordinatorCommission(admin: any, order: any, paymentId: st
   if (error) console.error("coordinator commission insert failed", error);
 }
 
+// Activates a Big Merchant Plus (₹1500) subscription and mirrors the premium
+// flags onto the merchant's shop profile so listings rank it at the top.
+async function activateBigMerchant(admin: any, order: any, days: number) {
+  const startedAt = new Date();
+  const expiresAt = new Date(startedAt);
+  expiresAt.setDate(expiresAt.getDate() + days);
+
+  const { data: big, error } = await admin.from("big_merchants").update({
+    status: "approved",
+    subscription_status: "active",
+    subscription_plan: order.plan,
+    subscription_started_at: startedAt.toISOString(),
+    subscription_expires_at: expiresAt.toISOString(),
+  }).eq("user_id", order.user_id).select("big_merchant_id").maybeSingle();
+  if (error) throw error;
+
+  await admin.from("merchant_profiles").update({
+    is_big_merchant: true,
+    big_merchant_id: big?.big_merchant_id || null,
+    is_premium: true,
+    premium_plan: order.plan,
+    premium_start_date: startedAt.toISOString(),
+    plan_ends_at: expiresAt.toISOString().slice(0, 10),
+    access_status: "active",
+  }).eq("user_id", order.user_id);
+}
+
 async function unlock(admin: any, order: any, paymentId: string, signature: string, source = "razorpay_webhook") {
+
   if (order.status === "paid" && order.unlocked_at) return;
   const days = Number(order.metadata?.days || (order.plan === "yearly" ? 365 : 30));
   const dates = addDays(days);
