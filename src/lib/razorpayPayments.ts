@@ -7,7 +7,7 @@ declare global {
   }
 }
 
-export type PaymentModule = "merchant_premium" | "marriage_bureau" | "bharat_gaurav" | "coordinator";
+export type PaymentModule = "merchant_premium" | "marriage_bureau" | "bharat_gaurav" | "coordinator" | "big_merchant";
 export type PaymentPlan = "monthly" | "yearly";
 
 const PAYMENT_LINKS: Record<PaymentModule, Record<PaymentPlan, { url: string; amount: number; planName: string; subscriptionId: string }>> = {
