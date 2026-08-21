@@ -27,7 +27,12 @@ const PAYMENT_LINKS: Record<PaymentModule, Record<PaymentPlan, { url: string; am
     monthly: { url: "https://rzp.io/rzp/F9VNIpQ", amount: 100, planName: "Coordinator Monthly Subscription ₹100 (Auto-Debit)", subscriptionId: "" },
     yearly: { url: "", amount: 1000, planName: "Coordinator Yearly Subscription ₹1000", subscriptionId: "" },
   },
+  big_merchant: {
+    monthly: { url: "", amount: 1500, planName: "Big Merchant Plus Monthly ₹1500", subscriptionId: "" },
+    yearly: { url: "", amount: 15000, planName: "Big Merchant Plus Yearly ₹15000", subscriptionId: "" },
+  },
 };
+
 
 let razorpayScriptPromise: Promise<void> | null = null;
 
