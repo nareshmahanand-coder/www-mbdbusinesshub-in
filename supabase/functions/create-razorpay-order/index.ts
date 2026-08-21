@@ -23,7 +23,12 @@ const PRODUCTS = {
     monthly: { amount: 100, amountPaise: 10000, days: 30, label: "Coordinator Monthly Subscription ₹100 (Auto-Debit)" },
     yearly: { amount: 1000, amountPaise: 100000, days: 365, label: "Coordinator Yearly Subscription ₹1000" },
   },
+  big_merchant: {
+    monthly: { amount: 1500, amountPaise: 150000, days: 30, label: "Big Merchant Plus Monthly ₹1500" },
+    yearly: { amount: 15000, amountPaise: 1500000, days: 365, label: "Big Merchant Plus Yearly ₹15000" },
+  },
 } as const;
+
 
 type ModuleName = keyof typeof PRODUCTS;
 type PlanName = "monthly" | "yearly";
