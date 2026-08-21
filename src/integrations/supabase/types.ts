@@ -376,6 +376,116 @@ export type Database = {
         }
         Relationships: []
       }
+      big_merchants: {
+        Row: {
+          aadhaar_back_url: string | null
+          aadhaar_front_url: string | null
+          aadhaar_number: string | null
+          address: string | null
+          admin_notes: string
+          big_merchant_id: string
+          category: string
+          city: string | null
+          coordinator_id: string | null
+          created_at: string
+          email: string | null
+          food_license_number: string | null
+          food_license_url: string | null
+          gst_certificate_url: string | null
+          gst_number: string
+          id: string
+          mobile: string
+          owner_name: string
+          pan_number: string | null
+          pan_url: string | null
+          photos: string[]
+          pincode: string | null
+          registration_type: string
+          shop_name: string
+          status: string
+          subscription_expires_at: string | null
+          subscription_plan: string | null
+          subscription_started_at: string | null
+          subscription_status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aadhaar_back_url?: string | null
+          aadhaar_front_url?: string | null
+          aadhaar_number?: string | null
+          address?: string | null
+          admin_notes?: string
+          big_merchant_id?: string
+          category?: string
+          city?: string | null
+          coordinator_id?: string | null
+          created_at?: string
+          email?: string | null
+          food_license_number?: string | null
+          food_license_url?: string | null
+          gst_certificate_url?: string | null
+          gst_number: string
+          id?: string
+          mobile?: string
+          owner_name: string
+          pan_number?: string | null
+          pan_url?: string | null
+          photos?: string[]
+          pincode?: string | null
+          registration_type?: string
+          shop_name: string
+          status?: string
+          subscription_expires_at?: string | null
+          subscription_plan?: string | null
+          subscription_started_at?: string | null
+          subscription_status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aadhaar_back_url?: string | null
+          aadhaar_front_url?: string | null
+          aadhaar_number?: string | null
+          address?: string | null
+          admin_notes?: string
+          big_merchant_id?: string
+          category?: string
+          city?: string | null
+          coordinator_id?: string | null
+          created_at?: string
+          email?: string | null
+          food_license_number?: string | null
+          food_license_url?: string | null
+          gst_certificate_url?: string | null
+          gst_number?: string
+          id?: string
+          mobile?: string
+          owner_name?: string
+          pan_number?: string | null
+          pan_url?: string | null
+          photos?: string[]
+          pincode?: string | null
+          registration_type?: string
+          shop_name?: string
+          status?: string
+          subscription_expires_at?: string | null
+          subscription_plan?: string | null
+          subscription_started_at?: string | null
+          subscription_status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "big_merchants_coordinator_id_fkey"
+            columns: ["coordinator_id"]
+            isOneToOne: false
+            referencedRelation: "coordinators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blood_donations: {
         Row: {
           admin_notes: string | null
@@ -1508,6 +1618,7 @@ export type Database = {
           access_status: string
           address: string | null
           admin_notes: string
+          big_merchant_id: string | null
           category: string | null
           city: string | null
           created_at: string
@@ -1515,6 +1626,7 @@ export type Database = {
           food_license_url: string | null
           gst_certificate_url: string | null
           id: string
+          is_big_merchant: boolean
           is_premium: boolean | null
           is_verified: boolean | null
           latitude: number | null
@@ -1544,6 +1656,7 @@ export type Database = {
           access_status?: string
           address?: string | null
           admin_notes?: string
+          big_merchant_id?: string | null
           category?: string | null
           city?: string | null
           created_at?: string
@@ -1551,6 +1664,7 @@ export type Database = {
           food_license_url?: string | null
           gst_certificate_url?: string | null
           id?: string
+          is_big_merchant?: boolean
           is_premium?: boolean | null
           is_verified?: boolean | null
           latitude?: number | null
@@ -1580,6 +1694,7 @@ export type Database = {
           access_status?: string
           address?: string | null
           admin_notes?: string
+          big_merchant_id?: string | null
           category?: string | null
           city?: string | null
           created_at?: string
@@ -1587,6 +1702,7 @@ export type Database = {
           food_license_url?: string | null
           gst_certificate_url?: string | null
           id?: string
+          is_big_merchant?: boolean
           is_premium?: boolean | null
           is_verified?: boolean | null
           latitude?: number | null
@@ -2241,6 +2357,7 @@ export type Database = {
         }[]
       }
       generate_agent_code: { Args: never; Returns: string }
+      generate_big_merchant_code: { Args: never; Returns: string }
       generate_coordinator_code: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -2281,6 +2398,16 @@ export type Database = {
           id: string
           name: string
           status: string
+        }[]
+      }
+      lookup_big_merchant_by_id: {
+        Args: { p_code: string }
+        Returns: {
+          big_merchant_id: string
+          id: string
+          shop_name: string
+          status: string
+          subscription_status: string
         }[]
       }
       lookup_coordinator_by_code: {
