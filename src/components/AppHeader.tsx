@@ -18,6 +18,8 @@ const AppHeader = () => {
     { to: "/merchant", label: t("merchant_portal") },
     { to: "/agent", label: "Agent Portal" },
     { to: "/coordinator", label: "Coordinator Portal" },
+    { to: "/big-merchant", label: "Big Merchant Plus" },
+
     { to: "/help", label: t("help_desk") },
     { to: "https://billing.mbdbusinesshub.in/", label: "Business Billing", external: true },
   ];
