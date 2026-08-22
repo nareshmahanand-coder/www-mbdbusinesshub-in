@@ -5,7 +5,7 @@ import {
   MessageSquareWarning, Send, Receipt, BarChart3, Settings as SettingsIcon,
   LogOut, Search, CheckCircle2, XCircle, Eye, RefreshCw, Moon, Sun,
   MapPin, Phone, Calendar, FileCheck2, Mail, Ban, ShieldOff, Trash2, UserX,
-  AlertTriangle, MessageCircle, UserCog, Wallet,
+  AlertTriangle, MessageCircle, UserCog, Wallet, Crown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, SUPERUSER_FLAG } from "@/contexts/AuthContext";
@@ -36,15 +36,17 @@ import { toast } from "sonner";
 type Section =
   | "overview" | "users" | "merchants" | "matrimony" | "subscriptions"
   | "kyc" | "complaints" | "delete_requests" | "duplicates" | "messaging" | "audit" | "analytics" | "settings"
-  | "agents" | "coordinators";
+  | "agents" | "coordinators" | "big_merchants";
 
 const NAV: { id: Section; label: string; icon: any }[] = [
   { id: "overview", label: "Dashboard", icon: LayoutDashboard },
   { id: "users", label: "All Users", icon: Users },
   { id: "merchants", label: "Merchants / Shops", icon: Store },
+  { id: "big_merchants", label: "Big Merchant Management", icon: Crown },
   { id: "matrimony", label: "Matrimony Profiles", icon: Heart },
   { id: "agents", label: "Agent Management", icon: UserCog },
   { id: "coordinators", label: "Coordinator Management", icon: UserCog },
+
   { id: "subscriptions", label: "Subscriptions & Plans", icon: CreditCard },
   { id: "kyc", label: "KYC Verification", icon: ShieldCheck },
   { id: "complaints", label: "Complaints & Reports", icon: MessageSquareWarning },
@@ -261,6 +263,8 @@ const AdminDashboard = () => {
           {section === "matrimony" && <MatrimonySection />}
           {section === "agents" && <AgentsSection />}
           {section === "coordinators" && <CoordinatorsSection />}
+          {section === "big_merchants" && <BigMerchantsSection />}
+
           {section === "subscriptions" && <SubscriptionsSection />}
           {section === "kyc" && <KycSection />}
           {section === "complaints" && <ComplaintsSection />}
@@ -2327,4 +2331,143 @@ const AgentsManagementSection = () => {
   );
 };
 
+/* ---------------- Big Merchant Plus management ---------------- */
+const BigMerchantsSection = () => {
+  const [rows, setRows] = useState<any[]>([]);
+  const [q, setQ] = useState("");
+  const [detail, setDetail] = useState<any>(null);
+  const [notes, setNotes] = useState("");
+
+  const load = async () => {
+    const d = await adminFetch("big_merchants");
+    if (!d) return;
+    setRows(d.rows || []);
+  };
+  useAutoRefresh(load, 10000, []);
+
+  const openDetail = async (id: string) => {
+    const d = await adminFetch("big_merchant_detail", { id });
+    if (!d) { toast.error("Failed to load big merchant"); return; }
+    setNotes(d.merchant?.admin_notes || "");
+    setDetail(d);
+  };
+
+  const setStatus = async (id: string, status: string) => {
+    const d = await adminFetch("big_merchant_status", { id, status, admin_notes: notes });
+    if (!d?.ok) { toast.error("Update failed"); return; }
+    toast.success(`Big Merchant ${status}`);
+    await load();
+    if (detail?.merchant?.id === id) await openDetail(id);
+  };
+
+  const filtered = rows.filter((r) =>
+    !q || [r.shop_name, r.owner_name, r.big_merchant_id, r.gst_number, r.mobile, r.city]
+      .some((v: string) => (v || "").toLowerCase().includes(q.toLowerCase()))
+  );
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Crown className="h-5 w-5 text-amber-500" /> Big Merchant Management ({rows.length})
+        </CardTitle>
+        <div className="flex items-center gap-2">
+          <Input placeholder="Search shop / ID / GST…" value={q} onChange={(e) => setQ(e.target.value)} className="h-9 w-56" />
+          <Button size="sm" variant="outline" onClick={load}><RefreshCw className="h-4 w-4" /></Button>
+        </div>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Shop / Owner</TableHead><TableHead>Big Merchant ID</TableHead><TableHead>GST</TableHead>
+              <TableHead>Coordinator</TableHead><TableHead>Subscription</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((b) => {
+              const subActive = b.subscription_status === "active"
+                && (!b.subscription_expires_at || new Date(b.subscription_expires_at) > new Date());
+              return (
+                <TableRow key={b.id}>
+                  <TableCell className="text-xs">
+                    <p className="font-medium">{b.shop_name}</p>
+                    <p className="text-muted-foreground">{b.owner_name} · {b.mobile} · {b.city || "—"}</p>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">{b.big_merchant_id}</TableCell>
+                  <TableCell className="font-mono text-xs">{b.gst_number}</TableCell>
+                  <TableCell className="text-xs">{b.coordinators?.coordinator_code || "Self"}</TableCell>
+                  <TableCell className="text-xs">
+                    <Badge variant={subActive ? "default" : "secondary"}>{subActive ? "Active ₹1500" : "Inactive"}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={b.status === "approved" ? "default" : b.status === "rejected" ? "destructive" : "secondary"} className="capitalize">{b.status}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button size="sm" variant="outline" onClick={() => openDetail(b.id)}>View</Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+        {!filtered.length && <p className="py-8 text-center text-sm text-muted-foreground">No big merchants</p>}
+      </CardContent>
+
+      <Dialog open={!!detail} onOpenChange={(o) => !o && setDetail(null)}>
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
+          <DialogHeader><DialogTitle>{detail?.merchant?.shop_name} — {detail?.merchant?.big_merchant_id}</DialogTitle></DialogHeader>
+          {detail?.merchant && (
+            <div className="space-y-4 text-sm">
+              <div className="space-y-1 text-xs">
+                <p><Phone className="mr-1 inline h-3.5 w-3.5" />{detail.merchant.mobile} · {detail.merchant.email || "—"}</p>
+                <p><MapPin className="mr-1 inline h-3.5 w-3.5" />{detail.merchant.city || "—"} · {detail.merchant.address || "—"} · {detail.merchant.pincode || "—"}</p>
+                <p>Category: {detail.merchant.category}</p>
+                <p>GST: {detail.merchant.gst_number} · FSSAI: {detail.merchant.food_license_number || "—"}</p>
+                <p>Aadhaar: {detail.merchant.aadhaar_number || "—"} · PAN: {detail.merchant.pan_number || "—"}</p>
+                <p>Coordinator: {detail.merchant.coordinators?.name || "Self"} ({detail.merchant.coordinators?.coordinator_code || "—"})</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {[["GST Certificate", detail.merchant.gst_certificate_url], ["FSSAI", detail.merchant.food_license_url],
+                  ["Aadhaar Front", detail.merchant.aadhaar_front_url], ["Aadhaar Back", detail.merchant.aadhaar_back_url],
+                  ["PAN", detail.merchant.pan_url]].map(([label, url]: any) => (
+                  <div key={label} className="rounded-lg border p-2 text-xs">
+                    <p className="mb-1 font-medium">{label}</p>
+                    {url ? <a href={url} target="_blank" rel="noreferrer"><img src={url} alt={label} className="h-24 w-full rounded object-cover" /></a>
+                      : <p className="text-muted-foreground">Not uploaded</p>}
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <p className="mb-2 font-semibold">Payments ({detail.payments.length})</p>
+                <div className="space-y-1 text-xs">
+                  {detail.payments.map((p: any) => (
+                    <div key={p.id} className="flex justify-between rounded border p-2">
+                      <span>{new Date(p.created_at).toLocaleString("en-IN")} · {p.plan}</span>
+                      <span className="font-mono">{inr(p.amount)} · {p.status}</span>
+                    </div>
+                  ))}
+                  {!detail.payments.length && <p className="text-muted-foreground">No payments yet</p>}
+                </div>
+              </div>
+
+              <Textarea placeholder="Admin notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
+              <div className="flex flex-wrap justify-end gap-2">
+                <Button size="sm" className="bg-green-600 text-white hover:bg-green-700" onClick={() => setStatus(detail.merchant.id, "approved")}>
+                  <CheckCircle2 className="mr-1 h-4 w-4" /> Approve
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setStatus(detail.merchant.id, "suspended")}><ShieldOff className="mr-1 h-4 w-4" /> Suspend</Button>
+                <Button size="sm" variant="destructive" onClick={() => setStatus(detail.merchant.id, "rejected")}><XCircle className="mr-1 h-4 w-4" /> Reject</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+};
+
 export default AdminDashboard;
+

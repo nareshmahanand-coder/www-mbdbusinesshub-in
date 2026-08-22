@@ -272,6 +272,50 @@ Deno.serve(async (req) => {
         if (error) return json({ error: error.message }, 400);
         return json({ ok: true });
       }
+      case "big_merchants": {
+        const { data: rows } = await sb
+          .from("big_merchants")
+          .select("*, coordinators(name, coordinator_code)")
+          .order("created_at", { ascending: false })
+          .limit(1000);
+        return json({ rows: rows || [] });
+      }
+      case "big_merchant_detail": {
+        const { id } = body;
+        if (!id) return json({ error: "id required" }, 400);
+        const { data: merchant } = await sb
+          .from("big_merchants")
+          .select("*, coordinators(name, coordinator_code)")
+          .eq("id", id)
+          .maybeSingle();
+        const [{ data: payments }, { data: shop }] = await Promise.all([
+          merchant
+            ? sb.from("payment_orders").select("*").eq("user_id", merchant.user_id).eq("module", "big_merchant").order("created_at", { ascending: false })
+            : Promise.resolve({ data: [] } as any),
+          merchant
+            ? sb.from("merchant_profiles").select("*").eq("user_id", merchant.user_id).maybeSingle()
+            : Promise.resolve({ data: null } as any),
+        ]);
+        return json({ merchant: merchant || null, payments: payments || [], shop: shop || null });
+      }
+      case "big_merchant_status": {
+        const { id, status, admin_notes } = body;
+        if (!id || !["pending", "approved", "rejected", "suspended"].includes(status)) {
+          return json({ error: "invalid status" }, 400);
+        }
+        const { data: merchant } = await sb.from("big_merchants").select("user_id, big_merchant_id").eq("id", id).maybeSingle();
+        const { error } = await sb.from("big_merchants").update({ status, admin_notes: admin_notes ?? "" }).eq("id", id);
+        if (error) return json({ error: error.message }, 400);
+        if (merchant?.user_id) {
+          await sb.from("merchant_profiles").update({
+            is_verified: status === "approved",
+            access_status: status === "suspended" ? "suspended" : "active",
+            big_merchant_id: merchant.big_merchant_id,
+          }).eq("user_id", merchant.user_id);
+        }
+        return json({ ok: true });
+      }
+
       case "agent_transactions": {
         const search = String(body.search || "").trim().toLowerCase();
         const agentId = body.agent_id ? String(body.agent_id) : "";
