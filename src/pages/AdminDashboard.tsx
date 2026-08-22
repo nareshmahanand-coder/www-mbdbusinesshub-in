@@ -263,6 +263,8 @@ const AdminDashboard = () => {
           {section === "matrimony" && <MatrimonySection />}
           {section === "agents" && <AgentsSection />}
           {section === "coordinators" && <CoordinatorsSection />}
+          {section === "big_merchants" && <BigMerchantsSection />}
+
           {section === "subscriptions" && <SubscriptionsSection />}
           {section === "kyc" && <KycSection />}
           {section === "complaints" && <ComplaintsSection />}
