@@ -221,6 +221,8 @@ const AppShell = () => {
         <Route path="/merchant" element={<KycRequiredRoute><MerchantPortal /></KycRequiredRoute>} />
         <Route path="/agent" element={<AgentPortal />} />
         <Route path="/coordinator" element={<CoordinatorPortal />} />
+        <Route path="/big-merchant" element={<BigMerchantPortal />} />
+
         <Route path="/help" element={<ProtectedRoute><HelpPage /></ProtectedRoute>} />
         <Route path="/settings" element={<KycRequiredRoute><Navigate to="/dashboard?tab=settings" replace /></KycRequiredRoute>} />
         <Route path="/kisan" element={<KycRequiredRoute><KisanRegistration /></KycRequiredRoute>} />
