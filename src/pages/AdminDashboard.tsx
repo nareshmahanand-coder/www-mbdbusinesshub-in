@@ -36,15 +36,17 @@ import { toast } from "sonner";
 type Section =
   | "overview" | "users" | "merchants" | "matrimony" | "subscriptions"
   | "kyc" | "complaints" | "delete_requests" | "duplicates" | "messaging" | "audit" | "analytics" | "settings"
-  | "agents" | "coordinators";
+  | "agents" | "coordinators" | "big_merchants";
 
 const NAV: { id: Section; label: string; icon: any }[] = [
   { id: "overview", label: "Dashboard", icon: LayoutDashboard },
   { id: "users", label: "All Users", icon: Users },
   { id: "merchants", label: "Merchants / Shops", icon: Store },
+  { id: "big_merchants", label: "Big Merchant Management", icon: Crown },
   { id: "matrimony", label: "Matrimony Profiles", icon: Heart },
   { id: "agents", label: "Agent Management", icon: UserCog },
   { id: "coordinators", label: "Coordinator Management", icon: UserCog },
+
   { id: "subscriptions", label: "Subscriptions & Plans", icon: CreditCard },
   { id: "kyc", label: "KYC Verification", icon: ShieldCheck },
   { id: "complaints", label: "Complaints & Reports", icon: MessageSquareWarning },
