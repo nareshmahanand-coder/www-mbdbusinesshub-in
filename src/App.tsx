@@ -32,6 +32,8 @@ import FamilyInvitePage from "./pages/FamilyInvitePage";
 import EkycPage from "./pages/EkycPage";
 import AgentPortal from "./pages/AgentPortal";
 import CoordinatorPortal from "./pages/CoordinatorPortal";
+import BigMerchantPortal from "./pages/BigMerchantPortal";
+
 import BharatGauravMembershipPage from "./pages/BharatGauravMembershipPage";
 import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
