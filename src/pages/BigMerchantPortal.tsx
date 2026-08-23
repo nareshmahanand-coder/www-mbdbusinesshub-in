@@ -117,6 +117,9 @@ const BigMerchantPortal = () => {
   const aadhaarBackRef = useRef<HTMLInputElement>(null);
   const panRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
+
+
 
   const draftKey = user ? `${DRAFT_KEY_PREFIX}${user.id}` : "";
   const foodRequired = useMemo(() => isFoodCategory(form.category), [form.category]);
