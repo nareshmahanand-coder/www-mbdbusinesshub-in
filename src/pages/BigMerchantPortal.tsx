@@ -273,7 +273,9 @@ const BigMerchantPortal = () => {
       aadhaar_back_url: aadhaarBackUrl || null,
       pan_number: form.panNumber.trim().toUpperCase() || null,
       pan_url: panUrl || null,
+      video_ad_url: videoUrl || null,
       photos,
+
     };
 
     const { data, error } = await supabase.from("big_merchants").insert(payload).select("*").maybeSingle();
