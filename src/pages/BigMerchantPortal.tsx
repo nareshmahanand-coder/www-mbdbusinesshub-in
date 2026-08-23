@@ -16,7 +16,7 @@ import { startBigMerchantPayment } from "@/lib/razorpayPayments";
 import { shopCategories } from "@/data/sampleShops";
 import {
   Crown, Loader2, ShieldCheck, Store, Users, FileText, BadgeCheck,
-  IndianRupee, Image as ImageIcon, Copy, LayoutDashboard,
+  IndianRupee, Image as ImageIcon, Copy, LayoutDashboard, Video,
 } from "lucide-react";
 
 type BigMerchantRow = {
@@ -644,15 +644,15 @@ const BigMerchantPortal = () => {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="font-hindi text-sm text-muted-foreground">
-                    ₹1500 मासिक भुगतान के बाद आपकी दुकान सबसे ऊपर दिखेगी और प्रीमियम डैशबोर्ड अनलॉक होगा।
+                    ₹1600 मासिक भुगतान के बाद आपकी दुकान सबसे ऊपर दिखेगी और प्रीमियम डैशबोर्ड अनलॉक होगा।
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button size="lg" disabled={paying} onClick={() => void pay("monthly")}>
                       {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Crown className="mr-2 h-4 w-4" />}
-                      ₹1500 / माह भुगतान करें
+                      ₹1600 / माह भुगतान करें
                     </Button>
                     <Button size="lg" variant="outline" disabled={paying} onClick={() => void pay("yearly")}>
-                      ₹15000 / वर्ष
+                      ₹16000 / वर्ष
                     </Button>
                   </div>
                 </CardContent>
@@ -672,7 +672,7 @@ const BigMerchantPortal = () => {
                     </div>
                     <div className="rounded-xl border bg-muted/30 p-3">
                       <p className="text-xs text-muted-foreground">Plan</p>
-                      <p className="text-lg font-bold">{record.subscription_plan === "yearly" ? "₹15000 / वर्ष" : "₹1500 / माह"}</p>
+                      <p className="text-lg font-bold">{record.subscription_plan === "yearly" ? "₹16000 / वर्ष" : "₹1600 / माह"}</p>
                     </div>
                     <div className="rounded-xl border bg-muted/30 p-3">
                       <p className="text-xs text-muted-foreground">GST</p>
