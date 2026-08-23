@@ -182,9 +182,10 @@ const BigMerchantPortal = () => {
     if (!draftKey || record) return;
     localStorage.setItem(
       draftKey,
-      JSON.stringify({ form, gstUrl, foodUrl, aadhaarFrontUrl, aadhaarBackUrl, panUrl, photos }),
+      JSON.stringify({ form, gstUrl, foodUrl, aadhaarFrontUrl, aadhaarBackUrl, panUrl, videoUrl, photos }),
     );
-  }, [draftKey, record, form, gstUrl, foodUrl, aadhaarFrontUrl, aadhaarBackUrl, panUrl, photos]);
+  }, [draftKey, record, form, gstUrl, foodUrl, aadhaarFrontUrl, aadhaarBackUrl, panUrl, videoUrl, photos]);
+
 
   // Live updates on approval / subscription activation.
   useEffect(() => {
