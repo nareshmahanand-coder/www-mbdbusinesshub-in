@@ -170,7 +170,9 @@ const BigMerchantPortal = () => {
       setAadhaarFrontUrl(draft.aadhaarFrontUrl || "");
       setAadhaarBackUrl(draft.aadhaarBackUrl || "");
       setPanUrl(draft.panUrl || "");
+      setVideoUrl(draft.videoUrl || "");
       setPhotos(draft.photos || []);
+
     } catch {
       /* ignore malformed drafts */
     }
