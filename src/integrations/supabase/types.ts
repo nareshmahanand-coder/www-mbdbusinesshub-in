@@ -409,6 +409,7 @@ export type Database = {
           subscription_status: string
           updated_at: string
           user_id: string
+          video_ad_url: string | null
         }
         Insert: {
           aadhaar_back_url?: string | null
@@ -442,6 +443,7 @@ export type Database = {
           subscription_status?: string
           updated_at?: string
           user_id: string
+          video_ad_url?: string | null
         }
         Update: {
           aadhaar_back_url?: string | null
@@ -475,6 +477,7 @@ export type Database = {
           subscription_status?: string
           updated_at?: string
           user_id?: string
+          video_ad_url?: string | null
         }
         Relationships: [
           {

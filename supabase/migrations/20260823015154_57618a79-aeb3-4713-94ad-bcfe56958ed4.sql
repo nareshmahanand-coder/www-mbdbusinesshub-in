@@ -1,0 +1,1 @@
+ALTER TABLE public.big_merchants ADD COLUMN IF NOT EXISTS video_ad_url TEXT;

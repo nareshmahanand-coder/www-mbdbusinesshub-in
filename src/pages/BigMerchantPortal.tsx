@@ -16,7 +16,7 @@ import { startBigMerchantPayment } from "@/lib/razorpayPayments";
 import { shopCategories } from "@/data/sampleShops";
 import {
   Crown, Loader2, ShieldCheck, Store, Users, FileText, BadgeCheck,
-  IndianRupee, Image as ImageIcon, Copy, LayoutDashboard,
+  IndianRupee, Image as ImageIcon, Copy, LayoutDashboard, Video,
 } from "lucide-react";
 
 type BigMerchantRow = {
@@ -43,6 +43,8 @@ type BigMerchantRow = {
   pan_number: string | null;
   pan_url: string | null;
   photos: string[] | null;
+  video_ad_url?: string | null;
+
   status: string;
   subscription_status: string;
   subscription_plan: string | null;
@@ -102,8 +104,10 @@ const BigMerchantPortal = () => {
   const [aadhaarFrontUrl, setAadhaarFrontUrl] = useState("");
   const [aadhaarBackUrl, setAadhaarBackUrl] = useState("");
   const [panUrl, setPanUrl] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
   const [coordinatorInfo, setCoordinatorInfo] = useState<{ id: string; name: string } | null>(null);
+
 
   // Coordinator view state
   const [coordinatorSelf, setCoordinatorSelf] = useState<{ id: string; coordinator_code: string; status: string } | null>(null);
@@ -115,6 +119,9 @@ const BigMerchantPortal = () => {
   const aadhaarBackRef = useRef<HTMLInputElement>(null);
   const panRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLInputElement>(null);
+
+
 
   const draftKey = user ? `${DRAFT_KEY_PREFIX}${user.id}` : "";
   const foodRequired = useMemo(() => isFoodCategory(form.category), [form.category]);
@@ -165,7 +172,9 @@ const BigMerchantPortal = () => {
       setAadhaarFrontUrl(draft.aadhaarFrontUrl || "");
       setAadhaarBackUrl(draft.aadhaarBackUrl || "");
       setPanUrl(draft.panUrl || "");
+      setVideoUrl(draft.videoUrl || "");
       setPhotos(draft.photos || []);
+
     } catch {
       /* ignore malformed drafts */
     }
@@ -175,9 +184,10 @@ const BigMerchantPortal = () => {
     if (!draftKey || record) return;
     localStorage.setItem(
       draftKey,
-      JSON.stringify({ form, gstUrl, foodUrl, aadhaarFrontUrl, aadhaarBackUrl, panUrl, photos }),
+      JSON.stringify({ form, gstUrl, foodUrl, aadhaarFrontUrl, aadhaarBackUrl, panUrl, videoUrl, photos }),
     );
-  }, [draftKey, record, form, gstUrl, foodUrl, aadhaarFrontUrl, aadhaarBackUrl, panUrl, photos]);
+  }, [draftKey, record, form, gstUrl, foodUrl, aadhaarFrontUrl, aadhaarBackUrl, panUrl, videoUrl, photos]);
+
 
   // Live updates on approval / subscription activation.
   useEffect(() => {
@@ -263,7 +273,9 @@ const BigMerchantPortal = () => {
       aadhaar_back_url: aadhaarBackUrl || null,
       pan_number: form.panNumber.trim().toUpperCase() || null,
       pan_url: panUrl || null,
+      video_ad_url: videoUrl || null,
       photos,
+
     };
 
     const { data, error } = await supabase.from("big_merchants").insert(payload).select("*").maybeSingle();
@@ -362,7 +374,7 @@ const BigMerchantPortal = () => {
             <Crown className="h-7 w-7 text-amber-500" /> Big Merchant Plus
           </h1>
           <p className="font-hindi text-sm text-muted-foreground">
-            ₹1500 मासिक प्लान — सबसे ऊपर लिस्टिंग, वेरिफाइड बैज और प्रीमियम बिज़नेस डैशबोर्ड।
+            ₹1600 मासिक प्लान — सबसे ऊपर लिस्टिंग, वेरिफाइड बैज, वीडियो विज्ञापन और प्रीमियम बिज़नेस डैशबोर्ड।
           </p>
         </header>
 
@@ -479,9 +491,22 @@ const BigMerchantPortal = () => {
         {user && mode === "merchant" && !record && hasKyc && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base"><Store className="h-5 w-5" /> Big Merchant Plus रजिस्ट्रेशन (₹1500/माह)</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base"><Store className="h-5 w-5" /> Big Merchant Plus रजिस्ट्रेशन (₹1600/माह)</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/5 p-4">
+                <p className="flex items-center gap-2 text-sm font-bold text-amber-700 dark:text-amber-400">
+                  <Crown className="h-4 w-4" /> ₹1600 प्लान में क्या-क्या मिलेगा
+                </p>
+                <ul className="mt-2 space-y-1 text-sm">
+                  <li>• Top-priority store ranking</li>
+                  <li>• Verified GST/FSSAI badge</li>
+                  <li>• Premium vendor dashboard access</li>
+                  <li>• In-app Video Advertisement support</li>
+                  <li>• Professional CA Support & MSME Bank Loan Guidance/Advisory sessions</li>
+                </ul>
+              </div>
+
               <div className="grid gap-3 md:grid-cols-2">
                 <div><Label>दुकान/बिज़नेस का नाम *</Label><Input value={form.shopName} onChange={(e) => setForm({ ...form, shopName: e.target.value })} /></div>
                 <div><Label>मालिक का नाम *</Label><Input value={form.ownerName} onChange={(e) => setForm({ ...form, ownerName: e.target.value })} /></div>
@@ -535,14 +560,49 @@ const BigMerchantPortal = () => {
                 </div>
               </div>
 
+              {/* Shop / product video advertisement */}
+              <div className="space-y-2 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-4">
+                <Label className="flex items-center gap-2 text-sm font-semibold">
+                  <Video className="h-4 w-4" /> Upload Shop/Product Video Advertisement
+                </Label>
+                <p className="font-hindi text-xs text-muted-foreground">
+                  अपनी दुकान या प्रोडक्ट का विज्ञापन वीडियो अपलोड करें (MP4 / MOV, अधिकतम 50 MB)।
+                </p>
+                {videoUrl ? (
+                  <video src={videoUrl} controls className="max-h-48 w-full rounded-lg bg-black" />
+                ) : null}
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" size="sm" variant="outline" disabled={uploading === "video-ad"} onClick={() => videoRef.current?.click()}>
+                    {uploading === "video-ad" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Video className="mr-2 h-4 w-4" />}
+                    {videoUrl ? "वीडियो बदलें" : "वीडियो चुनें"}
+                  </Button>
+                  {videoUrl && (
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setVideoUrl("")}>हटाएँ</Button>
+                  )}
+                </div>
+              </div>
+
               <input ref={gstRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => pick(e, "gst", setGstUrl)} />
               <input ref={foodRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => pick(e, "fssai", setFoodUrl)} />
               <input ref={aadhaarFrontRef} type="file" accept="image/*" className="hidden" onChange={(e) => pick(e, "aadhaar-front", setAadhaarFrontUrl)} />
               <input ref={aadhaarBackRef} type="file" accept="image/*" className="hidden" onChange={(e) => pick(e, "aadhaar-back", setAadhaarBackUrl)} />
               <input ref={panRef} type="file" accept="image/*" className="hidden" onChange={(e) => pick(e, "pan", setPanUrl)} />
               <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={(e) => pick(e, "shop-photo", (url) => setPhotos((p) => [...p, url]))} />
+              <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={(e) => pick(e, "video-ad", setVideoUrl)} />
+
+              <div className="rounded-xl border-2 border-amber-500/50 bg-amber-500/10 p-4">
+                <p className="font-hindi text-sm font-semibold">₹1600 मासिक सब्सक्रिप्शन भुगतान</p>
+                <p className="font-hindi text-xs text-muted-foreground">
+                  पहले रजिस्ट्रेशन जमा करें, फिर ₹1600 का भुगतान करके अपना Big Merchant Plus प्लान सक्रिय करें।
+                </p>
+                <Button className="mt-3" size="lg" disabled={paying} onClick={() => void pay("monthly")}>
+                  {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <IndianRupee className="mr-2 h-4 w-4" />}
+                  ₹1600 / माह भुगतान करें
+                </Button>
+              </div>
 
               <div className="flex flex-wrap gap-2">
+
                 <Button onClick={() => void submit()} disabled={submitting}>
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BadgeCheck className="mr-2 h-4 w-4" />}
                   रजिस्ट्रेशन जमा करें
@@ -584,15 +644,15 @@ const BigMerchantPortal = () => {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="font-hindi text-sm text-muted-foreground">
-                    ₹1500 मासिक भुगतान के बाद आपकी दुकान सबसे ऊपर दिखेगी और प्रीमियम डैशबोर्ड अनलॉक होगा।
+                    ₹1600 मासिक भुगतान के बाद आपकी दुकान सबसे ऊपर दिखेगी और प्रीमियम डैशबोर्ड अनलॉक होगा।
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button size="lg" disabled={paying} onClick={() => void pay("monthly")}>
                       {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Crown className="mr-2 h-4 w-4" />}
-                      ₹1500 / माह भुगतान करें
+                      ₹1600 / माह भुगतान करें
                     </Button>
                     <Button size="lg" variant="outline" disabled={paying} onClick={() => void pay("yearly")}>
-                      ₹15000 / वर्ष
+                      ₹16000 / वर्ष
                     </Button>
                   </div>
                 </CardContent>
@@ -612,7 +672,7 @@ const BigMerchantPortal = () => {
                     </div>
                     <div className="rounded-xl border bg-muted/30 p-3">
                       <p className="text-xs text-muted-foreground">Plan</p>
-                      <p className="text-lg font-bold">{record.subscription_plan === "yearly" ? "₹15000 / वर्ष" : "₹1500 / माह"}</p>
+                      <p className="text-lg font-bold">{record.subscription_plan === "yearly" ? "₹16000 / वर्ष" : "₹1600 / माह"}</p>
                     </div>
                     <div className="rounded-xl border bg-muted/30 p-3">
                       <p className="text-xs text-muted-foreground">GST</p>
