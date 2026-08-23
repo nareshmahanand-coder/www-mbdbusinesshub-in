@@ -491,7 +491,7 @@ const BigMerchantPortal = () => {
         {user && mode === "merchant" && !record && hasKyc && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base"><Store className="h-5 w-5" /> Big Merchant Plus रजिस्ट्रेशन (₹1500/माह)</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base"><Store className="h-5 w-5" /> Big Merchant Plus रजिस्ट्रेशन (₹1600/माह)</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-3 md:grid-cols-2">
