@@ -374,7 +374,7 @@ const BigMerchantPortal = () => {
             <Crown className="h-7 w-7 text-amber-500" /> Big Merchant Plus
           </h1>
           <p className="font-hindi text-sm text-muted-foreground">
-            ₹1500 मासिक प्लान — सबसे ऊपर लिस्टिंग, वेरिफाइड बैज और प्रीमियम बिज़नेस डैशबोर्ड।
+            ₹1600 मासिक प्लान — सबसे ऊपर लिस्टिंग, वेरिफाइड बैज, वीडियो विज्ञापन और प्रीमियम बिज़नेस डैशबोर्ड।
           </p>
         </header>
 
