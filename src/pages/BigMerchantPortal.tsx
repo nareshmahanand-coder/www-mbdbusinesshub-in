@@ -43,6 +43,8 @@ type BigMerchantRow = {
   pan_number: string | null;
   pan_url: string | null;
   photos: string[] | null;
+  video_ad_url?: string | null;
+
   status: string;
   subscription_status: string;
   subscription_plan: string | null;
