@@ -494,6 +494,19 @@ const BigMerchantPortal = () => {
               <CardTitle className="flex items-center gap-2 text-base"><Store className="h-5 w-5" /> Big Merchant Plus रजिस्ट्रेशन (₹1600/माह)</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/5 p-4">
+                <p className="flex items-center gap-2 text-sm font-bold text-amber-700 dark:text-amber-400">
+                  <Crown className="h-4 w-4" /> ₹1600 प्लान में क्या-क्या मिलेगा
+                </p>
+                <ul className="mt-2 space-y-1 text-sm">
+                  <li>• Top-priority store ranking</li>
+                  <li>• Verified GST/FSSAI badge</li>
+                  <li>• Premium vendor dashboard access</li>
+                  <li>• In-app Video Advertisement support</li>
+                  <li>• Professional CA Support & MSME Bank Loan Guidance/Advisory sessions</li>
+                </ul>
+              </div>
+
               <div className="grid gap-3 md:grid-cols-2">
                 <div><Label>दुकान/बिज़नेस का नाम *</Label><Input value={form.shopName} onChange={(e) => setForm({ ...form, shopName: e.target.value })} /></div>
                 <div><Label>मालिक का नाम *</Label><Input value={form.ownerName} onChange={(e) => setForm({ ...form, ownerName: e.target.value })} /></div>
