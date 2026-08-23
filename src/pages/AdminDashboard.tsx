@@ -2398,7 +2398,7 @@ const BigMerchantsSection = () => {
                   <TableCell className="font-mono text-xs">{b.gst_number}</TableCell>
                   <TableCell className="text-xs">{b.coordinators?.coordinator_code || "Self"}</TableCell>
                   <TableCell className="text-xs">
-                    <Badge variant={subActive ? "default" : "secondary"}>{subActive ? "Active ₹1500" : "Inactive"}</Badge>
+                    <Badge variant={subActive ? "default" : "secondary"}>{subActive ? "Active ₹1600" : "Inactive"}</Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant={b.status === "approved" ? "default" : b.status === "rejected" ? "destructive" : "secondary"} className="capitalize">{b.status}</Badge>
