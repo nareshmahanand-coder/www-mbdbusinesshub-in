@@ -560,14 +560,49 @@ const BigMerchantPortal = () => {
                 </div>
               </div>
 
+              {/* Shop / product video advertisement */}
+              <div className="space-y-2 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-4">
+                <Label className="flex items-center gap-2 text-sm font-semibold">
+                  <Video className="h-4 w-4" /> Upload Shop/Product Video Advertisement
+                </Label>
+                <p className="font-hindi text-xs text-muted-foreground">
+                  अपनी दुकान या प्रोडक्ट का विज्ञापन वीडियो अपलोड करें (MP4 / MOV, अधिकतम 50 MB)।
+                </p>
+                {videoUrl ? (
+                  <video src={videoUrl} controls className="max-h-48 w-full rounded-lg bg-black" />
+                ) : null}
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" size="sm" variant="outline" disabled={uploading === "video-ad"} onClick={() => videoRef.current?.click()}>
+                    {uploading === "video-ad" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Video className="mr-2 h-4 w-4" />}
+                    {videoUrl ? "वीडियो बदलें" : "वीडियो चुनें"}
+                  </Button>
+                  {videoUrl && (
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setVideoUrl("")}>हटाएँ</Button>
+                  )}
+                </div>
+              </div>
+
               <input ref={gstRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => pick(e, "gst", setGstUrl)} />
               <input ref={foodRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => pick(e, "fssai", setFoodUrl)} />
               <input ref={aadhaarFrontRef} type="file" accept="image/*" className="hidden" onChange={(e) => pick(e, "aadhaar-front", setAadhaarFrontUrl)} />
               <input ref={aadhaarBackRef} type="file" accept="image/*" className="hidden" onChange={(e) => pick(e, "aadhaar-back", setAadhaarBackUrl)} />
               <input ref={panRef} type="file" accept="image/*" className="hidden" onChange={(e) => pick(e, "pan", setPanUrl)} />
               <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={(e) => pick(e, "shop-photo", (url) => setPhotos((p) => [...p, url]))} />
+              <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={(e) => pick(e, "video-ad", setVideoUrl)} />
+
+              <div className="rounded-xl border-2 border-amber-500/50 bg-amber-500/10 p-4">
+                <p className="font-hindi text-sm font-semibold">₹1600 मासिक सब्सक्रिप्शन भुगतान</p>
+                <p className="font-hindi text-xs text-muted-foreground">
+                  पहले रजिस्ट्रेशन जमा करें, फिर ₹1600 का भुगतान करके अपना Big Merchant Plus प्लान सक्रिय करें।
+                </p>
+                <Button className="mt-3" size="lg" disabled={paying} onClick={() => void pay("monthly")}>
+                  {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <IndianRupee className="mr-2 h-4 w-4" />}
+                  ₹1600 / माह भुगतान करें
+                </Button>
+              </div>
 
               <div className="flex flex-wrap gap-2">
+
                 <Button onClick={() => void submit()} disabled={submitting}>
                   {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BadgeCheck className="mr-2 h-4 w-4" />}
                   रजिस्ट्रेशन जमा करें
