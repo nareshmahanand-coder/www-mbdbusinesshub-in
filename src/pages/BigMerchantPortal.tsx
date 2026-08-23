@@ -102,8 +102,10 @@ const BigMerchantPortal = () => {
   const [aadhaarFrontUrl, setAadhaarFrontUrl] = useState("");
   const [aadhaarBackUrl, setAadhaarBackUrl] = useState("");
   const [panUrl, setPanUrl] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
   const [coordinatorInfo, setCoordinatorInfo] = useState<{ id: string; name: string } | null>(null);
+
 
   // Coordinator view state
   const [coordinatorSelf, setCoordinatorSelf] = useState<{ id: string; coordinator_code: string; status: string } | null>(null);
