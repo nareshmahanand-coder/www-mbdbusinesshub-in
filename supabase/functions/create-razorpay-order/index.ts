@@ -24,8 +24,9 @@ const PRODUCTS = {
     yearly: { amount: 1000, amountPaise: 100000, days: 365, label: "Coordinator Yearly Subscription ₹1000" },
   },
   big_merchant: {
-    monthly: { amount: 1500, amountPaise: 150000, days: 30, label: "Big Merchant Plus Monthly ₹1500" },
-    yearly: { amount: 15000, amountPaise: 1500000, days: 365, label: "Big Merchant Plus Yearly ₹15000" },
+    monthly: { amount: 1600, amountPaise: 160000, days: 30, label: "Big Merchant Plus Monthly ₹1600" },
+    yearly: { amount: 16000, amountPaise: 1600000, days: 365, label: "Big Merchant Plus Yearly ₹16000" },
+
   },
 } as const;
 
