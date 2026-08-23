@@ -206,10 +206,11 @@ export const startCoordinatorPaymentLink = async (options: Omit<StartPaymentOpti
   await startPaymentLink({ ...options, module: "coordinator" });
 };
 
-/** Big Merchant Plus (₹1500/month) uses in-app Razorpay checkout. */
+/** Big Merchant Plus (₹1600/month) uses the Razorpay subscription payment link. */
 export const startBigMerchantPayment = async (options: Omit<StartPaymentOptions, "module">) => {
-  await startInstantRazorpayPayment({ ...options, module: "big_merchant" });
+  await startPaymentLink({ ...options, module: "big_merchant" });
 };
+
 
 
 export const startInstantRazorpayPayment = async ({ module, plan, onSuccess, onFailure }: StartPaymentOptions) => {
