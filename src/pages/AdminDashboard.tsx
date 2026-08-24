@@ -42,7 +42,7 @@ const NAV: { id: Section; label: string; icon: any }[] = [
   { id: "overview", label: "Dashboard", icon: LayoutDashboard },
   { id: "users", label: "All Users", icon: Users },
   { id: "merchants", label: "Merchants / Shops", icon: Store },
-  { id: "big_merchants", label: "Big Merchant Management", icon: Crown },
+  { id: "big_merchants", label: "Golden Merchant Management", icon: Crown },
   { id: "matrimony", label: "Matrimony Profiles", icon: Heart },
   { id: "agents", label: "Agent Management", icon: UserCog },
   { id: "coordinators", label: "Coordinator Management", icon: UserCog },
@@ -2355,7 +2355,7 @@ const BigMerchantsSection = () => {
   const setStatus = async (id: string, status: string) => {
     const d = await adminFetch("big_merchant_status", { id, status, admin_notes: notes });
     if (!d?.ok) { toast.error("Update failed"); return; }
-    toast.success(`Big Merchant ${status}`);
+    toast.success(`Golden Merchant ${status}`);
     await load();
     if (detail?.merchant?.id === id) await openDetail(id);
   };
@@ -2369,7 +2369,7 @@ const BigMerchantsSection = () => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Crown className="h-5 w-5 text-amber-500" /> Big Merchant Management ({rows.length})
+          <Crown className="h-5 w-5 text-amber-500" /> Golden Merchant Management ({rows.length})
         </CardTitle>
         <div className="flex items-center gap-2">
           <Input placeholder="Search shop / ID / GST…" value={q} onChange={(e) => setQ(e.target.value)} className="h-9 w-56" />
@@ -2380,7 +2380,7 @@ const BigMerchantsSection = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Shop / Owner</TableHead><TableHead>Big Merchant ID</TableHead><TableHead>GST</TableHead>
+              <TableHead>Shop / Owner</TableHead><TableHead>Golden Merchant ID</TableHead><TableHead>GST</TableHead>
               <TableHead>Coordinator</TableHead><TableHead>Subscription</TableHead><TableHead>Status</TableHead><TableHead></TableHead>
             </TableRow>
           </TableHeader>

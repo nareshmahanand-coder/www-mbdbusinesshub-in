@@ -28,8 +28,8 @@ const PAYMENT_LINKS: Record<PaymentModule, Record<PaymentPlan, { url: string; am
     yearly: { url: "", amount: 1000, planName: "Coordinator Yearly Subscription ₹1000", subscriptionId: "" },
   },
   big_merchant: {
-    monthly: { url: "https://rzp.io/rzp/II4KUFCG", amount: 1600, planName: "Big Merchant Plus Monthly ₹1600", subscriptionId: "" },
-    yearly: { url: "https://rzp.io/rzp/II4KUFCG", amount: 16000, planName: "Big Merchant Plus Yearly ₹16000", subscriptionId: "" },
+    monthly: { url: "https://rzp.io/rzp/II4KUFCG", amount: 1600, planName: "Golden Merchant Plan Monthly ₹1600", subscriptionId: "" },
+    yearly: { url: "https://rzp.io/rzp/II4KUFCG", amount: 16000, planName: "Golden Merchant Plan Yearly ₹16000", subscriptionId: "" },
   },
 
 };
