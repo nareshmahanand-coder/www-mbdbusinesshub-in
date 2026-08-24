@@ -2362,6 +2362,17 @@ export type Database = {
       generate_agent_code: { Args: never; Returns: string }
       generate_big_merchant_code: { Args: never; Returns: string }
       generate_coordinator_code: { Args: never; Returns: string }
+      golden_merchant_video_ads: {
+        Args: never
+        Returns: {
+          big_merchant_id: string
+          category: string
+          city: string
+          id: string
+          shop_name: string
+          video_ad_url: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
