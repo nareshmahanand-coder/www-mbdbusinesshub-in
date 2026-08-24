@@ -320,7 +320,7 @@ const BigMerchantPortal = () => {
 
     setRecord(row);
     setSubmitting(false);
-    toast.success(`रजिस्ट्रेशन पूरा! आपकी Big Merchant ID: ${row.big_merchant_id}`);
+    toast.success(`रजिस्ट्रेशन पूरा! आपकी Golden Merchant ID: ${row.big_merchant_id}`);
   };
 
   const pay = async (plan: "monthly" | "yearly") => {
@@ -328,7 +328,7 @@ const BigMerchantPortal = () => {
     try {
       await startBigMerchantPayment({
         plan,
-        onSuccess: () => { toast.success("Big Merchant Plus सक्रिय हो गया!"); void load(); },
+        onSuccess: () => { toast.success("Golden Merchant सक्रिय हो गया!"); void load(); },
         onFailure: () => toast.error("भुगतान पूरा नहीं हो सका"),
       });
     } catch (err) {
@@ -371,7 +371,7 @@ const BigMerchantPortal = () => {
       <main className="container mx-auto max-w-5xl px-4 py-8">
         <header className="mb-6 rounded-2xl bg-gradient-to-r from-amber-500/15 via-primary/10 to-transparent p-5">
           <h1 className="flex items-center gap-2 text-2xl font-bold md:text-3xl">
-            <Crown className="h-7 w-7 text-amber-500" /> Big Merchant Plus
+            <Crown className="h-7 w-7 text-amber-500" /> Golden Merchant
           </h1>
           <p className="font-hindi text-sm text-muted-foreground">
             ₹1600 मासिक प्लान — सबसे ऊपर लिस्टिंग, वेरिफाइड बैज, वीडियो विज्ञापन और प्रीमियम बिज़नेस डैशबोर्ड।
@@ -381,7 +381,7 @@ const BigMerchantPortal = () => {
         {!user && (
           <Card>
             <CardContent className="space-y-3 p-6">
-              <p className="font-hindi text-sm">Big Merchant Plus के लिए पहले लॉगिन करें।</p>
+              <p className="font-hindi text-sm">Golden Merchant के लिए पहले लॉगिन करें।</p>
               <Button onClick={() => navigate("/login?next=/big-merchant")}>Login / Register</Button>
             </CardContent>
           </Card>
@@ -396,7 +396,7 @@ const BigMerchantPortal = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="font-hindi text-sm text-muted-foreground">
-                  कोऑर्डिनेटर के रूप में लॉगिन करें और अपने द्वारा जोड़े गए Big Merchants देखें।
+                  कोऑर्डिनेटर के रूप में लॉगिन करें और अपने द्वारा जोड़े गए Golden Merchants देखें।
                 </p>
                 <Button className="w-full" onClick={() => setMode("coordinator")}>Coordinator के रूप में जारी रखें</Button>
               </CardContent>
@@ -407,7 +407,7 @@ const BigMerchantPortal = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="font-hindi text-sm text-muted-foreground">
-                  नया Big Merchant रजिस्ट्रेशन करें या अपनी मौजूदा Big Merchant ID से डैशबोर्ड खोलें।
+                  नया Golden Merchant रजिस्ट्रेशन करें या अपनी मौजूदा Golden Merchant ID से डैशबोर्ड खोलें।
                 </p>
                 {savedId ? (
                   <p className="rounded-md bg-muted p-2 text-xs">इस डिवाइस पर सेव ID: <span className="font-mono font-semibold">{savedId}</span></p>
@@ -422,7 +422,7 @@ const BigMerchantPortal = () => {
         {user && mode === "coordinator" && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base"><Users className="h-5 w-5" /> My Big Merchants</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base"><Users className="h-5 w-5" /> My Golden Merchants</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {!coordinatorSelf ? (
@@ -444,12 +444,12 @@ const BigMerchantPortal = () => {
                     मर्चेंट को रजिस्ट्रेशन फ़ॉर्म में यह Coordinator ID डालने को कहें — वे स्वतः आपकी टीम से मैप हो जाएँगे।
                   </p>
                   {teamBigMerchants.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">अभी कोई Big Merchant मैप नहीं है।</p>
+                    <p className="text-sm text-muted-foreground">अभी कोई Golden Merchant मैप नहीं है।</p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-sm">
                         <thead className="text-xs text-muted-foreground">
-                          <tr><th className="p-2">Big Merchant ID</th><th className="p-2">Shop</th><th className="p-2">City</th><th className="p-2">Status</th><th className="p-2">Subscription</th></tr>
+                          <tr><th className="p-2">Golden Merchant ID</th><th className="p-2">Shop</th><th className="p-2">City</th><th className="p-2">Status</th><th className="p-2">Subscription</th></tr>
                         </thead>
                         <tbody>
                           {teamBigMerchants.map((b) => (
@@ -479,7 +479,7 @@ const BigMerchantPortal = () => {
               <CardTitle className="flex items-center gap-2 text-base"><ShieldCheck className="h-5 w-5 text-amber-600" /> e-KYC अनिवार्य</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="font-hindi text-sm text-muted-foreground">Big Merchant Plus रजिस्ट्रेशन से पहले e-KYC पूरा करें।</p>
+              <p className="font-hindi text-sm text-muted-foreground">Golden Merchant Plan रजिस्ट्रेशन से पहले e-KYC पूरा करें।</p>
               <Button onClick={() => navigate("/ekyc?mode=upload&next=%2Fbig-merchant")}>
                 <ShieldCheck className="mr-2 h-4 w-4" /> e-KYC शुरू करें
               </Button>
@@ -491,7 +491,7 @@ const BigMerchantPortal = () => {
         {user && mode === "merchant" && !record && hasKyc && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base"><Store className="h-5 w-5" /> Big Merchant Plus रजिस्ट्रेशन (₹1600/माह)</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-base"><Store className="h-5 w-5" /> Golden Merchant Plan रजिस्ट्रेशन (₹1600/माह)</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-xl border-2 border-amber-500/40 bg-amber-500/5 p-4">
@@ -593,7 +593,7 @@ const BigMerchantPortal = () => {
               <div className="rounded-xl border-2 border-amber-500/50 bg-amber-500/10 p-4">
                 <p className="font-hindi text-sm font-semibold">₹1600 मासिक सब्सक्रिप्शन भुगतान</p>
                 <p className="font-hindi text-xs text-muted-foreground">
-                  पहले रजिस्ट्रेशन जमा करें, फिर ₹1600 का भुगतान करके अपना Big Merchant Plus प्लान सक्रिय करें।
+                  पहले रजिस्ट्रेशन जमा करें, फिर ₹1600 का भुगतान करके अपना Golden Merchant प्लान सक्रिय करें।
                 </p>
                 <Button className="mt-3" size="lg" disabled={paying} onClick={() => void pay("monthly")}>
                   {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <IndianRupee className="mr-2 h-4 w-4" />}
@@ -619,7 +619,7 @@ const BigMerchantPortal = () => {
             <Card className="border-2 border-amber-500/50 bg-gradient-to-br from-amber-500/10 to-transparent">
               <CardContent className="flex flex-wrap items-center justify-between gap-3 p-5">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Big Merchant ID</p>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">Golden Merchant ID</p>
                   <p className="font-mono text-xl font-bold">{record.big_merchant_id}</p>
                   <p className="font-hindi text-sm">{record.shop_name} · {record.category}</p>
                 </div>

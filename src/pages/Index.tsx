@@ -8,6 +8,7 @@ import AppHeader from "@/components/AppHeader";
 import HeroCarousel from "@/components/HeroCarousel";
 import NandaFarmSection from "@/components/NandaFarmSection";
 import ShopMap from "@/components/ShopMap";
+import GoldenMerchantVideoAds from "@/components/GoldenMerchantVideoAds";
 
 import SuperAppNav from "@/components/SuperAppNav";
 import AdminPinAccess from "@/components/AdminPinAccess";
@@ -208,6 +209,9 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* Golden Merchant video advertisements */}
+      <GoldenMerchantVideoAds />
 
       {/* Nanda Farm Featured Section */}
       <NandaFarmSection />
