@@ -14,6 +14,7 @@ interface PremiumShop {
   phone: string | null;
   photos: string[];
   description: string | null;
+  is_big_merchant?: boolean | null;
 }
 
 interface PremiumShopSliderProps {
@@ -32,7 +33,7 @@ const PremiumShopSlider = ({ rotationSpeed = 5000 }: PremiumShopSliderProps) => 
         .select("id, shop_name, shop_name_hindi, category, city, whatsapp, phone, photos, description, is_big_merchant")
         .eq("is_premium", true)
         .eq("is_verified", true)
-        // Big Merchant Plus shops always lead the premium rotation.
+        // Golden Merchant shops always lead the premium rotation.
         .order("is_big_merchant", { ascending: false })
         .order("premium_start_date", { ascending: false });
 
@@ -68,7 +69,7 @@ const PremiumShopSlider = ({ rotationSpeed = 5000 }: PremiumShopSliderProps) => 
     <div className="mb-6">
       <div className="mb-3 flex items-center gap-2">
         <Crown className="h-5 w-5 text-accent" />
-        <h2 className="text-lg font-bold text-foreground">प्रीमियम दुकानें — Premium Shops</h2>
+        <h2 className="text-lg font-bold text-foreground">प्रीमियम दुकानें — Golden & Premium Merchants</h2>
       </div>
 
       <Link to={`/shop/${shop.id}`} className="block">
@@ -81,11 +82,18 @@ const PremiumShopSlider = ({ rotationSpeed = 5000 }: PremiumShopSliderProps) => 
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
 
-          {/* Verified Premium badge */}
-          <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-accent/90 px-3 py-1 shadow">
-            <ShieldCheck className="h-3.5 w-3.5 text-accent-foreground" />
-            <span className="text-[10px] font-bold text-accent-foreground">VERIFIED PREMIUM</span>
-          </div>
+          {/* Merchant tier badge */}
+          {shop.is_big_merchant ? (
+            <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[hsl(45,90%,50%)] to-[hsl(35,90%,50%)] px-3 py-1 shadow">
+              <Crown className="h-3.5 w-3.5 text-[hsl(30,60%,15%)]" />
+              <span className="text-[10px] font-extrabold text-[hsl(30,60%,15%)]">GOLDEN MERCHANT</span>
+            </div>
+          ) : (
+            <div className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-accent/90 px-3 py-1 shadow">
+              <ShieldCheck className="h-3.5 w-3.5 text-accent-foreground" />
+              <span className="text-[10px] font-bold text-accent-foreground">PREMIUM MERCHANT</span>
+            </div>
+          )}
 
           {/* WhatsApp button */}
           {waNumber && (
