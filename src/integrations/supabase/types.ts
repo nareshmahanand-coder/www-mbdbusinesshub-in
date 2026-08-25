@@ -2433,6 +2433,20 @@ export type Database = {
           status: string
         }[]
       }
+      shop_media_cards: {
+        Args: { shop_ids: string[] }
+        Returns: {
+          category: string
+          city: string
+          id: string
+          is_big_merchant: boolean
+          photo_url: string
+          shop_name: string
+          shop_name_hindi: string
+          video_ad_url: string
+          whatsapp: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
