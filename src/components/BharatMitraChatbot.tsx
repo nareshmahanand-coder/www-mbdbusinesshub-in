@@ -912,7 +912,11 @@ const BharatMitraChatbot = () => {
                     m.sender === "user" ? "bg-accent text-accent-foreground" : "bg-muted text-foreground"
                   }`}>
                     {renderMessageWithShopLinks(m.text)}
+                    {m.sender === "bot" && (
+                      <ShopMediaCards shopIds={extractShopIds(m.text)} onNavigate={() => setOpen(false)} />
+                    )}
                   </div>
+
                   {m.sender === "bot" && m.id !== "welcome" && (
                     <button
                       onClick={() => {
