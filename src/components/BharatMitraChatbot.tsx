@@ -16,7 +16,18 @@ import {
 import SafetyOverlay from "./chatbot/SafetyOverlay";
 import BloodDonorTab from "./chatbot/BloodDonorTab";
 import HealthTab from "./chatbot/HealthTab";
+import ShopMediaCards from "./chatbot/ShopMediaCards";
 import { speakUnified, cancelSpeech, isNativeTtsPlatform } from "@/lib/nativeTts";
+
+/** Collect shop ids referenced via [[SHOP:id:name]] tokens in a bot reply. */
+const extractShopIds = (text: string): string[] => {
+  const ids: string[] = [];
+  const re = /\[\[SHOP:([^:\]]+):[^\]]+\]\]/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) if (!ids.includes(m[1])) ids.push(m[1]);
+  return ids;
+};
+
 
 const DEFAULT_INTRO = "नमस्ते Boss! 🙏 मैं भारत मित्र AI हूँ। मैं भारत की सभी भाषाएं (Hindi, English, Chhattisgarhi, Odia, Bengali, Tamil, Telugu, Punjabi, Marathi, Gujarati...) जानती हूँ। क्या मैं आपसे इसी भाषा में बात करना जारी रखूँ या आप किसी और भाषा में बात करना चाहते हैं? 🇮🇳";
 
