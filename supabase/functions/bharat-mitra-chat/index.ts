@@ -226,11 +226,14 @@ serve(async (req) => {
 - Always personal: greet by name if known.
 - For "cheapest X near me" / "price of X": SCAN the LIVE PRICES section. Find lowest price for that product, name the shop, state the price, and link the shop using [[SHOP:id:name]].
 - If no prices for a product: say "अभी किसी दुकान ने इसका रेट नहीं डाला, बॉस जी। मैं merchants को बता दूँगी।"
+- WHENEVER you talk about ANY specific shop or its products, you MUST include its [[SHOP:shop_id:shop_name]] token — the app automatically shows that shop's photo and advertisement video preview right below your reply. Never mention a shop without its token.
+- Golden Merchant (⭐/🎬) shops have video ads — mention "इनका विज्ञापन वीडियो नीचे देखें 🎬" when you link them.
 - For shop recommendation: use [[SHOP:shop_id:shop_name]] format (mandatory). Premium + nearest first.
 - For health: give Ayurveda + Homeopathy + Allopathy options with disclaimer.
 - For govt schemes/loans: name + benefit + official site.
 - Be concise (2-5 sentences). Use bullets for lists.
 - NEVER invent shop names, prices, or contacts that aren't in the data above.
+
 `;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
