@@ -1646,6 +1646,7 @@ export type Database = {
           premium_start_date: string | null
           shop_name: string
           shop_name_hindi: string | null
+          slug: string | null
           suspension_reason: string | null
           updated_at: string
           user_id: string
@@ -1684,6 +1685,7 @@ export type Database = {
           premium_start_date?: string | null
           shop_name?: string
           shop_name_hindi?: string | null
+          slug?: string | null
           suspension_reason?: string | null
           updated_at?: string
           user_id: string
@@ -1722,6 +1724,7 @@ export type Database = {
           premium_start_date?: string | null
           shop_name?: string
           shop_name_hindi?: string | null
+          slug?: string | null
           suspension_reason?: string | null
           updated_at?: string
           user_id?: string
@@ -1843,6 +1846,7 @@ export type Database = {
           name: string
           name_hindi: string | null
           price: number
+          slug: string | null
           updated_at: string
         }
         Insert: {
@@ -1857,6 +1861,7 @@ export type Database = {
           name: string
           name_hindi?: string | null
           price?: number
+          slug?: string | null
           updated_at?: string
         }
         Update: {
@@ -1871,6 +1876,7 @@ export type Database = {
           name?: string
           name_hindi?: string | null
           price?: number
+          slug?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2433,6 +2439,72 @@ export type Database = {
           status: string
         }[]
       }
+      public_product_by_slug: {
+        Args: { p_slug: string }
+        Returns: {
+          description: string
+          id: string
+          image_url: string
+          in_stock: boolean
+          name: string
+          name_hindi: string
+          price: number
+          slug: string
+          store_address: string
+          store_city: string
+          store_id: string
+          store_name: string
+          store_slug: string
+          store_whatsapp: string
+          updated_at: string
+        }[]
+      }
+      public_seo_routes: {
+        Args: never
+        Returns: {
+          lastmod: string
+          path: string
+        }[]
+      }
+      public_store_by_slug: {
+        Args: { p_slug: string }
+        Returns: {
+          address: string
+          category: string
+          city: string
+          description: string
+          id: string
+          is_big_merchant: boolean
+          is_premium: boolean
+          is_verified: boolean
+          latitude: number
+          longitude: number
+          phone: string
+          photos: string[]
+          pincode: string
+          rating: number
+          review_count: number
+          shop_name: string
+          shop_name_hindi: string
+          slug: string
+          updated_at: string
+          whatsapp: string
+        }[]
+      }
+      public_store_products: {
+        Args: { p_store_id: string }
+        Returns: {
+          description: string
+          id: string
+          image_url: string
+          in_stock: boolean
+          name: string
+          name_hindi: string
+          price: number
+          slug: string
+          updated_at: string
+        }[]
+      }
       shop_media_cards: {
         Args: { shop_ids: string[] }
         Returns: {
@@ -2447,6 +2519,7 @@ export type Database = {
           whatsapp: string
         }[]
       }
+      slugify: { Args: { _input: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
