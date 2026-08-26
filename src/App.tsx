@@ -26,6 +26,9 @@ import JobDetailPage from "./pages/JobDetailPage";
 import ServicesPage from "./pages/ServicesPage";
 import MyProfilePage from "./pages/MyProfilePage";
 import ShopProfilePage from "./pages/ShopProfilePage";
+import StorePage from "./pages/StorePage";
+import ProductPage from "./pages/ProductPage";
+
 import SkillDevelopmentPage from "./pages/SkillDevelopmentPage";
 import FamilySafetyPage from "./pages/FamilySafetyPage";
 import FamilyInvitePage from "./pages/FamilyInvitePage";
@@ -218,6 +221,9 @@ const AppShell = () => {
         <Route path="/privacy-policy" element={<LegalPage section="privacy" />} />
         <Route path="/refund-policy" element={<LegalPage section="refund" />} />
         <Route path="/" element={<PublicHomeRoute />} />
+        <Route path="/store/:slug" element={<StorePage />} />
+        <Route path="/product/:slug" element={<ProductPage />} />
+
         <Route path="/merchant" element={<KycRequiredRoute><MerchantPortal /></KycRequiredRoute>} />
         <Route path="/agent" element={<AgentPortal />} />
         <Route path="/coordinator" element={<CoordinatorPortal />} />
