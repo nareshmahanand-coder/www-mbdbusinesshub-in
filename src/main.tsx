@@ -1,12 +1,18 @@
 import { createRoot } from "react-dom/client";
+import { HelmetProvider } from "react-helmet-async";
 import "./index.css";
 import { restoreSessionFromNativeStorage } from "./lib/capacitorSessionBridge";
 import { requestMediaPermissionsOnce } from "./lib/requestMediaPermissions";
 
 async function mount() {
   const { default: App } = await import("./App.tsx");
-  createRoot(document.getElementById("root")!).render(<App />);
+  createRoot(document.getElementById("root")!).render(
+    <HelmetProvider>
+      <App />
+    </HelmetProvider>,
+  );
 }
+
 
 restoreSessionFromNativeStorage()
   .catch(() => {})
