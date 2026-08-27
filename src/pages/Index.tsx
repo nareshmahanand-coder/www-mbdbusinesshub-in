@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useState, useMemo, useRef, useCallback } from "react";
 import { Search, MapPin, Store, Mail, HelpCircle, ChevronDown, ChevronUp, Mic } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -110,8 +111,25 @@ const Index = () => {
 
   return (
     <div className="ashoka-watermark tiranga-bg min-h-screen">
+      <Seo
+        title="Mera Bharat Dukaan — Local Shops, Farmers & Services Near You"
+        description="अपने शहर की सत्यापित दुकानें, किसान और सेवाएँ खोजें। 0% कमीशन पर सीधे WhatsApp या कॉल से ऑर्डर करें — Mera Bharat Dukaan."
+        path="/"
+        jsonLd={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Mera Bharat Dukaan",
+          url: "https://shop.mbdbusinesshub.in",
+          potentialAction: {
+            "@type": "SearchAction",
+            target: "https://shop.mbdbusinesshub.in/services?q={search_term_string}",
+            "query-input": "required name=search_term_string",
+          },
+        }}
+      />
       <AppHeader />
       <SuperAppNav />
+
 
 
       {/* Hero */}
