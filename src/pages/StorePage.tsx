@@ -228,7 +228,9 @@ const StorePage = () => {
         description={description}
         path={`/store/${store.slug}`}
         image={store.photos[0]}
+        imageAlt={`${store.name} — ${store.category} in ${store.city}`}
         type="profile"
+
         jsonLd={[localBusiness, breadcrumb]}
       />
       <AppHeader />
