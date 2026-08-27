@@ -100,6 +100,8 @@ const AppHeader = () => {
               ))}
             </nav>
 
+            <LangToggle className="ml-2" />
+
             {user ? (
               <div className="ml-2">
                 <UserProfileMenu />
@@ -108,7 +110,7 @@ const AppHeader = () => {
               <Button asChild size="sm" variant="secondary" className="ml-2 rounded-full">
                 <Link to="/login">
                   <LogIn className="mr-1.5 h-4 w-4" />
-                  Login
+                  {t("login")}
                 </Link>
               </Button>
             )}
@@ -116,16 +118,18 @@ const AppHeader = () => {
 
           {/* Mobile */}
           <div className="flex items-center gap-2 md:hidden">
+            <LangToggle />
             {user ? (
               <UserProfileMenu />
             ) : (
               <Button asChild size="sm" variant="secondary" className="h-8 rounded-full px-3 text-xs">
                 <Link to="/login">
                   <LogIn className="mr-1 h-3.5 w-3.5" />
-                  Login
+                  {t("login")}
                 </Link>
               </Button>
             )}
+
             <button
               className="text-primary-foreground"
               onClick={() => setMenuOpen(!menuOpen)}
