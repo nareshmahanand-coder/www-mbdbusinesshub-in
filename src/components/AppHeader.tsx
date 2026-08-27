@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { LogIn, Menu, X } from "lucide-react";
+import { Globe, LogIn, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -10,19 +10,32 @@ import UserProfileMenu from "@/components/UserProfileMenu";
 const AppHeader = () => {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
-  const { t } = useLanguage();
+  const { t, lang, toggleLang } = useLanguage();
   const { user } = useAuth();
 
   const links = [
     { to: "/", label: t("home") },
     { to: "/merchant", label: t("merchant_portal") },
-    { to: "/agent", label: "Agent Portal" },
-    { to: "/coordinator", label: "Coordinator Portal" },
-    { to: "/big-merchant", label: "Golden Merchant" },
+    { to: "/agent", label: t("agent_portal") },
+    { to: "/coordinator", label: t("coordinator_portal") },
+    { to: "/big-merchant", label: t("golden_merchant") },
 
     { to: "/help", label: t("help_desk") },
-    { to: "https://billing.mbdbusinesshub.in/", label: "Business Billing", external: true },
+    { to: "https://billing.mbdbusinesshub.in/", label: t("business_billing"), external: true },
   ];
+
+  const LangToggle = ({ className = "" }: { className?: string }) => (
+    <button
+      type="button"
+      onClick={toggleLang}
+      aria-label={t("language")}
+      className={`flex items-center gap-1 rounded-full border border-primary-foreground/30 px-2.5 py-1 text-xs font-semibold text-primary-foreground/90 transition-colors hover:bg-primary-foreground/10 ${className}`}
+    >
+      <Globe className="h-3.5 w-3.5" />
+      {lang === "en" ? "हिं" : "EN"}
+    </button>
+  );
+
 
   return (
     <>
