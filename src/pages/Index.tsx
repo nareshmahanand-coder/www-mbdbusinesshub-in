@@ -1,3 +1,4 @@
+import Seo from "@/components/Seo";
 import { useState, useMemo, useRef, useCallback } from "react";
 import { Search, MapPin, Store, Mail, HelpCircle, ChevronDown, ChevronUp, Mic } from "lucide-react";
 import { Input } from "@/components/ui/input";
