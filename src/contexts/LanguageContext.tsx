@@ -129,8 +129,10 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     lang,
     setLang: setLangState,
     toggleLang: () => setLangState((prev) => (prev === "en" ? "hi" : "en")),
-    t: (key: string, fallback?: string) => translations[key]?.[lang] ?? fallback ?? key,
+    t: (key: string, fallback?: string) =>
+      translations[key]?.[lang] ?? translatePhrase(key, lang) ?? fallback ?? key,
   }), [lang]);
+
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 };
