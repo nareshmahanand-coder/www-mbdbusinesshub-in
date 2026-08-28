@@ -527,7 +527,7 @@ const CoordinatorDashboard = ({
       <CoordinatorWithdrawalCard coordinator={coordinator} withdrawals={withdrawals} onDone={async () => { await load(); await onReload(); }} />
 
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Banknote className="h-4 w-4" /> Commission Log (2%)</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Banknote className="h-4 w-4" /> Commission Log (2% + Golden ₹600)</CardTitle></CardHeader>
         <CardContent>
           {commissions.length === 0 ? (
             <p className="font-hindi text-sm text-muted-foreground">अभी कोई कमीशन ट्रांज़ैक्शन नहीं।</p>
