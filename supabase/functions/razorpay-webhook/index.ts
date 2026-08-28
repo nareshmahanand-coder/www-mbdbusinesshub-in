@@ -262,7 +262,10 @@ async function creditAgentCommission(admin: any, order: any, paymentId: string) 
 }
 
 async function creditCoordinatorCommission(admin: any, order: any, paymentId: string, agent: any, base: number) {
+  // Golden Merchant (₹1600) pays a flat ₹600 to the selling coordinator instead of 2%.
+  if (order.module === "big_merchant") return;
   if (!agent?.coordinator_id || !(base > 0)) return;
+
 
   const { data: coordinator } = await admin
     .from("coordinators")
