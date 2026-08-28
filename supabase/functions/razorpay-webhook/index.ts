@@ -262,7 +262,10 @@ async function creditAgentCommission(admin: any, order: any, paymentId: string) 
 }
 
 async function creditCoordinatorCommission(admin: any, order: any, paymentId: string, agent: any, base: number) {
+  // Golden Merchant (₹1600) pays a flat ₹600 to the selling coordinator instead of 2%.
+  if (order.module === "big_merchant") return;
   if (!agent?.coordinator_id || !(base > 0)) return;
+
 
   const { data: coordinator } = await admin
     .from("coordinators")
@@ -297,6 +300,77 @@ async function creditCoordinatorCommission(admin: any, order: any, paymentId: st
     note: `2% passive commission on ${order.module} ${order.plan} (₹${base})`,
   });
   if (error) console.error("coordinator commission insert failed", error);
+}
+
+// Golden Merchant (₹1600 plan): flat ₹600 commission for the coordinator who sold it.
+const GOLDEN_MERCHANT_COORDINATOR_COMMISSION = 600;
+
+async function creditGoldenMerchantCoordinator(admin: any, order: any, paymentId: string) {
+  if (order.module !== "big_merchant") return;
+
+  // 1) Coordinator who directly registered the Golden Merchant.
+  const { data: big } = await admin
+    .from("big_merchants")
+    .select("coordinator_id")
+    .eq("user_id", order.user_id)
+    .maybeSingle();
+
+  let coordinatorId: string | null = big?.coordinator_id ?? null;
+  let agentId: string | null = null;
+
+  // 2) Otherwise, the coordinator of the referring agent.
+  if (!coordinatorId) {
+    const { data: referral } = await admin
+      .from("agent_referrals")
+      .select("agent_id")
+      .eq("merchant_user_id", order.user_id)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (referral?.agent_id) {
+      const { data: agent } = await admin
+        .from("agents")
+        .select("id, status, coordinator_id")
+        .eq("id", referral.agent_id)
+        .maybeSingle();
+      if (agent?.status === "approved" && agent.coordinator_id) {
+        coordinatorId = agent.coordinator_id;
+        agentId = agent.id;
+      }
+    }
+  }
+
+  if (!coordinatorId) return;
+
+  const { data: coordinator } = await admin
+    .from("coordinators")
+    .select("id, status")
+    .eq("id", coordinatorId)
+    .maybeSingle();
+  if (!coordinator || coordinator.status !== "approved") return;
+
+  if (paymentId) {
+    const { data: dup } = await admin
+      .from("coordinator_commissions")
+      .select("id")
+      .eq("razorpay_payment_id", paymentId)
+      .eq("coordinator_id", coordinator.id)
+      .maybeSingle();
+    if (dup) return;
+  }
+
+  const { error } = await admin.from("coordinator_commissions").insert({
+    coordinator_id: coordinator.id,
+    agent_id: agentId,
+    merchant_user_id: order.user_id,
+    payment_order_id: order.id,
+    razorpay_payment_id: paymentId || null,
+    plan: order.plan,
+    amount: GOLDEN_MERCHANT_COORDINATOR_COMMISSION,
+    note: `₹${GOLDEN_MERCHANT_COORDINATOR_COMMISSION} Golden Merchant commission (${order.plan}, ₹${Number(order.amount || 0)})`,
+  });
+  if (error) console.error("golden merchant coordinator commission insert failed", error);
+
 }
 
 // Activates a Big Merchant Plus (₹1500) subscription and mirrors the premium
@@ -403,6 +477,13 @@ async function unlock(admin: any, order: any, paymentId: string, signature: stri
   } catch (e) {
     console.error("agent commission error", e);
   }
+
+  try {
+    await creditGoldenMerchantCoordinator(admin, order, paymentId);
+  } catch (e) {
+    console.error("golden merchant coordinator commission error", e);
+  }
+
 }
 
 serve(async (req) => {

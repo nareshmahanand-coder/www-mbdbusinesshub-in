@@ -446,7 +446,11 @@ const CoordinatorDashboard = ({
     shops: team.reduce((s, t) => s + Number(t.shops_count || 0), 0),
     subs: team.reduce((s, t) => s + Number(t.merchant_subscriptions || 0), 0),
     earned: commissions.reduce((s, c) => s + Number(c.amount || 0), 0),
+    golden: commissions
+      .filter((c) => String(c.note || "").includes("Golden Merchant"))
+      .reduce((s, c) => s + Number(c.amount || 0), 0),
   }), [team, commissions]);
+
 
   return (
     <div className="space-y-5">
@@ -458,6 +462,10 @@ const CoordinatorDashboard = ({
               <IndianRupee className="h-7 w-7" />{Number(coordinator.wallet_balance || 0).toLocaleString("en-IN")}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">टीम की हर सब्सक्रिप्शन पर 2% पैसिव कमीशन</p>
+            <p className="mt-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+              Golden Merchant (₹1600) पर सीधे ₹600 कमीशन · अब तक {inr(totals.golden)}
+            </p>
+
           </div>
           <div className="text-right">
             <Badge variant="outline" className="gap-1"><span className="h-2 w-2 animate-pulse rounded-full bg-green-500" /> Active</Badge>
@@ -519,7 +527,7 @@ const CoordinatorDashboard = ({
       <CoordinatorWithdrawalCard coordinator={coordinator} withdrawals={withdrawals} onDone={async () => { await load(); await onReload(); }} />
 
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Banknote className="h-4 w-4" /> Commission Log (2%)</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Banknote className="h-4 w-4" /> Commission Log (2% + Golden ₹600)</CardTitle></CardHeader>
         <CardContent>
           {commissions.length === 0 ? (
             <p className="font-hindi text-sm text-muted-foreground">अभी कोई कमीशन ट्रांज़ैक्शन नहीं।</p>

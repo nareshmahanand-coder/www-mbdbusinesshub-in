@@ -137,7 +137,9 @@ const ProductPage = () => {
         description={description}
         path={`/product/${product.slug}`}
         image={product.imageUrl ?? undefined}
+        imageAlt={`${product.name} — ${product.storeName}, ${product.storeCity}`}
         type="product"
+
         jsonLd={[productLd, breadcrumb]}
       />
       <AppHeader />
