@@ -462,6 +462,10 @@ const CoordinatorDashboard = ({
               <IndianRupee className="h-7 w-7" />{Number(coordinator.wallet_balance || 0).toLocaleString("en-IN")}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">टीम की हर सब्सक्रिप्शन पर 2% पैसिव कमीशन</p>
+            <p className="mt-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+              Golden Merchant (₹1600) पर सीधे ₹600 कमीशन · अब तक {inr(totals.golden)}
+            </p>
+
           </div>
           <div className="text-right">
             <Badge variant="outline" className="gap-1"><span className="h-2 w-2 animate-pulse rounded-full bg-green-500" /> Active</Badge>
