@@ -477,6 +477,13 @@ async function unlock(admin: any, order: any, paymentId: string, signature: stri
   } catch (e) {
     console.error("agent commission error", e);
   }
+
+  try {
+    await creditGoldenMerchantCoordinator(admin, order, paymentId);
+  } catch (e) {
+    console.error("golden merchant coordinator commission error", e);
+  }
+
 }
 
 serve(async (req) => {
