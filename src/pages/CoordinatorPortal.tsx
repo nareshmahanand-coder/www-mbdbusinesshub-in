@@ -446,7 +446,11 @@ const CoordinatorDashboard = ({
     shops: team.reduce((s, t) => s + Number(t.shops_count || 0), 0),
     subs: team.reduce((s, t) => s + Number(t.merchant_subscriptions || 0), 0),
     earned: commissions.reduce((s, c) => s + Number(c.amount || 0), 0),
+    golden: commissions
+      .filter((c) => String(c.note || "").includes("Golden Merchant"))
+      .reduce((s, c) => s + Number(c.amount || 0), 0),
   }), [team, commissions]);
+
 
   return (
     <div className="space-y-5">
