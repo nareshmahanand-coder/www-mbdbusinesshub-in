@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1788221569781,
+      "tag": "0000_create_ui_translation_cache",
+      "breakpoints": true
+    }
+  ]
+}
