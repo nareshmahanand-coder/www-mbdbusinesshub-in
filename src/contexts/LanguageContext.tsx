@@ -125,7 +125,11 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       // storage may be unavailable (private mode / webview)
     }
     document.documentElement.lang = lang;
+    startAutoTranslate(lang);
   }, [lang]);
+
+  useEffect(() => () => stopAutoTranslate(), []);
+
 
   const value = useMemo<LanguageContextType>(() => ({
     lang,
