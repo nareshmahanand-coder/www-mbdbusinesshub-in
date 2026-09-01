@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { translatePhrase } from "@/i18n";
+import { startAutoTranslate, stopAutoTranslate } from "@/lib/uiAutoTranslate";
+
 
 
 type Lang = "en" | "hi";
