@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
 import { translatePhrase } from "@/i18n";
+import { startAutoTranslate, stopAutoTranslate } from "@/lib/uiAutoTranslate";
+
 
 
 type Lang = "en" | "hi";
@@ -125,7 +127,11 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
       // storage may be unavailable (private mode / webview)
     }
     document.documentElement.lang = lang;
+    startAutoTranslate(lang);
   }, [lang]);
+
+  useEffect(() => () => stopAutoTranslate(), []);
+
 
   const value = useMemo<LanguageContextType>(() => ({
     lang,
