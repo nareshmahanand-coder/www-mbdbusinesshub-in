@@ -22,6 +22,7 @@ import { kisanPhrases } from "./phrases/kisan";
 import { servicesPhrases } from "./phrases/services";
 import { legalPhrases } from "./phrases/legal";
 import { profilePhrases } from "./phrases/profile";
+import { generatedPhrases } from "./phrases/generated";
 
 const allPhrases: Phrases = [
   ...commonPhrases,
@@ -47,6 +48,7 @@ const allPhrases: Phrases = [
   ...servicesPhrases,
   ...legalPhrases,
   ...profilePhrases,
+  ...generatedPhrases,
 ];
 
 /** Lookup keyed by BOTH the english and the hindi source string. */
