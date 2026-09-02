@@ -244,12 +244,7 @@ const BigMerchantPortal = () => {
 
     if (!shopName || !ownerName || !form.category) { toast.error("दुकान का नाम, मालिक का नाम और कैटेगरी अनिवार्य है"); return; }
     if (mobile.length !== 10) { toast.error("10 अंकों का मोबाइल नंबर डालें"); return; }
-    if (!GST_REGEX.test(gst)) { toast.error("वैध GST नंबर अनिवार्य है (उदा. 09ABCDE1234F1Z5)"); return; }
-    if (!gstUrl) { toast.error("GST सर्टिफिकेट अपलोड करना अनिवार्य है"); return; }
-    if (foodRequired && (!form.foodLicenseNumber.trim() || !foodUrl)) {
-      toast.error("खाद्य श्रेणी के लिए FSSAI नंबर और लाइसेंस अपलोड अनिवार्य है");
-      return;
-    }
+    if (gst && !GST_REGEX.test(gst)) { toast.error("GST नंबर सही फॉर्मेट में डालें (उदा. 09ABCDE1234F1Z5)"); return; }
 
     setSubmitting(true);
     const payload = {
