@@ -586,14 +586,23 @@ const BigMerchantPortal = () => {
               <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={(e) => pick(e, "video-ad", setVideoUrl)} />
 
               <div className="rounded-xl border-2 border-amber-500/50 bg-amber-500/10 p-4">
-                <p className="font-hindi text-sm font-semibold">₹1600 मासिक सब्सक्रिप्शन भुगतान</p>
+                <p className="font-hindi text-sm font-semibold">Golden Merchant सब्सक्रिप्शन भुगतान</p>
                 <p className="font-hindi text-xs text-muted-foreground">
-                  पहले रजिस्ट्रेशन जमा करें, फिर ₹1600 का भुगतान करके अपना Golden Merchant प्लान सक्रिय करें।
+                  पहले रजिस्ट्रेशन जमा करें, फिर अपना Golden Merchant प्लान सक्रिय करें।
                 </p>
-                <Button className="mt-3" size="lg" disabled={paying} onClick={() => void pay("monthly")}>
-                  {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <IndianRupee className="mr-2 h-4 w-4" />}
-                  ₹1600 / माह भुगतान करें
-                </Button>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button size="lg" disabled={paying} onClick={() => void pay("monthly")}>
+                    {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <IndianRupee className="mr-2 h-4 w-4" />}
+                    ₹1600 / माह
+                  </Button>
+                  <Button size="lg" variant="outline" disabled={paying} onClick={() => void pay("yearly")}>
+                    <Crown className="mr-2 h-4 w-4 text-amber-600" />
+                    ₹16000 / वर्ष
+                  </Button>
+                </div>
+                <p className="mt-2 text-xs font-medium text-green-700">
+                  वार्षिक प्लान पर ₹3200 की बचत — 12 महीने का मासिक प्लान ₹19,200 होता है।
+                </p>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -639,15 +648,19 @@ const BigMerchantPortal = () => {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="font-hindi text-sm text-muted-foreground">
-                    ₹1600 मासिक भुगतान के बाद आपकी दुकान सबसे ऊपर दिखेगी और प्रीमियम डैशबोर्ड अनलॉक होगा।
+                    Golden Merchant प्लान सक्रिय करें और सबसे ऊपर लिस्टिंग, वेरिफाइड बैज और प्रीमियम डैशबोर्ड पाएँ।
                   </p>
+                  <div className="rounded-lg bg-green-50 p-3 text-sm font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
+                    वार्षिक प्लान से ₹3200 बचाएँ — मासिक 12×₹1600 = ₹19,200, सालाना सिर्फ ₹16,000।
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     <Button size="lg" disabled={paying} onClick={() => void pay("monthly")}>
                       {paying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Crown className="mr-2 h-4 w-4" />}
                       ₹1600 / माह भुगतान करें
                     </Button>
                     <Button size="lg" variant="outline" disabled={paying} onClick={() => void pay("yearly")}>
-                      ₹16000 / वर्ष
+                      <Crown className="mr-2 h-4 w-4 text-amber-600" />
+                      ₹16000 / वर्ष — ₹3200 बचत
                     </Button>
                   </div>
                 </CardContent>
