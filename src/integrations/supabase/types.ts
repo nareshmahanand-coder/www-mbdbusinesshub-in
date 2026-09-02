@@ -392,7 +392,7 @@ export type Database = {
           food_license_number: string | null
           food_license_url: string | null
           gst_certificate_url: string | null
-          gst_number: string
+          gst_number: string | null
           id: string
           mobile: string
           owner_name: string
@@ -426,7 +426,7 @@ export type Database = {
           food_license_number?: string | null
           food_license_url?: string | null
           gst_certificate_url?: string | null
-          gst_number: string
+          gst_number?: string | null
           id?: string
           mobile?: string
           owner_name: string
@@ -460,7 +460,7 @@ export type Database = {
           food_license_number?: string | null
           food_license_url?: string | null
           gst_certificate_url?: string | null
-          gst_number?: string
+          gst_number?: string | null
           id?: string
           mobile?: string
           owner_name?: string

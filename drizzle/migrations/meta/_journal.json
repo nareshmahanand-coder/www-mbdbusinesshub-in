@@ -8,6 +8,13 @@
       "when": 1788221569781,
       "tag": "0000_create_ui_translation_cache",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788308785635,
+      "tag": "0001_make_gst_optional_big_merchants",
+      "breakpoints": true
     }
   ]
 }

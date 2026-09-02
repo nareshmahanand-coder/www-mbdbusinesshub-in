@@ -1,0 +1,1 @@
+ALTER TABLE public.big_merchants ALTER COLUMN gst_number DROP NOT NULL;

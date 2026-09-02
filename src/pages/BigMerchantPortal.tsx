@@ -244,12 +244,7 @@ const BigMerchantPortal = () => {
 
     if (!shopName || !ownerName || !form.category) { toast.error("दुकान का नाम, मालिक का नाम और कैटेगरी अनिवार्य है"); return; }
     if (mobile.length !== 10) { toast.error("10 अंकों का मोबाइल नंबर डालें"); return; }
-    if (!GST_REGEX.test(gst)) { toast.error("वैध GST नंबर अनिवार्य है (उदा. 09ABCDE1234F1Z5)"); return; }
-    if (!gstUrl) { toast.error("GST सर्टिफिकेट अपलोड करना अनिवार्य है"); return; }
-    if (foodRequired && (!form.foodLicenseNumber.trim() || !foodUrl)) {
-      toast.error("खाद्य श्रेणी के लिए FSSAI नंबर और लाइसेंस अपलोड अनिवार्य है");
-      return;
-    }
+    if (gst && !GST_REGEX.test(gst)) { toast.error("GST नंबर सही फॉर्मेट में डालें (उदा. 09ABCDE1234F1Z5)"); return; }
 
     setSubmitting(true);
     const payload = {
@@ -264,8 +259,8 @@ const BigMerchantPortal = () => {
       city: form.city.trim() || null,
       address: form.address.trim() || null,
       pincode: form.pincode.trim() || null,
-      gst_number: gst,
-      gst_certificate_url: gstUrl,
+      gst_number: gst || null,
+      gst_certificate_url: gstUrl || null,
       food_license_number: form.foodLicenseNumber.trim() || null,
       food_license_url: foodUrl || null,
       aadhaar_number: form.aadhaarNumber.trim() || null,
@@ -523,12 +518,12 @@ const BigMerchantPortal = () => {
                 <div><Label>ईमेल</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
                 <div><Label>शहर</Label><Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
                 <div><Label>पिनकोड</Label><Input inputMode="numeric" maxLength={6} value={form.pincode} onChange={(e) => setForm({ ...form, pincode: e.target.value.replace(/\D/g, "") })} /></div>
-                <div><Label>GST नंबर *</Label><Input value={form.gstNumber} onChange={(e) => setForm({ ...form, gstNumber: e.target.value.toUpperCase() })} placeholder="09ABCDE1234F1Z5" /></div>
+                <div><Label>GST नंबर (वैकल्पिक)</Label><Input value={form.gstNumber} onChange={(e) => setForm({ ...form, gstNumber: e.target.value.toUpperCase() })} placeholder="09ABCDE1234F1Z5" /></div>
                 <div className="md:col-span-2"><Label>पता</Label><Textarea rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
                 <div className="md:col-span-2"><Label>बिज़नेस विवरण</Label><Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
                 {foodRequired && (
                   <div className="md:col-span-2">
-                    <Label>FSSAI / खाद्य लाइसेंस नंबर * (खाद्य श्रेणी के लिए अनिवार्य)</Label>
+                    <Label>FSSAI / खाद्य लाइसेंस नंबर (वैकल्पिक)</Label>
                     <Input value={form.foodLicenseNumber} onChange={(e) => setForm({ ...form, foodLicenseNumber: e.target.value })} />
                   </div>
                 )}
@@ -546,8 +541,8 @@ const BigMerchantPortal = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                <UploadTile label="GST सर्टिफिकेट" url={gstUrl} folder="gst" inputRef={gstRef} required />
-                {foodRequired && <UploadTile label="FSSAI लाइसेंस" url={foodUrl} folder="fssai" inputRef={foodRef} required />}
+<UploadTile label="GST सर्टिफिकेट (वैकल्पिक)" url={gstUrl} folder="gst" inputRef={gstRef} />
+                {foodRequired && <UploadTile label="FSSAI लाइसेंस (वैकल्पिक)" url={foodUrl} folder="fssai" inputRef={foodRef} />}
                 <UploadTile label="आधार (आगे)" url={aadhaarFrontUrl} folder="aadhaar-front" inputRef={aadhaarFrontRef} />
                 <UploadTile label="आधार (पीछे)" url={aadhaarBackUrl} folder="aadhaar-back" inputRef={aadhaarBackRef} />
                 <UploadTile label="PAN कार्ड" url={panUrl} folder="pan" inputRef={panRef} />
