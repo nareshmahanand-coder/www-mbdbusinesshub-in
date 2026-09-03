@@ -19,22 +19,17 @@ const Bilingual = ({
 }: {
   en: string;
   hi: string;
-}) => (
-  <div className="grid gap-3 rounded-md border bg-muted/30 p-3 sm:grid-cols-2">
-    <div>
-      <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-primary">
-        English
+}) => {
+  const { lang } = useLanguage();
+  return (
+    <div className="rounded-md border bg-muted/30 p-3">
+      <p className={`text-sm text-foreground${lang === "hi" ? " font-hindi" : ""}`} data-no-translate>
+        {lang === "hi" ? hi : en}
       </p>
-      <p className="text-sm text-foreground">{en}</p>
     </div>
-    <div className="border-t pt-3 sm:border-l sm:border-t-0 sm:pl-3 sm:pt-0">
-      <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-saffron">
-        हिंदी
-      </p>
-      <p className="font-hindi text-sm text-foreground">{hi}</p>
-    </div>
-  </div>
-);
+  );
+};
+
 
 const TermsPage = () => (
   <div className="ashoka-watermark tiranga-bg min-h-screen">
