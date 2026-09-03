@@ -198,6 +198,29 @@ const translateAttributes = (el: Element, lang: Lang) => {
   }
 };
 
+/**
+ * Sentences broken up by inline markup (`<p>Text <strong>bold</strong> more.</p>`)
+ * never match a dictionary entry node-by-node, so the whole block text is tried
+ * as one phrase first.
+ */
+const BLOCK_TAGS = new Set(["P", "LI", "H1", "H2", "H3", "H4", "H5", "H6", "BUTTON", "LABEL"]);
+const blockOriginals = new WeakMap<Element, string>();
+
+const translateBlock = (el: Element, lang: Lang): boolean => {
+  if (!BLOCK_TAGS.has(el.tagName)) return false;
+  if (el.children.length === 0) return false; // plain text handled per node
+  if (el.querySelector("input, textarea, select, svg, img, [data-no-translate]")) return false;
+  const current = (el.textContent ?? "").replace(/\s+/g, " ").trim();
+  if (!current) return false;
+  const original = blockOriginals.get(el) ?? current;
+  if (!translatable(original)) return false;
+  const next = resolve(original, lang);
+  if (!next || next === original) return false;
+  blockOriginals.set(el, original);
+  if (current !== next) el.textContent = next;
+  return true;
+};
+
 const walk = (root: Node, lang: Lang) => {
   if (root.nodeType === Node.TEXT_NODE) {
     const parent = (root as Text).parentElement;
@@ -215,7 +238,7 @@ const walk = (root: Node, lang: Lang) => {
   while (node) {
     if (node.nodeType === Node.ELEMENT_NODE) {
       const child = node as Element;
-      if (SKIP_TAGS.has(child.tagName) || child.hasAttribute("data-no-translate")) {
+      if (SKIP_TAGS.has(child.tagName) || child.hasAttribute("data-no-translate") || translateBlock(child, lang)) {
         // skip the whole subtree
         let next = walker.nextSibling();
         while (!next && walker.parentNode()) next = walker.nextSibling();
@@ -223,6 +246,12 @@ const walk = (root: Node, lang: Lang) => {
         continue;
       }
       translateAttributes(child, lang);
+    } else {
+      translateTextNode(node as Text, lang);
+    }
+    node = walker.nextNode();
+  }
+
     } else {
       translateTextNode(node as Text, lang);
     }
