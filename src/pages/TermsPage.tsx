@@ -1,6 +1,7 @@
 import AppHeader from "@/components/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Scale,
   IndianRupee,
@@ -19,22 +20,17 @@ const Bilingual = ({
 }: {
   en: string;
   hi: string;
-}) => (
-  <div className="grid gap-3 rounded-md border bg-muted/30 p-3 sm:grid-cols-2">
-    <div>
-      <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-primary">
-        English
+}) => {
+  const { lang } = useLanguage();
+  return (
+    <div className="rounded-md border bg-muted/30 p-3">
+      <p className={`text-sm text-foreground${lang === "hi" ? " font-hindi" : ""}`} data-no-translate>
+        {lang === "hi" ? hi : en}
       </p>
-      <p className="text-sm text-foreground">{en}</p>
     </div>
-    <div className="border-t pt-3 sm:border-l sm:border-t-0 sm:pl-3 sm:pt-0">
-      <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-saffron">
-        हिंदी
-      </p>
-      <p className="font-hindi text-sm text-foreground">{hi}</p>
-    </div>
-  </div>
-);
+  );
+};
+
 
 const TermsPage = () => (
   <div className="ashoka-watermark tiranga-bg min-h-screen">
@@ -43,7 +39,6 @@ const TermsPage = () => (
       <div className="mb-6 text-center">
         <Scale className="mx-auto mb-2 h-10 w-10 text-primary" />
         <h2 className="text-2xl font-bold text-foreground">Terms & Conditions</h2>
-        <p className="font-hindi text-muted-foreground">नियम एवं शर्तें</p>
       </div>
 
       <div className="space-y-4">
@@ -151,7 +146,6 @@ const TermsPage = () => (
         <Card>
           <CardContent className="py-4 text-center text-sm text-muted-foreground">
             <p>By using Mera Bharat Dukaan, you agree to these terms.</p>
-            <p className="font-hindi mt-1">मेरा भारत दुकान का उपयोग करके, आप इन शर्तों से सहमत हैं।</p>
             <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs font-semibold text-primary">
               <Link to="/contact" className="underline">Contact Us</Link>
               <Link to="/privacy-policy" className="underline">Privacy Policy</Link>

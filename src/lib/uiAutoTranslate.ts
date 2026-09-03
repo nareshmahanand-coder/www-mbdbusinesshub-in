@@ -61,10 +61,22 @@ const saveCache = () => {
   }, 800);
 };
 
-const sourceLang = (s: string): Lang | null => {
-  if (DEVANAGARI.test(s)) return "hi";
-  if (LATIN_LETTER.test(s)) return "en";
-  return null;
+const SEPARATOR = /\s*(?:\/|—|–|\||·)\s*/;
+
+/**
+ * Bilingual labels such as "Registration type / रजिस्ट्रेशन प्रकार" are reduced
+ * to the side that matches the active language.
+ */
+const pickBilingual = (src: string, lang: Lang): string | null => {
+  if (!DEVANAGARI.test(src) || !LATIN_LETTER.test(src)) return null;
+  const parts = src.split(SEPARATOR).map((p) => p.trim()).filter(Boolean);
+  if (parts.length < 2) return null;
+  const isTarget = (p: string) =>
+    lang === "hi" ? DEVANAGARI.test(p) && !LATIN_LETTER.test(p) : LATIN_LETTER.test(p) && !DEVANAGARI.test(p);
+  const wanted = parts.filter(isTarget);
+  const other = parts.filter((p) => !isTarget(p));
+  if (wanted.length === 0 || other.length === 0) return null;
+  return wanted.join(" / ");
 };
 
 const translatable = (raw: string): boolean => {
@@ -81,11 +93,24 @@ const translatable = (raw: string): boolean => {
 const resolve = (source: string, lang: Lang): string | null => {
   const src = source.trim();
   if (!translatable(src)) return null;
-  const from = sourceLang(src);
-  if (!from || from === lang) return null;
+
+  // strings that already contain no text of the "other" language need no work
+  const letters = src.match(/[A-Za-z\u0900-\u097F]/g) ?? [];
+  const hiCount = src.match(/[\u0900-\u097F]/g)?.length ?? 0;
+  const enCount = letters.length - hiCount;
+  const otherShare = letters.length === 0 ? 0 : (lang === "hi" ? enCount : hiCount) / letters.length;
+  // mostly already in the target language (brand names such as WhatsApp / UPI remain)
+  if (otherShare < 0.2) return null;
 
   const fromDict = translatePhrase(src, lang);
-  if (fromDict && fromDict !== src) return fromDict;
+  if (fromDict && fromDict !== src) {
+    const cleaned = pickBilingual(fromDict, lang) ?? fromDict;
+    if (cleaned !== src) return cleaned;
+  }
+
+
+  const bilingual = pickBilingual(src, lang);
+  if (bilingual && bilingual !== src) return bilingual;
 
   const cached = memory.get(key(lang, src));
   if (cached) return cached;
@@ -93,6 +118,7 @@ const resolve = (source: string, lang: Lang): string | null => {
   if (!failed.has(key(lang, src))) queue(src);
   return null;
 };
+
 
 const queue = (source: string) => {
   pending.add(source);
@@ -172,6 +198,29 @@ const translateAttributes = (el: Element, lang: Lang) => {
   }
 };
 
+/**
+ * Sentences broken up by inline markup (`<p>Text <strong>bold</strong> more.</p>`)
+ * never match a dictionary entry node-by-node, so the whole block text is tried
+ * as one phrase first.
+ */
+const BLOCK_TAGS = new Set(["P", "LI", "H1", "H2", "H3", "H4", "H5", "H6", "BUTTON", "LABEL"]);
+const blockOriginals = new WeakMap<Element, string>();
+
+const translateBlock = (el: Element, lang: Lang): boolean => {
+  if (!BLOCK_TAGS.has(el.tagName)) return false;
+  if (el.children.length === 0) return false; // plain text handled per node
+  if (el.querySelector("input, textarea, select, svg, img, [data-no-translate]")) return false;
+  const current = (el.textContent ?? "").replace(/\s+/g, " ").trim();
+  if (!current) return false;
+  const original = blockOriginals.get(el) ?? current;
+  if (!translatable(original)) return false;
+  const next = resolve(original, lang);
+  if (!next || next === original) return false;
+  blockOriginals.set(el, original);
+  if (current !== next) el.textContent = next;
+  return true;
+};
+
 const walk = (root: Node, lang: Lang) => {
   if (root.nodeType === Node.TEXT_NODE) {
     const parent = (root as Text).parentElement;
@@ -189,7 +238,7 @@ const walk = (root: Node, lang: Lang) => {
   while (node) {
     if (node.nodeType === Node.ELEMENT_NODE) {
       const child = node as Element;
-      if (SKIP_TAGS.has(child.tagName) || child.hasAttribute("data-no-translate")) {
+      if (SKIP_TAGS.has(child.tagName) || child.hasAttribute("data-no-translate") || translateBlock(child, lang)) {
         // skip the whole subtree
         let next = walker.nextSibling();
         while (!next && walker.parentNode()) next = walker.nextSibling();
@@ -197,6 +246,12 @@ const walk = (root: Node, lang: Lang) => {
         continue;
       }
       translateAttributes(child, lang);
+    } else {
+      translateTextNode(node as Text, lang);
+    }
+    node = walker.nextNode();
+  }
+
     } else {
       translateTextNode(node as Text, lang);
     }
