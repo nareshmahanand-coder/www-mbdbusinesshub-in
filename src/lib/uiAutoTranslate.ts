@@ -61,10 +61,22 @@ const saveCache = () => {
   }, 800);
 };
 
-const sourceLang = (s: string): Lang | null => {
-  if (DEVANAGARI.test(s)) return "hi";
-  if (LATIN_LETTER.test(s)) return "en";
-  return null;
+const SEPARATOR = /\s*(?:\/|—|–|\||·)\s*/;
+
+/**
+ * Bilingual labels such as "Registration type / रजिस्ट्रेशन प्रकार" are reduced
+ * to the side that matches the active language.
+ */
+const pickBilingual = (src: string, lang: Lang): string | null => {
+  if (!DEVANAGARI.test(src) || !LATIN_LETTER.test(src)) return null;
+  const parts = src.split(SEPARATOR).map((p) => p.trim()).filter(Boolean);
+  if (parts.length < 2) return null;
+  const isTarget = (p: string) =>
+    lang === "hi" ? DEVANAGARI.test(p) && !LATIN_LETTER.test(p) : LATIN_LETTER.test(p) && !DEVANAGARI.test(p);
+  const wanted = parts.filter(isTarget);
+  const other = parts.filter((p) => !isTarget(p));
+  if (wanted.length === 0 || other.length === 0) return null;
+  return wanted.join(" / ");
 };
 
 const translatable = (raw: string): boolean => {
@@ -81,11 +93,21 @@ const translatable = (raw: string): boolean => {
 const resolve = (source: string, lang: Lang): string | null => {
   const src = source.trim();
   if (!translatable(src)) return null;
-  const from = sourceLang(src);
-  if (!from || from === lang) return null;
+
+  // strings that already contain no text of the "other" language need no work
+  const hasHi = DEVANAGARI.test(src);
+  const hasEn = LATIN_LETTER.test(src);
+  const needsWork = lang === "hi" ? hasEn : hasHi;
+  if (!needsWork) return null;
 
   const fromDict = translatePhrase(src, lang);
-  if (fromDict && fromDict !== src) return fromDict;
+  if (fromDict && fromDict !== src && !(lang === "hi" ? LATIN_LETTER.test(fromDict) && DEVANAGARI.test(fromDict) : false)) {
+    const cleaned = pickBilingual(fromDict, lang) ?? fromDict;
+    if (cleaned !== src) return cleaned;
+  }
+
+  const bilingual = pickBilingual(src, lang);
+  if (bilingual && bilingual !== src) return bilingual;
 
   const cached = memory.get(key(lang, src));
   if (cached) return cached;
@@ -93,6 +115,7 @@ const resolve = (source: string, lang: Lang): string | null => {
   if (!failed.has(key(lang, src))) queue(src);
   return null;
 };
+
 
 const queue = (source: string) => {
   pending.add(source);
