@@ -57,4 +57,25 @@ export const legalPhrases: Phrases = [
     "इस सुविधा के लिए आपसी सहमति ज़रूरी है। भारत मित्र केवल उन्हीं सदस्यों की लोकेशन साझा करेगा जिन्होंने मेरा भारत दुकान में निमंत्रण 'स्वीकार' किया है।",
   ],
   ["Family Safety Circle (Kavach)", "फैमिली सेफ्टी सर्कल (कवच)"],
+  [
+    "Mera Bharat Dukaan charges absolutely zero commission on any transaction. We are a platform to connect local merchants with customers.",
+    "मेरा भारत दुकान किसी भी लेन-देन पर बिल्कुल शून्य कमीशन लेता है। हम स्थानीय दुकानदारों को ग्राहकों से जोड़ने वाला मंच हैं।",
+  ],
+  [
+    "All payments are made directly to the merchant via cash, UPI, or any mode agreed between buyer and seller.",
+    "सभी भुगतान सीधे दुकानदार को किए जाते हैं — नकद, UPI या खरीदार और विक्रेता के बीच तय किसी भी माध्यम से।",
+  ],
+  [
+    "Mera Bharat Dukaan does not process, hold, or facilitate any payments. We only provide a discovery platform.",
+    "मेरा भारत दुकान किसी भी भुगतान को न तो प्रोसेस करता है, न रोकता है और न ही उसमें मदद करता है। हम केवल खोज का मंच देते हैं।",
+  ],
+  [
+    "Mera Bharat Dukaan is a listing and discovery platform only. We are not responsible for:",
+    "मेरा भारत दुकान केवल एक लिस्टिंग और खोज मंच है। हम इनके लिए जिम्मेदार नहीं हैं:",
+  ],
+  ["Quality of goods or services provided by merchants", "दुकानदारों द्वारा दिए गए सामान या सेवाओं की गुणवत्ता"],
+  ["Any disputes between merchants and customers", "दुकानदारों और ग्राहकों के बीच किसी भी विवाद"],
+  ["Pricing, availability, or delivery of products", "उत्पादों की कीमत, उपलब्धता या डिलीवरी"],
+  ["By using Mera Bharat Dukaan, you agree to these terms.", "मेरा भारत दुकान का उपयोग करके, आप इन शर्तों से सहमत हैं।"],
+  ["English", "English"],
 ];
