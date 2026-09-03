@@ -95,16 +95,19 @@ const resolve = (source: string, lang: Lang): string | null => {
   if (!translatable(src)) return null;
 
   // strings that already contain no text of the "other" language need no work
-  const hasHi = DEVANAGARI.test(src);
-  const hasEn = LATIN_LETTER.test(src);
-  const needsWork = lang === "hi" ? hasEn : hasHi;
-  if (!needsWork) return null;
+  const letters = src.match(/[A-Za-z\u0900-\u097F]/g) ?? [];
+  const hiCount = src.match(/[\u0900-\u097F]/g)?.length ?? 0;
+  const enCount = letters.length - hiCount;
+  const otherShare = letters.length === 0 ? 0 : (lang === "hi" ? enCount : hiCount) / letters.length;
+  // mostly already in the target language (brand names such as WhatsApp / UPI remain)
+  if (otherShare < 0.2) return null;
 
   const fromDict = translatePhrase(src, lang);
-  if (fromDict && fromDict !== src && !(lang === "hi" ? LATIN_LETTER.test(fromDict) && DEVANAGARI.test(fromDict) : false)) {
+  if (fromDict && fromDict !== src) {
     const cleaned = pickBilingual(fromDict, lang) ?? fromDict;
     if (cleaned !== src) return cleaned;
   }
+
 
   const bilingual = pickBilingual(src, lang);
   if (bilingual && bilingual !== src) return bilingual;
