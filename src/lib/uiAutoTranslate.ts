@@ -61,7 +61,7 @@ const saveCache = () => {
   }, 800);
 };
 
-const SEPARATOR = /\s*(?:\/|—|–|\||·)\s*/;
+const SEPARATOR = /\s*(?:\/|—|–|\||·|•)\s*/;
 
 /**
  * Bilingual labels such as "Registration type / रजिस्ट्रेशन प्रकार" are reduced
@@ -203,7 +203,7 @@ const translateAttributes = (el: Element, lang: Lang) => {
  * never match a dictionary entry node-by-node, so the whole block text is tried
  * as one phrase first.
  */
-const BLOCK_TAGS = new Set(["P", "LI", "H1", "H2", "H3", "H4", "H5", "H6", "BUTTON", "LABEL"]);
+const BLOCK_TAGS = new Set(["P", "SPAN", "TD", "TH", "LI", "H1", "H2", "H3", "H4", "H5", "H6", "BUTTON", "LABEL"]);
 const blockOriginals = new WeakMap<Element, string>();
 
 const translateBlock = (el: Element, lang: Lang): boolean => {
@@ -252,11 +252,6 @@ const walk = (root: Node, lang: Lang) => {
     node = walker.nextNode();
   }
 
-    } else {
-      translateTextNode(node as Text, lang);
-    }
-    node = walker.nextNode();
-  }
 };
 
 const runScan = () => {

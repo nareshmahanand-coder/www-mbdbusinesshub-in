@@ -41,7 +41,7 @@ const AppHeader = () => {
     <>
       {/* Tricolor Ticker */}
       <div className="ticker-tricolor overflow-hidden whitespace-nowrap py-1.5 sticky top-0 z-[60]">
-        <p className="ticker-scroll inline-block font-hindi text-sm font-semibold text-foreground">
+        <p className="ticker-scroll inline-block font-hindi text-sm font-semibold text-foreground" data-no-translate>
           कश्मीर से लेकर कन्याकुमारी तक, हर धर्म को मिलेगा{" "}
           <span className="text-saffron font-bold">सम्मान</span> और हर घर पहुँचेगा{" "}
           <span className="text-green-india font-bold">सामान</span>।
