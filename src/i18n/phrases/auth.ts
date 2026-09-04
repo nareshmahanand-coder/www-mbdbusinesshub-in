@@ -21,4 +21,5 @@ export const authPhrases: Phrases = [
   ["Send reset link", "रीसेट लिंक भेजें"],
   ["Already have an account?", "पहले से खाता है?"],
   ["Don't have an account?", "खाता नहीं है?"],
+  ["Selecting Self or Agent is mandatory to continue.", "आगे बढ़ने के लिए Self या Agent चुनना अनिवार्य है।"],
 ];
