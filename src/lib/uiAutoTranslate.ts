@@ -252,11 +252,6 @@ const walk = (root: Node, lang: Lang) => {
     node = walker.nextNode();
   }
 
-    } else {
-      translateTextNode(node as Text, lang);
-    }
-    node = walker.nextNode();
-  }
 };
 
 const runScan = () => {
