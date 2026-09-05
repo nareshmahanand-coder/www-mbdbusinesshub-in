@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useId, useRef, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, ShieldCheck, Camera, MapPin, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, ShieldCheck, Camera, Image as ImageIcon, MapPin, CheckCircle2, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { persistKycVerifiedMarker } from "@/lib/capacitorSessionBridge";
@@ -65,6 +65,24 @@ const dataUrlToJpegBlob = (dataUrl: string, maxSide = 1800, quality = 0.88): Pro
     img.src = dataUrl;
   });
 
+const fileToCompressedDataUrl = async (file: File): Promise<string> => {
+  if (!file.type.startsWith("image/")) throw new Error("कृपया फोटो फ़ाइल चुनें / Please select an image");
+  if (file.size > 20 * 1024 * 1024) throw new Error("फ़ाइल बहुत बड़ी है (max 20MB)");
+  const raw = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("फ़ाइल पढ़ी नहीं जा सकी / Could not read file"));
+    reader.readAsDataURL(file);
+  });
+  const blob = await dataUrlToJpegBlob(raw, 1800, 0.86);
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("फोटो तैयार नहीं हो सकी / Could not prepare image"));
+    reader.readAsDataURL(blob);
+  });
+};
+
 const Scanner = ({
   facing,
   guide,
@@ -88,16 +106,22 @@ const Scanner = ({
   const [ready, setReady] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const fileInputId = useId();
+  const [readingFile, setReadingFile] = useState(false);
 
-  const pickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const pickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (file.size > 12 * 1024 * 1024) { toast.error("फ़ाइल बहुत बड़ी है (max 12MB)"); return; }
-    const reader = new FileReader();
-    reader.onload = () => onCapture(String(reader.result));
-    reader.onerror = () => toast.error("फ़ाइल पढ़ी नहीं जा सकी");
-    reader.readAsDataURL(file);
+    setReadingFile(true);
+    try {
+      onCapture(await fileToCompressedDataUrl(file));
+      toast.success("फोटो तैयार है — पुष्टि करें / Photo ready — confirm it");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "फोटो अपलोड नहीं हो सकी");
+    } finally {
+      setReadingFile(false);
+    }
   };
 
   useEffect(() => {
@@ -217,16 +241,13 @@ const Scanner = ({
         <p className="text-xs font-semibold text-white">
           फ़ोटो खींचें / Tap to capture
         </p>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="bg-white/10 text-white hover:bg-white/20"
-          onClick={() => fileRef.current?.click()}
-        >
-          गैलरी से अपलोड करें / Upload file
+        <Button type="button" variant="outline" size="sm" className="bg-white/10 text-white hover:bg-white/20" asChild>
+          <label htmlFor={fileInputId} className="cursor-pointer">
+            {readingFile ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ImageIcon className="mr-2 h-4 w-4" />}
+            {readingFile ? "फोटो तैयार हो रही है..." : "गैलरी से अपलोड करें / Upload file"}
+          </label>
         </Button>
-        <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickFile} />
+        <input ref={fileRef} id={fileInputId} type="file" accept="image/jpeg,image/png,image/webp,image/*" className="sr-only" onChange={pickFile} disabled={readingFile} />
       </div>
     </div>
   );
@@ -421,11 +442,11 @@ const EkycPage = () => {
         }
       };
       const capturedAt = Date.now();
-      const [selfieUrl, frontUrl, backUrl] = await Promise.all([
-        uploadDataUrl(selfieDataUrl, "selfie", capturedAt),
-        uploadDataUrl(frontImg, "aadhaar-front", capturedAt),
-        uploadDataUrl(backImg, "aadhaar-back", capturedAt),
-      ]);
+      // Upload sequentially to avoid Android WebView memory spikes from processing
+      // three camera-resolution photos at the same time.
+      const selfieUrl = await uploadDataUrl(selfieDataUrl, "selfie", capturedAt);
+      const frontUrl = await uploadDataUrl(frontImg, "aadhaar-front", capturedAt);
+      const backUrl = await uploadDataUrl(backImg, "aadhaar-back", capturedAt);
       const payload = {
         user_id: user.id,
         mobile,
