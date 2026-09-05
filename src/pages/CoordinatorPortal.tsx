@@ -205,18 +205,54 @@ const CoordinatorRegistrationForm = ({
 
   const upload = async (file: File, folder: string, setter: (u: string) => void) => {
     setUploading(folder);
-    const ext = file.name.split(".").pop();
-    const path = `coordinators/${userId}/${folder}-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("uploads").upload(path, file);
-    if (error) { toast.error("Upload failed"); setUploading(""); return; }
-    const { data } = supabase.storage.from("uploads").getPublicUrl(path);
-    setter(data.publicUrl);
-    setUploading("");
-    toast.success("Uploaded");
+    try {
+      if (!file.type.startsWith("image/")) throw new Error("कृपया फोटो फ़ाइल चुनें");
+      if (file.size > 20 * 1024 * 1024) throw new Error("फ़ाइल बहुत बड़ी है (max 20MB)");
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("फ़ाइल पढ़ी नहीं जा सकी"));
+        reader.readAsDataURL(file);
+      });
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => {
+          const scale = Math.min(1, 1800 / Math.max(image.width, image.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(image.width * scale));
+          canvas.height = Math.max(1, Math.round(image.height * scale));
+          const context = canvas.getContext("2d");
+          if (!context) { reject(new Error("फोटो तैयार नहीं हो सकी")); return; }
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((value) => value ? resolve(value) : reject(new Error("फोटो तैयार नहीं हो सकी")), "image/jpeg", 0.86);
+        };
+        image.onerror = () => reject(new Error("यह फोटो format support नहीं है; JPG/PNG चुनें"));
+        image.src = dataUrl;
+      });
+      // First path segment must be the signed-in user ID so Storage ownership
+      // policies also permit the uploaded coordinator documents.
+      const path = `${userId}/coordinators/${folder}-${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from("uploads").upload(path, blob, {
+        contentType: "image/jpeg",
+        cacheControl: "3600",
+        upsert: false,
+      });
+      if (error) throw error;
+      const { data } = supabase.storage.from("uploads").getPublicUrl(path);
+      if (!data.publicUrl) throw new Error("फोटो लिंक नहीं बन सका");
+      setter(data.publicUrl);
+      toast.success("फोटो अपलोड हो गई");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload failed";
+      toast.error(`फोटो अपलोड नहीं हुई: ${message}`);
+    } finally {
+      setUploading("");
+    }
   };
 
   const pick = (e: React.ChangeEvent<HTMLInputElement>, folder: string, setter: (u: string) => void) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (file) void upload(file, folder, setter);
   };
 
