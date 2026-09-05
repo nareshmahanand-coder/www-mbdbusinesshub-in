@@ -217,20 +217,16 @@ const Scanner = ({
         <p className="text-xs font-semibold text-white">
           फ़ोटो खींचें / Tap to capture
         </p>
-        {mode === "document" && (
-          <>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="bg-white/10 text-white hover:bg-white/20"
-              onClick={() => fileRef.current?.click()}
-            >
-              गैलरी से अपलोड करें / Upload file
-            </Button>
-            <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickFile} />
-          </>
-        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="bg-white/10 text-white hover:bg-white/20"
+          onClick={() => fileRef.current?.click()}
+        >
+          गैलरी से अपलोड करें / Upload file
+        </Button>
+        <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickFile} />
       </div>
     </div>
   );
