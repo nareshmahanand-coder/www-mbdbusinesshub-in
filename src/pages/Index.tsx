@@ -57,6 +57,7 @@ const Index = () => {
           phone: row.phone ?? row.whatsapp ?? "",
           photos: Array.isArray(row.photos) ? row.photos : [],
           verified: !!row.is_verified,
+          golden: !!row.is_big_merchant,
           premium: !!row.is_premium || !!row.is_big_merchant,
           rating: 0,
           reviewCount: 0,
@@ -118,8 +119,12 @@ const Index = () => {
       const aFlag = a.flagship ? 1 : 0;
       const bFlag = b.flagship ? 1 : 0;
       if (bFlag !== aFlag) return bFlag - aFlag;
-      const aPremium = a.premium && a.verified ? 1 : 0;
-      const bPremium = b.premium && b.verified ? 1 : 0;
+      // Strict tier priority: Golden → Premium/Paid → Free
+      const aGolden = a.golden ? 1 : 0;
+      const bGolden = b.golden ? 1 : 0;
+      if (bGolden !== aGolden) return bGolden - aGolden;
+      const aPremium = a.premium ? 1 : 0;
+      const bPremium = b.premium ? 1 : 0;
       if (bPremium !== aPremium) return bPremium - aPremium;
       // Then verified shops
       const aVerified = a.verified ? 1 : 0;

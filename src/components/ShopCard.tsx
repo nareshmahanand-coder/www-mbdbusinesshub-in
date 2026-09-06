@@ -89,6 +89,8 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
     <Card className={`group relative overflow-hidden transition-all hover:shadow-xl ${
       shop.flagship
         ? "ring-2 ring-[hsl(45,90%,55%)] shadow-[0_0_24px_hsl(45,90%,55%,0.45)] border-[hsl(45,90%,55%)] bg-gradient-to-br from-background to-[hsl(45,80%,50%,0.06)]"
+        : shop.golden
+        ? "ring-2 ring-[hsl(45,90%,50%)] shadow-[0_0_18px_hsl(45,90%,50%,0.4)] border-[hsl(45,90%,50%)]"
         : shop.premium
         ? "ring-2 ring-saffron shadow-[0_0_16px_hsl(var(--saffron)/0.35)] border-saffron"
         : ""
@@ -109,6 +111,10 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
             {shop.flagship ? (
               <Badge className="bg-gradient-to-r from-[hsl(45,90%,50%)] via-[hsl(40,95%,55%)] to-[hsl(35,90%,50%)] text-[hsl(140,40%,12%)] text-[10px] font-extrabold px-3 py-0.5 shadow-lg">
                 🌾 FLAGSHIP
+              </Badge>
+            ) : shop.golden ? (
+              <Badge className="bg-gradient-to-r from-[hsl(45,95%,50%)] to-[hsl(38,92%,48%)] text-[hsl(30,60%,15%)] text-[10px] font-extrabold px-3 py-0.5 shadow-md">
+                👑 Golden Merchant
               </Badge>
             ) : shop.premium ? (
               <Badge className="bg-gradient-to-r from-saffron to-[hsl(35,90%,50%)] text-primary-foreground text-[10px] font-bold px-3 py-0.5 shadow-md animate-pulse">
