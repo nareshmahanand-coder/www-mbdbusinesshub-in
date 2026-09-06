@@ -139,16 +139,28 @@ Deno.serve(async (req) => {
       const apiKey = Deno.env.get("LOVABLE_API_KEY");
       if (!apiKey) return jsonResponse({ error: "Missing LOVABLE_API_KEY" }, 500);
 
-      const fresh = await translateBatch(missing, target, apiKey);
-      Object.assign(translations, fresh);
+      try {
+        const fresh = await translateBatch(missing, target, apiKey);
+        Object.assign(translations, fresh);
 
-      const rows = Object.entries(fresh).map(([source_text, translated_text]) => ({
-        source_text,
-        target_lang: target,
-        translated_text,
-      }));
-      if (rows.length > 0) {
-        await supabase.from("ui_translation_cache").upsert(rows, { onConflict: "source_text,target_lang" });
+        const rows = Object.entries(fresh).map(([source_text, translated_text]) => ({
+          source_text,
+          target_lang: target,
+          translated_text,
+        }));
+        if (rows.length > 0) {
+          await supabase.from("ui_translation_cache").upsert(rows, { onConflict: "source_text,target_lang" });
+        }
+      } catch (aiErr) {
+        // AI unavailable (credit limit, rate limit, upstream error): serve whatever
+        // is cached instead of failing the page. The UI keeps the original text.
+        const status = (aiErr as { status?: number })?.status;
+        console.error("translate-ui AI unavailable", status, aiErr);
+        return jsonResponse({
+          translations,
+          degraded: true,
+          reason: status === 402 || status === 403 ? "ai_credits_unavailable" : "ai_unavailable",
+        });
       }
     }
 
