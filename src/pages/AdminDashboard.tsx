@@ -280,6 +280,57 @@ const AdminDashboard = () => {
   );
 };
 
+const PendingAlertsCard = ({ onJump }: { onJump: (s: Section) => void }) => {
+  const [counts, setCounts] = useState({ freeUnverified: 0, premiumUnverified: 0, golden: 0, agents: 0, coordinators: 0 });
+
+  const load = async () => {
+    const [m, g, a, c] = await Promise.all([
+      adminFetch("merchants"),
+      adminFetch("big_merchants"),
+      adminFetch("agents"),
+      adminFetch("coordinators"),
+    ]);
+    const merchants = m?.rows || [];
+    setCounts({
+      freeUnverified: merchants.filter((r: any) => !r.is_verified && !r.is_premium).length,
+      premiumUnverified: merchants.filter((r: any) => !r.is_verified && r.is_premium).length,
+      golden: (g?.rows || []).filter((r: any) => r.status === "pending").length,
+      agents: (a?.rows || []).filter((r: any) => r.status === "pending").length,
+      coordinators: (c?.rows || []).filter((r: any) => r.status === "pending").length,
+    });
+  };
+  useAutoRefresh(load, 15000);
+
+  const total = counts.freeUnverified + counts.premiumUnverified + counts.golden + counts.agents + counts.coordinators;
+  const items: [string, number, Section][] = [
+    ["Free merchants pending", counts.freeUnverified, "merchants"],
+    ["Premium merchants pending", counts.premiumUnverified, "merchants"],
+    ["Golden merchants pending", counts.golden, "big_merchants"],
+    ["Agents pending", counts.agents, "agents"],
+    ["Coordinators pending", counts.coordinators, "coordinators"],
+  ];
+
+  return (
+    <Card className={total ? "border-2 border-red-500/60 bg-red-500/5" : "border-2 border-emerald-500/50 bg-emerald-500/5"}>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <span className={`inline-block h-2.5 w-2.5 rounded-full ${total ? "animate-pulse bg-red-500" : "bg-emerald-500"}`} />
+          {total ? `${total} registrations waiting for verification` : "All registrations verified"}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-2">
+        {items.map(([label, count, target]) => (
+          <Button key={label} size="sm" variant={count ? "default" : "outline"}
+            className={count ? "bg-red-600 hover:bg-red-700" : ""}
+            onClick={() => onJump(target)}>
+            {label}: {count}
+          </Button>
+        ))}
+      </CardContent>
+    </Card>
+  );
+};
+
 const Overview = ({ onJump }: { onJump: (s: Section) => void }) => {
   const [stats, setStats] = useState<any>({});
   const [loading, setLoading] = useState(true);
@@ -301,6 +352,7 @@ const Overview = ({ onJump }: { onJump: (s: Section) => void }) => {
           <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${loading ? "animate-spin" : ""}`} /> Refresh
         </Button>
       </div>
+      <PendingAlertsCard onJump={onJump} />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Users" value={stats.users ?? "—"} hint="Registered" accent="bg-blue-500/10 text-blue-600" />
         <StatCard label="Premium Members" value={stats.premium ?? "—"} hint="Bharat Gaurav" accent="bg-amber-500/10 text-amber-600" />
@@ -728,12 +780,22 @@ const MerchantsSection = () => {
                 <TableCell>{m.city || "—"}</TableCell>
                 <TableCell>{m.phone || "—"}</TableCell>
                 <TableCell className="space-x-1">
-                  {m.is_premium ? <Badge className="bg-amber-500">Premium</Badge> : <Badge variant="secondary">Free</Badge>}
-                  {m.is_verified && <Badge className="bg-emerald-600">Verified</Badge>}
+                  {m.is_big_merchant
+                    ? <Badge className="bg-amber-500 text-black">👑 Golden</Badge>
+                    : m.is_premium ? <Badge className="bg-amber-500">Premium</Badge> : <Badge variant="secondary">Free</Badge>}
+                  <Badge className={m.is_verified ? "bg-emerald-600" : "bg-red-600"}>
+                    {m.is_verified ? "Verified" : "Pending"}
+                  </Badge>
                 </TableCell>
                 <TableCell className="space-x-1">
-                  <Button size="sm" variant="outline" onClick={() => togglePremium(m)}>Toggle Premium</Button>
-                  <Button size="sm" variant="outline" onClick={() => toggleVerified(m)}>Toggle Verified</Button>
+                  <Button size="sm" className={m.is_premium ? "bg-amber-500 hover:bg-amber-600 text-black" : "bg-slate-500 hover:bg-slate-600"}
+                    onClick={() => togglePremium(m)}>
+                    {m.is_premium ? "Premium ✓" : "Set Premium"}
+                  </Button>
+                  <Button size="sm" className={m.is_verified ? "bg-emerald-600 hover:bg-emerald-700" : "bg-red-600 hover:bg-red-700"}
+                    onClick={() => toggleVerified(m)}>
+                    {m.is_verified ? "Verified ✓" : "Unverified — click to verify"}
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -1954,7 +2016,7 @@ const CoordinatorsSection = () => {
                       <Badge variant={subActive ? "default" : "secondary"}>{subActive ? "Active" : "Inactive"}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={c.status === "approved" ? "default" : c.status === "rejected" ? "destructive" : "secondary"} className="capitalize">{c.status}</Badge>
+                      <Badge className={`capitalize ${c.status === "approved" ? "bg-emerald-600" : c.status === "rejected" ? "bg-slate-500" : "bg-red-600"}`}>{c.status}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <Button size="sm" variant="outline" onClick={() => openDetail(c.id)}>View</Button>
@@ -2205,7 +2267,7 @@ const AgentsManagementSection = () => {
                 <TableCell className="font-mono text-xs">{a.agent_code}</TableCell>
                 <TableCell>{a.mobile}</TableCell>
                 <TableCell>
-                  <Badge variant={a.status === "approved" ? "default" : a.status === "pending" ? "secondary" : "destructive"}>{a.status}</Badge>
+                  <Badge className={a.status === "approved" ? "bg-emerald-600" : a.status === "pending" ? "bg-red-600" : "bg-slate-500"}>{a.status}</Badge>
                 </TableCell>
                 <TableCell>{refCounts[a.id] || 0}</TableCell>
                 <TableCell>{inr(a.wallet_balance)}</TableCell>
@@ -2401,7 +2463,7 @@ const BigMerchantsSection = () => {
                     <Badge variant={subActive ? "default" : "secondary"}>{subActive ? "Active ₹1600" : "Inactive"}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={b.status === "approved" ? "default" : b.status === "rejected" ? "destructive" : "secondary"} className="capitalize">{b.status}</Badge>
+                    <Badge className={`capitalize ${b.status === "approved" ? "bg-emerald-600" : b.status === "rejected" ? "bg-slate-500" : "bg-red-600"}`}>{b.status}</Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button size="sm" variant="outline" onClick={() => openDetail(b.id)}>View</Button>
