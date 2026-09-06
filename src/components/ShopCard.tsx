@@ -7,6 +7,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import { useMembershipGate } from "@/hooks/useMembershipGate";
+import { getVehicleInfo } from "@/data/categoryFields";
+import { VehicleSummary, VehicleDetailsDialog } from "@/components/VehicleInfoCard";
 
 const StarRating = ({ rating, onRate, interactive = false }: { rating: number; onRate?: (r: number) => void; interactive?: boolean }) => {
   const [hover, setHover] = useState(0);
@@ -40,6 +42,7 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
   const [userComment, setUserComment] = useState("");
   const [reviews, setReviews] = useState(shop.reviews || []);
   const { requireMembership, membershipDialog } = useMembershipGate();
+  const vehicle = getVehicleInfo(shop.category, shop.categoryDetails, shop.ownerName);
 
   const handleWhatsApp = () => {
     requireMembership(() => {
@@ -146,6 +149,8 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
           <span className="text-xs text-muted-foreground">({totalReviews} reviews)</span>
         </button>
 
+        {vehicle && <VehicleSummary info={vehicle} />}
+
         <p className="mb-4 text-sm text-muted-foreground">{shop.description}</p>
 
         {/* Review section (expandable) */}
@@ -208,6 +213,11 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
             <Phone className="mr-1 h-4 w-4" />
             Direct Call
           </Button>
+          {vehicle && (
+            <div className="w-full">
+              <VehicleDetailsDialog info={vehicle} shopName={shop.name} />
+            </div>
+          )}
         </div>
 
         <button
