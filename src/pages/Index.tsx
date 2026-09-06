@@ -1,9 +1,11 @@
 import Seo from "@/components/Seo";
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import { Search, MapPin, Store, Mail, HelpCircle, ChevronDown, ChevronUp, Mic } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { sampleShops, shopCategories, categoryIcons, categorySections } from "@/data/sampleShops";
+import { sampleShops, shopCategories, categoryIcons, categorySections, type Shop } from "@/data/sampleShops";
+import { supabase } from "@/integrations/supabase/client";
+import { matchesQuery } from "@/data/categoryFields";
 import ShopCard from "@/components/ShopCard";
 import AppHeader from "@/components/AppHeader";
 import HeroCarousel from "@/components/HeroCarousel";
@@ -23,7 +25,54 @@ const Index = () => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
   const { t, lang } = useLanguage();
   const [isListening, setIsListening] = useState(false);
+  const [dbShops, setDbShops] = useState<Shop[]>([]);
   const recognitionRef = useRef<any>(null);
+
+  // Live registered merchants — every new registration (free, premium, golden)
+  // becomes searchable on the homepage instantly.
+  useEffect(() => {
+    let active = true;
+    const loadRegisteredShops = async () => {
+      const { data } = await supabase
+        .from("merchant_profiles")
+        .select("id, shop_name, shop_name_hindi, category, address, city, pincode, latitude, longitude, whatsapp, phone, photos, is_verified, is_premium, is_big_merchant, description, service_tags")
+        .eq("access_status", "active")
+        .order("is_big_merchant", { ascending: false })
+        .order("is_premium", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(500);
+      if (!active || !data) return;
+      setDbShops(
+        data.map((row: any) => ({
+          id: row.id,
+          name: row.shop_name ?? "",
+          nameHindi: row.shop_name_hindi ?? "",
+          category: row.category ?? "Other",
+          address: row.address ?? "",
+          city: row.city ?? "",
+          pincode: row.pincode ?? "",
+          lat: row.latitude ?? 0,
+          lng: row.longitude ?? 0,
+          whatsapp: row.whatsapp ?? row.phone ?? "",
+          phone: row.phone ?? row.whatsapp ?? "",
+          photos: Array.isArray(row.photos) ? row.photos : [],
+          verified: !!row.is_verified,
+          premium: !!row.is_premium || !!row.is_big_merchant,
+          rating: 0,
+          reviewCount: 0,
+          reviews: [],
+          description: [row.description ?? "", (row.service_tags ?? []).join(", ")].filter(Boolean).join(" • "),
+        })),
+      );
+    };
+    void loadRegisteredShops();
+
+    const channel = supabase
+      .channel("home-merchants")
+      .on("postgres_changes", { event: "*", schema: "public", table: "merchant_profiles" }, () => { void loadRegisteredShops(); })
+      .subscribe();
+    return () => { active = false; void supabase.removeChannel(channel); };
+  }, []);
 
   const stopListening = useCallback(() => {
     setIsListening(false);
@@ -54,18 +103,11 @@ const Index = () => {
   }, [lang]);
 
   const filteredShops = useMemo(() => {
-    // Only show shops registered in our database (sampleShops)
-    const filtered = sampleShops.filter((s) => {
-      const q = search.toLowerCase();
+    const allShops = [...sampleShops, ...dbShops];
+    const filtered = allShops.filter((s) => {
       const matchSearch =
         !search ||
-        s.name.toLowerCase().includes(q) ||
-        s.nameHindi.includes(search) ||
-        s.category.toLowerCase().includes(q) ||
-        s.address.toLowerCase().includes(q) ||
-        s.city.toLowerCase().includes(q) ||
-        s.pincode.includes(search) ||
-        s.description.toLowerCase().includes(q);
+        matchesQuery(search, [s.name, s.nameHindi, s.category, s.address, s.city, s.pincode, s.description]);
       const matchCategory = !selectedCategory || s.category === selectedCategory;
       return matchSearch && matchCategory;
     });
@@ -86,13 +128,14 @@ const Index = () => {
       // Then by rating (higher first) as distance proxy
       return b.rating - a.rating;
     });
-  }, [search, selectedCategory]);
+  }, [search, selectedCategory, dbShops]);
 
   const filteredCategories = useMemo(() => {
-    if (!search) return shopCategories;
-    const q = search.toLowerCase();
-    return shopCategories.filter((c) => c.toLowerCase().includes(q));
-  }, [search]);
+    const customCategories = dbShops.map((s) => s.category).filter(Boolean);
+    const all = [...new Set([...shopCategories, ...customCategories])];
+    if (!search) return all;
+    return all.filter((c) => matchesQuery(search, [c]));
+  }, [search, dbShops]);
 
   const handleLocationAccess = () => {
     if (navigator.geolocation) {
