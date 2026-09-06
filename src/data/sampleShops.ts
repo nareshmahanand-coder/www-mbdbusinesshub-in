@@ -399,11 +399,15 @@ export const categorySections: CategorySection[] = [
     sectionName: "Transport & Vehicles",
     sectionNameHindi: "वाहन और रिपेयर",
     categories: [
+      "Auto / E-Rickshaw / Taxi (ऑटो / ई-रिक्शा / टैक्सी)",
+      "Bike Taxi (बाइक टैक्सी)",
+      "Travel Agency / Tour Package (ट्रेवल एजेंसी)",
       "Cycle Store (साइकिल स्टोर)",
       "Cycle Repair (साइकिल रिपेयर)",
       "Two Wheeler Spare Parts",
     ],
   },
+
   {
     sectionName: "Real Estate",
     sectionNameHindi: "रियल एस्टेट",
