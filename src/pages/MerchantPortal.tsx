@@ -15,6 +15,8 @@ import { useLocation } from "react-router-dom";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
 import { MerchantPremiumLinkButton } from "@/components/MerchantPremiumLinkButton";
 import { attachAgentReferral } from "@/lib/agentReferral";
+import CategoryFields from "@/components/merchant/CategoryFields";
+import { buildServiceTags, getCategoryFields } from "@/data/categoryFields";
 
 const MerchantPortal = () => {
   const { user } = useAuth();
@@ -52,6 +54,7 @@ const MerchantPortal = () => {
     pincode: "", whatsapp: "", phone: "", description: "", ownerName: "",
     aadhaarNumber: "", panNumber: "",
   });
+  const [categoryDetails, setCategoryDetails] = useState<Record<string, any>>({});
 
   const handleFileUpload = async (
     file: File,
@@ -100,6 +103,15 @@ const MerchantPortal = () => {
     if (!form.shopName || !form.category || !form.address || !form.pincode || !form.whatsapp || !form.ownerName) {
       toast.error("Please fill all required fields"); return;
     }
+    const missingDynamic = getCategoryFields(form.category)
+      .filter((f) => f.required)
+      .find((f) => {
+        const v = categoryDetails[f.key];
+        return Array.isArray(v) ? v.length === 0 : !v || !String(v).trim();
+      });
+    if (missingDynamic) {
+      toast.error(`कृपया भरें: ${missingDynamic.label} (${missingDynamic.labelHindi})`); return;
+    }
     if (!isAadhaarValid) { toast.error("कृपया मान्य 12-अंकीय आधार नंबर दर्ज करें"); return; }
     if (!isPanValid) { toast.error("कृपया मान्य PAN नंबर दर्ज करें (ABCDE1234F)"); return; }
     if (!aadhaarFrontUrl || !aadhaarBackUrl) { toast.error("आधार कार्ड के दोनों फ़ोटो अपलोड करें"); return; }
@@ -124,6 +136,8 @@ const MerchantPortal = () => {
       phone: form.phone,
       description: form.description,
       photos: shopPhotos,
+      category_details: categoryDetails,
+      service_tags: buildServiceTags(form.category, categoryDetails),
       access_status: "active",
     }).select("id").maybeSingle();
     if (error) { toast.error("Shop registration failed"); return; }
@@ -241,6 +255,22 @@ const MerchantPortal = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* STEP 1 — Category first: the rest of the form adapts to it */}
+              <div className="rounded-xl border-2 border-[#1a237e]/25 bg-[#1a237e]/5 p-3">
+                <Label className="text-sm font-bold text-[#1a237e]">
+                  Step 1 — Select Category *
+                  <span className="block font-hindi text-[11px] font-normal text-muted-foreground">
+                    पहले श्रेणी चुनें — उसी के अनुसार आगे के फ़ॉर्म खुलेंगे
+                  </span>
+                </Label>
+                <Select value={form.category} onValueChange={(v) => { setForm({ ...form, category: v }); setCategoryDetails({}); }}>
+                  <SelectTrigger className="mt-2"><SelectValue placeholder="Select shop / service category" /></SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {shopCategories.map((cat) => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="ownerName">Owner Name *</Label>
@@ -264,15 +294,6 @@ const MerchantPortal = () => {
                 </div>
               </div>
               <div>
-                <Label>Category *</Label>
-                <Select onValueChange={(v) => setForm({ ...form, category: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select shop category" /></SelectTrigger>
-                  <SelectContent>
-                    {shopCategories.map((cat) => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
                 <Label htmlFor="address">Full Address *</Label>
                 <Textarea id="address" placeholder="Complete shop address with landmark" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} required />
               </div>
@@ -294,6 +315,14 @@ const MerchantPortal = () => {
                 <Label htmlFor="description">Shop Description</Label>
                 <Textarea id="description" placeholder="What do you sell? Any speciality?" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
               </div>
+
+              <CategoryFields
+                category={form.category}
+                values={categoryDetails}
+                onChange={setCategoryDetails}
+                uploading={uploading}
+                onUpload={(file) => handleFileUpload(file, "category")}
+              />
 
               {/* Mandatory KYC Documents */}
               <div className="rounded-xl border-2 border-[#1a237e]/20 bg-[#1a237e]/5 p-3 space-y-3">
