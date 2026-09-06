@@ -46,7 +46,11 @@ ${JSON.stringify(texts)}`;
 
   if (!res.ok || !res.body) {
     const detail = await res.text().catch(() => "");
-    throw new Error(`AI gateway error ${res.status}: ${detail.slice(0, 300)}`);
+    const err = new Error(`AI gateway error ${res.status}: ${detail.slice(0, 300)}`) as Error & {
+      status?: number;
+    };
+    err.status = res.status;
+    throw err;
   }
 
   // Consume the SSE stream and accumulate the output text.
