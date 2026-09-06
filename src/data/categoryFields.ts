@@ -29,22 +29,30 @@ export interface CategoryFieldGroup {
 
 export const CATEGORY_FIELD_GROUPS: CategoryFieldGroup[] = [
   {
-    match: ["auto", "e-rickshaw", "rickshaw", "taxi", "cab", "driver"],
+    match: ["auto", "e-rickshaw", "rickshaw", "taxi", "transport", "cab", "driver"],
     title: "Vehicle & Driver Details",
     titleHindi: "गाड़ी और ड्राइवर की जानकारी",
-    tags: ["auto", "e-rickshaw", "ई-रिक्शा", "रिक्शा", "टैक्सी", "taxi", "cab", "ride", "सवारी"],
+    tags: ["auto", "e-rickshaw", "ई-रिक्शा", "रिक्शा", "टैक्सी", "taxi", "cab", "ride", "सवारी", "transport", "ट्रांसपोर्ट", "car", "bike", "rental", "किराया"],
     fields: [
-      { key: "vehicle_type", label: "Vehicle Type", labelHindi: "गाड़ी का प्रकार", type: "select", required: true, options: ["E-Rickshaw (ई-रिक्शा)", "Auto Rickshaw (ऑटो)", "Taxi / Cab (टैक्सी)", "Bike Taxi (बाइक टैक्सी)", "Tempo / Loading Auto"] },
-      { key: "vehicle_number", label: "Vehicle Number", labelHindi: "गाड़ी नंबर", type: "text", required: true, placeholder: "CG07 AB 1234" },
-      { key: "driving_license", label: "Driving Licence Number", labelHindi: "ड्राइविंग लाइसेंस नंबर", type: "text", required: true, placeholder: "CG0720230001234" },
-      { key: "permit_number", label: "Permit / RC Number", labelHindi: "परमिट / आरसी नंबर", type: "text", placeholder: "Permit or RC number" },
+      { key: "vehicle_type", label: "Vehicle Type", labelHindi: "गाड़ी का प्रकार", type: "select", required: true, options: ["E-Rickshaw (ई-रिक्शा)", "Auto Rickshaw (ऑटो)", "Taxi / Cab (टैक्सी)", "Car on Rent (कार किराया)", "Bike Taxi (बाइक टैक्सी)", "Bike / Scooty on Rent (बाइक किराया)", "Tempo / Loading Auto"] },
+      { key: "vehicle_number", label: "Vehicle Registration Number", labelHindi: "गाड़ी रजिस्ट्रेशन नंबर", type: "text", placeholder: "CG07 AB 1234" },
+      { key: "vehicle_model", label: "Vehicle Model Name", labelHindi: "गाड़ी का मॉडल", type: "text", placeholder: "Bajaj RE / Maruti Dzire" },
+      { key: "fuel_type", label: "Fuel / Power Type", labelHindi: "ईंधन / पावर", type: "select", options: ["Petrol (पेट्रोल)", "Diesel (डीज़ल)", "CNG (सीएनजी)", "Electric / E-Rickshaw (इलेक्ट्रिक)"] },
       { key: "seating_capacity", label: "Seating Capacity", labelHindi: "सवारी क्षमता", type: "number", placeholder: "4" },
+      { key: "driving_license", label: "Driving Licence Number", labelHindi: "ड्राइविंग लाइसेंस नंबर", type: "text", placeholder: "CG0720230001234" },
+      { key: "rc_details", label: "RC Card Details", labelHindi: "आरसी कार्ड की जानकारी", type: "text", placeholder: "RC number / owner name" },
+      { key: "insurance_details", label: "Insurance Paper Details", labelHindi: "बीमा पेपर की जानकारी", type: "text", placeholder: "Policy number, valid till" },
+      { key: "permit_number", label: "Permit Number", labelHindi: "परमिट नंबर", type: "text", placeholder: "Permit number" },
       { key: "service_area", label: "Service Area / Route", labelHindi: "सेवा क्षेत्र / रूट", type: "text", placeholder: "Bhilai — Durg — Station" },
       { key: "fare_note", label: "Fare Details", labelHindi: "किराया", type: "text", placeholder: "₹20 per km / ₹300 per trip" },
-      { key: "vehicle_photo", label: "Vehicle Photo", labelHindi: "गाड़ी का फ़ोटो", type: "photo", required: true },
+      { key: "vehicle_photo", label: "Vehicle Photo", labelHindi: "गाड़ी का फ़ोटो", type: "photo" },
+      { key: "driver_photo", label: "Driver's Photo", labelHindi: "ड्राइवर का फ़ोटो", type: "photo" },
+      { key: "rc_photo", label: "RC Card Photo", labelHindi: "आरसी कार्ड फ़ोटो", type: "photo" },
+      { key: "insurance_photo", label: "Insurance Paper Upload", labelHindi: "बीमा पेपर अपलोड", type: "photo" },
       { key: "license_photo", label: "Driving Licence Photo", labelHindi: "लाइसेंस का फ़ोटो", type: "photo" },
     ],
   },
+
   {
     match: ["fish", "meat", "poultry", "chicken", "मछली", "मटन", "मुर्गा"],
     title: "Available Items",
