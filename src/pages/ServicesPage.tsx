@@ -182,6 +182,8 @@ const ServicesPage = () => {
       : locationFiltered;
 
     return filtered.sort((a, b) => {
+      // Strict tier priority: Golden → Premium/Paid → Free
+      if (!!a.is_big_merchant !== !!b.is_big_merchant) return a.is_big_merchant ? -1 : 1;
       if (!!a.is_premium !== !!b.is_premium) return a.is_premium ? -1 : 1;
       const aDistance = a.distanceKm ?? Number.POSITIVE_INFINITY;
       const bDistance = b.distanceKm ?? Number.POSITIVE_INFINITY;
@@ -238,7 +240,7 @@ const ServicesPage = () => {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {visibleShops.map((shop) => (
-              <Card key={shop.id} className={shop.is_premium ? "ring-2 ring-saffron" : undefined}>
+              <Card key={shop.id} className={shop.is_big_merchant ? "ring-2 ring-[hsl(45,90%,50%)]" : shop.is_premium ? "ring-2 ring-saffron" : undefined}>
                 <CardContent className="p-4">
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div>
@@ -246,7 +248,13 @@ const ServicesPage = () => {
                       {shop.shop_name_hindi && <p className="font-hindi text-xs text-muted-foreground">{shop.shop_name_hindi}</p>}
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                      {shop.is_premium && <Badge className="bg-accent text-accent-foreground">Premium</Badge>}
+                      {shop.is_big_merchant ? (
+                        <Badge className="bg-gradient-to-r from-[hsl(45,95%,50%)] to-[hsl(38,92%,48%)] text-[hsl(30,60%,15%)] font-extrabold">👑 Golden</Badge>
+                      ) : shop.is_premium ? (
+                        <Badge className="bg-accent text-accent-foreground">Premium</Badge>
+                      ) : (
+                        <Badge variant="outline">Free</Badge>
+                      )}
                       {shop.is_verified && <ShieldCheck className="h-4 w-4 text-green-india" />}
                     </div>
                   </div>

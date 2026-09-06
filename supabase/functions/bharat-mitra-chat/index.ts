@@ -178,7 +178,7 @@ serve(async (req) => {
 
       // Parallel fetch: global app data + (if userId) user-specific data
       const [shopsRes, jobsRes, matrimonyRes, classifiedsRes, productsRes, profileRes, myMerchantRes] = await Promise.all([
-        supabase.from("merchant_profiles").select("id, shop_name, shop_name_hindi, category, city, address, phone, whatsapp, is_premium, is_verified, latitude, longitude, description, service_tags, category_details").order("created_at", { ascending: false }).limit(200),
+        supabase.from("merchant_profiles").select("id, shop_name, shop_name_hindi, category, city, address, phone, whatsapp, is_premium, is_big_merchant, is_verified, latitude, longitude, description, service_tags, category_details").order("created_at", { ascending: false }).limit(200),
         supabase.from("jobs").select("title, company_name, city, salary_range, job_type, contact_phone, is_active").eq("is_active", true).limit(30),
         supabase.from("matrimony_profiles").select("name, gender, city, education, profession").eq("is_published", true).limit(30),
         supabase.from("classifieds").select("title, category, price, city, condition, is_sold").eq("is_sold", false).limit(30),
@@ -215,17 +215,14 @@ serve(async (req) => {
 
       // === SHOPS (sorted by proximity + premium) ===
       if (shopsRes.data?.length) {
-        let shops = shopsRes.data as any[];
-        if (userLat && userLng) {
-          shops = shops.map((s: any) => ({
-            ...s,
-            _dist: s.latitude && s.longitude ? Math.sqrt(Math.pow(s.latitude - userLat, 2) + Math.pow(s.longitude - userLng, 2)) : 999,
-          })).sort((a: any, b: any) => {
-            if (a.is_premium && !b.is_premium) return -1;
-            if (!a.is_premium && b.is_premium) return 1;
-            return a._dist - b._dist;
-          });
-        }
+        // Tier rank: Golden (0) → Premium/Paid (1) → Free (2)
+        const tier = (s: any) => (s.is_big_merchant ? 0 : s.is_premium ? 1 : 2);
+        let shops = (shopsRes.data as any[]).map((s: any) => ({
+          ...s,
+          _dist: userLat && userLng && s.latitude && s.longitude
+            ? Math.sqrt(Math.pow(s.latitude - userLat, 2) + Math.pow(s.longitude - userLng, 2))
+            : 999,
+        })).sort((a: any, b: any) => (tier(a) - tier(b)) || (a._dist - b._dist));
         dbContext += `\n### 🏪 All Registered Shops (${shops.length}):\n`;
         shops.slice(0, 120).forEach((s: any) => {
           const tags = Array.isArray(s.service_tags) && s.service_tags.length ? ` | tags: ${s.service_tags.join(", ")}` : "";
@@ -235,7 +232,8 @@ serve(async (req) => {
                 .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join("/") : v}`)
                 .join(", ")
             : "";
-          dbContext += `- [SHOP_ID:${s.id}] ${s.shop_name}${s.shop_name_hindi ? ` (${s.shop_name_hindi})` : ""} | ${s.category} | ${s.city} | ${s.is_premium ? "⭐" : ""}${s.is_verified ? "✅" : ""} | wa:${s.whatsapp || s.phone || "N/A"}${tags}${det ? ` | ${det}` : ""}\n`;
+          const tierLabel = s.is_big_merchant ? "GOLDEN 👑 (top priority)" : s.is_premium ? "PREMIUM ⭐ (second priority)" : "FREE (last priority)";
+          dbContext += `- [SHOP_ID:${s.id}] ${s.shop_name}${s.shop_name_hindi ? ` (${s.shop_name_hindi})` : ""} | ${s.category} | ${s.city} | ${tierLabel}${s.is_verified ? " ✅" : ""} | wa:${s.whatsapp || s.phone || "N/A"}${tags}${det ? ` | ${det}` : ""}\n`;
         });
       }
 
@@ -272,7 +270,9 @@ serve(async (req) => {
 - If no prices for a product: say "अभी किसी दुकान ने इसका रेट नहीं डाला, बॉस जी। मैं merchants को बता दूँगी।"
 - WHENEVER you talk about ANY specific shop or its products, you MUST include its [[SHOP:shop_id:shop_name]] token — the app automatically shows that shop's photo and advertisement video preview right below your reply. Never mention a shop without its token.
 - Golden Merchant (⭐/🎬) shops have video ads — mention "इनका विज्ञापन वीडियो नीचे देखें 🎬" when you link them.
-- For shop recommendation: use [[SHOP:shop_id:shop_name]] format (mandatory). Premium + nearest first.
+- For shop recommendation: use [[SHOP:shop_id:shop_name]] format (mandatory).
+- STRICT PRIORITY ORDER for every suggestion/search result: 1) GOLDEN 👑 merchants first (highlight them as "Golden Merchant — verified priority partner"), 2) PREMIUM ⭐ merchants next, 3) FREE listings last. Within the same tier, nearest first.
+- If only FREE listings match the service, still suggest them politely ("अभी इस सेवा में यही उपलब्ध हैं, बॉस जी") and always show their card token, phone and WhatsApp number.
 - For health: give Ayurveda + Homeopathy + Allopathy options with disclaimer.
 - For govt schemes/loans: name + benefit + official site.
 - Be concise (2-5 sentences). Use bullets for lists.
