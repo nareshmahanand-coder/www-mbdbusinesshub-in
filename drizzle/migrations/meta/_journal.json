@@ -15,6 +15,13 @@
       "when": 1788308785635,
       "tag": "0001_make_gst_optional_big_merchants",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788703541388,
+      "tag": "0002_merchant_category_details_and_tags",
+      "breakpoints": true
     }
   ]
 }
