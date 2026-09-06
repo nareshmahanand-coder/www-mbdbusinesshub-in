@@ -265,6 +265,29 @@ const MerchantDashboard = () => {
           )}
         </div>
 
+        {profile && !profile.is_premium && !profile.is_big_merchant && (
+          <Card className="mb-6 border-2 border-amber-400 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-950/40 dark:to-amber-900/20">
+            <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="flex items-center gap-2 text-base font-bold text-foreground">
+                  <Sparkles className="h-4 w-4 text-amber-500" /> आप अभी Free Plan पर हैं
+                </p>
+                <p className="font-hindi text-xs text-muted-foreground">
+                  Premium (₹99/माह) या Golden Merchant (₹1600/माह) लेने पर आपकी दुकान search में सबसे ऊपर दिखेगी, Verified बैज और वीडियो विज्ञापन भी मिलेगा।
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <Button asChild size="sm" className="bg-amber-500 text-white hover:bg-amber-600">
+                  <Link to="/merchant">Upgrade to Premium</Link>
+                </Button>
+                <Button asChild size="sm" variant="outline" className="border-amber-500 text-amber-700">
+                  <Link to="/golden-merchant">Golden Merchant</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Analytics Cards */}
         <div className="mb-6 grid gap-3 grid-cols-3">
           <Card className="bg-primary text-primary-foreground">
@@ -331,6 +354,9 @@ const MerchantDashboard = () => {
             <TabsTrigger value="profile" className="flex-1 text-xs">
               <Store className="mr-1 h-3.5 w-3.5" /> Shop Profile
             </TabsTrigger>
+            <TabsTrigger value="details" className="flex-1 text-xs">
+              <Edit className="mr-1 h-3.5 w-3.5" /> {isTransportCategory(shopForm.category) ? "Vehicle" : "Details"}
+            </TabsTrigger>
             <TabsTrigger value="products" className="flex-1 text-xs">
               <Package className="mr-1 h-3.5 w-3.5" /> Products
             </TabsTrigger>
@@ -341,6 +367,35 @@ const MerchantDashboard = () => {
               <HelpCircle className="mr-1 h-3.5 w-3.5" /> Help
             </TabsTrigger>
           </TabsList>
+
+          {/* Category / Vehicle details tab */}
+          <TabsContent value="details" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  {isTransportCategory(shopForm.category) ? "Vehicle & Driver Details / गाड़ी और ड्राइवर" : "Category Details / श्रेणी की जानकारी"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!shopForm.category ? (
+                  <p className="text-sm text-muted-foreground">Add your shop category in the Shop Profile tab first.</p>
+                ) : (
+                  <>
+                    <CategoryFields
+                      category={shopForm.category}
+                      values={categoryDetails}
+                      onChange={setCategoryDetails}
+                      onUpload={uploadDetailPhoto}
+                      uploading={uploading}
+                    />
+                    <Button onClick={saveCategoryDetails} disabled={saving || uploading} className="w-full">
+                      <Save className="mr-1 h-4 w-4" /> {saving ? "Saving..." : "Save Details"}
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Shop Profile Tab */}
           <TabsContent value="profile" className="mt-4">
@@ -580,6 +635,32 @@ const MerchantDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={showUpgrade} onOpenChange={setShowUpgrade}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-hindi text-lg">अपनी दुकान को और आगे बढ़ाइए 🚀</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm">
+            <p className="font-hindi text-muted-foreground">
+              आप अभी Free Plan पर हैं। Premium या Golden Merchant बनने पर आपको मिलेगा:
+            </p>
+            <ul className="ml-4 list-disc space-y-1 font-hindi text-muted-foreground">
+              <li>Search में सबसे ऊपर प्राथमिकता</li>
+              <li>Verified ✅ और Premium ⭐ बैज</li>
+              <li>Golden Merchant में वीडियो विज्ञापन और होम पेज बैनर</li>
+              <li>ज़्यादा ग्राहक कॉल और WhatsApp ऑर्डर</li>
+            </ul>
+          </div>
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button variant="ghost" onClick={() => setShowUpgrade(false)}>बाद में</Button>
+            <div className="flex gap-2">
+              <Button asChild className="bg-amber-500 text-white hover:bg-amber-600"><Link to="/merchant">Premium ₹99</Link></Button>
+              <Button asChild variant="outline" className="border-amber-500 text-amber-700"><Link to="/golden-merchant">Golden ₹1600</Link></Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
