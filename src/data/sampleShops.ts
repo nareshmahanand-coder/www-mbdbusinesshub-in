@@ -21,6 +21,8 @@ export interface Shop {
   photos: string[];
   verified: boolean;
   premium?: boolean;
+  /** Golden Merchant (₹1600 plan) — always ranked above premium & free */
+  golden?: boolean;
   /** Nanda Agro Farm flagship units — pinned absolutely on top of all listings */
   flagship?: boolean;
   /** Optional hero image (public path or imported asset URL) for branded portals */
@@ -401,6 +403,7 @@ export const categorySections: CategorySection[] = [
     sectionName: "Transport & Vehicles",
     sectionNameHindi: "वाहन और रिपेयर",
     categories: [
+      "Taxi / Transport (टैक्सी / ट्रांसपोर्ट — ऑटो, ई-रिक्शा, कार, बाइक, किराया)",
       "Auto / E-Rickshaw / Taxi (ऑटो / ई-रिक्शा / टैक्सी)",
       "Bike Taxi (बाइक टैक्सी)",
       "Travel Agency / Tour Package (ट्रेवल एजेंसी)",
@@ -515,6 +518,7 @@ export const categoryIcons: Record<string, string> = {
   "Heavy Vehicle / Truck Rent (ट्रक किराया)": "🚛",
   "Car/Travels on Rent": "🚘",
   // Transport
+  "Taxi / Transport (टैक्सी / ट्रांसपोर्ट — ऑटो, ई-रिक्शा, कार, बाइक, किराया)": "🚕",
   "Auto / E-Rickshaw / Taxi (ऑटो / ई-रिक्शा / टैक्सी)": "🛺",
   "Bike Taxi (बाइक टैक्सी)": "🏍️",
   "Travel Agency / Tour Package (ट्रेवल एजेंसी)": "🧳",
