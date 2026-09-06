@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import CategoryFields from "@/components/merchant/CategoryFields";
+import { buildServiceTags, getCategoryFields } from "@/data/categoryFields";
 import { useKycStatus } from "@/hooks/useKycStatus";
 import { startBigMerchantPayment } from "@/lib/razorpayPayments";
 import { shopCategories } from "@/data/sampleShops";
@@ -200,6 +202,19 @@ const BigMerchantPortal = () => {
     return () => { void supabase.removeChannel(channel); };
   }, [record?.id]);
 
+  const [categoryDetails, setCategoryDetails] = useState<Record<string, any>>({});
+
+  const uploadReturnUrl = async (file: File): Promise<string | null> => {
+    if (!user) return null;
+    setUploading("category");
+    const ext = file.name.split(".").pop();
+    const path = `big-merchants/${user.id}/category-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("uploads").upload(path, file);
+    setUploading("");
+    if (error) { toast.error("Upload failed"); return null; }
+    return supabase.storage.from("uploads").getPublicUrl(path).data.publicUrl;
+  };
+
   const upload = async (file: File, folder: string, setter: (url: string) => void) => {
     if (!user) return;
     setUploading(folder);
@@ -244,6 +259,13 @@ const BigMerchantPortal = () => {
 
     if (!shopName || !ownerName || !form.category) { toast.error("दुकान का नाम, मालिक का नाम और कैटेगरी अनिवार्य है"); return; }
     if (mobile.length !== 10) { toast.error("10 अंकों का मोबाइल नंबर डालें"); return; }
+    const missingDynamic = getCategoryFields(form.category)
+      .filter((f) => f.required)
+      .find((f) => {
+        const v = categoryDetails[f.key];
+        return Array.isArray(v) ? v.length === 0 : !v || !String(v).trim();
+      });
+    if (missingDynamic) { toast.error(`कृपया भरें: ${missingDynamic.labelHindi}`); return; }
     if (gst && !GST_REGEX.test(gst)) { toast.error("GST नंबर सही फॉर्मेट में डालें (उदा. 09ABCDE1234F1Z5)"); return; }
 
     setSubmitting(true);
@@ -270,6 +292,8 @@ const BigMerchantPortal = () => {
       pan_url: panUrl || null,
       video_ad_url: videoUrl || null,
       photos,
+      category_details: categoryDetails,
+      service_tags: buildServiceTags(form.category, categoryDetails),
 
     };
 
@@ -305,6 +329,8 @@ const BigMerchantPortal = () => {
       photos,
       gst_certificate_url: gstUrl,
       food_license_url: foodUrl || null,
+      category_details: categoryDetails,
+      service_tags: buildServiceTags(form.category, categoryDetails),
       big_merchant_id: row.big_merchant_id,
     };
     if (existing?.id) {
@@ -502,18 +528,22 @@ const BigMerchantPortal = () => {
                 </ul>
               </div>
 
+              <div className="rounded-xl border-2 border-[#B8860B]/40 bg-[#FFD700]/10 p-3">
+                <Label className="text-sm font-bold text-[#8B6508]">
+                  Step 1 — कैटेगरी चुनें *
+                  <span className="block text-[11px] font-normal text-muted-foreground">श्रेणी चुनते ही उसी के अनुसार अगले फ़ील्ड खुलेंगे</span>
+                </Label>
+                <Select value={form.category} onValueChange={(v) => { setForm({ ...form, category: v }); setCategoryDetails({}); }}>
+                  <SelectTrigger className="mt-2"><SelectValue placeholder="चुनें" /></SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    {shopCategories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="grid gap-3 md:grid-cols-2">
                 <div><Label>दुकान/बिज़नेस का नाम *</Label><Input value={form.shopName} onChange={(e) => setForm({ ...form, shopName: e.target.value })} /></div>
                 <div><Label>मालिक का नाम *</Label><Input value={form.ownerName} onChange={(e) => setForm({ ...form, ownerName: e.target.value })} /></div>
-                <div>
-                  <Label>कैटेगरी *</Label>
-                  <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-                    <SelectTrigger><SelectValue placeholder="चुनें" /></SelectTrigger>
-                    <SelectContent className="max-h-64">
-                      {shopCategories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div><Label>मोबाइल नंबर *</Label><Input inputMode="numeric" maxLength={10} value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value.replace(/\D/g, "") })} /></div>
                 <div><Label>ईमेल</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
                 <div><Label>शहर</Label><Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></div>
@@ -521,6 +551,15 @@ const BigMerchantPortal = () => {
                 <div><Label>GST नंबर (वैकल्पिक)</Label><Input value={form.gstNumber} onChange={(e) => setForm({ ...form, gstNumber: e.target.value.toUpperCase() })} placeholder="09ABCDE1234F1Z5" /></div>
                 <div className="md:col-span-2"><Label>पता</Label><Textarea rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
                 <div className="md:col-span-2"><Label>बिज़नेस विवरण</Label><Textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></div>
+                <div className="md:col-span-2">
+                  <CategoryFields
+                    category={form.category}
+                    values={categoryDetails}
+                    onChange={setCategoryDetails}
+                    uploading={uploading === "category"}
+                    onUpload={uploadReturnUrl}
+                  />
+                </div>
                 {foodRequired && (
                   <div className="md:col-span-2">
                     <Label>FSSAI / खाद्य लाइसेंस नंबर (वैकल्पिक)</Label>
