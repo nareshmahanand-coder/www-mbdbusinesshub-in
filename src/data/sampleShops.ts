@@ -514,6 +514,11 @@ export const categoryIcons: Record<string, string> = {
   "Car & Bike Rent (कार-बाइक किराया)": "🚗",
   "Heavy Vehicle / Truck Rent (ट्रक किराया)": "🚛",
   "Car/Travels on Rent": "🚘",
+  // Transport
+  "Auto / E-Rickshaw / Taxi (ऑटो / ई-रिक्शा / टैक्सी)": "🛺",
+  "Bike Taxi (बाइक टैक्सी)": "🏍️",
+  "Travel Agency / Tour Package (ट्रेवल एजेंसी)": "🧳",
+  "Beauty Parlour (ब्यूटी पार्लर)": "💄",
   // Agriculture
   "Tractor on Rent": "🚜",
   "Pesticide Spraying": "🌾",
