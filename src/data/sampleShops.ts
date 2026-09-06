@@ -296,6 +296,8 @@ export const categorySections: CategorySection[] = [
     sectionNameHindi: "रोज़मर्रा की सेवाएं",
     categories: [
       "Salon & Barber",
+      "Beauty Parlour (ब्यूटी पार्लर)",
+
       "Laundry / Dry Clean (धोबी)",
       "Tailor (दरजी)",
       "Car/Bike Mechanic",
@@ -399,11 +401,15 @@ export const categorySections: CategorySection[] = [
     sectionName: "Transport & Vehicles",
     sectionNameHindi: "वाहन और रिपेयर",
     categories: [
+      "Auto / E-Rickshaw / Taxi (ऑटो / ई-रिक्शा / टैक्सी)",
+      "Bike Taxi (बाइक टैक्सी)",
+      "Travel Agency / Tour Package (ट्रेवल एजेंसी)",
       "Cycle Store (साइकिल स्टोर)",
       "Cycle Repair (साइकिल रिपेयर)",
       "Two Wheeler Spare Parts",
     ],
   },
+
   {
     sectionName: "Real Estate",
     sectionNameHindi: "रियल एस्टेट",
@@ -508,6 +514,11 @@ export const categoryIcons: Record<string, string> = {
   "Car & Bike Rent (कार-बाइक किराया)": "🚗",
   "Heavy Vehicle / Truck Rent (ट्रक किराया)": "🚛",
   "Car/Travels on Rent": "🚘",
+  // Transport
+  "Auto / E-Rickshaw / Taxi (ऑटो / ई-रिक्शा / टैक्सी)": "🛺",
+  "Bike Taxi (बाइक टैक्सी)": "🏍️",
+  "Travel Agency / Tour Package (ट्रेवल एजेंसी)": "🧳",
+  "Beauty Parlour (ब्यूटी पार्लर)": "💄",
   // Agriculture
   "Tractor on Rent": "🚜",
   "Pesticide Spraying": "🌾",

@@ -385,6 +385,7 @@ export type Database = {
           admin_notes: string
           big_merchant_id: string
           category: string
+          category_details: Json
           city: string | null
           coordinator_id: string | null
           created_at: string
@@ -401,6 +402,7 @@ export type Database = {
           photos: string[]
           pincode: string | null
           registration_type: string
+          service_tags: string[]
           shop_name: string
           status: string
           subscription_expires_at: string | null
@@ -419,6 +421,7 @@ export type Database = {
           admin_notes?: string
           big_merchant_id?: string
           category?: string
+          category_details?: Json
           city?: string | null
           coordinator_id?: string | null
           created_at?: string
@@ -435,6 +438,7 @@ export type Database = {
           photos?: string[]
           pincode?: string | null
           registration_type?: string
+          service_tags?: string[]
           shop_name: string
           status?: string
           subscription_expires_at?: string | null
@@ -453,6 +457,7 @@ export type Database = {
           admin_notes?: string
           big_merchant_id?: string
           category?: string
+          category_details?: Json
           city?: string | null
           coordinator_id?: string | null
           created_at?: string
@@ -469,6 +474,7 @@ export type Database = {
           photos?: string[]
           pincode?: string | null
           registration_type?: string
+          service_tags?: string[]
           shop_name?: string
           status?: string
           subscription_expires_at?: string | null
@@ -1623,6 +1629,7 @@ export type Database = {
           admin_notes: string
           big_merchant_id: string | null
           category: string | null
+          category_details: Json
           city: string | null
           created_at: string
           description: string | null
@@ -1644,6 +1651,7 @@ export type Database = {
           plan_override: string | null
           premium_plan: string | null
           premium_start_date: string | null
+          service_tags: string[]
           shop_name: string
           shop_name_hindi: string | null
           slug: string | null
@@ -1662,6 +1670,7 @@ export type Database = {
           admin_notes?: string
           big_merchant_id?: string | null
           category?: string | null
+          category_details?: Json
           city?: string | null
           created_at?: string
           description?: string | null
@@ -1683,6 +1692,7 @@ export type Database = {
           plan_override?: string | null
           premium_plan?: string | null
           premium_start_date?: string | null
+          service_tags?: string[]
           shop_name?: string
           shop_name_hindi?: string | null
           slug?: string | null
@@ -1701,6 +1711,7 @@ export type Database = {
           admin_notes?: string
           big_merchant_id?: string | null
           category?: string | null
+          category_details?: Json
           city?: string | null
           created_at?: string
           description?: string | null
@@ -1722,6 +1733,7 @@ export type Database = {
           plan_override?: string | null
           premium_plan?: string | null
           premium_start_date?: string | null
+          service_tags?: string[]
           shop_name?: string
           shop_name_hindi?: string | null
           slug?: string | null

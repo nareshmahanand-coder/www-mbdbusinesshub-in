@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
 import LocationSearchBar from "@/components/LocationSearchBar";
 import PremiumShopSlider from "@/components/PremiumShopSlider";
+import { matchesQuery } from "@/data/categoryFields";
 import { sampleShops } from "@/data/sampleShops";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -71,7 +72,7 @@ const ServicesPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("merchant_profiles")
-      .select("id, shop_name, shop_name_hindi, category, city, address, pincode, latitude, longitude, is_premium, is_verified, is_big_merchant")
+      .select("id, shop_name, shop_name_hindi, category, city, address, pincode, latitude, longitude, is_premium, is_verified, is_big_merchant, description, service_tags")
       // Priority: Big Merchant Plus (₹1500) → Premium (₹99) → everyone else.
       .order("is_big_merchant", { ascending: false })
       .order("is_premium", { ascending: false })
@@ -162,12 +163,23 @@ const ServicesPage = () => {
     }));
 
     const locationFiltered = query
-      ? withDistance.filter((shop) => [shop.shop_name, shop.shop_name_hindi, shop.category, shop.city, shop.address, shop.pincode].some((value) => value?.toLowerCase().includes(query)))
+      ? withDistance.filter((shop) => matchesQuery(query, [shop.shop_name, shop.shop_name_hindi, shop.category, shop.city, shop.address, shop.pincode]))
       : userLocation
         ? withDistance.filter((shop) => shop.distanceKm == null || shop.distanceKm <= 10)
         : withDistance;
 
-    const filtered = categoryQuery ? locationFiltered.filter((shop) => [shop.shop_name, shop.shop_name_hindi, shop.category, shop.address].some((value) => value?.toLowerCase().includes(categoryQuery))) : locationFiltered;
+    const filtered = categoryQuery
+      ? locationFiltered.filter((shop) =>
+          matchesQuery(categoryQuery, [
+            shop.shop_name,
+            shop.shop_name_hindi,
+            shop.category,
+            shop.address,
+            (shop as any).description,
+            ((shop as any).service_tags ?? []).join(" "),
+          ]),
+        )
+      : locationFiltered;
 
     return filtered.sort((a, b) => {
       if (!!a.is_premium !== !!b.is_premium) return a.is_premium ? -1 : 1;
