@@ -178,7 +178,7 @@ serve(async (req) => {
 
       // Parallel fetch: global app data + (if userId) user-specific data
       const [shopsRes, jobsRes, matrimonyRes, classifiedsRes, productsRes, profileRes, myMerchantRes] = await Promise.all([
-        supabase.from("merchant_profiles").select("id, shop_name, shop_name_hindi, category, city, address, phone, whatsapp, is_premium, is_verified, latitude, longitude, description").limit(80),
+        supabase.from("merchant_profiles").select("id, shop_name, shop_name_hindi, category, city, address, phone, whatsapp, is_premium, is_verified, latitude, longitude, description, service_tags, category_details").order("created_at", { ascending: false }).limit(200),
         supabase.from("jobs").select("title, company_name, city, salary_range, job_type, contact_phone, is_active").eq("is_active", true).limit(30),
         supabase.from("matrimony_profiles").select("name, gender, city, education, profession").eq("is_published", true).limit(30),
         supabase.from("classifieds").select("title, category, price, city, condition, is_sold").eq("is_sold", false).limit(30),
@@ -227,8 +227,15 @@ serve(async (req) => {
           });
         }
         dbContext += `\n### 🏪 All Registered Shops (${shops.length}):\n`;
-        shops.slice(0, 40).forEach((s: any) => {
-          dbContext += `- [SHOP_ID:${s.id}] ${s.shop_name}${s.shop_name_hindi ? ` (${s.shop_name_hindi})` : ""} | ${s.category} | ${s.city} | ${s.is_premium ? "⭐" : ""}${s.is_verified ? "✅" : ""} | wa:${s.whatsapp || s.phone || "N/A"}\n`;
+        shops.slice(0, 120).forEach((s: any) => {
+          const tags = Array.isArray(s.service_tags) && s.service_tags.length ? ` | tags: ${s.service_tags.join(", ")}` : "";
+          const det = s.category_details && typeof s.category_details === "object"
+            ? Object.entries(s.category_details)
+                .filter(([, v]) => v && String(v).trim() && !String(v).startsWith("http"))
+                .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join("/") : v}`)
+                .join(", ")
+            : "";
+          dbContext += `- [SHOP_ID:${s.id}] ${s.shop_name}${s.shop_name_hindi ? ` (${s.shop_name_hindi})` : ""} | ${s.category} | ${s.city} | ${s.is_premium ? "⭐" : ""}${s.is_verified ? "✅" : ""} | wa:${s.whatsapp || s.phone || "N/A"}${tags}${det ? ` | ${det}` : ""}\n`;
         });
       }
 
@@ -269,6 +276,8 @@ serve(async (req) => {
 - For health: give Ayurveda + Homeopathy + Allopathy options with disclaimer.
 - For govt schemes/loans: name + benefit + official site.
 - Be concise (2-5 sentences). Use bullets for lists.
+- SERVICE QUERIES (ई-रिक्शा, ऑटो, टैक्सी, काम वाली बाई, नौकरानी, ट्रेवल, प्लंबर, इलेक्ट्रिशियन, पार्लर, मछली, मीट आदि): search the shops list above by category AND by "tags:" — those tags come from each merchant's own registration form. Return EVERY matching merchant with [[SHOP:id:name]] token plus their phone/WhatsApp number, even if only one exists.
+- If a service has no registered merchant yet, say so honestly and invite the user to register their own business free at /merchant-portal.
 - NEVER invent shop names, prices, or contacts that aren't in the data above.
 
 `;
