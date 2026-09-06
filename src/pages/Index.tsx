@@ -35,7 +35,7 @@ const Index = () => {
     const loadRegisteredShops = async () => {
       const { data } = await supabase
         .from("merchant_profiles")
-        .select("id, shop_name, shop_name_hindi, category, address, city, pincode, latitude, longitude, whatsapp, phone, photos, is_verified, is_premium, is_big_merchant, description, service_tags")
+        .select("id, shop_name, shop_name_hindi, category, address, city, pincode, latitude, longitude, whatsapp, phone, photos, is_verified, is_premium, is_big_merchant, description, service_tags, owner_name, category_details")
         .eq("access_status", "active")
         .order("is_big_merchant", { ascending: false })
         .order("is_premium", { ascending: false })
@@ -63,6 +63,8 @@ const Index = () => {
           reviewCount: 0,
           reviews: [],
           description: [row.description ?? "", (row.service_tags ?? []).join(", ")].filter(Boolean).join(" • "),
+          ownerName: row.owner_name ?? "",
+          categoryDetails: (row.category_details ?? {}) as Record<string, any>,
         })),
       );
     };

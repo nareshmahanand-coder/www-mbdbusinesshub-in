@@ -13,6 +13,10 @@ import {
   Save, Eye, Phone, MapPin, Edit, Mail, Receipt, ExternalLink, Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
+import CategoryFields from "@/components/merchant/CategoryFields";
+import { buildServiceTags, getCategoryFields, isTransportCategory } from "@/data/categoryFields";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Link } from "react-router-dom";
 
 interface MerchantProfile {
   id: string;
@@ -27,6 +31,8 @@ interface MerchantProfile {
   whatsapp: string;
   is_premium: boolean;
   is_verified: boolean;
+  is_big_merchant?: boolean;
+  category_details?: Record<string, any> | null;
 }
 
 interface Product {
@@ -54,6 +60,9 @@ const MerchantDashboard = () => {
   const [analytics, setAnalytics] = useState({ views: 0, calls: 0, directions: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [categoryDetails, setCategoryDetails] = useState<Record<string, any>>({});
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   // New product form
   const [newProduct, setNewProduct] = useState({ name: "", name_hindi: "", price: "", description: "" });
@@ -81,6 +90,16 @@ const MerchantDashboard = () => {
 
     if (merchantData) {
       setProfile(merchantData as MerchantProfile);
+      setCategoryDetails(((merchantData as any).category_details as Record<string, any>) || {});
+      // Polite upgrade reminder for Free merchants (once per day)
+      if (!merchantData.is_premium && !(merchantData as any).is_big_merchant) {
+        const key = `mbd-upgrade-reminder-${merchantData.id}`;
+        const last = localStorage.getItem(key);
+        if (!last || Date.now() - Number(last) > 24 * 60 * 60 * 1000) {
+          localStorage.setItem(key, String(Date.now()));
+          setTimeout(() => setShowUpgrade(true), 1200);
+        }
+      }
       setShopForm({
         shop_name: merchantData.shop_name || "",
         shop_name_hindi: merchantData.shop_name_hindi || "",
@@ -133,7 +152,11 @@ const MerchantDashboard = () => {
     if (profile) {
       const { error } = await supabase
         .from("merchant_profiles")
-        .update(shopForm)
+        .update({
+          ...shopForm,
+          category_details: categoryDetails,
+          service_tags: buildServiceTags(shopForm.category, categoryDetails),
+        })
         .eq("id", profile.id);
       if (error) toast.error("Failed to update shop");
       else toast.success("Shop profile updated!");
@@ -172,6 +195,34 @@ const MerchantDashboard = () => {
       setNewProduct({ name: "", name_hindi: "", price: "", description: "" });
       await loadData();
     }
+  };
+
+  const uploadDetailPhoto = async (file: File): Promise<string | null> => {
+    if (!user) return null;
+    setUploading(true);
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}/vehicle-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("uploads").upload(path, file);
+    if (error) { toast.error("Upload failed"); setUploading(false); return null; }
+    const { data } = supabase.storage.from("uploads").getPublicUrl(path);
+    setUploading(false);
+    toast.success("Photo uploaded");
+    return data.publicUrl;
+  };
+
+  const saveCategoryDetails = async () => {
+    if (!profile) { toast.error("Save your shop profile first"); return; }
+    setSaving(true);
+    const { error } = await supabase
+      .from("merchant_profiles")
+      .update({
+        category_details: categoryDetails,
+        service_tags: buildServiceTags(shopForm.category || profile.category, categoryDetails),
+      })
+      .eq("id", profile.id);
+    setSaving(false);
+    if (error) toast.error("Could not save details");
+    else { toast.success("Details updated!"); await loadData(); }
   };
 
   const deleteProduct = async (id: string) => {
@@ -213,6 +264,29 @@ const MerchantDashboard = () => {
             </div>
           )}
         </div>
+
+        {profile && !profile.is_premium && !profile.is_big_merchant && (
+          <Card className="mb-6 border-2 border-amber-400 bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-950/40 dark:to-amber-900/20">
+            <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="flex items-center gap-2 text-base font-bold text-foreground">
+                  <Sparkles className="h-4 w-4 text-amber-500" /> आप अभी Free Plan पर हैं
+                </p>
+                <p className="font-hindi text-xs text-muted-foreground">
+                  Premium (₹99/माह) या Golden Merchant (₹1600/माह) लेने पर आपकी दुकान search में सबसे ऊपर दिखेगी, Verified बैज और वीडियो विज्ञापन भी मिलेगा।
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <Button asChild size="sm" className="bg-amber-500 text-white hover:bg-amber-600">
+                  <Link to="/merchant">Upgrade to Premium</Link>
+                </Button>
+                <Button asChild size="sm" variant="outline" className="border-amber-500 text-amber-700">
+                  <Link to="/big-merchant">Golden Merchant</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Analytics Cards */}
         <div className="mb-6 grid gap-3 grid-cols-3">
@@ -280,6 +354,9 @@ const MerchantDashboard = () => {
             <TabsTrigger value="profile" className="flex-1 text-xs">
               <Store className="mr-1 h-3.5 w-3.5" /> Shop Profile
             </TabsTrigger>
+            <TabsTrigger value="details" className="flex-1 text-xs">
+              <Edit className="mr-1 h-3.5 w-3.5" /> {isTransportCategory(shopForm.category) ? "Vehicle" : "Details"}
+            </TabsTrigger>
             <TabsTrigger value="products" className="flex-1 text-xs">
               <Package className="mr-1 h-3.5 w-3.5" /> Products
             </TabsTrigger>
@@ -290,6 +367,35 @@ const MerchantDashboard = () => {
               <HelpCircle className="mr-1 h-3.5 w-3.5" /> Help
             </TabsTrigger>
           </TabsList>
+
+          {/* Category / Vehicle details tab */}
+          <TabsContent value="details" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">
+                  {isTransportCategory(shopForm.category) ? "Vehicle & Driver Details / गाड़ी और ड्राइवर" : "Category Details / श्रेणी की जानकारी"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!shopForm.category ? (
+                  <p className="text-sm text-muted-foreground">Add your shop category in the Shop Profile tab first.</p>
+                ) : (
+                  <>
+                    <CategoryFields
+                      category={shopForm.category}
+                      values={categoryDetails}
+                      onChange={setCategoryDetails}
+                      onUpload={uploadDetailPhoto}
+                      uploading={uploading}
+                    />
+                    <Button onClick={saveCategoryDetails} disabled={saving || uploading} className="w-full">
+                      <Save className="mr-1 h-4 w-4" /> {saving ? "Saving..." : "Save Details"}
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Shop Profile Tab */}
           <TabsContent value="profile" className="mt-4">
@@ -529,6 +635,32 @@ const MerchantDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={showUpgrade} onOpenChange={setShowUpgrade}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-hindi text-lg">अपनी दुकान को और आगे बढ़ाइए 🚀</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm">
+            <p className="font-hindi text-muted-foreground">
+              आप अभी Free Plan पर हैं। Premium या Golden Merchant बनने पर आपको मिलेगा:
+            </p>
+            <ul className="ml-4 list-disc space-y-1 font-hindi text-muted-foreground">
+              <li>Search में सबसे ऊपर प्राथमिकता</li>
+              <li>Verified ✅ और Premium ⭐ बैज</li>
+              <li>Golden Merchant में वीडियो विज्ञापन और होम पेज बैनर</li>
+              <li>ज़्यादा ग्राहक कॉल और WhatsApp ऑर्डर</li>
+            </ul>
+          </div>
+          <DialogFooter className="gap-2 sm:justify-between">
+            <Button variant="ghost" onClick={() => setShowUpgrade(false)}>बाद में</Button>
+            <div className="flex gap-2">
+              <Button asChild className="bg-amber-500 text-white hover:bg-amber-600"><Link to="/merchant">Premium ₹99</Link></Button>
+              <Button asChild variant="outline" className="border-amber-500 text-amber-700"><Link to="/big-merchant">Golden ₹1600</Link></Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

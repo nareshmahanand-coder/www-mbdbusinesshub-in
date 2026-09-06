@@ -35,6 +35,11 @@ export interface Shop {
   reviewCount: number;
   reviews: Review[];
   description: string;
+  /** Owner / driver name shown on transport cards */
+  ownerName?: string;
+  /** Dynamic category answers (vehicle details, services etc.) */
+  categoryDetails?: Record<string, any>;
+
 }
 
 export const defaultCategories = [

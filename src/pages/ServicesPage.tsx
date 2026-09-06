@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import AppHeader from "@/components/AppHeader";
 import LocationSearchBar from "@/components/LocationSearchBar";
 import PremiumShopSlider from "@/components/PremiumShopSlider";
-import { matchesQuery } from "@/data/categoryFields";
+import { matchesQuery, getVehicleInfo } from "@/data/categoryFields";
+import { VehicleSummary, VehicleDetailsDialog } from "@/components/VehicleInfoCard";
 import { sampleShops } from "@/data/sampleShops";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -72,7 +73,7 @@ const ServicesPage = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("merchant_profiles")
-      .select("id, shop_name, shop_name_hindi, category, city, address, pincode, latitude, longitude, is_premium, is_verified, is_big_merchant, description, service_tags")
+      .select("id, shop_name, shop_name_hindi, category, city, address, pincode, latitude, longitude, is_premium, is_verified, is_big_merchant, description, service_tags, owner_name, category_details, phone, whatsapp")
       // Priority: Big Merchant Plus (₹1500) → Premium (₹99) → everyone else.
       .order("is_big_merchant", { ascending: false })
       .order("is_premium", { ascending: false })
@@ -275,9 +276,36 @@ const ServicesPage = () => {
                     <p className="flex items-center gap-2"><Navigation className="h-4 w-4 shrink-0 text-primary" />{shop.distanceKm == null ? "Distance calculating after GPS" : `${shop.distanceKm.toFixed(1)} km away`}</p>
                   </div>
 
-                  <Button asChild className="w-full">
-                    <Link to={`/shop/${shop.id}`}>View Details</Link>
-                  </Button>
+                  {(() => {
+                    const vehicle = getVehicleInfo(shop.category || "", (shop as any).category_details, (shop as any).owner_name);
+                    if (!vehicle) return (
+                      <Button asChild className="w-full">
+                        <Link to={`/shop/${shop.id}`}>View Details</Link>
+                      </Button>
+                    );
+                    const wa = (shop as any).whatsapp || (shop as any).phone;
+                    const tel = (shop as any).phone || (shop as any).whatsapp;
+                    return (
+                      <>
+                        <VehicleSummary info={vehicle} />
+                        <div className="grid grid-cols-2 gap-2">
+                          {wa && (
+                            <Button asChild className="bg-green-india text-primary-foreground hover:bg-green-india/90">
+                              <a href={`https://wa.me/${String(wa).replace(/\D/g, "")}`} target="_blank" rel="noreferrer">WhatsApp</a>
+                            </Button>
+                          )}
+                          {tel && (
+                            <Button asChild variant="outline">
+                              <a href={`tel:${tel}`}>Direct Call</a>
+                            </Button>
+                          )}
+                        </div>
+                        <div className="mt-2">
+                          <VehicleDetailsDialog info={vehicle} shopName={shop.shop_name} trigger={<Button className="w-full">View Details</Button>} />
+                        </div>
+                      </>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             ))}

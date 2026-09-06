@@ -276,3 +276,81 @@ export const matchesQuery = (query: string, haystack: (string | null | undefined
   const blob = haystack.filter(Boolean).join(" • ").toLowerCase();
   return terms.some((term) => blob.includes(term));
 };
+
+/* ────────────────────────────────────────────────────────────
+   Transport / vehicle helpers — used by the Rapido-style cards
+   ──────────────────────────────────────────────────────────── */
+
+const TRANSPORT_KEYWORDS = ["auto", "e-rickshaw", "rickshaw", "taxi", "transport", "cab", "driver", "travel", "tour", "rent", "किराया", "car", "bike"];
+
+export interface VehicleInfo {
+  driverName?: string;
+  driverPhoto?: string;
+  vehiclePhoto?: string;
+  vehicleType?: string;
+  vehicleModel?: string;
+  vehicleNumber?: string;
+  fuelType?: string;
+  seatingCapacity?: string;
+  rcDetails?: string;
+  rcPhoto?: string;
+  insuranceDetails?: string;
+  insurancePhoto?: string;
+  licenseNumber?: string;
+  licensePhoto?: string;
+  serviceArea?: string;
+  fare?: string;
+}
+
+/** True when a merchant category belongs to the Taxi / Transport family. */
+export const isTransportCategory = (category: string): boolean => {
+  const c = (category || "").toLowerCase();
+  return !!c && TRANSPORT_KEYWORDS.some((k) => c.includes(k));
+};
+
+const str = (v: unknown): string | undefined => {
+  if (typeof v === "number") return String(v);
+  if (typeof v === "string" && v.trim()) return v.trim();
+  if (Array.isArray(v) && v.length) return v.filter(Boolean).join(", ");
+  return undefined;
+};
+
+/** Normalise stored category_details into a vehicle card model. */
+export const getVehicleInfo = (
+  category: string,
+  details: Record<string, any> | null | undefined,
+  fallbackDriverName?: string | null,
+): VehicleInfo | null => {
+  if (!isTransportCategory(category) || !details) return null;
+  const info: VehicleInfo = {
+    driverName: str(details.driver_name) ?? str(fallbackDriverName),
+    driverPhoto: str(details.driver_photo),
+    vehiclePhoto: str(details.vehicle_photo),
+    vehicleType: str(details.vehicle_type),
+    vehicleModel: str(details.vehicle_model),
+    vehicleNumber: str(details.vehicle_number),
+    fuelType: str(details.fuel_type),
+    seatingCapacity: str(details.seating_capacity),
+    rcDetails: str(details.rc_details),
+    rcPhoto: str(details.rc_photo),
+    insuranceDetails: str(details.insurance_details),
+    insurancePhoto: str(details.insurance_photo),
+    licenseNumber: str(details.driving_license),
+    licensePhoto: str(details.license_photo),
+    serviceArea: str(details.service_area) ?? str(details.routes),
+    fare: str(details.fare_note) ?? str(details.rate),
+  };
+  const hasAny = Object.values(info).some(Boolean);
+  return hasAny ? info : null;
+};
+
+/** Short label for the fuel / power badge, e.g. "Electric / Battery Operated". */
+export const fuelBadgeLabel = (fuelType?: string): string | null => {
+  if (!fuelType) return null;
+  const f = fuelType.toLowerCase();
+  if (f.includes("electric") || f.includes("इलेक्ट्रिक")) return "⚡ Electric / Battery Operated";
+  if (f.includes("cng")) return "🟢 CNG";
+  if (f.includes("diesel")) return "⛽ Diesel";
+  if (f.includes("petrol")) return "⛽ Petrol";
+  return fuelType;
+};
