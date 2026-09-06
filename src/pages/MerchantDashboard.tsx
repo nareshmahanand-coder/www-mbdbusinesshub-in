@@ -13,6 +13,10 @@ import {
   Save, Eye, Phone, MapPin, Edit, Mail, Receipt, ExternalLink, Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
+import CategoryFields from "@/components/merchant/CategoryFields";
+import { buildServiceTags, getCategoryFields, isTransportCategory } from "@/data/categoryFields";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Link } from "react-router-dom";
 
 interface MerchantProfile {
   id: string;
@@ -27,6 +31,8 @@ interface MerchantProfile {
   whatsapp: string;
   is_premium: boolean;
   is_verified: boolean;
+  is_big_merchant?: boolean;
+  category_details?: Record<string, any> | null;
 }
 
 interface Product {
@@ -54,6 +60,9 @@ const MerchantDashboard = () => {
   const [analytics, setAnalytics] = useState({ views: 0, calls: 0, directions: 0 });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [categoryDetails, setCategoryDetails] = useState<Record<string, any>>({});
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   // New product form
   const [newProduct, setNewProduct] = useState({ name: "", name_hindi: "", price: "", description: "" });
@@ -81,6 +90,16 @@ const MerchantDashboard = () => {
 
     if (merchantData) {
       setProfile(merchantData as MerchantProfile);
+      setCategoryDetails(((merchantData as any).category_details as Record<string, any>) || {});
+      // Polite upgrade reminder for Free merchants (once per day)
+      if (!merchantData.is_premium && !(merchantData as any).is_big_merchant) {
+        const key = `mbd-upgrade-reminder-${merchantData.id}`;
+        const last = localStorage.getItem(key);
+        if (!last || Date.now() - Number(last) > 24 * 60 * 60 * 1000) {
+          localStorage.setItem(key, String(Date.now()));
+          setTimeout(() => setShowUpgrade(true), 1200);
+        }
+      }
       setShopForm({
         shop_name: merchantData.shop_name || "",
         shop_name_hindi: merchantData.shop_name_hindi || "",
@@ -133,7 +152,11 @@ const MerchantDashboard = () => {
     if (profile) {
       const { error } = await supabase
         .from("merchant_profiles")
-        .update(shopForm)
+        .update({
+          ...shopForm,
+          category_details: categoryDetails,
+          service_tags: buildServiceTags(shopForm.category, categoryDetails),
+        })
         .eq("id", profile.id);
       if (error) toast.error("Failed to update shop");
       else toast.success("Shop profile updated!");
@@ -172,6 +195,34 @@ const MerchantDashboard = () => {
       setNewProduct({ name: "", name_hindi: "", price: "", description: "" });
       await loadData();
     }
+  };
+
+  const uploadDetailPhoto = async (file: File): Promise<string | null> => {
+    if (!user) return null;
+    setUploading(true);
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}/vehicle-${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("uploads").upload(path, file);
+    if (error) { toast.error("Upload failed"); setUploading(false); return null; }
+    const { data } = supabase.storage.from("uploads").getPublicUrl(path);
+    setUploading(false);
+    toast.success("Photo uploaded");
+    return data.publicUrl;
+  };
+
+  const saveCategoryDetails = async () => {
+    if (!profile) { toast.error("Save your shop profile first"); return; }
+    setSaving(true);
+    const { error } = await supabase
+      .from("merchant_profiles")
+      .update({
+        category_details: categoryDetails,
+        service_tags: buildServiceTags(shopForm.category || profile.category, categoryDetails),
+      })
+      .eq("id", profile.id);
+    setSaving(false);
+    if (error) toast.error("Could not save details");
+    else { toast.success("Details updated!"); await loadData(); }
   };
 
   const deleteProduct = async (id: string) => {
