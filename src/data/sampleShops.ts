@@ -296,6 +296,8 @@ export const categorySections: CategorySection[] = [
     sectionNameHindi: "रोज़मर्रा की सेवाएं",
     categories: [
       "Salon & Barber",
+      "Beauty Parlour (ब्यूटी पार्लर)",
+
       "Laundry / Dry Clean (धोबी)",
       "Tailor (दरजी)",
       "Car/Bike Mechanic",
