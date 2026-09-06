@@ -281,7 +281,7 @@ const MerchantDashboard = () => {
                   <Link to="/merchant">Upgrade to Premium</Link>
                 </Button>
                 <Button asChild size="sm" variant="outline" className="border-amber-500 text-amber-700">
-                  <Link to="/golden-merchant">Golden Merchant</Link>
+                  <Link to="/big-merchant">Golden Merchant</Link>
                 </Button>
               </div>
             </CardContent>
@@ -656,7 +656,7 @@ const MerchantDashboard = () => {
             <Button variant="ghost" onClick={() => setShowUpgrade(false)}>बाद में</Button>
             <div className="flex gap-2">
               <Button asChild className="bg-amber-500 text-white hover:bg-amber-600"><Link to="/merchant">Premium ₹99</Link></Button>
-              <Button asChild variant="outline" className="border-amber-500 text-amber-700"><Link to="/golden-merchant">Golden ₹1600</Link></Button>
+              <Button asChild variant="outline" className="border-amber-500 text-amber-700"><Link to="/big-merchant">Golden ₹1600</Link></Button>
             </div>
           </DialogFooter>
         </DialogContent>
