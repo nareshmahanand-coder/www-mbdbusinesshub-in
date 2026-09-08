@@ -1,7 +1,10 @@
+import type { LiveMerchantResult } from "@/lib/liveMerchantSearch";
+
 export interface ChatMessage {
   id: string;
   sender: "bot" | "user";
   text: string;
+  shops?: LiveMerchantResult[];
   actions?: ChatAction[];
 }
 

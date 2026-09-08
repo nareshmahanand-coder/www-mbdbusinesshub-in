@@ -18,6 +18,7 @@ import BloodDonorTab from "./chatbot/BloodDonorTab";
 import HealthTab from "./chatbot/HealthTab";
 import ShopMediaCards from "./chatbot/ShopMediaCards";
 import { speakUnified, cancelSpeech, isNativeTtsPlatform } from "@/lib/nativeTts";
+import { isMerchantSearchQuery, sampleShopToLiveResult, searchLiveMerchants, type LiveMerchantResult } from "@/lib/liveMerchantSearch";
 
 /** Collect shop ids referenced via [[SHOP:id:name]] tokens in a bot reply. */
 const extractShopIds = (text: string): string[] => {
@@ -489,8 +490,8 @@ const BharatMitraChatbot = () => {
     return parts.length > 0 ? parts : text;
   };
 
-  const addBotMessage = (text: string) => {
-    setMessages((prev) => [...prev, { id: `bot-${Date.now()}`, sender: "bot", text }]);
+  const addBotMessage = (text: string, shops?: LiveMerchantResult[]) => {
+    setMessages((prev) => [...prev, { id: `bot-${Date.now()}`, sender: "bot", text, shops }]);
     resetIdleTimer();
   };
 
@@ -608,6 +609,58 @@ const BharatMitraChatbot = () => {
     const loc = userLocation || await getUserLocation();
 
     try {
+      const { data: merchantRows, error: merchantError } = await supabase
+        .from("merchant_profiles")
+        .select("id, shop_name, shop_name_hindi, category, address, city, phone, whatsapp, photos, is_verified, is_premium, is_big_merchant, description, service_tags, category_details, latitude, longitude")
+        .eq("access_status", "active")
+        .order("is_big_merchant", { ascending: false })
+        .order("is_premium", { ascending: false })
+        .limit(500);
+
+      const databaseShops: LiveMerchantResult[] = (merchantRows ?? []).map((row) => ({
+        id: row.id,
+        name: row.shop_name,
+        nameHindi: row.shop_name_hindi || undefined,
+        category: row.category || undefined,
+        address: row.address || undefined,
+        city: row.city || undefined,
+        phone: row.phone || undefined,
+        whatsapp: row.whatsapp || row.phone || undefined,
+        photos: row.photos || [],
+        verified: !!row.is_verified,
+        premium: !!row.is_premium,
+        golden: !!row.is_big_merchant,
+        description: row.description || undefined,
+        serviceTags: row.service_tags || [],
+        categoryDetails: row.category_details && typeof row.category_details === "object" && !Array.isArray(row.category_details)
+          ? row.category_details as Record<string, unknown>
+          : undefined,
+        lat: row.latitude ?? undefined,
+        lng: row.longitude ?? undefined,
+      }));
+      const searchableShops = [...sampleShops.map(sampleShopToLiveResult), ...databaseShops];
+      const merchantIntent = isMerchantSearchQuery(trimmed, searchableShops);
+
+      if (merchantIntent) {
+        const found = searchLiveMerchants(trimmed, searchableShops, loc, 6);
+        if (found.results.length) {
+          const onlyFree = found.results.every((shop) => !shop.golden && !shop.flagship && !shop.premium);
+          const reply = found.exact
+            ? `Boss, live दुकान सूची में ${found.results.length} सही परिणाम मिले हैं।${onlyFree ? " अभी इस सेवा में Free registration उपलब्ध है।" : " Golden और Premium दुकानों को प्राथमिकता से ऊपर दिखाया गया है।"}`
+            : `Boss, exact नाम नहीं मिला, लेकिन इसी category की सबसे नज़दीकी उपलब्ध सेवाएँ नीचे हैं।`;
+          addBotMessage(reply, found.results);
+          setAiHistory([...newHistory, { role: "assistant", content: reply }]);
+          return;
+        }
+
+        const reply = merchantError
+          ? "Boss, दुकान सूची अभी refresh हो रही है। Nanda Agro Farm की उपलब्ध units और संपर्क विकल्प नीचे दिए हैं।"
+          : "Boss, इस नाम या सेवा की कोई registered listing अभी नहीं मिली। आप category या शहर का नाम लिखकर दोबारा खोज सकते हैं।";
+        const fallback = merchantError ? sampleShops.filter((shop) => shop.flagship).slice(0, 3).map(sampleShopToLiveResult) : undefined;
+        addBotMessage(reply, fallback);
+        return;
+      }
+
       const resp = await fetch(CHAT_URL, {
         method: "POST",
         headers: {
@@ -685,7 +738,7 @@ const BharatMitraChatbot = () => {
       }
     } catch (e) {
       console.error("AI chat error:", e);
-      addBotMessage("बॉस जी, अभी AI सर्वर से जुड़ने में दिक्कत हो रही है। कृपया नीचे FAQ बटन देखें या helpline.bharatdukaan@gmail.com पर संपर्क करें।");
+      addBotMessage("Boss, सामान्य AI जवाब अभी उपलब्ध नहीं है। दुकान या सेवा खोजने के लिए उसका नाम लिखें—live merchant search चालू है।");
     } finally {
       setIsAiLoading(false);
     }
@@ -924,7 +977,7 @@ const BharatMitraChatbot = () => {
                   }`}>
                     {renderMessageWithShopLinks(m.text)}
                     {m.sender === "bot" && (
-                      <ShopMediaCards shopIds={extractShopIds(m.text)} onNavigate={() => setOpen(false)} />
+                      <ShopMediaCards shopIds={extractShopIds(m.text)} liveShops={m.shops} onNavigate={() => setOpen(false)} />
                     )}
                   </div>
 
