@@ -22,6 +22,13 @@
       "when": 1788703541388,
       "tag": "0002_merchant_category_details_and_tags",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788915825276,
+      "tag": "0003_allow_public_verified_merchant_discovery",
+      "breakpoints": true
     }
   ]
 }

@@ -35,10 +35,19 @@ const FILLER_WORDS = new Set([
   "where", "is", "the", "a", "an", "me", "near", "nearby", "boss", "जी",
 ]);
 
+const BRAND_ALIASES: Record<string, string[]> = {
+  "नंदा": ["nanda"],
+  "एग्रो": ["agro"],
+  "फार्म": ["farm"],
+  "nanda": ["नंदा"],
+  "agro": ["एग्रो"],
+  "farm": ["फार्म"],
+};
+
 const normalize = (value: unknown): string => String(value ?? "")
   .toLowerCase()
   .replace(/[\-_./]+/g, " ")
-  .replace(/[^\p{L}\p{N}\s]/gu, " ")
+  .replace(/[^\p{L}\p{M}\p{N}\s]/gu, " ")
   .replace(/\s+/g, " ")
   .trim();
 
@@ -62,7 +71,8 @@ const searchableText = (shop: LiveMerchantResult): string => normalize([
 ].filter(Boolean).join(" "));
 
 const usefulTerms = (query: string): string[] => {
-  const expanded = expandQuery(query).flatMap((term) => normalize(term).split(" "));
+  const baseTerms = expandQuery(query).flatMap((term) => normalize(term).split(" "));
+  const expanded = baseTerms.flatMap((term) => [term, ...(BRAND_ALIASES[term] ?? [])]);
   return [...new Set(expanded.filter((term) => term.length > 1 && !FILLER_WORDS.has(term)))];
 };
 
