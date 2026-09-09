@@ -47,7 +47,7 @@ const BRAND_ALIASES: Record<string, string[]> = {
 const normalize = (value: unknown): string => String(value ?? "")
   .toLowerCase()
   .replace(/[\-_./]+/g, " ")
-  .replace(/[^\p{L}\p{N}\s]/gu, " ")
+  .replace(/[^\p{L}\p{M}\p{N}\s]/gu, " ")
   .replace(/\s+/g, " ")
   .trim();
 
