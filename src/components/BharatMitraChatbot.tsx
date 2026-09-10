@@ -653,12 +653,12 @@ const BharatMitraChatbot = () => {
           return;
         }
 
-        const reply = merchantError
-          ? "Boss, दुकान सूची अभी refresh हो रही है। Nanda Agro Farm की उपलब्ध units और संपर्क विकल्प नीचे दिए हैं।"
-          : "Boss, इस नाम या सेवा की कोई registered listing अभी नहीं मिली। आप category या शहर का नाम लिखकर दोबारा खोज सकते हैं।";
-        const fallback = merchantError ? sampleShops.filter((shop) => shop.flagship).slice(0, 3).map(sampleShopToLiveResult) : undefined;
-        addBotMessage(reply, fallback);
-        return;
+        if (merchantError) {
+          const reply = "Boss, दुकान सूची अभी refresh हो रही है। Nanda Agro Farm की उपलब्ध units और संपर्क विकल्प नीचे दिए हैं।";
+          addBotMessage(reply, sampleShops.filter((shop) => shop.flagship).slice(0, 3).map(sampleShopToLiveResult));
+          return;
+        }
+        // No listing found — do NOT dead-end; let the conversational AI answer instead.
       }
 
       const resp = await fetch(CHAT_URL, {
