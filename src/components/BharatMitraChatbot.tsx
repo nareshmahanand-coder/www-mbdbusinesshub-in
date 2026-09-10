@@ -19,6 +19,15 @@ import HealthTab from "./chatbot/HealthTab";
 import ShopMediaCards from "./chatbot/ShopMediaCards";
 import { speakUnified, cancelSpeech, isNativeTtsPlatform } from "@/lib/nativeTts";
 import { isMerchantSearchQuery, sampleShopToLiveResult, searchLiveMerchants, type LiveMerchantResult } from "@/lib/liveMerchantSearch";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+/** Detect the language a user typed in (Devanagari → Hindi, Latin → English). */
+const detectTypedLang = (text: string): "hi" | "en" | null => {
+  if (/[\u0900-\u097F]/.test(text)) return "hi";
+  if (/[A-Za-z]{2,}/.test(text)) return "en";
+  return null;
+};
+
 
 /** Collect shop ids referenced via [[SHOP:id:name]] tokens in a bot reply. */
 const extractShopIds = (text: string): string[] => {
