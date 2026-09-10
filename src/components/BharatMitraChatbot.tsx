@@ -653,12 +653,12 @@ const BharatMitraChatbot = () => {
           return;
         }
 
-        const reply = merchantError
-          ? "Boss, दुकान सूची अभी refresh हो रही है। Nanda Agro Farm की उपलब्ध units और संपर्क विकल्प नीचे दिए हैं।"
-          : "Boss, इस नाम या सेवा की कोई registered listing अभी नहीं मिली। आप category या शहर का नाम लिखकर दोबारा खोज सकते हैं।";
-        const fallback = merchantError ? sampleShops.filter((shop) => shop.flagship).slice(0, 3).map(sampleShopToLiveResult) : undefined;
-        addBotMessage(reply, fallback);
-        return;
+        if (merchantError) {
+          const reply = "Boss, दुकान सूची अभी refresh हो रही है। Nanda Agro Farm की उपलब्ध units और संपर्क विकल्प नीचे दिए हैं।";
+          addBotMessage(reply, sampleShops.filter((shop) => shop.flagship).slice(0, 3).map(sampleShopToLiveResult));
+          return;
+        }
+        // No listing found — do NOT dead-end; let the conversational AI answer instead.
       }
 
       const resp = await fetch(CHAT_URL, {
@@ -735,10 +735,13 @@ const BharatMitraChatbot = () => {
 
       if (assistantSoFar) {
         setAiHistory([...newHistory, { role: "assistant", content: assistantSoFar }]);
+      } else {
+        setMessages((prev) => prev.filter((m) => m.id !== botMsgId));
+        addBotMessage("Boss, थोड़ा फिर से पूछिए — मैं आपकी बात समझकर पूरा जवाब देती हूँ। 🙏");
       }
     } catch (e) {
       console.error("AI chat error:", e);
-      addBotMessage("Boss, सामान्य AI जवाब अभी उपलब्ध नहीं है। दुकान या सेवा खोजने के लिए उसका नाम लिखें—live merchant search चालू है।");
+      addBotMessage("Boss, अभी मेरी सोचने वाली सेवा व्यस्त है 🙏 कुछ सेकंड बाद फिर पूछिए। तब तक दुकान, सेवा या गाड़ी का नाम लिखें — live search तुरंत काम कर रही है।");
     } finally {
       setIsAiLoading(false);
     }
