@@ -103,8 +103,25 @@ const scoreShop = (shop: LiveMerchantResult, query: string): number => {
   return score;
 };
 
+// Conversational / advisory intents must NEVER be hijacked by merchant search.
+const GENERAL_CHAT_PATTERNS = [
+  "बिजनेस", "बिज़नेस", "business idea", "बिज़नेस आइडिया", "कैसे करूं", "कैसे करूँ", "क्या करूं", "क्या करूँ",
+  "सलाह", "advice", "idea", "आइडिया", "सुझाव", "योजना", "scheme", "लोन", "loan", "सब्सिडी", "subsidy",
+  "पढ़ाई", "study", "exam", "बीमारी", "दवा", "इलाज", "health", "कानून", "law", "recipe", "खेती", "farming",
+  "नमस्ते", "namaste", "hello", "hi ", "कैसे हो", "how are you", "क्या हाल", "धन्यवाद", "thank",
+  "समझाओ", "explain", "बताओ कैसे", "why", "क्यों", "मतलब", "meaning", "tips", "टिप्स", "शुरू कैसे",
+];
+
+export const isGeneralChatQuery = (query: string): boolean => {
+  const q = normalize(query);
+  return GENERAL_CHAT_PATTERNS.some((pattern) => q.includes(normalize(pattern)));
+};
+
 export const isMerchantSearchQuery = (query: string, shops: LiveMerchantResult[]): boolean => {
   const q = normalize(query);
+  const strongShopMatch = shops.some((shop) => scoreShop(shop, query) >= 80);
+  if (strongShopMatch) return true;
+  if (isGeneralChatQuery(query)) return false;
   if (SEARCH_WORDS.some((word) => q.includes(normalize(word)))) return true;
   return shops.some((shop) => scoreShop(shop, query) >= 30);
 };
