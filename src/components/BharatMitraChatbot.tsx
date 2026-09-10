@@ -735,10 +735,13 @@ const BharatMitraChatbot = () => {
 
       if (assistantSoFar) {
         setAiHistory([...newHistory, { role: "assistant", content: assistantSoFar }]);
+      } else {
+        setMessages((prev) => prev.filter((m) => m.id !== botMsgId));
+        addBotMessage("Boss, थोड़ा फिर से पूछिए — मैं आपकी बात समझकर पूरा जवाब देती हूँ। 🙏");
       }
     } catch (e) {
       console.error("AI chat error:", e);
-      addBotMessage("Boss, सामान्य AI जवाब अभी उपलब्ध नहीं है। दुकान या सेवा खोजने के लिए उसका नाम लिखें—live merchant search चालू है।");
+      addBotMessage("Boss, अभी मेरी सोचने वाली सेवा व्यस्त है 🙏 कुछ सेकंड बाद फिर पूछिए। तब तक दुकान, सेवा या गाड़ी का नाम लिखें — live search तुरंत काम कर रही है।");
     } finally {
       setIsAiLoading(false);
     }
