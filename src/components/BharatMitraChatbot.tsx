@@ -615,6 +615,8 @@ const BharatMitraChatbot = () => {
     }
 
     setIsAiLoading(true);
+    const replyLang: "hi" | "en" = detectTypedLang(trimmed) ?? (uiLang === "en" ? "en" : "hi");
+    replyLangRef.current = replyLang;
     const newHistory: AiMessage[] = [...aiHistory, { role: "user", content: trimmed }];
 
     // Get user location for proximity search
@@ -657,16 +659,22 @@ const BharatMitraChatbot = () => {
         const found = searchLiveMerchants(trimmed, searchableShops, loc, 6);
         if (found.results.length) {
           const onlyFree = found.results.every((shop) => !shop.golden && !shop.flagship && !shop.premium);
-          const reply = found.exact
-            ? `Boss, live दुकान सूची में ${found.results.length} सही परिणाम मिले हैं।${onlyFree ? " अभी इस सेवा में Free registration उपलब्ध है।" : " Golden और Premium दुकानों को प्राथमिकता से ऊपर दिखाया गया है।"}`
-            : `Boss, exact नाम नहीं मिला, लेकिन इसी category की सबसे नज़दीकी उपलब्ध सेवाएँ नीचे हैं।`;
+          const reply = replyLang === "en"
+            ? (found.exact
+              ? `Boss, I found ${found.results.length} matching listing(s) in the live directory.${onlyFree ? " Only free registrations are available for this service right now." : " Golden and Premium shops are shown first."}`
+              : `Boss, I could not find that exact name, but here are the closest available options in the same category.`)
+            : (found.exact
+              ? `Boss, live दुकान सूची में ${found.results.length} सही परिणाम मिले हैं।${onlyFree ? " अभी इस सेवा में Free registration उपलब्ध है।" : " Golden और Premium दुकानों को प्राथमिकता से ऊपर दिखाया गया है।"}`
+              : `Boss, exact नाम नहीं मिला, लेकिन इसी category की सबसे नज़दीकी उपलब्ध सेवाएँ नीचे हैं।`);
           addBotMessage(reply, found.results);
           setAiHistory([...newHistory, { role: "assistant", content: reply }]);
           return;
         }
 
         if (merchantError) {
-          const reply = "Boss, दुकान सूची अभी refresh हो रही है। Nanda Agro Farm की उपलब्ध units और संपर्क विकल्प नीचे दिए हैं।";
+          const reply = replyLang === "en"
+            ? "Boss, the shop directory is refreshing. Here are the available Nanda Agro Farm units and their contact options."
+            : "Boss, दुकान सूची अभी refresh हो रही है। Nanda Agro Farm की उपलब्ध units और संपर्क विकल्प नीचे दिए हैं।";
           addBotMessage(reply, sampleShops.filter((shop) => shop.flagship).slice(0, 3).map(sampleShopToLiveResult));
           return;
         }
@@ -685,6 +693,8 @@ const BharatMitraChatbot = () => {
           userLng: loc?.lng,
           userId: user?.id,
           userState,
+          uiLang,
+          replyLang,
         }),
       });
 
@@ -749,11 +759,15 @@ const BharatMitraChatbot = () => {
         setAiHistory([...newHistory, { role: "assistant", content: assistantSoFar }]);
       } else {
         setMessages((prev) => prev.filter((m) => m.id !== botMsgId));
-        addBotMessage("Boss, थोड़ा फिर से पूछिए — मैं आपकी बात समझकर पूरा जवाब देती हूँ। 🙏");
+        addBotMessage(replyLang === "en"
+          ? "Boss, please ask that once more — I will give you a complete answer. 🙏"
+          : "Boss, थोड़ा फिर से पूछिए — मैं आपकी बात समझकर पूरा जवाब देती हूँ। 🙏");
       }
     } catch (e) {
       console.error("AI chat error:", e);
-      addBotMessage("Boss, अभी मेरी सोचने वाली सेवा व्यस्त है 🙏 कुछ सेकंड बाद फिर पूछिए। तब तक दुकान, सेवा या गाड़ी का नाम लिखें — live search तुरंत काम कर रही है।");
+      addBotMessage(replyLang === "en"
+        ? "Boss, my thinking service is busy right now 🙏 Please ask again in a few seconds. Meanwhile type a shop, service or vehicle name — live search is working instantly."
+        : "Boss, अभी मेरी सोचने वाली सेवा व्यस्त है 🙏 कुछ सेकंड बाद फिर पूछिए। तब तक दुकान, सेवा या गाड़ी का नाम लिखें — live search तुरंत काम कर रही है।");
     } finally {
       setIsAiLoading(false);
     }
