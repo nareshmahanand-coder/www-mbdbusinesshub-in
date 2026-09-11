@@ -41,6 +41,8 @@ const extractShopIds = (text: string): string[] => {
 
 const DEFAULT_INTRO = "नमस्ते Boss! 🙏 मैं भारत मित्र AI हूँ। मैं भारत की सभी भाषाएं (Hindi, English, Chhattisgarhi, Odia, Bengali, Tamil, Telugu, Punjabi, Marathi, Gujarati...) जानती हूँ। क्या मैं आपसे इसी भाषा में बात करना जारी रखूँ या आप किसी और भाषा में बात करना चाहते हैं? 🇮🇳";
 
+const DEFAULT_INTRO_EN = "Hello Boss! 🙏 I am Bharat Mitra AI. I speak English, Hindi and all major Indian languages. Ask me about shops, services, vehicles or any business advice. 🇮🇳";
+
 const WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
   sender: "bot",
@@ -187,6 +189,13 @@ const BharatMitraChatbot = () => {
   }, []);
 
   useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
+
+  // Keep the opening greeting in the app's selected language while chat is untouched.
+  useEffect(() => {
+    setMessages((prev) => (prev.length === 1 && prev[0].id === "welcome"
+      ? [{ ...prev[0], text: uiLang === "en" ? DEFAULT_INTRO_EN : DEFAULT_INTRO }]
+      : prev));
+  }, [uiLang]);
 
   // TTS — speak a specific message in a given language
   const speakText = useCallback((text: string, msgId?: string, langCode?: string) => {
