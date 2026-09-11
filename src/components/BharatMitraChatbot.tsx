@@ -107,6 +107,9 @@ interface AiMessage {
 
 const BharatMitraChatbot = () => {
   const { user } = useAuth();
+  const { lang: uiLang } = useLanguage();
+  const replyLangRef = useRef<"hi" | "en">(uiLang === "en" ? "en" : "hi");
+  useEffect(() => { replyLangRef.current = uiLang === "en" ? "en" : "hi"; }, [uiLang]);
   const isPremium = false;
   const location = useLocation();
   const navigate = useNavigate();
@@ -230,7 +233,7 @@ const BharatMitraChatbot = () => {
 
     void speakUnified({
       text: cleanText,
-      lang: langCode ?? "hi-IN",
+      lang: langCode ?? (replyLangRef.current === "en" ? "en-IN" : "hi-IN"),
       rate: 0.98,
       pitch: 1.0,
       volume: 1,
@@ -293,7 +296,7 @@ const BharatMitraChatbot = () => {
     liveModeRef.current = true;
 
     const recognition = new SpeechRecognition();
-    recognition.lang = "hi-IN";
+    recognition.lang = replyLangRef.current === "en" ? "en-IN" : "hi-IN";
     recognition.interimResults = false;
     recognition.continuous = false;
     recognition.maxAlternatives = 1;
@@ -325,7 +328,7 @@ const BharatMitraChatbot = () => {
     if (!SR) return;
     try { recognitionRef.current?.stop(); } catch {}
     const recog = new SR();
-    recog.lang = "hi-IN";
+    recog.lang = replyLangRef.current === "en" ? "en-IN" : "hi-IN";
     recog.interimResults = false;
     recog.continuous = false;
     recog.maxAlternatives = 1;
@@ -398,7 +401,7 @@ const BharatMitraChatbot = () => {
     }
 
     const recog = new SR();
-    recog.lang = "hi-IN";
+    recog.lang = replyLangRef.current === "en" ? "en-IN" : "hi-IN";
     recog.continuous = true;
     recog.interimResults = true;
     recog.maxAlternatives = 1;
