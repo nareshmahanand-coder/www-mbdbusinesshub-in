@@ -41,6 +41,8 @@ const extractShopIds = (text: string): string[] => {
 
 const DEFAULT_INTRO = "नमस्ते Boss! 🙏 मैं भारत मित्र AI हूँ। मैं भारत की सभी भाषाएं (Hindi, English, Chhattisgarhi, Odia, Bengali, Tamil, Telugu, Punjabi, Marathi, Gujarati...) जानती हूँ। क्या मैं आपसे इसी भाषा में बात करना जारी रखूँ या आप किसी और भाषा में बात करना चाहते हैं? 🇮🇳";
 
+const DEFAULT_INTRO_EN = "Hello Boss! 🙏 I am Bharat Mitra AI. I speak English, Hindi and all major Indian languages. Ask me about shops, services, vehicles or any business advice. 🇮🇳";
+
 const WELCOME_MESSAGE: ChatMessage = {
   id: "welcome",
   sender: "bot",
@@ -107,6 +109,9 @@ interface AiMessage {
 
 const BharatMitraChatbot = () => {
   const { user } = useAuth();
+  const { lang: uiLang } = useLanguage();
+  const replyLangRef = useRef<"hi" | "en">(uiLang === "en" ? "en" : "hi");
+  useEffect(() => { replyLangRef.current = uiLang === "en" ? "en" : "hi"; }, [uiLang]);
   const isPremium = false;
   const location = useLocation();
   const navigate = useNavigate();
@@ -185,6 +190,13 @@ const BharatMitraChatbot = () => {
 
   useEffect(() => { scrollToBottom(); }, [messages, scrollToBottom]);
 
+  // Keep the opening greeting in the app's selected language while chat is untouched.
+  useEffect(() => {
+    setMessages((prev) => (prev.length === 1 && prev[0].id === "welcome"
+      ? [{ ...prev[0], text: uiLang === "en" ? DEFAULT_INTRO_EN : DEFAULT_INTRO }]
+      : prev));
+  }, [uiLang]);
+
   // TTS — speak a specific message in a given language
   const speakText = useCallback((text: string, msgId?: string, langCode?: string) => {
     if (voiceMutedRef.current) return;
@@ -230,7 +242,7 @@ const BharatMitraChatbot = () => {
 
     void speakUnified({
       text: cleanText,
-      lang: langCode ?? "hi-IN",
+      lang: langCode ?? (replyLangRef.current === "en" ? "en-IN" : "hi-IN"),
       rate: 0.98,
       pitch: 1.0,
       volume: 1,
@@ -293,7 +305,7 @@ const BharatMitraChatbot = () => {
     liveModeRef.current = true;
 
     const recognition = new SpeechRecognition();
-    recognition.lang = "hi-IN";
+    recognition.lang = replyLangRef.current === "en" ? "en-IN" : "hi-IN";
     recognition.interimResults = false;
     recognition.continuous = false;
     recognition.maxAlternatives = 1;
@@ -325,7 +337,7 @@ const BharatMitraChatbot = () => {
     if (!SR) return;
     try { recognitionRef.current?.stop(); } catch {}
     const recog = new SR();
-    recog.lang = "hi-IN";
+    recog.lang = replyLangRef.current === "en" ? "en-IN" : "hi-IN";
     recog.interimResults = false;
     recog.continuous = false;
     recog.maxAlternatives = 1;
@@ -398,7 +410,7 @@ const BharatMitraChatbot = () => {
     }
 
     const recog = new SR();
-    recog.lang = "hi-IN";
+    recog.lang = replyLangRef.current === "en" ? "en-IN" : "hi-IN";
     recog.continuous = true;
     recog.interimResults = true;
     recog.maxAlternatives = 1;
@@ -612,6 +624,8 @@ const BharatMitraChatbot = () => {
     }
 
     setIsAiLoading(true);
+    const replyLang: "hi" | "en" = detectTypedLang(trimmed) ?? (uiLang === "en" ? "en" : "hi");
+    replyLangRef.current = replyLang;
     const newHistory: AiMessage[] = [...aiHistory, { role: "user", content: trimmed }];
 
     // Get user location for proximity search
@@ -654,16 +668,22 @@ const BharatMitraChatbot = () => {
         const found = searchLiveMerchants(trimmed, searchableShops, loc, 6);
         if (found.results.length) {
           const onlyFree = found.results.every((shop) => !shop.golden && !shop.flagship && !shop.premium);
-          const reply = found.exact
-            ? `Boss, live दुकान सूची में ${found.results.length} सही परिणाम मिले हैं।${onlyFree ? " अभी इस सेवा में Free registration उपलब्ध है।" : " Golden और Premium दुकानों को प्राथमिकता से ऊपर दिखाया गया है।"}`
-            : `Boss, exact नाम नहीं मिला, लेकिन इसी category की सबसे नज़दीकी उपलब्ध सेवाएँ नीचे हैं।`;
+          const reply = replyLang === "en"
+            ? (found.exact
+              ? `Boss, I found ${found.results.length} matching listing(s) in the live directory.${onlyFree ? " Only free registrations are available for this service right now." : " Golden and Premium shops are shown first."}`
+              : `Boss, I could not find that exact name, but here are the closest available options in the same category.`)
+            : (found.exact
+              ? `Boss, live दुकान सूची में ${found.results.length} सही परिणाम मिले हैं।${onlyFree ? " अभी इस सेवा में Free registration उपलब्ध है।" : " Golden और Premium दुकानों को प्राथमिकता से ऊपर दिखाया गया है।"}`
+              : `Boss, exact नाम नहीं मिला, लेकिन इसी category की सबसे नज़दीकी उपलब्ध सेवाएँ नीचे हैं।`);
           addBotMessage(reply, found.results);
           setAiHistory([...newHistory, { role: "assistant", content: reply }]);
           return;
         }
 
         if (merchantError) {
-          const reply = "Boss, दुकान सूची अभी refresh हो रही है। Nanda Agro Farm की उपलब्ध units और संपर्क विकल्प नीचे दिए हैं।";
+          const reply = replyLang === "en"
+            ? "Boss, the shop directory is refreshing. Here are the available Nanda Agro Farm units and their contact options."
+            : "Boss, दुकान सूची अभी refresh हो रही है। Nanda Agro Farm की उपलब्ध units और संपर्क विकल्प नीचे दिए हैं।";
           addBotMessage(reply, sampleShops.filter((shop) => shop.flagship).slice(0, 3).map(sampleShopToLiveResult));
           return;
         }
@@ -682,6 +702,8 @@ const BharatMitraChatbot = () => {
           userLng: loc?.lng,
           userId: user?.id,
           userState,
+          uiLang,
+          replyLang,
         }),
       });
 
@@ -746,11 +768,15 @@ const BharatMitraChatbot = () => {
         setAiHistory([...newHistory, { role: "assistant", content: assistantSoFar }]);
       } else {
         setMessages((prev) => prev.filter((m) => m.id !== botMsgId));
-        addBotMessage("Boss, थोड़ा फिर से पूछिए — मैं आपकी बात समझकर पूरा जवाब देती हूँ। 🙏");
+        addBotMessage(replyLang === "en"
+          ? "Boss, please ask that once more — I will give you a complete answer. 🙏"
+          : "Boss, थोड़ा फिर से पूछिए — मैं आपकी बात समझकर पूरा जवाब देती हूँ। 🙏");
       }
     } catch (e) {
       console.error("AI chat error:", e);
-      addBotMessage("Boss, अभी मेरी सोचने वाली सेवा व्यस्त है 🙏 कुछ सेकंड बाद फिर पूछिए। तब तक दुकान, सेवा या गाड़ी का नाम लिखें — live search तुरंत काम कर रही है।");
+      addBotMessage(replyLang === "en"
+        ? "Boss, my thinking service is busy right now 🙏 Please ask again in a few seconds. Meanwhile type a shop, service or vehicle name — live search is working instantly."
+        : "Boss, अभी मेरी सोचने वाली सेवा व्यस्त है 🙏 कुछ सेकंड बाद फिर पूछिए। तब तक दुकान, सेवा या गाड़ी का नाम लिखें — live search तुरंत काम कर रही है।");
     } finally {
       setIsAiLoading(false);
     }
