@@ -142,7 +142,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { userLat, userLng, userId, userState } = body;
+    const { userLat, userLng, userId, userState, uiLang, replyLang } = body;
     const history = Array.isArray(body.history) ? body.history : [];
     const messages = Array.isArray(body.messages)
       ? body.messages
@@ -262,7 +262,17 @@ serve(async (req) => {
       }
     }
 
-    const fullSystemPrompt = SYSTEM_PROMPT + dbContext + `
+    const lastUserMsg = [...safeMessages].reverse().find((m: any) => m.role === "user")?.content ?? "";
+    const detected = /[\u0900-\u097F]/.test(lastUserMsg) ? "hi" : /[A-Za-z]{2,}/.test(lastUserMsg) ? "en" : null;
+    const effectiveLang = (replyLang === "hi" || replyLang === "en")
+      ? replyLang
+      : (detected ?? (uiLang === "en" ? "en" : "hi"));
+
+    const languageDirective = effectiveLang === "en"
+      ? `\n\n## 🌐 ACTIVE LANGUAGE: ENGLISH (HIGHEST PRIORITY)\nThe user's app language is English or they wrote in English. Reply ONLY in fluent, natural English (Indian English tone), including all shop details, addresses, prices, plans, commissions and business advice. Still address the user as "Boss". Do NOT reply in Hindi or Devanagari script unless the user writes in Hindi again. Proper nouns (shop names, Nanda units) may stay as-is.\n`
+      : `\n\n## 🌐 ACTIVE LANGUAGE: HINDI (HIGHEST PRIORITY)\nUser की app भाषा हिंदी है या उन्होंने हिंदी में लिखा है। पूरा जवाब सहज बोलचाल की हिंदी (देवनागरी) में दें — दुकान की जानकारी, पता, दाम, प्लान, कमीशन और सलाह सब हिंदी में। User को "Boss"/"बॉस जी" कहकर संबोधित करें। अगर user दोबारा English में लिखे तो तुरंत English में स्विच करें।\n`;
+
+    const fullSystemPrompt = SYSTEM_PROMPT + languageDirective + dbContext + `
 
 ## RULES
 - Always personal: greet by name if known.
@@ -279,6 +289,7 @@ serve(async (req) => {
 - SERVICE QUERIES (ई-रिक्शा, ऑटो, टैक्सी, काम वाली बाई, नौकरानी, ट्रेवल, प्लंबर, इलेक्ट्रिशियन, पार्लर, मछली, मीट आदि): search the shops list above by category AND by "tags:" — those tags come from each merchant's own registration form. Return EVERY matching merchant with [[SHOP:id:name]] token plus their phone/WhatsApp number, even if only one exists.
 - If a service has no registered merchant yet, say so honestly and invite the user to register their own business free at /merchant-portal.
 - NEVER invent shop names, prices, or contacts that aren't in the data above.
+- LANGUAGE: obey the "ACTIVE LANGUAGE" section above for EVERY reply — merchant card descriptions and general advice alike. If the user's newest message is in a different language/script, mirror that language instead.
 
 `;
 
