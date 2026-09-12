@@ -321,7 +321,7 @@ const Index = () => {
           <h3 className="mb-5 text-xl font-bold text-foreground">
             {t("browse_by_category")} <span className="font-hindi text-base font-normal text-muted-foreground">• {t("categories_hindi")}</span>
           </h3>
-          <div className="grid grid-cols-2 gap-3 min-[390px]:grid-cols-4 sm:grid-cols-5 lg:grid-cols-10">
+          <div className="grid grid-cols-4 gap-3 sm:grid-cols-5 lg:grid-cols-10">
             {topCategories.map((cat) => (
               <Button
                 key={cat}
