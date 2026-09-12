@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { sampleShops, shopCategories, categoryIcons, categorySections, type Shop } from "@/data/sampleShops";
 import { supabase } from "@/integrations/supabase/client";
-import { matchesQuery } from "@/data/categoryFields";
+import { isTransportCategory, matchesQuery } from "@/data/categoryFields";
 import ShopCard from "@/components/ShopCard";
 import AppHeader from "@/components/AppHeader";
 import HeroCarousel from "@/components/HeroCarousel";
@@ -23,6 +23,7 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [locationGranted, setLocationGranted] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [taxiOptionsOpen, setTaxiOptionsOpen] = useState(false);
   const { t, lang } = useLanguage();
   const [isListening, setIsListening] = useState(false);
   const [dbShops, setDbShops] = useState<Shop[]>([]);
@@ -108,10 +109,19 @@ const Index = () => {
   const filteredShops = useMemo(() => {
     const allShops = [...sampleShops, ...dbShops];
     const filtered = allShops.filter((s) => {
+      const searchableDetails = JSON.stringify(s.categoryDetails ?? {});
       const matchSearch =
         !search ||
-        matchesQuery(search, [s.name, s.nameHindi, s.category, s.address, s.city, s.pincode, s.description]);
-      const matchCategory = !selectedCategory || s.category === selectedCategory;
+        matchesQuery(search, [s.name, s.nameHindi, s.category, s.address, s.city, s.pincode, s.description, searchableDetails]);
+      const transportFilter = ["Taxi", "All Taxi / Transport"].includes(selectedCategory);
+      const medicalFilter = selectedCategory === "Medical & Pharmacy";
+      const taxiOptionFilter = ["Auto Rickshaw", "E-Rickshaw", "Cars", "Bikes", "Sedans", "Rental Vehicles"].includes(selectedCategory);
+      const matchCategory =
+        !selectedCategory ||
+        (transportFilter && isTransportCategory(s.category)) ||
+        (medicalFilter && matchesQuery("medical pharmacy दवा", [s.category, s.description, searchableDetails])) ||
+        (taxiOptionFilter && isTransportCategory(s.category) && matchesQuery(selectedCategory, [s.category, s.description, searchableDetails])) ||
+        s.category === selectedCategory;
       return matchSearch && matchCategory;
     });
 
@@ -157,7 +167,18 @@ const Index = () => {
     setExpandedSections((prev) => ({ ...prev, [name]: !prev[name] }));
   };
 
-  const topCategories = shopCategories.slice(0, 8);
+  const topCategories = [...shopCategories.slice(0, 8), "Medical & Pharmacy", "Taxi"];
+
+  const taxiOptions = ["All Taxi / Transport", "Auto Rickshaw", "E-Rickshaw", "Cars", "Bikes", "Sedans", "Rental Vehicles"];
+
+  const selectCategory = (category: string) => {
+    if (category === "Taxi") {
+      setTaxiOptionsOpen((open) => !open);
+      setSelectedCategory("Taxi");
+      return;
+    }
+    setSelectedCategory((current) => current === category ? "" : category);
+  };
 
   return (
     <div className="ashoka-watermark tiranga-bg min-h-screen">
@@ -291,22 +312,49 @@ const Index = () => {
           <h3 className="mb-5 text-xl font-bold text-foreground">
             {t("browse_by_category")} <span className="font-hindi text-base font-normal text-muted-foreground">• {t("categories_hindi")}</span>
           </h3>
-          <div className="grid grid-cols-4 gap-3 sm:grid-cols-8">
+          <div className="grid grid-cols-2 gap-3 min-[390px]:grid-cols-4 sm:grid-cols-5 lg:grid-cols-10">
             {topCategories.map((cat) => (
-              <button
+              <Button
                 key={cat}
-                onClick={() => setSelectedCategory(selectedCategory === cat ? "" : cat)}
-                className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-all hover:shadow-md ${
+                type="button"
+                variant="ghost"
+                onClick={() => selectCategory(cat)}
+                aria-expanded={cat === "Taxi" ? taxiOptionsOpen : undefined}
+                className={`h-auto min-h-28 whitespace-normal flex-col gap-2 rounded-xl border p-3 transition-all hover:shadow-md ${
                   selectedCategory === cat
                     ? "border-accent bg-accent/10 shadow-md"
                     : "border-border bg-card hover:border-accent/50"
                 }`}
               >
-                <span className="text-2xl">{categoryIcons[cat] || "🏪"}</span>
+                <span className="text-3xl" aria-hidden="true">{categoryIcons[cat] || "🏪"}</span>
                 <span className="text-xs font-medium text-foreground text-center leading-tight">{cat}</span>
-              </button>
+                {cat === "Taxi" && (taxiOptionsOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />)}
+              </Button>
             ))}
           </div>
+
+          {taxiOptionsOpen && (
+            <div className="mt-3 rounded-lg border border-accent/30 bg-accent/5 p-3" aria-label="Taxi and transport options">
+              <p className="mb-2 text-sm font-bold text-foreground">
+                {lang === "hi" ? "टैक्सी और परिवहन चुनें" : "Choose Taxi & Transport"}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {taxiOptions.map((option) => (
+                  <Button
+                    key={option}
+                    type="button"
+                    size="sm"
+                    variant={selectedCategory === option ? "default" : "outline"}
+                    onClick={() => setSelectedCategory(option)}
+                    className="h-auto whitespace-normal text-xs"
+                  >
+                    <span aria-hidden="true">{categoryIcons[option]}</span>
+                    {option}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Sectioned Categories */}
           <div className="mt-6 space-y-3">
@@ -337,7 +385,7 @@ const Index = () => {
                           key={cat}
                           size="sm"
                           variant={selectedCategory === cat ? "default" : "outline"}
-                          onClick={() => setSelectedCategory(selectedCategory === cat ? "" : cat)}
+                          onClick={() => selectCategory(cat)}
                           className="text-xs"
                         >
                           {categoryIcons[cat] || "🏪"} {cat}

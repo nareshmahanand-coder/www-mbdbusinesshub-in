@@ -277,6 +277,19 @@ export const categorySections: CategorySection[] = [
     ],
   },
   {
+    sectionName: "Taxi",
+    sectionNameHindi: "टैक्सी और परिवहन",
+    categories: [
+      "All Taxi / Transport",
+      "Auto Rickshaw",
+      "E-Rickshaw",
+      "Cars",
+      "Bikes",
+      "Sedans",
+      "Rental Vehicles",
+    ],
+  },
+  {
     sectionName: "Electronics & Tech",
     sectionNameHindi: "इलेक्ट्रॉनिक्स और टेक",
     categories: [
@@ -466,6 +479,7 @@ export const categoryIcons: Record<string, string> = {
   "Clothing & Fashion": "👗",
   "Electronics": "📱",
   "Pharmacy": "💊",
+  "Medical & Pharmacy": "⚕️",
   "Salon & Barber": "✂️",
   "Fast Food": "🍔",
   "Hardware & Paints": "🔧",
@@ -523,6 +537,14 @@ export const categoryIcons: Record<string, string> = {
   "Heavy Vehicle / Truck Rent (ट्रक किराया)": "🚛",
   "Car/Travels on Rent": "🚘",
   // Transport
+  "Taxi": "🛺",
+  "All Taxi / Transport": "🚕",
+  "Auto Rickshaw": "🛺",
+  "E-Rickshaw": "🛺",
+  "Cars": "🚗",
+  "Bikes": "🏍️",
+  "Sedans": "🚘",
+  "Rental Vehicles": "🚙",
   "Taxi / Transport (टैक्सी / ट्रांसपोर्ट — ऑटो, ई-रिक्शा, कार, बाइक, किराया)": "🚕",
   "Auto / E-Rickshaw / Taxi (ऑटो / ई-रिक्शा / टैक्सी)": "🛺",
   "Bike Taxi (बाइक टैक्सी)": "🏍️",

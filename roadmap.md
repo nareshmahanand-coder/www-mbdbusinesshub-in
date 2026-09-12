@@ -5,3 +5,5 @@
 - [x] Add exact-match and closest-category fallback behavior without server-error chat copy.
 - [x] Verify merchant/farm and transport searches, function response, and build.
 - [x] Hybrid Bharat Mitra AI: live merchant search + general conversational AI (credit limit raised, intent switching).
+- [x] Add Medical & Pharmacy and expandable Taxi cards to the homepage category grid.
+- [x] Add a dedicated Taxi section with grouped live transport filtering.
