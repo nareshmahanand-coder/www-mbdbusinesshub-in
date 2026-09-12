@@ -18,6 +18,15 @@ import AdminPinAccess from "@/components/AdminPinAccess";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+const TAXI_OPTION_QUERIES: Record<string, string> = {
+  "Auto Rickshaw": "auto rickshaw ऑटो रिक्शा",
+  "E-Rickshaw": "e-rickshaw ई-रिक्शा",
+  Cars: "car कार",
+  Bikes: "bike बाइक",
+  Sedans: "sedan सेडान",
+  "Rental Vehicles": "rent rental किराया",
+};
+
 const Index = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -115,12 +124,12 @@ const Index = () => {
         matchesQuery(search, [s.name, s.nameHindi, s.category, s.address, s.city, s.pincode, s.description, searchableDetails]);
       const transportFilter = ["Taxi", "All Taxi / Transport"].includes(selectedCategory);
       const medicalFilter = selectedCategory === "Medical & Pharmacy";
-      const taxiOptionFilter = ["Auto Rickshaw", "E-Rickshaw", "Cars", "Bikes", "Sedans", "Rental Vehicles"].includes(selectedCategory);
+      const taxiOptionQuery = TAXI_OPTION_QUERIES[selectedCategory];
       const matchCategory =
         !selectedCategory ||
         (transportFilter && isTransportCategory(s.category)) ||
         (medicalFilter && matchesQuery("medical pharmacy दवा", [s.category, s.description, searchableDetails])) ||
-        (taxiOptionFilter && isTransportCategory(s.category) && matchesQuery(selectedCategory, [s.category, s.description, searchableDetails])) ||
+        (!!taxiOptionQuery && isTransportCategory(s.category) && matchesQuery(taxiOptionQuery, [s.category, s.description, searchableDetails])) ||
         s.category === selectedCategory;
       return matchSearch && matchCategory;
     });
