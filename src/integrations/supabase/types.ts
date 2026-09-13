@@ -1618,6 +1618,53 @@ export type Database = {
         }
         Relationships: []
       }
+      meetings: {
+        Row: {
+          created_at: string
+          description: string
+          host_id: string
+          id: string
+          jitsi_room: string
+          public_code: string
+          scheduled_at: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          host_id: string
+          id?: string
+          jitsi_room?: string
+          public_code?: string
+          scheduled_at?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          host_id?: string
+          id?: string
+          jitsi_room?: string
+          public_code?: string
+          scheduled_at?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_profiles: {
         Row: {
           aadhaar_back_url: string | null
@@ -2473,6 +2520,19 @@ export type Database = {
           id: string
           name: string
           status: string
+        }[]
+      }
+      public_meeting_by_code: {
+        Args: { p_code: string }
+        Returns: {
+          description: string
+          host_name: string
+          id: string
+          jitsi_room: string
+          public_code: string
+          scheduled_at: string
+          status: string
+          title: string
         }[]
       }
       public_product_by_slug: {
