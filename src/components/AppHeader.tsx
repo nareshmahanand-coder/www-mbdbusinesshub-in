@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import logoCircle from "@/assets/logo-circle.jpeg";
-import { Globe, LogIn, Menu, X } from "lucide-react";
+import { Globe, LogIn, Menu, Video, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -19,6 +19,7 @@ const AppHeader = () => {
     { to: "/agent", label: t("agent_portal") },
     { to: "/coordinator", label: t("coordinator_portal") },
     { to: "/big-merchant", label: t("golden_merchant") },
+    { to: "/meetings", label: t("live_meeting"), icon: Video },
 
     { to: "/help", label: t("help_desk") },
     { to: "https://billing.mbdbusinesshub.in/", label: t("business_billing"), external: true },
@@ -82,6 +83,7 @@ const AppHeader = () => {
                     rel="noopener noreferrer"
                     className="rounded-lg px-4 py-2 text-sm font-medium text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground transition-colors"
                   >
+                    {l.icon && <l.icon className="mr-1.5 inline h-4 w-4" />}
                     {l.label}
                   </a>
                 ) : (
@@ -94,6 +96,7 @@ const AppHeader = () => {
                         : "text-primary-foreground/70 hover:bg-primary-foreground/10 hover:text-primary-foreground"
                     }`}
                   >
+                    {l.icon && <l.icon className="mr-1.5 inline h-4 w-4" />}
                     {l.label}
                   </Link>
                 )

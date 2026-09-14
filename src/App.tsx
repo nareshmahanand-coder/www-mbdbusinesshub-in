@@ -42,6 +42,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import MeetingsPage from "./pages/MeetingsPage";
+import MeetingRoomPage from "./pages/MeetingRoomPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useLastKnownLocation } from "@/hooks/useLastKnownLocation";
 import { useSiteSettings } from "@/hooks/useSiteSettings";
@@ -244,6 +246,8 @@ const AppShell = () => {
         <Route path="/skills" element={<KycRequiredRoute><SkillDevelopmentPage /></KycRequiredRoute>} />
         <Route path="/family-safety" element={<KycRequiredRoute><FamilySafetyPage /></KycRequiredRoute>} />
         <Route path="/family-invite/:token" element={<FamilyInvitePage />} />
+        <Route path="/meetings" element={<ProtectedRoute><MeetingsPage /></ProtectedRoute>} />
+        <Route path="/meeting/:code" element={<MeetingRoomPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
