@@ -7,3 +7,6 @@
 - [x] Hybrid Bharat Mitra AI: live merchant search + general conversational AI (credit limit raised, intent switching).
 - [x] Add Medical & Pharmacy and expandable Taxi cards to the homepage category grid.
 - [x] Add a dedicated Taxi section with grouped live transport filtering.
+- [x] Add scheduled Live Meeting / Zoom Webinar hosting with public guest links.
+- [x] Add Free Jitsi video rooms with grid, chat, screen sharing, and media controls.
+- [x] Add bilingual meeting navigation, host management, and WhatsApp sharing.

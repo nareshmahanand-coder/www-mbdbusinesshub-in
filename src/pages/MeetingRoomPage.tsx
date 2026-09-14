@@ -77,7 +77,7 @@ const MeetingRoomPage = () => {
     return (
       <>
         <Seo title={`${meeting.title} | Live Meeting`} description={meeting.description || "Join this live Mera Bharat Dukaan video meeting."} path={`/meeting/${meeting.public_code}`} noindex />
-        <JitsiMeetingRoom roomName={meeting.jitsi_room} displayName={participantName} email={user?.email} subject={meeting.title} language={lang} onLeave={() => navigate("/meetings")} />
+        <JitsiMeetingRoom roomName={meeting.jitsi_room} displayName={participantName} email={user?.email} subject={meeting.title} language={lang} onLeave={() => navigate(user ? "/meetings" : "/")} />
       </>
     );
   }

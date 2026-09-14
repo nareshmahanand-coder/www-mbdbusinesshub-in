@@ -25,6 +25,7 @@ const translations: Record<string, Record<Lang, string>> = {
   "premium_merchant": { en: "Premium Merchant", hi: "प्रीमियम मर्चेंट" },
   "business_billing": { en: "Business Billing", hi: "बिज़नेस बिलिंग" },
   "help_desk": { en: "Help Desk", hi: "सहायता केंद्र" },
+  "live_meeting": { en: "Live Meeting / Zoom Webinar", hi: "लाइव मीटिंग / ज़ूम वेबिनार" },
   "dashboard": { en: "Dashboard", hi: "डैशबोर्ड" },
   "my_profile": { en: "My Profile", hi: "मेरी प्रोफ़ाइल" },
   "settings": { en: "Settings", hi: "सेटिंग्स" },

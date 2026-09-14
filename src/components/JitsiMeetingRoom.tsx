@@ -44,7 +44,7 @@ const loadJitsi = () =>
 
 const JitsiMeetingRoom = ({ roomName, displayName, email, subject, language, onLeave }: JitsiMeetingRoomProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const apiRef = useRef<InstanceType<NonNullable<typeof window.JitsiMeetExternalAPI>> | null>(null);
+  const apiRef = useRef<{ dispose: () => void } | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
 
   useEffect(() => {
