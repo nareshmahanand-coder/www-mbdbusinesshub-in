@@ -10,3 +10,4 @@
 - [x] Add scheduled Live Meeting / Zoom Webinar hosting with public guest links.
 - [x] Add Free Jitsi video rooms with grid, chat, screen sharing, and media controls.
 - [x] Add bilingual meeting navigation, host management, and WhatsApp sharing.
+- [x] Upgrade Bharat Mitra general conversation to streaming human-like bilingual guidance without changing live search.

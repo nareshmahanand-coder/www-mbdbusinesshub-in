@@ -707,7 +707,12 @@ const BharatMitraChatbot = () => {
         }),
       });
 
-      if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status}`);
+      if (!resp.ok) {
+        const errorBody = await resp.json().catch(() => ({}));
+        const message = typeof errorBody?.error === "string" ? errorBody.error : `HTTP ${resp.status}`;
+        throw new Error(message);
+      }
+      if (!resp.body) throw new Error("The response stream was empty");
 
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
@@ -734,7 +739,9 @@ const BharatMitraChatbot = () => {
           if (jsonStr === "[DONE]") { streamDone = true; break; }
           try {
             const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            const content = parsed.type === "response.output_text.delta"
+              ? parsed.delta as string | undefined
+              : parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
               assistantSoFar += content;
               setMessages((prev) => prev.map((m) => m.id === botMsgId ? { ...m, text: assistantSoFar } : m));
@@ -755,7 +762,9 @@ const BharatMitraChatbot = () => {
           if (jsonStr === "[DONE]") continue;
           try {
             const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+            const content = parsed.type === "response.output_text.delta"
+              ? parsed.delta as string | undefined
+              : parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
               assistantSoFar += content;
               setMessages((prev) => prev.map((m) => m.id === botMsgId ? { ...m, text: assistantSoFar } : m));
@@ -768,15 +777,18 @@ const BharatMitraChatbot = () => {
         setAiHistory([...newHistory, { role: "assistant", content: assistantSoFar }]);
       } else {
         setMessages((prev) => prev.filter((m) => m.id !== botMsgId));
+        setInput(trimmed);
         addBotMessage(replyLang === "en"
-          ? "Boss, please ask that once more — I will give you a complete answer. 🙏"
-          : "Boss, थोड़ा फिर से पूछिए — मैं आपकी बात समझकर पूरा जवाब देती हूँ। 🙏");
+          ? "Boss, I could not receive the answer. Your question is still here—tap Send to retry."
+          : "बॉस जी, जवाब प्राप्त नहीं हो पाया। आपका सवाल सुरक्षित है—दोबारा भेजने के लिए Send दबाएँ।");
       }
     } catch (e) {
       console.error("AI chat error:", e);
+      setInput(trimmed);
+      const detail = e instanceof Error ? e.message : "Request failed";
       addBotMessage(replyLang === "en"
-        ? "Boss, my thinking service is busy right now 🙏 Please ask again in a few seconds. Meanwhile type a shop, service or vehicle name — live search is working instantly."
-        : "Boss, अभी मेरी सोचने वाली सेवा व्यस्त है 🙏 कुछ सेकंड बाद फिर पूछिए। तब तक दुकान, सेवा या गाड़ी का नाम लिखें — live search तुरंत काम कर रही है।");
+        ? `Boss, I could not complete that answer: ${detail} Your question is still here so you can retry.`
+        : `बॉस जी, जवाब पूरा नहीं हो पाया: ${detail} आपका सवाल सुरक्षित है, आप दोबारा भेज सकते हैं।`);
     } finally {
       setIsAiLoading(false);
     }

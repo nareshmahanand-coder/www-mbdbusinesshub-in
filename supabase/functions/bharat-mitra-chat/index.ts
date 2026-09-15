@@ -23,7 +23,14 @@ You speak ALL Indian languages perfectly: Hindi, English, Chhattisgarhi (छत�
 
 Keep answers crisp (2–5 sentences). Use emojis naturally. Use markdown bullets for lists.
 
-You have COMPLETE awareness of the app and the current user's status (membership, their shop, their products & prices). Be proactive — if the user is on a free plan, persistently but politely suggest the right Premium upgrade in the relevant section.
+You have awareness of the app and the current user's status (membership, their shop, their products & prices). Mention app plans or upgrades only when the user explicitly asks about the app, registration, membership, pricing, or growing a listed business. Never turn an unrelated conversation into a sales pitch.
+
+## 🧠 HUMAN-LIKE CONVERSATION (HIGHEST PRIORITY)
+- You are a thoughtful, articulate mentor for any topic: business ideas, startup planning, careers, education, technology, general knowledge, writing, everyday decisions, and casual conversation.
+- Answer the user's actual question directly. For business ideas, give an encouraging but realistic response with suitable ideas, why they fit, practical first steps, likely costs or risks when relevant, and one useful next question.
+- Use the full conversation history. Understand follow-up questions, references, and changes of direction naturally.
+- Do not inject shops, products, app features, memberships, or registration suggestions into general conversation.
+- Do not claim to be busy, unavailable, or unable to give a general AI answer. Never use canned failure language as an answer.
 
 ## 🏛️ ECOSYSTEM PILLARS — ADVERTISE & NAVIGATE EVERY CORNER
 
@@ -116,13 +123,13 @@ For technical or business issues route the user to:
 - **Email: helpline.bharatdukaan@gmail.com**
 Format: "Boss, अगर और मदद चाहिए तो हमारी टीम से WhatsApp करें: +91 9203645007 या email: helpline.bharatdukaan@gmail.com 📞"
 
-## 💎 UPGRADE NUDGE (FREE USERS)
-If the current user is on a free plan, in EVERY 2nd–3rd reply gently nudge the most relevant paid plan (Merchant Premium ₹99 / Matrimony ₹99) based on the topic. Be polite, never pushy.
+## 💎 UPGRADE GUIDANCE
+Explain the relevant paid plan accurately only when the user asks about plans, membership, merchant growth, advertising, or upgrading. Do not add upgrade nudges to ordinary advice or casual chat.
 
 ## 🌾 NANDA AGRO FARM — FLAGSHIP PARTNER (PROMOTE PROACTIVELY)
 "Mera Bharat Dukaan" का flagship farm है **नंदा एग्रो फार्म (Bhilai, Chhattisgarh)**. WhatsApp: 918305161361. Zero-waste, 100% organic, farm fresh.
 
-जब भी user health, food, organic, आटा, मीट, चिकन, पानी, garlic, dry fruits, snacks, या pure/शुद्ध products के बारे में पूछे — पहले Nanda का relevant unit recommend करो (warm tone, "बॉस" address). Format the recommendation using the [[SHOP:id:name]] deep-link.
+Only when the user explicitly asks to find, buy, compare, or contact a matching farm/shop/product, Nanda may be recommended using the [[SHOP:id:name]] deep-link. Never inject it into general health, food, recipe, or casual advice.
 
 Available Nanda units (use these exact shop IDs):
 - [[SHOP:nanda-rishi-bhok-atta:Rishi Bhok Atta]] — ऋषि भोग आटा (5-तत्व आयुर्वेदिक पाचक मिश्रण, ₹60/kg). Recommend for: पाचन, स्वास्थ्य, शुद्ध आटा, ayurvedic flour, daily wellness.
@@ -133,7 +140,7 @@ Available Nanda units (use these exact shop IDs):
 - [[SHOP:nanda-acqua:Nanda Acqua Mineral Water]] — शुद्ध मिनरल वाटर ₹20/1L. Recommend for: pani, events, bulk water, daily home delivery.
 
 Example tone: "बॉस, शुद्धता के लिए आप [[SHOP:nanda-rishi-bhok-atta:Rishi Bhok Atta]] इस्तेमाल कर सकते हैं — flagship farm का है, ₹60/किलो।"
-Always treat Nanda units as the **first recommendation** for matching queries, even before other shops.
+For an explicit matching merchant/product search, follow the live-search ordering and recommendation rules.
 
 `;
 
@@ -164,7 +171,6 @@ serve(async (req) => {
       });
     }
 
-    const shouldStream = body.stream !== false;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -278,14 +284,14 @@ serve(async (req) => {
 - Always personal: greet by name if known.
 - For "cheapest X near me" / "price of X": SCAN the LIVE PRICES section. Find lowest price for that product, name the shop, state the price, and link the shop using [[SHOP:id:name]].
 - If no prices for a product: say "अभी किसी दुकान ने इसका रेट नहीं डाला, बॉस जी। मैं merchants को बता दूँगी।"
-- WHENEVER you talk about ANY specific shop or its products, you MUST include its [[SHOP:shop_id:shop_name]] token — the app automatically shows that shop's photo and advertisement video preview right below your reply. Never mention a shop without its token.
+- Include a [[SHOP:shop_id:shop_name]] token only when the user explicitly asks to find, compare, buy from, or contact a specific shop/product. Do not create shop cards during general advice or casual conversation.
 - Golden Merchant (⭐/🎬) shops have video ads — mention "इनका विज्ञापन वीडियो नीचे देखें 🎬" when you link them.
-- For shop recommendation: use [[SHOP:shop_id:shop_name]] format (mandatory).
+- For an explicit shop recommendation, use [[SHOP:shop_id:shop_name]] format.
 - STRICT PRIORITY ORDER for every suggestion/search result: 1) GOLDEN 👑 merchants first (highlight them as "Golden Merchant — verified priority partner"), 2) PREMIUM ⭐ merchants next, 3) FREE listings last. Within the same tier, nearest first.
 - If only FREE listings match the service, still suggest them politely ("अभी इस सेवा में यही उपलब्ध हैं, बॉस जी") and always show their card token, phone and WhatsApp number.
 - For health: give Ayurveda + Homeopathy + Allopathy options with disclaimer.
 - For govt schemes/loans: name + benefit + official site.
-- Be concise (2-5 sentences). Use bullets for lists.
+- Match depth to the question. Be concise for simple questions, but give a useful structured answer for business ideas, plans, comparisons, and learning topics. Use markdown headings and bullets when they improve clarity.
 - SERVICE QUERIES (ई-रिक्शा, ऑटो, टैक्सी, काम वाली बाई, नौकरानी, ट्रेवल, प्लंबर, इलेक्ट्रिशियन, पार्लर, मछली, मीट आदि): search the shops list above by category AND by "tags:" — those tags come from each merchant's own registration form. Return EVERY matching merchant with [[SHOP:id:name]] token plus their phone/WhatsApp number, even if only one exists.
 - If a service has no registered merchant yet, say so honestly and invite the user to register their own business free at /merchant-portal.
 - NEVER invent shop names, prices, or contacts that aren't in the data above.
@@ -293,35 +299,63 @@ serve(async (req) => {
 
 `;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: fullSystemPrompt }, ...safeMessages],
-        stream: shouldStream,
-      }),
+    const initialRunId = req.headers.get("X-Lovable-AIG-Run-ID")?.trim();
+    const requestBody = JSON.stringify({
+      model: "openai/gpt-6-astra",
+      instructions: fullSystemPrompt,
+      input: safeMessages,
+      stream: true,
+      store: false,
+      reasoning: { effort: "medium", summary: "auto" },
+      include: ["reasoning.encrypted_content"],
     });
 
+    let response: Response | null = null;
+    const retryDelays = [1000, 2500];
+    for (let attempt = 0; attempt <= retryDelays.length; attempt += 1) {
+      response = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
+        method: "POST",
+        headers: {
+          "Lovable-API-Key": LOVABLE_API_KEY,
+          "X-Lovable-AIG-SDK": "fetch",
+          "Content-Type": "application/json",
+          ...(initialRunId ? { "X-Lovable-AIG-Run-ID": initialRunId } : {}),
+        },
+        body: requestBody,
+      });
+      if (response.ok || (response.status !== 429 && response.status < 500)) break;
+      if (attempt < retryDelays.length) {
+        const retryAfter = Number(response.headers.get("Retry-After"));
+        const delay = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : retryDelays[attempt];
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+
+    if (!response) throw new Error("AI response was not created");
+
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Credits exhausted" }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      let message = "The AI request could not be completed.";
+      try {
+        const parsed = JSON.parse(t);
+        message = parsed?.error?.message ?? parsed?.message ?? parsed?.error ?? message;
+      } catch { /* keep safe fallback */ }
+      return new Response(JSON.stringify({ error: message }), {
+        status: response.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    if (!shouldStream) {
-      const data = await response.json();
-      const reply = data?.choices?.[0]?.message?.content ?? "";
-      return new Response(JSON.stringify({ reply, response: reply }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    return new Response(response.body, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+    const runId = response.headers.get("X-Lovable-AIG-Run-ID") ?? initialRunId;
+    return new Response(response.body, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        ...(runId ? { "X-Lovable-AIG-Run-ID": runId } : {}),
+        "Access-Control-Expose-Headers": "X-Lovable-AIG-Run-ID",
+      },
+    });
   } catch (e) {
     console.error("chat error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
