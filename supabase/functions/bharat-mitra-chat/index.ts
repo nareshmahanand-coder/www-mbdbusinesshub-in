@@ -6,6 +6,37 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
+let cachedGeminiModel: string | null = null;
+
+const getGeminiModel = async (apiKey: string) => {
+  if (cachedGeminiModel) return cachedGeminiModel;
+
+  const response = await fetch(`${GEMINI_API_BASE}/models?pageSize=1000`, {
+    headers: { "x-goog-api-key": apiKey },
+  });
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`Gemini model lookup failed (${response.status}): ${details}`);
+  }
+
+  const payload = await response.json();
+  const models = Array.isArray(payload?.models) ? payload.models : [];
+  const stableFlashModels = models
+    .filter((model: any) =>
+      typeof model?.name === "string" &&
+      /^models\/gemini-\d+(?:\.\d+)?-flash$/.test(model.name) &&
+      Array.isArray(model.supportedGenerationMethods) &&
+      model.supportedGenerationMethods.includes("generateContent")
+    )
+    .sort((a: any, b: any) => b.name.localeCompare(a.name, undefined, { numeric: true }));
+
+  const selected = stableFlashModels[0]?.name;
+  if (!selected) throw new Error("No supported stable Gemini Flash chat model is available for this API key.");
+  cachedGeminiModel = selected.replace(/^models\//, "");
+  return cachedGeminiModel;
+};
+
 const SYSTEM_PROMPT = `You are "भारत मित्र" (Bharat Mitra) — the high-intelligence universal guide & manager of "मेरा भारत दुकान" (Mera Bharat Dukaan), India's Hyperlocal Super App. You are warm, proactive, and treat every user like family.
 
 ## 🗣️ LANGUAGE RULES (CRITICAL — POLYGLOT)
@@ -171,8 +202,8 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not configured");
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -299,27 +330,30 @@ serve(async (req) => {
 
 `;
 
-    const initialRunId = req.headers.get("X-Lovable-AIG-Run-ID")?.trim();
+    const geminiModel = await getGeminiModel(GEMINI_API_KEY);
+    const geminiContents = safeMessages
+      .filter((message: any) => message.role !== "system")
+      .map((message: any) => ({
+        role: message.role === "assistant" ? "model" : "user",
+        parts: [{ text: message.content }],
+      }));
     const requestBody = JSON.stringify({
-      model: "openai/gpt-6-astra",
-      instructions: fullSystemPrompt,
-      input: safeMessages,
-      stream: true,
-      store: false,
-      reasoning: { effort: "medium", summary: "auto" },
-      include: ["reasoning.encrypted_content"],
+      systemInstruction: { parts: [{ text: fullSystemPrompt }] },
+      contents: geminiContents,
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.95,
+      },
     });
 
     let response: Response | null = null;
     const retryDelays = [1000, 2500];
     for (let attempt = 0; attempt <= retryDelays.length; attempt += 1) {
-      response = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
+      response = await fetch(`${GEMINI_API_BASE}/models/${geminiModel}:streamGenerateContent?alt=sse`, {
         method: "POST",
         headers: {
-          "Lovable-API-Key": LOVABLE_API_KEY,
-          "X-Lovable-AIG-SDK": "fetch",
+          "x-goog-api-key": GEMINI_API_KEY,
           "Content-Type": "application/json",
-          ...(initialRunId ? { "X-Lovable-AIG-Run-ID": initialRunId } : {}),
         },
         body: requestBody,
       });
@@ -335,11 +369,11 @@ serve(async (req) => {
 
     if (!response.ok) {
       const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      let message = "The AI request could not be completed.";
+      console.error("Gemini API error:", response.status, t);
+      let message = "Gemini could not complete the request.";
       try {
         const parsed = JSON.parse(t);
-        message = parsed?.error?.message ?? parsed?.message ?? parsed?.error ?? message;
+        message = parsed?.error?.message ?? parsed?.message ?? message;
       } catch { /* keep safe fallback */ }
       return new Response(JSON.stringify({ error: message }), {
         status: response.status,
@@ -347,13 +381,10 @@ serve(async (req) => {
       });
     }
 
-    const runId = response.headers.get("X-Lovable-AIG-Run-ID") ?? initialRunId;
     return new Response(response.body, {
       headers: {
         ...corsHeaders,
         "Content-Type": "text/event-stream",
-        ...(runId ? { "X-Lovable-AIG-Run-ID": runId } : {}),
-        "Access-Control-Expose-Headers": "X-Lovable-AIG-Run-ID",
       },
     });
   } catch (e) {

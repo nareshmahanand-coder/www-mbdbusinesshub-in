@@ -11,3 +11,4 @@
 - [x] Add Free Jitsi video rooms with grid, chat, screen sharing, and media controls.
 - [x] Add bilingual meeting navigation, host management, and WhatsApp sharing.
 - [x] Upgrade Bharat Mitra general conversation to streaming human-like bilingual guidance without changing live search.
+- [x] Move Bharat Mitra general conversation to the owner's Gemini API while preserving live search.

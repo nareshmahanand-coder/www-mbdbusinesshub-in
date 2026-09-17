@@ -741,7 +741,8 @@ const BharatMitraChatbot = () => {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.type === "response.output_text.delta"
               ? parsed.delta as string | undefined
-              : parsed.choices?.[0]?.delta?.content as string | undefined;
+              : parsed.choices?.[0]?.delta?.content as string | undefined
+                ?? parsed.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text ?? "").join("");
             if (content) {
               assistantSoFar += content;
               setMessages((prev) => prev.map((m) => m.id === botMsgId ? { ...m, text: assistantSoFar } : m));
@@ -764,7 +765,8 @@ const BharatMitraChatbot = () => {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.type === "response.output_text.delta"
               ? parsed.delta as string | undefined
-              : parsed.choices?.[0]?.delta?.content as string | undefined;
+              : parsed.choices?.[0]?.delta?.content as string | undefined
+                ?? parsed.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text ?? "").join("");
             if (content) {
               assistantSoFar += content;
               setMessages((prev) => prev.map((m) => m.id === botMsgId ? { ...m, text: assistantSoFar } : m));
