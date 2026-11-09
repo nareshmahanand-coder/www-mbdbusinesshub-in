@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.merabharatdukaan.app2",
+      "sha256_cert_fingerprints": [
+        "9C:A8:89:D3:A1:24:35:2F:43:EF:4B:94:13:39:CD:B6:18:E6:B2:E9:79:42:BD:91:9A:49:48:35:A2:73:99:CB"
+      ]
+    }
+  }
+]
