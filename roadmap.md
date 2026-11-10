@@ -12,3 +12,8 @@
 - [x] Add bilingual meeting navigation, host management, and WhatsApp sharing.
 - [x] Upgrade Bharat Mitra general conversation to streaming human-like bilingual guidance without changing live search.
 - [x] Move Bharat Mitra general conversation to the owner's Gemini API while preserving live search.
+- [ ] Audit and isolate payment rows and entitlements by account across all requested tiers.
+- [ ] Require verified, correctly bound Razorpay captures before any entitlement unlock.
+- [ ] Make payment fulfillment idempotent and recurring renewals account-specific.
+- [ ] Add per-account payment attempt history and independent tier verification tests.
+- [ ] Verify Golden Merchant auto-debit only after its real Razorpay plan mapping is confirmed.
