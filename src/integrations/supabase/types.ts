@@ -1835,6 +1835,50 @@ export type Database = {
           },
         ]
       }
+      payment_attempt_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          payment_order_id: string
+          provider_event_id: string | null
+          provider_payment_id: string | null
+          safe_message: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          payment_order_id: string
+          provider_event_id?: string | null
+          provider_payment_id?: string | null
+          safe_message?: string | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          payment_order_id?: string
+          provider_event_id?: string | null
+          provider_payment_id?: string | null
+          safe_message?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_attempt_events_payment_order_id_fkey"
+            columns: ["payment_order_id"]
+            isOneToOne: false
+            referencedRelation: "payment_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_orders: {
         Row: {
           amount: number
@@ -2004,6 +2048,56 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      razorpay_subscription_mappings: {
+        Row: {
+          created_at: string
+          id: string
+          last_payment_id: string | null
+          module: string
+          payment_order_id: string
+          plan: string
+          razorpay_plan_id: string
+          razorpay_subscription_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_payment_id?: string | null
+          module: string
+          payment_order_id: string
+          plan: string
+          razorpay_plan_id: string
+          razorpay_subscription_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_payment_id?: string | null
+          module?: string
+          payment_order_id?: string
+          plan?: string
+          razorpay_plan_id?: string
+          razorpay_subscription_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "razorpay_subscription_mappings_payment_order_id_fkey"
+            columns: ["payment_order_id"]
+            isOneToOne: false
+            referencedRelation: "payment_orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       saved_shops: {
         Row: {
@@ -2448,6 +2542,18 @@ export type Database = {
           shops_count: number
         }[]
       }
+      fulfill_razorpay_payment: {
+        Args: {
+          p_amount_paise: number
+          p_currency: string
+          p_payment_id: string
+          p_payment_order_id: string
+          p_provider_event_id: string
+          p_signature?: string
+          p_source?: string
+        }
+        Returns: Json
+      }
       generate_agent_code: { Args: never; Returns: string }
       generate_big_merchant_code: { Args: never; Returns: string }
       generate_coordinator_code: { Args: never; Returns: string }
@@ -2600,6 +2706,15 @@ export type Database = {
           slug: string
           updated_at: string
         }[]
+      }
+      record_razorpay_payment_failure: {
+        Args: {
+          p_payment_id: string
+          p_payment_order_id: string
+          p_provider_event_id: string
+          p_safe_message?: string
+        }
+        Returns: Json
       }
       shop_media_cards: {
         Args: { shop_ids: string[] }
