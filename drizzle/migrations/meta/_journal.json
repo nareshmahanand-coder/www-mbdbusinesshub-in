@@ -36,6 +36,13 @@
       "when": 1789261187214,
       "tag": "0004_create_live_meetings",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794628263466,
+      "tag": "0005_isolate_razorpay_payments",
+      "breakpoints": true
     }
   ]
 }
