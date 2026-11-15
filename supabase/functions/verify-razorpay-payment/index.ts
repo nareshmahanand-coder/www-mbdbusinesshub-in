@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.2";
-import { validateCapturedPayment } from "../_shared/paymentCatalog.ts";
+import { isPaymentOrderOwnedBy, validateCapturedPayment, validateCapturedSubscriptionPayment } from "../_shared/paymentCatalog.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,7 +66,7 @@ serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
     const { data: order, error: orderError } = await admin.from("payment_orders").select("*").eq("id", paymentOrderId).eq("user_id", authData.user.id).maybeSingle();
-    if (orderError || !order) return new Response(JSON.stringify({ error: "Payment order not found for this account" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (orderError || !order || !isPaymentOrderOwnedBy(order, authData.user.id)) return new Response(JSON.stringify({ error: "Payment order not found for this account" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     if (order.status === "paid" && order.unlocked_at) return new Response(JSON.stringify({ ok: true, alreadyUnlocked: true, module: order.module }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     let signatureMessage = "";
@@ -84,18 +84,12 @@ serve(async (req) => {
     if (!safeEqual(expectedSignature, signature.toLowerCase())) return new Response(JSON.stringify({ error: "Payment verification failed" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
     const payment = await fetchPayment(callbackPaymentId, keyId, keySecret);
-    const invalidPayment = validateCapturedPayment(order, {
-      id: payment?.id,
-      order_id: callbackSubscriptionId ? order.razorpay_order_id : payment?.order_id,
-      status: payment?.status,
-      amount: payment?.amount,
-      currency: payment?.currency,
-    });
-    if (invalidPayment && !(callbackSubscriptionId && invalidPayment === "Provider order does not match this account's order")) {
+    const invalidPayment = callbackSubscriptionId
+      ? validateCapturedSubscriptionPayment(order, payment, expectedSubscriptionId)
+      : validateCapturedPayment(order, payment);
+    if (invalidPayment) {
       return new Response(JSON.stringify({ ok: false, pending: payment?.status !== "captured", error: invalidPayment }), { status: payment?.status === "captured" ? 400 : 202, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    if (callbackSubscriptionId && payment?.subscription_id !== expectedSubscriptionId) return new Response(JSON.stringify({ error: "Captured payment does not match this account's subscription" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
     const { data: fulfillment, error: fulfillmentError } = await admin.rpc("fulfill_razorpay_payment", {
       p_payment_order_id: order.id,
       p_payment_id: payment.id,

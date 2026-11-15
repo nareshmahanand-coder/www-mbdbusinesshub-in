@@ -44,3 +44,24 @@ export function validateCapturedPayment(
   if (String(payment.currency || "").toUpperCase() !== "INR") return "Captured currency does not match the plan";
   return null;
 }
+
+export function validateCapturedSubscriptionPayment(
+  order: { id: string; user_id: string; module: string; plan: string; amount: number; currency: string },
+  payment: { id?: string; subscription_id?: string; status?: string; amount?: number; currency?: string },
+  mappedSubscriptionId: string,
+) {
+  const product = getPaymentProduct(order.module, order.plan);
+  if (!product) return "Unknown payment product";
+  if (!order.user_id || !order.id || !mappedSubscriptionId) return "Subscription is not bound to an account and order";
+  if (Number(order.amount) !== product.amount || order.currency.toUpperCase() !== "INR") return "Local order does not match the published plan";
+  if (!payment.id || !/^pay_[A-Za-z0-9]+$/.test(payment.id)) return "Provider payment reference is invalid";
+  if (payment.status !== "captured") return "Payment has not been captured";
+  if (payment.subscription_id !== mappedSubscriptionId) return "Captured payment does not match this account's subscription";
+  if (Number(payment.amount) !== product.amount * 100) return "Captured amount does not match the plan";
+  if (String(payment.currency || "").toUpperCase() !== "INR") return "Captured currency does not match the plan";
+  return null;
+}
+
+export function isPaymentOrderOwnedBy(order: { user_id?: string | null } | null | undefined, userId: string) {
+  return Boolean(order?.user_id && userId && order.user_id === userId);
+}
