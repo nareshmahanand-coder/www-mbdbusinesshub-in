@@ -1,38 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.99.2";
+import { getPaymentProduct } from "../_shared/paymentCatalog.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const PRODUCTS = {
-  merchant_premium: {
-    monthly: { amount: 99, amountPaise: 9900, days: 30, label: "Merchant Premium Monthly" },
-    yearly: { amount: 999, amountPaise: 99900, days: 365, label: "Merchant Premium Yearly - Best Value" },
-  },
-  marriage_bureau: {
-    monthly: { amount: 99, amountPaise: 9900, days: 30, label: "Mera Jeevansathi Monthly Premium" },
-    yearly: { amount: 99, amountPaise: 9900, days: 365, label: "Mera Jeevansathi Yearly Premium" },
-  },
-  bharat_gaurav: {
-    monthly: { amount: 10, amountPaise: 1000, days: 30, label: "Bharat Gaurav Membership Monthly ₹10" },
-    yearly: { amount: 100, amountPaise: 10000, days: 365, label: "Bharat Gaurav Membership Yearly ₹100" },
-  },
-  coordinator: {
-    monthly: { amount: 100, amountPaise: 10000, days: 30, label: "Coordinator Monthly Subscription ₹100 (Auto-Debit)" },
-    yearly: { amount: 1000, amountPaise: 100000, days: 365, label: "Coordinator Yearly Subscription ₹1000" },
-  },
-  big_merchant: {
-    monthly: { amount: 1600, amountPaise: 160000, days: 30, label: "Big Merchant Plus Monthly ₹1600" },
-    yearly: { amount: 16000, amountPaise: 1600000, days: 365, label: "Big Merchant Plus Yearly ₹16000" },
-
-  },
-} as const;
-
-
-type ModuleName = keyof typeof PRODUCTS;
-type PlanName = "monthly" | "yearly";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -54,9 +27,9 @@ serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const module = String(body.module || "") as ModuleName;
-    const plan = String(body.plan || "") as PlanName;
-    const product = PRODUCTS[module]?.[plan];
+    const module = String(body.module || "");
+    const plan = String(body.plan || "");
+    const product = getPaymentProduct(module, plan);
 
     if (!product) {
       return new Response(JSON.stringify({ error: "Invalid payment module or plan" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -70,7 +43,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        amount: product.amountPaise,
+        amount: product.amount * 100,
         currency: "INR",
         receipt,
         notes: {
