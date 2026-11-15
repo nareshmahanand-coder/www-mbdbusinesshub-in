@@ -77,8 +77,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: sub?.error?.description || "Could not create subscription" }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { error: providerOrderError } = await admin.from("payment_orders").update({ razorpay_order_id: sub.id }).eq("id", paymentOrder.id).eq("user_id", userData.user.id);
-    if (providerOrderError) throw providerOrderError;
     const { error: mappingError } = await admin.from("razorpay_subscription_mappings").insert({
       user_id: userData.user.id, payment_order_id: paymentOrder.id, module: meta.module, plan: meta.plan,
       razorpay_subscription_id: sub.id, razorpay_plan_id: planId, status: "created",
