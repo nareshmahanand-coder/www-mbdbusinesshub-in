@@ -28,3 +28,19 @@ export function getPaymentProduct(module: string, plan: string) {
   if (!(module in PAYMENT_PRODUCTS) || (plan !== "monthly" && plan !== "yearly")) return null;
   return PAYMENT_PRODUCTS[module as PaymentModule][plan as PaymentPlan] ?? null;
 }
+
+export function validateCapturedPayment(
+  order: { id: string; user_id: string; module: string; plan: string; amount: number; currency: string; razorpay_order_id: string | null },
+  payment: { id?: string; order_id?: string | null; status?: string; amount?: number; currency?: string },
+) {
+  const product = getPaymentProduct(order.module, order.plan);
+  if (!product) return "Unknown payment product";
+  if (!order.user_id || !order.id || !order.razorpay_order_id) return "Payment order is not bound to an account and provider order";
+  if (Number(order.amount) !== product.amount || order.currency.toUpperCase() !== "INR") return "Local order does not match the published plan";
+  if (!payment.id || !/^pay_[A-Za-z0-9]+$/.test(payment.id)) return "Provider payment reference is invalid";
+  if (payment.status !== "captured") return "Payment has not been captured";
+  if (payment.order_id !== order.razorpay_order_id) return "Provider order does not match this account's order";
+  if (Number(payment.amount) !== product.amount * 100) return "Captured amount does not match the plan";
+  if (String(payment.currency || "").toUpperCase() !== "INR") return "Captured currency does not match the plan";
+  return null;
+}
