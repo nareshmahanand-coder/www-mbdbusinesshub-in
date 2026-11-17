@@ -62,7 +62,7 @@ serve(async (req) => {
     }
 
     const admin = createClient(supabaseUrl, serviceKey);
-    const { error: insertError } = await admin.from("payment_orders").insert({
+    const { data: orderData, error: insertError } = await admin.from("payment_orders").insert({
       user_id: userData.user.id,
       module,
       plan,
@@ -72,12 +72,13 @@ serve(async (req) => {
       razorpay_order_id: order.id,
       receipt,
       metadata: { days: product.days, label: product.label, plan_name: `${module}_${plan}` },
-    });
+    }).select("id").single();
 
     if (insertError) throw insertError;
 
     return new Response(JSON.stringify({
       keyId,
+      paymentOrderId: orderData.id,
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
