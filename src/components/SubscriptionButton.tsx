@@ -32,13 +32,12 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
     void (async () => {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) { if (!cancelled) setChecking(false); return; }
-      const { data } = await supabase.from("user_profiles")
-        .select("membership_status, membership_type, current_period_end")
-        .eq("user_id", auth.user.id).maybeSingle();
+      const { data } = await supabase.from("bharat_gaurav_memberships")
+        .select("expires_at")
+        .eq("user_id", auth.user.id).eq("status", "active")
+        .gt("expires_at", new Date().toISOString()).order("expires_at", { ascending: false }).limit(1).maybeSingle();
       if (!cancelled) {
-        const sameType = data?.membership_type === membership_type;
-        const unexpired = Boolean(data?.current_period_end && new Date(data.current_period_end) > new Date());
-        setIsActive(data?.membership_status === "active" && sameType && unexpired);
+        setIsActive(Boolean(data?.expires_at));
         setChecking(false);
       }
     })();
@@ -53,6 +52,7 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
 
   const handleClick = async () => {
     setLoading(true);
+    let paymentOrderId = "";
     try {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) throw new Error("Please login first");
@@ -63,11 +63,12 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
       const RazorpayConstructor = (window as any).Razorpay;
       if (!RazorpayConstructor) throw new Error("Razorpay checkout is unavailable");
       let completed = false;
+      paymentOrderId = data.paymentOrderId;
       const onVerifiedPayment = async (response: any) => {
         if (completed) return;
         completed = true;
         const result = await supabase.functions.invoke("verify-razorpay-payment", { body: {
-          payment_order_id: data.paymentOrderId,
+          payment_order_id: paymentOrderId,
           subscription_id: data.subscriptionId,
           razorpay_payment_id: response?.razorpay_payment_id,
           razorpay_signature: response?.razorpay_signature,
@@ -97,7 +98,7 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
         if (completed) return;
         completed = true;
         void supabase.functions.invoke("record-payment-failure", { body: {
-          payment_order_id: data.paymentOrderId,
+          payment_order_id: paymentOrderId,
           razorpay_payment_id: response?.error?.metadata?.payment_id,
           reason: response?.error?.description,
         } });
@@ -106,6 +107,7 @@ export const SubscriptionButton = ({ plan_id, membership_type, plan_type, button
       });
       checkout.open();
     } catch (error) {
+      if (paymentOrderId) void supabase.functions.invoke("record-payment-failure", { body: { payment_order_id: paymentOrderId, reason: "Subscription checkout could not be opened" } });
       toast.error(error instanceof Error ? error.message : "Something went wrong");
       setLoading(false);
     }
