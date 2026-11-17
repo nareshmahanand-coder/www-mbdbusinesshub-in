@@ -78,6 +78,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       keyId,
+      paymentOrderId: orderData.id,
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
