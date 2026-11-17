@@ -47,21 +47,6 @@ type SyncPaymentOptions = {
   razorpay_signature?: string;
 };
 
-const waitForPaymentOrderUnlock = async (paymentOrderId: string) => {
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    const { data } = await supabase
-      .from("payment_orders")
-      .select("status, razorpay_payment_id, unlocked_at")
-      .eq("id", paymentOrderId)
-      .maybeSingle();
-
-    if (data?.status === "paid" && data.razorpay_payment_id && data.unlocked_at) return true;
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-  }
-
-  return false;
-};
-
 export const syncLatestRazorpayPayment = async ({ paymentOrderId, razorpay_order_id, razorpay_payment_id, razorpay_signature, subscription_id }: SyncPaymentOptions & { subscription_id?: string }) => {
   const { data, error } = await supabase.functions.invoke("verify-razorpay-payment", {
     body: {
@@ -98,16 +83,13 @@ export const startInstantRazorpayPayment = async ({ module, plan, onSuccess, onF
     theme: { color: "#FF9933" },
     handler: async (response: RazorpaySuccessResponse) => {
       const orderId = String(response?.razorpay_order_id || data.orderId || "");
-      let unlocked = false;
-      if (!unlocked) {
-        const synced = await syncLatestRazorpayPayment({
-          paymentOrderId: data.paymentOrderId,
-          razorpay_order_id: orderId,
-          razorpay_payment_id: response?.razorpay_payment_id,
-          razorpay_signature: response?.razorpay_signature,
-        });
-        unlocked = Boolean(synced.ok);
-      }
+      const synced = await syncLatestRazorpayPayment({
+        paymentOrderId: data.paymentOrderId,
+        razorpay_order_id: orderId,
+        razorpay_payment_id: response?.razorpay_payment_id,
+        razorpay_signature: response?.razorpay_signature,
+      });
+      const unlocked = Boolean(synced.ok);
 
       if (!unlocked) {
         onFailure?.();
