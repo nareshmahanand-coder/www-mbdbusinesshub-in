@@ -41,6 +41,8 @@ type RazorpaySuccessResponse = {
 };
 
 type SyncPaymentOptions = {
+  module?: PaymentModule;
+  plan?: PaymentPlan;
   paymentOrderId?: string;
   razorpay_order_id?: string;
   razorpay_payment_id?: string;
